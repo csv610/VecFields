@@ -1,0 +1,692 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/DenseCoeffsBase.h
+        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
+        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
+        -:    0:Runs:4
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2006-2010 Benoit Jacob <jacob.benoit.1@gmail.com>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:#ifndef EIGEN_DENSECOEFFSBASE_H
+        -:   11:#define EIGEN_DENSECOEFFSBASE_H
+        -:   12:
+        -:   13:// IWYU pragma: private
+        -:   14:#include "./InternalHeaderCheck.h"
+        -:   15:
+        -:   16:namespace Eigen {
+        -:   17:
+        -:   18:namespace internal {
+        -:   19:template<typename T> struct add_const_on_value_type_if_arithmetic
+        -:   20:{
+        -:   21:  typedef std::conditional_t<is_arithmetic<T>::value, T, add_const_on_value_type_t<T>> type;
+        -:   22:};
+        -:   23:}
+        -:   24:
+        -:   25:/** \brief Base class providing read-only coefficient access to matrices and arrays.
+        -:   26:  * \ingroup Core_Module
+        -:   27:  * \tparam Derived Type of the derived class
+        -:   28:  *
+        -:   29:  * \note #ReadOnlyAccessors Constant indicating read-only access
+        -:   30:  *
+        -:   31:  * This class defines the \c operator() \c const function and friends, which can be used to read specific
+        -:   32:  * entries of a matrix or array.
+        -:   33:  *
+        -:   34:  * \sa DenseCoeffsBase<Derived, WriteAccessors>, DenseCoeffsBase<Derived, DirectAccessors>,
+        -:   35:  *     \ref TopicClassHierarchy
+        -:   36:  */
+        -:   37:template<typename Derived>
+        -:   38:class DenseCoeffsBase<Derived,ReadOnlyAccessors> : public EigenBase<Derived>
+        -:   39:{
+        -:   40:  public:
+        -:   41:    typedef typename internal::traits<Derived>::StorageKind StorageKind;
+        -:   42:    typedef typename internal::traits<Derived>::Scalar Scalar;
+        -:   43:    typedef typename internal::packet_traits<Scalar>::type PacketScalar;
+        -:   44:
+        -:   45:    // Explanation for this CoeffReturnType typedef.
+        -:   46:    // - This is the return type of the coeff() method.
+        -:   47:    // - The LvalueBit means exactly that we can offer a coeffRef() method, which means exactly that we can get references
+        -:   48:    // to coeffs, which means exactly that we can have coeff() return a const reference (as opposed to returning a value).
+        -:   49:    // - The is_arithmetic check is required since "const int", "const double", etc. will cause warnings on some systems
+        -:   50:    // while the declaration of "const T", where T is a non arithmetic type does not. Always returning "const Scalar&" is
+        -:   51:    // not possible, since the underlying expressions might not offer a valid address the reference could be referring to.
+        -:   52:    typedef std::conditional_t<bool(internal::traits<Derived>::Flags&LvalueBit),
+        -:   53:                const Scalar&,
+        -:   54:                std::conditional_t<internal::is_arithmetic<Scalar>::value, Scalar, const Scalar>
+        -:   55:            > CoeffReturnType;
+        -:   56:
+        -:   57:    typedef typename internal::add_const_on_value_type_if_arithmetic<
+        -:   58:                         typename internal::packet_traits<Scalar>::type
+        -:   59:                     >::type PacketReturnType;
+        -:   60:
+        -:   61:    typedef EigenBase<Derived> Base;
+        -:   62:    using Base::rows;
+        -:   63:    using Base::cols;
+        -:   64:    using Base::size;
+        -:   65:    using Base::derived;
+        -:   66:
+        -:   67:    EIGEN_DEVICE_FUNC
+        -:   68:    EIGEN_STRONG_INLINE Index rowIndexByOuterInner(Index outer, Index inner) const
+        -:   69:    {
+        -:   70:      return int(Derived::RowsAtCompileTime) == 1 ? 0
+        -:   71:          : int(Derived::ColsAtCompileTime) == 1 ? inner
+        -:   72:          : int(Derived::Flags)&RowMajorBit ? outer
+        -:   73:          : inner;
+        -:   74:    }
+        -:   75:
+        -:   76:    EIGEN_DEVICE_FUNC
+        -:   77:    EIGEN_STRONG_INLINE Index colIndexByOuterInner(Index outer, Index inner) const
+        -:   78:    {
+        -:   79:      return int(Derived::ColsAtCompileTime) == 1 ? 0
+        -:   80:          : int(Derived::RowsAtCompileTime) == 1 ? inner
+        -:   81:          : int(Derived::Flags)&RowMajorBit ? inner
+        -:   82:          : outer;
+        -:   83:    }
+        -:   84:
+        -:   85:    /** Short version: don't use this function, use
+        -:   86:      * \link operator()(Index,Index) const \endlink instead.
+        -:   87:      *
+        -:   88:      * Long version: this function is similar to
+        -:   89:      * \link operator()(Index,Index) const \endlink, but without the assertion.
+        -:   90:      * Use this for limiting the performance cost of debugging code when doing
+        -:   91:      * repeated coefficient access. Only use this when it is guaranteed that the
+        -:   92:      * parameters \a row and \a col are in range.
+        -:   93:      *
+        -:   94:      * If EIGEN_INTERNAL_DEBUGGING is defined, an assertion will be made, making this
+        -:   95:      * function equivalent to \link operator()(Index,Index) const \endlink.
+        -:   96:      *
+        -:   97:      * \sa operator()(Index,Index) const, coeffRef(Index,Index), coeff(Index) const
+        -:   98:      */
+        -:   99:    EIGEN_DEVICE_FUNC
+    57780:  100:    EIGEN_STRONG_INLINE CoeffReturnType coeff(Index row, Index col) const
+        -:  101:    {
+        -:  102:      eigen_internal_assert(row >= 0 && row < rows()
+        -:  103:                         && col >= 0 && col < cols());
+    57780:  104:      return internal::evaluator<Derived>(derived()).coeff(row,col);
+    #####:  105:    }
+        -:  106:
+        -:  107:    EIGEN_DEVICE_FUNC
+        -:  108:    EIGEN_STRONG_INLINE CoeffReturnType coeffByOuterInner(Index outer, Index inner) const
+        -:  109:    {
+        -:  110:      return coeff(rowIndexByOuterInner(outer, inner),
+        -:  111:                   colIndexByOuterInner(outer, inner));
+        -:  112:    }
+        -:  113:
+        -:  114:    /** \returns the coefficient at given the given row and column.
+        -:  115:      *
+        -:  116:      * \sa operator()(Index,Index), operator[](Index)
+        -:  117:      */
+        -:  118:    EIGEN_DEVICE_FUNC
+    57780:  119:    EIGEN_STRONG_INLINE CoeffReturnType operator()(Index row, Index col) const
+        -:  120:    {
+    57780:  121:      eigen_assert(row >= 0 && row < rows()
+        -:  122:          && col >= 0 && col < cols());
+    57780:  123:      return coeff(row, col);
+        -:  124:    }
+        -:  125:
+        -:  126:    /** Short version: don't use this function, use
+        -:  127:      * \link operator[](Index) const \endlink instead.
+        -:  128:      *
+        -:  129:      * Long version: this function is similar to
+        -:  130:      * \link operator[](Index) const \endlink, but without the assertion.
+        -:  131:      * Use this for limiting the performance cost of debugging code when doing
+        -:  132:      * repeated coefficient access. Only use this when it is guaranteed that the
+        -:  133:      * parameter \a index is in range.
+        -:  134:      *
+        -:  135:      * If EIGEN_INTERNAL_DEBUGGING is defined, an assertion will be made, making this
+        -:  136:      * function equivalent to \link operator[](Index) const \endlink.
+        -:  137:      *
+        -:  138:      * \sa operator[](Index) const, coeffRef(Index), coeff(Index,Index) const
+        -:  139:      */
+        -:  140:
+        -:  141:    EIGEN_DEVICE_FUNC
+        -:  142:    EIGEN_STRONG_INLINE CoeffReturnType
+    19052:  143:    coeff(Index index) const
+        -:  144:    {
+        -:  145:      EIGEN_STATIC_ASSERT(internal::evaluator<Derived>::Flags & LinearAccessBit,
+        -:  146:                          THIS_COEFFICIENT_ACCESSOR_TAKING_ONE_ACCESS_IS_ONLY_FOR_EXPRESSIONS_ALLOWING_LINEAR_ACCESS)
+        -:  147:      eigen_internal_assert(index >= 0 && index < size());
+    19052:  148:      return internal::evaluator<Derived>(derived()).coeff(index);
+    #####:  149:    }
+        -:  150:
+        -:  151:
+        -:  152:    /** \returns the coefficient at given index.
+        -:  153:      *
+        -:  154:      * This method is allowed only for vector expressions, and for matrix expressions having the LinearAccessBit.
+        -:  155:      *
+        -:  156:      * \sa operator[](Index), operator()(Index,Index) const, x() const, y() const,
+        -:  157:      * z() const, w() const
+        -:  158:      */
+        -:  159:
+        -:  160:    EIGEN_DEVICE_FUNC
+        -:  161:    EIGEN_STRONG_INLINE CoeffReturnType
+        -:  162:    operator[](Index index) const
+        -:  163:    {
+        -:  164:      EIGEN_STATIC_ASSERT(Derived::IsVectorAtCompileTime,
+        -:  165:                          THE_BRACKET_OPERATOR_IS_ONLY_FOR_VECTORS__USE_THE_PARENTHESIS_OPERATOR_INSTEAD)
+        -:  166:      eigen_assert(index >= 0 && index < size());
+        -:  167:      return coeff(index);
+        -:  168:    }
+        -:  169:
+        -:  170:    /** \returns the coefficient at given index.
+        -:  171:      *
+        -:  172:      * This is synonymous to operator[](Index) const.
+        -:  173:      *
+        -:  174:      * This method is allowed only for vector expressions, and for matrix expressions having the LinearAccessBit.
+        -:  175:      *
+        -:  176:      * \sa operator[](Index), operator()(Index,Index) const, x() const, y() const,
+        -:  177:      * z() const, w() const
+        -:  178:      */
+        -:  179:
+        -:  180:    EIGEN_DEVICE_FUNC
+        -:  181:    EIGEN_STRONG_INLINE CoeffReturnType
+    10430:  182:    operator()(Index index) const
+        -:  183:    {
+    10430:  184:      eigen_assert(index >= 0 && index < size());
+    10430:  185:      return coeff(index);
+        -:  186:    }
+        -:  187:
+        -:  188:    /** equivalent to operator[](0).  */
+        -:  189:
+        -:  190:    EIGEN_DEVICE_FUNC
+        -:  191:    EIGEN_STRONG_INLINE CoeffReturnType
+        -:  192:    x() const { return (*this)[0]; }
+        -:  193:
+        -:  194:    /** equivalent to operator[](1).  */
+        -:  195:
+        -:  196:    EIGEN_DEVICE_FUNC
+        -:  197:    EIGEN_STRONG_INLINE CoeffReturnType
+        -:  198:    y() const
+        -:  199:    {
+        -:  200:      EIGEN_STATIC_ASSERT(Derived::SizeAtCompileTime==-1 || Derived::SizeAtCompileTime>=2, OUT_OF_RANGE_ACCESS);
+        -:  201:      return (*this)[1];
+        -:  202:    }
+        -:  203:
+        -:  204:    /** equivalent to operator[](2).  */
+        -:  205:
+        -:  206:    EIGEN_DEVICE_FUNC
+        -:  207:    EIGEN_STRONG_INLINE CoeffReturnType
+        -:  208:    z() const
+        -:  209:    {
+        -:  210:      EIGEN_STATIC_ASSERT(Derived::SizeAtCompileTime==-1 || Derived::SizeAtCompileTime>=3, OUT_OF_RANGE_ACCESS);
+        -:  211:      return (*this)[2];
+        -:  212:    }
+        -:  213:
+        -:  214:    /** equivalent to operator[](3).  */
+        -:  215:
+        -:  216:    EIGEN_DEVICE_FUNC
+        -:  217:    EIGEN_STRONG_INLINE CoeffReturnType
+        -:  218:    w() const
+        -:  219:    {
+        -:  220:      EIGEN_STATIC_ASSERT(Derived::SizeAtCompileTime==-1 || Derived::SizeAtCompileTime>=4, OUT_OF_RANGE_ACCESS);
+        -:  221:      return (*this)[3];
+        -:  222:    }
+        -:  223:
+        -:  224:    /** \internal
+        -:  225:      * \returns the packet of coefficients starting at the given row and column. It is your responsibility
+        -:  226:      * to ensure that a packet really starts there. This method is only available on expressions having the
+        -:  227:      * PacketAccessBit.
+        -:  228:      *
+        -:  229:      * The \a LoadMode parameter may have the value \a #Aligned or \a #Unaligned. Its effect is to select
+        -:  230:      * the appropriate vectorization instruction. Aligned access is faster, but is only possible for packets
+        -:  231:      * starting at an address which is a multiple of the packet size.
+        -:  232:      */
+        -:  233:
+        -:  234:    template<int LoadMode>
+        -:  235:    EIGEN_STRONG_INLINE PacketReturnType packet(Index row, Index col) const
+        -:  236:    {
+        -:  237:      typedef typename internal::packet_traits<Scalar>::type DefaultPacketType;
+        -:  238:      eigen_internal_assert(row >= 0 && row < rows() && col >= 0 && col < cols());
+        -:  239:      return internal::evaluator<Derived>(derived()).template packet<LoadMode,DefaultPacketType>(row,col);
+        -:  240:    }
+        -:  241:
+        -:  242:
+        -:  243:    /** \internal */
+        -:  244:    template<int LoadMode>
+        -:  245:    EIGEN_STRONG_INLINE PacketReturnType packetByOuterInner(Index outer, Index inner) const
+        -:  246:    {
+        -:  247:      return packet<LoadMode>(rowIndexByOuterInner(outer, inner),
+        -:  248:                              colIndexByOuterInner(outer, inner));
+        -:  249:    }
+        -:  250:
+        -:  251:    /** \internal
+        -:  252:      * \returns the packet of coefficients starting at the given index. It is your responsibility
+        -:  253:      * to ensure that a packet really starts there. This method is only available on expressions having the
+        -:  254:      * PacketAccessBit and the LinearAccessBit.
+        -:  255:      *
+        -:  256:      * The \a LoadMode parameter may have the value \a #Aligned or \a #Unaligned. Its effect is to select
+        -:  257:      * the appropriate vectorization instruction. Aligned access is faster, but is only possible for packets
+        -:  258:      * starting at an address which is a multiple of the packet size.
+        -:  259:      */
+        -:  260:
+        -:  261:    template<int LoadMode>
+        -:  262:    EIGEN_STRONG_INLINE PacketReturnType packet(Index index) const
+        -:  263:    {
+        -:  264:      EIGEN_STATIC_ASSERT(internal::evaluator<Derived>::Flags & LinearAccessBit,
+        -:  265:                          THIS_COEFFICIENT_ACCESSOR_TAKING_ONE_ACCESS_IS_ONLY_FOR_EXPRESSIONS_ALLOWING_LINEAR_ACCESS)
+        -:  266:      typedef typename internal::packet_traits<Scalar>::type DefaultPacketType;
+        -:  267:      eigen_internal_assert(index >= 0 && index < size());
+        -:  268:      return internal::evaluator<Derived>(derived()).template packet<LoadMode,DefaultPacketType>(index);
+        -:  269:    }
+        -:  270:
+        -:  271:  protected:
+        -:  272:    // explanation: DenseBase is doing "using ..." on the methods from DenseCoeffsBase.
+        -:  273:    // But some methods are only available in the DirectAccess case.
+        -:  274:    // So we add dummy methods here with these names, so that "using... " doesn't fail.
+        -:  275:    // It's not private so that the child class DenseBase can access them, and it's not public
+        -:  276:    // either since it's an implementation detail, so has to be protected.
+        -:  277:    void coeffRef();
+        -:  278:    void coeffRefByOuterInner();
+        -:  279:    void writePacket();
+        -:  280:    void writePacketByOuterInner();
+        -:  281:    void copyCoeff();
+        -:  282:    void copyCoeffByOuterInner();
+        -:  283:    void copyPacket();
+        -:  284:    void copyPacketByOuterInner();
+        -:  285:    void stride();
+        -:  286:    void innerStride();
+        -:  287:    void outerStride();
+        -:  288:    void rowStride();
+        -:  289:    void colStride();
+        -:  290:};
+        -:  291:
+        -:  292:/** \brief Base class providing read/write coefficient access to matrices and arrays.
+        -:  293:  * \ingroup Core_Module
+        -:  294:  * \tparam Derived Type of the derived class
+        -:  295:  *
+        -:  296:  * \note #WriteAccessors Constant indicating read/write access
+        -:  297:  *
+        -:  298:  * This class defines the non-const \c operator() function and friends, which can be used to write specific
+        -:  299:  * entries of a matrix or array. This class inherits DenseCoeffsBase<Derived, ReadOnlyAccessors> which
+        -:  300:  * defines the const variant for reading specific entries.
+        -:  301:  *
+        -:  302:  * \sa DenseCoeffsBase<Derived, DirectAccessors>, \ref TopicClassHierarchy
+        -:  303:  */
+        -:  304:template<typename Derived>
+        -:  305:class DenseCoeffsBase<Derived, WriteAccessors> : public DenseCoeffsBase<Derived, ReadOnlyAccessors>
+        -:  306:{
+        -:  307:  public:
+        -:  308:
+        -:  309:    typedef DenseCoeffsBase<Derived, ReadOnlyAccessors> Base;
+        -:  310:
+        -:  311:    typedef typename internal::traits<Derived>::StorageKind StorageKind;
+        -:  312:    typedef typename internal::traits<Derived>::Scalar Scalar;
+        -:  313:    typedef typename internal::packet_traits<Scalar>::type PacketScalar;
+        -:  314:    typedef typename NumTraits<Scalar>::Real RealScalar;
+        -:  315:
+        -:  316:    using Base::coeff;
+        -:  317:    using Base::rows;
+        -:  318:    using Base::cols;
+        -:  319:    using Base::size;
+        -:  320:    using Base::derived;
+        -:  321:    using Base::rowIndexByOuterInner;
+        -:  322:    using Base::colIndexByOuterInner;
+        -:  323:    using Base::operator[];
+        -:  324:    using Base::operator();
+        -:  325:    using Base::x;
+        -:  326:    using Base::y;
+        -:  327:    using Base::z;
+        -:  328:    using Base::w;
+        -:  329:
+        -:  330:    /** Short version: don't use this function, use
+        -:  331:      * \link operator()(Index,Index) \endlink instead.
+        -:  332:      *
+        -:  333:      * Long version: this function is similar to
+        -:  334:      * \link operator()(Index,Index) \endlink, but without the assertion.
+        -:  335:      * Use this for limiting the performance cost of debugging code when doing
+        -:  336:      * repeated coefficient access. Only use this when it is guaranteed that the
+        -:  337:      * parameters \a row and \a col are in range.
+        -:  338:      *
+        -:  339:      * If EIGEN_INTERNAL_DEBUGGING is defined, an assertion will be made, making this
+        -:  340:      * function equivalent to \link operator()(Index,Index) \endlink.
+        -:  341:      *
+        -:  342:      * \sa operator()(Index,Index), coeff(Index, Index) const, coeffRef(Index)
+        -:  343:      */
+        -:  344:    EIGEN_DEVICE_FUNC
+   122050:  345:    EIGEN_STRONG_INLINE Scalar& coeffRef(Index row, Index col)
+        -:  346:    {
+        -:  347:      eigen_internal_assert(row >= 0 && row < rows()
+        -:  348:                         && col >= 0 && col < cols());
+   122050:  349:      return internal::evaluator<Derived>(derived()).coeffRef(row,col);
+    #####:  350:    }
+        -:  351:
+        -:  352:    EIGEN_DEVICE_FUNC
+        -:  353:    EIGEN_STRONG_INLINE Scalar&
+        -:  354:    coeffRefByOuterInner(Index outer, Index inner)
+        -:  355:    {
+        -:  356:      return coeffRef(rowIndexByOuterInner(outer, inner),
+        -:  357:                      colIndexByOuterInner(outer, inner));
+        -:  358:    }
+        -:  359:
+        -:  360:    /** \returns a reference to the coefficient at given the given row and column.
+        -:  361:      *
+        -:  362:      * \sa operator[](Index)
+        -:  363:      */
+        -:  364:
+        -:  365:    EIGEN_DEVICE_FUNC
+        -:  366:    EIGEN_STRONG_INLINE Scalar&
+   122050:  367:    operator()(Index row, Index col)
+        -:  368:    {
+   122050:  369:      eigen_assert(row >= 0 && row < rows()
+        -:  370:          && col >= 0 && col < cols());
+   122050:  371:      return coeffRef(row, col);
+        -:  372:    }
+        -:  373:
+        -:  374:
+        -:  375:    /** Short version: don't use this function, use
+        -:  376:      * \link operator[](Index) \endlink instead.
+        -:  377:      *
+        -:  378:      * Long version: this function is similar to
+        -:  379:      * \link operator[](Index) \endlink, but without the assertion.
+        -:  380:      * Use this for limiting the performance cost of debugging code when doing
+        -:  381:      * repeated coefficient access. Only use this when it is guaranteed that the
+        -:  382:      * parameters \a row and \a col are in range.
+        -:  383:      *
+        -:  384:      * If EIGEN_INTERNAL_DEBUGGING is defined, an assertion will be made, making this
+        -:  385:      * function equivalent to \link operator[](Index) \endlink.
+        -:  386:      *
+        -:  387:      * \sa operator[](Index), coeff(Index) const, coeffRef(Index,Index)
+        -:  388:      */
+        -:  389:
+        -:  390:    EIGEN_DEVICE_FUNC
+        -:  391:    EIGEN_STRONG_INLINE Scalar&
+    67068:  392:    coeffRef(Index index)
+        -:  393:    {
+        -:  394:      EIGEN_STATIC_ASSERT(internal::evaluator<Derived>::Flags & LinearAccessBit,
+        -:  395:                          THIS_COEFFICIENT_ACCESSOR_TAKING_ONE_ACCESS_IS_ONLY_FOR_EXPRESSIONS_ALLOWING_LINEAR_ACCESS)
+        -:  396:      eigen_internal_assert(index >= 0 && index < size());
+    67068:  397:      return internal::evaluator<Derived>(derived()).coeffRef(index);
+    #####:  398:    }
+        -:  399:
+        -:  400:    /** \returns a reference to the coefficient at given index.
+        -:  401:      *
+        -:  402:      * This method is allowed only for vector expressions, and for matrix expressions having the LinearAccessBit.
+        -:  403:      *
+        -:  404:      * \sa operator[](Index) const, operator()(Index,Index), x(), y(), z(), w()
+        -:  405:      */
+        -:  406:
+        -:  407:    EIGEN_DEVICE_FUNC
+        -:  408:    EIGEN_STRONG_INLINE Scalar&
+    15146:  409:    operator[](Index index)
+        -:  410:    {
+        -:  411:      EIGEN_STATIC_ASSERT(Derived::IsVectorAtCompileTime,
+        -:  412:                          THE_BRACKET_OPERATOR_IS_ONLY_FOR_VECTORS__USE_THE_PARENTHESIS_OPERATOR_INSTEAD)
+    15146:  413:      eigen_assert(index >= 0 && index < size());
+    15146:  414:      return coeffRef(index);
+        -:  415:    }
+        -:  416:
+        -:  417:    /** \returns a reference to the coefficient at given index.
+        -:  418:      *
+        -:  419:      * This is synonymous to operator[](Index).
+        -:  420:      *
+        -:  421:      * This method is allowed only for vector expressions, and for matrix expressions having the LinearAccessBit.
+        -:  422:      *
+        -:  423:      * \sa operator[](Index) const, operator()(Index,Index), x(), y(), z(), w()
+        -:  424:      */
+        -:  425:
+        -:  426:    EIGEN_DEVICE_FUNC
+        -:  427:    EIGEN_STRONG_INLINE Scalar&
+    51922:  428:    operator()(Index index)
+        -:  429:    {
+    51922:  430:      eigen_assert(index >= 0 && index < size());
+    51922:  431:      return coeffRef(index);
+        -:  432:    }
+        -:  433:
+        -:  434:    /** equivalent to operator[](0).  */
+        -:  435:
+        -:  436:    EIGEN_DEVICE_FUNC
+        -:  437:    EIGEN_STRONG_INLINE Scalar&
+        -:  438:    x() { return (*this)[0]; }
+        -:  439:
+        -:  440:    /** equivalent to operator[](1).  */
+        -:  441:
+        -:  442:    EIGEN_DEVICE_FUNC
+        -:  443:    EIGEN_STRONG_INLINE Scalar&
+        -:  444:    y()
+        -:  445:    {
+        -:  446:      EIGEN_STATIC_ASSERT(Derived::SizeAtCompileTime==-1 || Derived::SizeAtCompileTime>=2, OUT_OF_RANGE_ACCESS);
+        -:  447:      return (*this)[1];
+        -:  448:    }
+        -:  449:
+        -:  450:    /** equivalent to operator[](2).  */
+        -:  451:
+        -:  452:    EIGEN_DEVICE_FUNC
+        -:  453:    EIGEN_STRONG_INLINE Scalar&
+        -:  454:    z()
+        -:  455:    {
+        -:  456:      EIGEN_STATIC_ASSERT(Derived::SizeAtCompileTime==-1 || Derived::SizeAtCompileTime>=3, OUT_OF_RANGE_ACCESS);
+        -:  457:      return (*this)[2];
+        -:  458:    }
+        -:  459:
+        -:  460:    /** equivalent to operator[](3).  */
+        -:  461:
+        -:  462:    EIGEN_DEVICE_FUNC
+        -:  463:    EIGEN_STRONG_INLINE Scalar&
+        -:  464:    w()
+        -:  465:    {
+        -:  466:      EIGEN_STATIC_ASSERT(Derived::SizeAtCompileTime==-1 || Derived::SizeAtCompileTime>=4, OUT_OF_RANGE_ACCESS);
+        -:  467:      return (*this)[3];
+        -:  468:    }
+        -:  469:};
+        -:  470:
+        -:  471:/** \brief Base class providing direct read-only coefficient access to matrices and arrays.
+        -:  472:  * \ingroup Core_Module
+        -:  473:  * \tparam Derived Type of the derived class
+        -:  474:  *
+        -:  475:  * \note #DirectAccessors Constant indicating direct access
+        -:  476:  *
+        -:  477:  * This class defines functions to work with strides which can be used to access entries directly. This class
+        -:  478:  * inherits DenseCoeffsBase<Derived, ReadOnlyAccessors> which defines functions to access entries read-only using
+        -:  479:  * \c operator() .
+        -:  480:  *
+        -:  481:  * \sa \blank \ref TopicClassHierarchy
+        -:  482:  */
+        -:  483:template<typename Derived>
+        -:  484:class DenseCoeffsBase<Derived, DirectAccessors> : public DenseCoeffsBase<Derived, ReadOnlyAccessors>
+        -:  485:{
+        -:  486:  public:
+        -:  487:
+        -:  488:    typedef DenseCoeffsBase<Derived, ReadOnlyAccessors> Base;
+        -:  489:    typedef typename internal::traits<Derived>::Scalar Scalar;
+        -:  490:    typedef typename NumTraits<Scalar>::Real RealScalar;
+        -:  491:
+        -:  492:    using Base::rows;
+        -:  493:    using Base::cols;
+        -:  494:    using Base::size;
+        -:  495:    using Base::derived;
+        -:  496:
+        -:  497:    /** \returns the pointer increment between two consecutive elements within a slice in the inner direction.
+        -:  498:      *
+        -:  499:      * \sa outerStride(), rowStride(), colStride()
+        -:  500:      */
+        -:  501:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+     6176:  502:    inline Index innerStride() const
+        -:  503:    {
+     6176:  504:      return derived().innerStride();
+        -:  505:    }
+        -:  506:
+        -:  507:    /** \returns the pointer increment between two consecutive inner slices (for example, between two consecutive columns
+        -:  508:      *          in a column-major matrix).
+        -:  509:      *
+        -:  510:      * \sa innerStride(), rowStride(), colStride()
+        -:  511:      */
+        -:  512:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+     6176:  513:    inline Index outerStride() const
+        -:  514:    {
+     6176:  515:      return derived().outerStride();
+        -:  516:    }
+        -:  517:
+        -:  518:    // FIXME shall we remove it ?
+        -:  519:    EIGEN_CONSTEXPR inline Index stride() const
+        -:  520:    {
+        -:  521:      return Derived::IsVectorAtCompileTime ? innerStride() : outerStride();
+        -:  522:    }
+        -:  523:
+        -:  524:    /** \returns the pointer increment between two consecutive rows.
+        -:  525:      *
+        -:  526:      * \sa innerStride(), outerStride(), colStride()
+        -:  527:      */
+        -:  528:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+     6176:  529:    inline Index rowStride() const
+        -:  530:    {
+     6176:  531:      return Derived::IsRowMajor ? outerStride() : innerStride();
+        -:  532:    }
+        -:  533:
+        -:  534:    /** \returns the pointer increment between two consecutive columns.
+        -:  535:      *
+        -:  536:      * \sa innerStride(), outerStride(), rowStride()
+        -:  537:      */
+        -:  538:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+     6176:  539:    inline Index colStride() const
+        -:  540:    {
+     6176:  541:      return Derived::IsRowMajor ? innerStride() : outerStride();
+        -:  542:    }
+        -:  543:};
+        -:  544:
+        -:  545:/** \brief Base class providing direct read/write coefficient access to matrices and arrays.
+        -:  546:  * \ingroup Core_Module
+        -:  547:  * \tparam Derived Type of the derived class
+        -:  548:  *
+        -:  549:  * \note #DirectWriteAccessors Constant indicating direct access
+        -:  550:  *
+        -:  551:  * This class defines functions to work with strides which can be used to access entries directly. This class
+        -:  552:  * inherits DenseCoeffsBase<Derived, WriteAccessors> which defines functions to access entries read/write using
+        -:  553:  * \c operator().
+        -:  554:  *
+        -:  555:  * \sa \blank \ref TopicClassHierarchy
+        -:  556:  */
+        -:  557:template<typename Derived>
+        -:  558:class DenseCoeffsBase<Derived, DirectWriteAccessors>
+        -:  559:  : public DenseCoeffsBase<Derived, WriteAccessors>
+        -:  560:{
+        -:  561:  public:
+        -:  562:
+        -:  563:    typedef DenseCoeffsBase<Derived, WriteAccessors> Base;
+        -:  564:    typedef typename internal::traits<Derived>::Scalar Scalar;
+        -:  565:    typedef typename NumTraits<Scalar>::Real RealScalar;
+        -:  566:
+        -:  567:    using Base::rows;
+        -:  568:    using Base::cols;
+        -:  569:    using Base::size;
+        -:  570:    using Base::derived;
+        -:  571:
+        -:  572:    /** \returns the pointer increment between two consecutive elements within a slice in the inner direction.
+        -:  573:      *
+        -:  574:      * \sa outerStride(), rowStride(), colStride()
+        -:  575:      */
+        -:  576:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+    71246:  577:    inline Index innerStride() const EIGEN_NOEXCEPT
+        -:  578:    {
+    71246:  579:      return derived().innerStride();
+        -:  580:    }
+        -:  581:
+        -:  582:    /** \returns the pointer increment between two consecutive inner slices (for example, between two consecutive columns
+        -:  583:      *          in a column-major matrix).
+        -:  584:      *
+        -:  585:      * \sa innerStride(), rowStride(), colStride()
+        -:  586:      */
+        -:  587:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+   262876:  588:    inline Index outerStride() const EIGEN_NOEXCEPT
+        -:  589:    {
+   262876:  590:      return derived().outerStride();
+        -:  591:    }
+        -:  592:
+        -:  593:    // FIXME shall we remove it ?
+        -:  594:    EIGEN_CONSTEXPR inline Index stride() const EIGEN_NOEXCEPT
+        -:  595:    {
+        -:  596:      return Derived::IsVectorAtCompileTime ? innerStride() : outerStride();
+        -:  597:    }
+        -:  598:
+        -:  599:    /** \returns the pointer increment between two consecutive rows.
+        -:  600:      *
+        -:  601:      * \sa innerStride(), outerStride(), colStride()
+        -:  602:      */
+        -:  603:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+    62902:  604:    inline Index rowStride() const EIGEN_NOEXCEPT
+        -:  605:    {
+    62902:  606:      return Derived::IsRowMajor ? outerStride() : innerStride();
+        -:  607:    }
+        -:  608:
+        -:  609:    /** \returns the pointer increment between two consecutive columns.
+        -:  610:      *
+        -:  611:      * \sa innerStride(), outerStride(), rowStride()
+        -:  612:      */
+        -:  613:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+    62902:  614:    inline Index colStride() const EIGEN_NOEXCEPT
+        -:  615:    {
+    62902:  616:      return Derived::IsRowMajor ? innerStride() : outerStride();
+        -:  617:    }
+        -:  618:};
+        -:  619:
+        -:  620:namespace internal {
+        -:  621:
+        -:  622:template<int Alignment, typename Derived, bool JustReturnZero>
+        -:  623:struct first_aligned_impl
+        -:  624:{
+    24842:  625:  static EIGEN_CONSTEXPR inline Index run(const Derived&) EIGEN_NOEXCEPT
+    24842:  626:  { return 0; }
+        -:  627:};
+        -:  628:
+        -:  629:template<int Alignment, typename Derived>
+        -:  630:struct first_aligned_impl<Alignment, Derived, false>
+        -:  631:{
+       24:  632:  static inline Index run(const Derived& m)
+        -:  633:  {
+       24:  634:    return internal::first_aligned<Alignment>(m.data(), m.size());
+        -:  635:  }
+        -:  636:};
+        -:  637:
+        -:  638:/** \internal \returns the index of the first element of the array stored by \a m that is properly aligned with respect to \a Alignment for vectorization.
+        -:  639:  *
+        -:  640:  * \tparam Alignment requested alignment in Bytes.
+        -:  641:  *
+        -:  642:  * There is also the variant first_aligned(const Scalar*, Integer) defined in Memory.h. See it for more
+        -:  643:  * documentation.
+        -:  644:  */
+        -:  645:template<int Alignment, typename Derived>
+    24866:  646:static inline Index first_aligned(const DenseBase<Derived>& m)
+        -:  647:{
+        -:  648:  enum { ReturnZero = (int(evaluator<Derived>::Alignment) >= Alignment) || !(Derived::Flags & DirectAccessBit) };
+    24866:  649:  return first_aligned_impl<Alignment, Derived, ReturnZero>::run(m.derived());
+        -:  650:}
+        -:  651:
+        -:  652:template<typename Derived>
+    24866:  653:static inline Index first_default_aligned(const DenseBase<Derived>& m)
+        -:  654:{
+        -:  655:  typedef typename Derived::Scalar Scalar;
+        -:  656:  typedef typename packet_traits<Scalar>::type DefaultPacketType;
+    24866:  657:  return internal::first_aligned<int(unpacket_traits<DefaultPacketType>::alignment),Derived>(m);
+        -:  658:}
+        -:  659:
+        -:  660:template<typename Derived, bool HasDirectAccess = has_direct_access<Derived>::ret>
+        -:  661:struct inner_stride_at_compile_time
+        -:  662:{
+        -:  663:  enum { ret = traits<Derived>::InnerStrideAtCompileTime };
+        -:  664:};
+        -:  665:
+        -:  666:template<typename Derived>
+        -:  667:struct inner_stride_at_compile_time<Derived, false>
+        -:  668:{
+        -:  669:  enum { ret = 0 };
+        -:  670:};
+        -:  671:
+        -:  672:template<typename Derived, bool HasDirectAccess = has_direct_access<Derived>::ret>
+        -:  673:struct outer_stride_at_compile_time
+        -:  674:{
+        -:  675:  enum { ret = traits<Derived>::OuterStrideAtCompileTime };
+        -:  676:};
+        -:  677:
+        -:  678:template<typename Derived>
+        -:  679:struct outer_stride_at_compile_time<Derived, false>
+        -:  680:{
+        -:  681:  enum { ret = 0 };
+        -:  682:};
+        -:  683:
+        -:  684:} // end namespace internal
+        -:  685:
+        -:  686:} // end namespace Eigen
+        -:  687:
+        -:  688:#endif // EIGEN_DENSECOEFFSBASE_H

@@ -1,0 +1,590 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/util/Meta.h
+        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
+        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
+        -:    0:Runs:4
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2008-2015 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    5:// Copyright (C) 2006-2008 Benoit Jacob <jacob.benoit.1@gmail.com>
+        -:    6://
+        -:    7:// This Source Code Form is subject to the terms of the Mozilla
+        -:    8:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    9:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:   10:
+        -:   11:#ifndef EIGEN_META_H
+        -:   12:#define EIGEN_META_H
+        -:   13:
+        -:   14:// IWYU pragma: private
+        -:   15:#include "../InternalHeaderCheck.h"
+        -:   16:
+        -:   17:#if defined(EIGEN_GPU_COMPILE_PHASE)
+        -:   18:
+        -:   19: #include <cfloat>
+        -:   20:
+        -:   21: #if defined(EIGEN_CUDA_ARCH)
+        -:   22:  #include <math_constants.h>
+        -:   23: #endif
+        -:   24:
+        -:   25: #if defined(EIGEN_HIP_DEVICE_COMPILE)
+        -:   26:  #include "Eigen/src/Core/arch/HIP/hcc/math_constants.h"
+        -:   27:  #endif
+        -:   28:
+        -:   29:#endif
+        -:   30:
+        -:   31:// Define portable (u)int{32,64} types
+        -:   32:#include <cstdint>
+        -:   33:
+        -:   34:namespace Eigen {
+        -:   35:namespace numext {
+        -:   36:typedef std::uint8_t  uint8_t;
+        -:   37:typedef std::int8_t   int8_t;
+        -:   38:typedef std::uint16_t uint16_t;
+        -:   39:typedef std::int16_t  int16_t;
+        -:   40:typedef std::uint32_t uint32_t;
+        -:   41:typedef std::int32_t  int32_t;
+        -:   42:typedef std::uint64_t uint64_t;
+        -:   43:typedef std::int64_t  int64_t;
+        -:   44:
+        -:   45:template <size_t Size>
+        -:   46:struct get_integer_by_size {
+        -:   47:    typedef void signed_type;
+        -:   48:    typedef void unsigned_type;
+        -:   49:};
+        -:   50:template <>
+        -:   51:struct get_integer_by_size<1> {
+        -:   52:    typedef int8_t signed_type;
+        -:   53:    typedef uint8_t unsigned_type;
+        -:   54:};
+        -:   55:template <>
+        -:   56:struct get_integer_by_size<2> {
+        -:   57:    typedef int16_t signed_type;
+        -:   58:    typedef uint16_t unsigned_type;
+        -:   59:};
+        -:   60:template <>
+        -:   61:struct get_integer_by_size<4> {
+        -:   62:    typedef int32_t signed_type;
+        -:   63:    typedef uint32_t unsigned_type;
+        -:   64:};
+        -:   65:template <>
+        -:   66:struct get_integer_by_size<8> {
+        -:   67:    typedef int64_t signed_type;
+        -:   68:    typedef uint64_t unsigned_type;
+        -:   69:};
+        -:   70:}
+        -:   71:}
+        -:   72:
+        -:   73:namespace Eigen {
+        -:   74:
+        -:   75:typedef EIGEN_DEFAULT_DENSE_INDEX_TYPE DenseIndex;
+        -:   76:
+        -:   77:/**
+        -:   78: * \brief The Index type as used for the API.
+        -:   79: * \details To change this, \c \#define the preprocessor symbol \c EIGEN_DEFAULT_DENSE_INDEX_TYPE.
+        -:   80: * \sa \blank \ref TopicPreprocessorDirectives, StorageIndex.
+        -:   81: */
+        -:   82:
+        -:   83:typedef EIGEN_DEFAULT_DENSE_INDEX_TYPE Index;
+        -:   84:
+        -:   85:namespace internal {
+        -:   86:
+        -:   87:/** \internal
+        -:   88:  * \file Meta.h
+        -:   89:  * This file contains generic metaprogramming classes which are not specifically related to Eigen.
+        -:   90:  * \note In case you wonder, yes we're aware that Boost already provides all these features,
+        -:   91:  * we however don't want to add a dependency to Boost.
+        -:   92:  */
+        -:   93:
+        -:   94:struct true_type {  enum { value = 1 }; };
+        -:   95:struct false_type { enum { value = 0 }; };
+        -:   96:
+        -:   97:template<bool Condition>
+        -:   98:struct bool_constant;
+        -:   99:
+        -:  100:template<>
+        -:  101:struct bool_constant<true> : true_type {};
+        -:  102:
+        -:  103:template<>
+        -:  104:struct bool_constant<false> : false_type {};
+        -:  105:
+        -:  106:// Third-party libraries rely on these.
+        -:  107:using std::conditional;
+        -:  108:using std::remove_reference;
+        -:  109:using std::remove_pointer;
+        -:  110:using std::remove_const;
+        -:  111:
+        -:  112:template<typename T> struct remove_all { typedef T type; };
+        -:  113:template<typename T> struct remove_all<const T>   { typedef typename remove_all<T>::type type; };
+        -:  114:template<typename T> struct remove_all<T const&>  { typedef typename remove_all<T>::type type; };
+        -:  115:template<typename T> struct remove_all<T&>        { typedef typename remove_all<T>::type type; };
+        -:  116:template<typename T> struct remove_all<T const*>  { typedef typename remove_all<T>::type type; };
+        -:  117:template<typename T> struct remove_all<T*>        { typedef typename remove_all<T>::type type; };
+        -:  118:
+        -:  119:template<typename T>
+        -:  120:using remove_all_t = typename remove_all<T>::type;
+        -:  121:
+        -:  122:template<typename T> struct is_arithmetic      { enum { value = false }; };
+        -:  123:template<> struct is_arithmetic<float>         { enum { value = true }; };
+        -:  124:template<> struct is_arithmetic<double>        { enum { value = true }; };
+        -:  125:// GPU devices treat `long double` as `double`.
+        -:  126:#ifndef EIGEN_GPU_COMPILE_PHASE
+        -:  127:template<> struct is_arithmetic<long double>   { enum { value = true }; };
+        -:  128:#endif
+        -:  129:template<> struct is_arithmetic<bool>          { enum { value = true }; };
+        -:  130:template<> struct is_arithmetic<char>          { enum { value = true }; };
+        -:  131:template<> struct is_arithmetic<signed char>   { enum { value = true }; };
+        -:  132:template<> struct is_arithmetic<unsigned char> { enum { value = true }; };
+        -:  133:template<> struct is_arithmetic<signed short>  { enum { value = true }; };
+        -:  134:template<> struct is_arithmetic<unsigned short>{ enum { value = true }; };
+        -:  135:template<> struct is_arithmetic<signed int>    { enum { value = true }; };
+        -:  136:template<> struct is_arithmetic<unsigned int>  { enum { value = true }; };
+        -:  137:template<> struct is_arithmetic<signed long>   { enum { value = true }; };
+        -:  138:template<> struct is_arithmetic<unsigned long> { enum { value = true }; };
+        -:  139:
+        -:  140:template<typename T, typename U> struct is_same { enum { value = 0 }; };
+        -:  141:template<typename T> struct is_same<T,T> { enum { value = 1 }; };
+        -:  142:
+        -:  143:template< class T >
+        -:  144:struct is_void : is_same<void, std::remove_const_t<T>> {};
+        -:  145:
+        -:  146:/** \internal
+        -:  147:  * Implementation of std::void_t for SFINAE.
+        -:  148:  *
+        -:  149:  * Pre C++17:
+        -:  150:  * Custom implementation.
+        -:  151:  *
+        -:  152:  * Post C++17: Uses std::void_t
+        -:  153:  */
+        -:  154:#if EIGEN_COMP_CXXVER >= 17
+        -:  155:using std::void_t;
+        -:  156:#else
+        -:  157:template<typename...>
+        -:  158:using void_t = void;
+        -:  159:#endif
+        -:  160:
+        -:  161:template<> struct is_arithmetic<signed long long>   { enum { value = true }; };
+        -:  162:template<> struct is_arithmetic<unsigned long long> { enum { value = true }; };
+        -:  163:using std::is_integral;
+        -:  164:
+        -:  165:using std::make_unsigned;
+        -:  166:
+        -:  167:template <typename T> struct is_const { enum { value = 0 }; };
+        -:  168:template <typename T> struct is_const<T const> { enum { value = 1 }; };
+        -:  169:
+        -:  170:template<typename T> struct add_const_on_value_type            { typedef const T type;  };
+        -:  171:template<typename T> struct add_const_on_value_type<T&>        { typedef T const& type; };
+        -:  172:template<typename T> struct add_const_on_value_type<T*>        { typedef T const* type; };
+        -:  173:template<typename T> struct add_const_on_value_type<T* const>  { typedef T const* const type; };
+        -:  174:template<typename T> struct add_const_on_value_type<T const* const>  { typedef T const* const type; };
+        -:  175:
+        -:  176:template<typename T>
+        -:  177:using add_const_on_value_type_t = typename add_const_on_value_type<T>::type;
+        -:  178:
+        -:  179:using std::is_convertible;
+        -:  180:
+        -:  181:/** \internal
+        -:  182:  * A base class do disable default copy ctor and copy assignment operator.
+        -:  183:  */
+        -:  184:class noncopyable
+        -:  185:{
+        -:  186:  EIGEN_DEVICE_FUNC noncopyable(const noncopyable&);
+        -:  187:  EIGEN_DEVICE_FUNC const noncopyable& operator=(const noncopyable&);
+        -:  188:protected:
+     9766:  189:  EIGEN_DEVICE_FUNC noncopyable() {}
+     9766:  190:  EIGEN_DEVICE_FUNC ~noncopyable() {}
+        -:  191:};
+        -:  192:
+        -:  193:/** \internal
+        -:  194:  * Provides access to the number of elements in the object of as a compile-time constant expression.
+        -:  195:  * It "returns" Eigen::Dynamic if the size cannot be resolved at compile-time (default).
+        -:  196:  *
+        -:  197:  * Similar to std::tuple_size, but more general.
+        -:  198:  *
+        -:  199:  * It currently supports:
+        -:  200:  *  - any types T defining T::SizeAtCompileTime
+        -:  201:  *  - plain C arrays as T[N]
+        -:  202:  *  - std::array (c++11)
+        -:  203:  *  - some internal types such as SingleRange and AllRange
+        -:  204:  *
+        -:  205:  * The second template parameter eases SFINAE-based specializations.
+        -:  206:  */
+        -:  207:template<typename T, typename EnableIf = void> struct array_size {
+        -:  208:  enum { value = Dynamic };
+        -:  209:};
+        -:  210:
+        -:  211:template<typename T> struct array_size<T, std::enable_if_t<((T::SizeAtCompileTime&0)==0)>> {
+        -:  212:  enum { value = T::SizeAtCompileTime };
+        -:  213:};
+        -:  214:
+        -:  215:template<typename T, int N> struct array_size<const T (&)[N]> {
+        -:  216:  enum { value = N };
+        -:  217:};
+        -:  218:template<typename T, int N> struct array_size<T (&)[N]> {
+        -:  219:  enum { value = N };
+        -:  220:};
+        -:  221:
+        -:  222:template<typename T, std::size_t N> struct array_size<const std::array<T,N> > {
+        -:  223:  enum { value = N };
+        -:  224:};
+        -:  225:template<typename T, std::size_t N> struct array_size<std::array<T,N> > {
+        -:  226:  enum { value = N };
+        -:  227:};
+        -:  228:
+        -:  229:
+        -:  230:/** \internal
+        -:  231:  * Analogue of the std::ssize free function.
+        -:  232:  * It returns the signed size of the container or view \a x of type \c T
+        -:  233:  *
+        -:  234:  * It currently supports:
+        -:  235:  *  - any types T defining a member T::size() const
+        -:  236:  *  - plain C arrays as T[N]
+        -:  237:  *
+        -:  238:  * For C++20, this function just forwards to `std::ssize`, or any ADL discoverable `ssize` function.
+        -:  239:  */
+        -:  240:#if EIGEN_COMP_CXXVER < 20 || EIGEN_GNUC_STRICT_LESS_THAN(10,0,0)
+        -:  241:template <typename T>
+        -:  242:EIGEN_CONSTEXPR auto index_list_size(const T& x) {
+        -:  243:  using R = std::common_type_t<std::ptrdiff_t, std::make_signed_t<decltype(x.size())>>;
+        -:  244:  return static_cast<R>(x.size());
+        -:  245:}
+        -:  246:
+        -:  247:template<typename T, std::ptrdiff_t N>
+        -:  248:EIGEN_CONSTEXPR std::ptrdiff_t index_list_size(const T (&)[N]) { return N; }
+        -:  249:#else
+        -:  250:template <typename T>
+        -:  251:EIGEN_CONSTEXPR auto index_list_size(T&& x) {
+        -:  252:  using std::ssize;
+        -:  253:  return ssize(std::forward<T>(x));
+        -:  254:}
+        -:  255:#endif // EIGEN_COMP_CXXVER
+        -:  256:
+        -:  257:/** \internal
+        -:  258:  * Convenient struct to get the result type of a nullary, unary, binary, or
+        -:  259:  * ternary functor.
+        -:  260:  *
+        -:  261:  * Pre C++17:
+        -:  262:  * This uses std::result_of. However, note the `type` member removes
+        -:  263:  * const and converts references/pointers to their corresponding value type.
+        -:  264:  *
+        -:  265:  * Post C++17: Uses std::invoke_result
+        -:  266:  */
+        -:  267:#if EIGEN_HAS_STD_INVOKE_RESULT
+        -:  268:template<typename T> struct result_of;
+        -:  269:
+        -:  270:template<typename F, typename... ArgTypes>
+        -:  271:struct result_of<F(ArgTypes...)> {
+        -:  272:  typedef typename std::invoke_result<F, ArgTypes...>::type type1;
+        -:  273:  typedef remove_all_t<type1> type;
+        -:  274:};
+        -:  275:
+        -:  276:template<typename F, typename... ArgTypes>
+        -:  277:struct invoke_result {
+        -:  278:  typedef typename std::invoke_result<F, ArgTypes...>::type type1;
+        -:  279:  typedef remove_all_t<type1> type;
+        -:  280:};
+        -:  281:#else
+        -:  282:template<typename T> struct result_of {
+        -:  283:  typedef typename std::result_of<T>::type type1;
+        -:  284:  typedef remove_all_t<type1> type;
+        -:  285:};
+        -:  286:
+        -:  287:template<typename F, typename... ArgTypes>
+        -:  288:struct invoke_result {
+        -:  289:    typedef typename result_of<F(ArgTypes...)>::type type1;
+        -:  290:    typedef remove_all_t<type1> type;
+        -:  291:};
+        -:  292:#endif
+        -:  293:
+        -:  294:// Reduces a sequence of bools to true if all are true, false otherwise.
+        -:  295:template<bool... values>
+        -:  296:using reduce_all = std::is_same<std::integer_sequence<bool, values..., true>,
+        -:  297:    std::integer_sequence<bool, true, values...> >;
+        -:  298:
+        -:  299:// Reduces a sequence of bools to true if any are true, false if all false.
+        -:  300:template<bool... values>
+        -:  301:using reduce_any = std::integral_constant<bool,
+        -:  302:    !std::is_same<std::integer_sequence<bool, values..., false>, std::integer_sequence<bool, false, values...> >::value>;
+        -:  303:
+        -:  304:struct meta_yes { char a[1]; };
+        -:  305:struct meta_no  { char a[2]; };
+        -:  306:
+        -:  307:// Check whether T::ReturnType does exist
+        -:  308:template <typename T>
+        -:  309:struct has_ReturnType
+        -:  310:{
+        -:  311:  template <typename C> static meta_yes testFunctor(C const *, typename C::ReturnType const * = 0);
+        -:  312:  template <typename C> static meta_no  testFunctor(...);
+        -:  313:
+        -:  314:  enum { value = sizeof(testFunctor<T>(static_cast<T*>(0))) == sizeof(meta_yes) };
+        -:  315:};
+        -:  316:
+        -:  317:template<typename T> const T* return_ptr();
+        -:  318:
+        -:  319:template <typename T, typename IndexType=Index>
+        -:  320:struct has_nullary_operator
+        -:  321:{
+        -:  322:  template <typename C> static meta_yes testFunctor(C const *,std::enable_if_t<(sizeof(return_ptr<C>()->operator()())>0)> * = 0);
+        -:  323:  static meta_no testFunctor(...);
+        -:  324:
+        -:  325:  enum { value = sizeof(testFunctor(static_cast<T*>(0))) == sizeof(meta_yes) };
+        -:  326:};
+        -:  327:
+        -:  328:template <typename T, typename IndexType=Index>
+        -:  329:struct has_unary_operator
+        -:  330:{
+        -:  331:  template <typename C> static meta_yes testFunctor(C const *,std::enable_if_t<(sizeof(return_ptr<C>()->operator()(IndexType(0)))>0)> * = 0);
+        -:  332:  static meta_no testFunctor(...);
+        -:  333:
+        -:  334:  enum { value = sizeof(testFunctor(static_cast<T*>(0))) == sizeof(meta_yes) };
+        -:  335:};
+        -:  336:
+        -:  337:template <typename T, typename IndexType=Index>
+        -:  338:struct has_binary_operator
+        -:  339:{
+        -:  340:  template <typename C> static meta_yes testFunctor(C const *,std::enable_if_t<(sizeof(return_ptr<C>()->operator()(IndexType(0),IndexType(0)))>0)> * = 0);
+        -:  341:  static meta_no testFunctor(...);
+        -:  342:
+        -:  343:  enum { value = sizeof(testFunctor(static_cast<T*>(0))) == sizeof(meta_yes) };
+        -:  344:};
+        -:  345:
+        -:  346:/** \internal In short, it computes int(sqrt(\a Y)) with \a Y an integer.
+        -:  347:  * Usage example: \code meta_sqrt<1023>::ret \endcode
+        -:  348:  */
+        -:  349:template<int Y,
+        -:  350:         int InfX = 0,
+        -:  351:         int SupX = ((Y==1) ? 1 : Y/2),
+        -:  352:         bool Done = ((SupX - InfX) <= 1 || ((SupX * SupX <= Y) && ((SupX + 1) * (SupX + 1) > Y)))>
+        -:  353:class meta_sqrt
+        -:  354:{
+        -:  355:    enum {
+        -:  356:      MidX = (InfX+SupX)/2,
+        -:  357:      TakeInf = MidX*MidX > Y ? 1 : 0,
+        -:  358:      NewInf = int(TakeInf) ? InfX : int(MidX),
+        -:  359:      NewSup = int(TakeInf) ? int(MidX) : SupX
+        -:  360:    };
+        -:  361:  public:
+        -:  362:    enum { ret = meta_sqrt<Y,NewInf,NewSup>::ret };
+        -:  363:};
+        -:  364:
+        -:  365:template<int Y, int InfX, int SupX>
+        -:  366:class meta_sqrt<Y, InfX, SupX, true> { public:  enum { ret = (SupX*SupX <= Y) ? SupX : InfX }; };
+        -:  367:
+        -:  368:
+        -:  369:/** \internal Computes the least common multiple of two positive integer A and B
+        -:  370:  * at compile-time. 
+        -:  371:  */
+        -:  372:template<int A, int B, int K=1, bool Done = ((A*K)%B)==0, bool Big=(A>=B)>
+        -:  373:struct meta_least_common_multiple
+        -:  374:{
+        -:  375:  enum { ret = meta_least_common_multiple<A,B,K+1>::ret };
+        -:  376:};
+        -:  377:template<int A, int B, int K, bool Done>
+        -:  378:struct meta_least_common_multiple<A,B,K,Done,false>
+        -:  379:{
+        -:  380:  enum { ret = meta_least_common_multiple<B,A,K>::ret };
+        -:  381:};
+        -:  382:template<int A, int B, int K>
+        -:  383:struct meta_least_common_multiple<A,B,K,true,true>
+        -:  384:{
+        -:  385:  enum { ret = A*K };
+        -:  386:};
+        -:  387:
+        -:  388:
+        -:  389:/** \internal determines whether the product of two numeric types is allowed and what the return type is */
+        -:  390:template<typename T, typename U> struct scalar_product_traits
+        -:  391:{
+        -:  392:  enum { Defined = 0 };
+        -:  393:};
+        -:  394:
+        -:  395:// FIXME quick workaround around current limitation of result_of
+        -:  396:// template<typename Scalar, typename ArgType0, typename ArgType1>
+        -:  397:// struct result_of<scalar_product_op<Scalar>(ArgType0,ArgType1)> {
+        -:  398:// typedef typename scalar_product_traits<remove_all_t<ArgType0>, remove_all_t<ArgType1>>::ReturnType type;
+        -:  399:// };
+        -:  400:
+        -:  401:/** \internal Obtains a POD type suitable to use as storage for an object of a size
+        -:  402:  * of at most Len bytes, aligned as specified by \c Align.
+        -:  403:  */
+        -:  404:template<unsigned Len, unsigned Align>
+        -:  405:struct aligned_storage {
+        -:  406:  struct type {
+        -:  407:    EIGEN_ALIGN_TO_BOUNDARY(Align) unsigned char data[Len];
+        -:  408:  };
+        -:  409:};
+        -:  410:
+        -:  411:} // end namespace internal
+        -:  412:
+        -:  413:template<typename T> struct NumTraits;
+        -:  414:
+        -:  415:namespace numext {
+        -:  416:
+        -:  417:#if defined(EIGEN_GPU_COMPILE_PHASE)
+        -:  418:template<typename T> EIGEN_DEVICE_FUNC   void swap(T &a, T &b) { T tmp = b; b = a; a = tmp; }
+        -:  419:#else
+      576:  420:template<typename T> EIGEN_STRONG_INLINE void swap(T &a, T &b) { std::swap(a,b); }
+        -:  421:#endif
+        -:  422:
+        -:  423:using std::numeric_limits;
+        -:  424:
+        -:  425:// Handle integer comparisons of different signedness.
+        -:  426:template <typename X, typename Y, bool XIsInteger = NumTraits<X>::IsInteger, bool XIsSigned = NumTraits<X>::IsSigned,
+        -:  427:          bool YIsInteger = NumTraits<Y>::IsInteger, bool YIsSigned = NumTraits<Y>::IsSigned>
+        -:  428:struct equal_strict_impl {
+        -:  429:  static EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bool run(const X& x, const Y& y) { return x == y; }
+        -:  430:};
+        -:  431:template <typename X, typename Y>
+        -:  432:struct equal_strict_impl<X, Y, true, false, true, true> {
+        -:  433:  // X is an unsigned integer
+        -:  434:  // Y is a signed integer
+        -:  435:  // if Y is non-negative, it may be represented exactly as its unsigned counterpart.
+        -:  436:  using UnsignedY = typename internal::make_unsigned<Y>::type;
+        -:  437:  static EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bool run(const X& x, const Y& y) {
+        -:  438:    return y < Y(0) ? false : (x == static_cast<UnsignedY>(y));
+        -:  439:  }
+        -:  440:};
+        -:  441:template <typename X, typename Y>
+        -:  442:struct equal_strict_impl<X, Y, true, true, true, false> {
+        -:  443:  // X is a signed integer
+        -:  444:  // Y is an unsigned integer
+        -:  445:  static EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bool run(const X& x, const Y& y) {
+        -:  446:    return equal_strict_impl<Y, X>::run(y, x);
+        -:  447:  }
+        -:  448:};
+        -:  449:
+        -:  450:// The aim of the following functions is to bypass -Wfloat-equal warnings
+        -:  451:// when we really want a strict equality comparison on floating points.
+        -:  452:template<typename X, typename Y> EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bool equal_strict(const X& x, const Y& y) { return equal_strict_impl<X, Y>::run(x, y); }
+        -:  453:
+        -:  454:#if !defined(EIGEN_GPU_COMPILE_PHASE) || (!defined(EIGEN_CUDA_ARCH) && defined(EIGEN_CONSTEXPR_ARE_DEVICE_FUNC))
+        -:  455:template<> EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC
+        -:  456:bool equal_strict(const float& x,const float& y) { return std::equal_to<float>()(x,y); }
+        -:  457:
+        -:  458:template<> EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC
+    72500:  459:bool equal_strict(const double& x,const double& y) { return std::equal_to<double>()(x,y); }
+        -:  460:#endif
+        -:  461:
+        -:  462:/**
+        -:  463: * \internal Performs an exact comparison of x to zero, e.g. to decide whether a term can be ignored.
+        -:  464: * Use this to to bypass -Wfloat-equal warnings when exact zero is what needs to be tested.
+        -:  465:*/
+        -:  466:template<typename X> EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC
+    47500:  467:bool is_exactly_zero(const X& x) { return equal_strict(x, typename NumTraits<X>::Literal{0}); }
+        -:  468:
+        -:  469:/**
+        -:  470: * \internal Performs an exact comparison of x to one, e.g. to decide whether a factor needs to be multiplied.
+        -:  471: * Use this to to bypass -Wfloat-equal warnings when exact one is what needs to be tested.
+        -:  472:*/
+        -:  473:template<typename X> EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC
+     1192:  474:bool is_exactly_one(const X& x) { return equal_strict(x, typename NumTraits<X>::Literal{1}); }
+        -:  475:
+        -:  476:template<typename X, typename Y> EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC
+        -:  477:bool not_equal_strict(const X& x,const Y& y) { return !equal_strict_impl<X, Y>::run(x, y); }
+        -:  478:
+        -:  479:#if !defined(EIGEN_GPU_COMPILE_PHASE) || (!defined(EIGEN_CUDA_ARCH) && defined(EIGEN_CONSTEXPR_ARE_DEVICE_FUNC))
+        -:  480:template<> EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC
+        -:  481:bool not_equal_strict(const float& x,const float& y) { return std::not_equal_to<float>()(x,y); }
+        -:  482:
+        -:  483:template<> EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC
+        -:  484:bool not_equal_strict(const double& x,const double& y) { return std::not_equal_to<double>()(x,y); }
+        -:  485:#endif
+        -:  486:
+        -:  487:} // end namespace numext
+        -:  488:
+        -:  489:namespace internal {
+        -:  490:
+        -:  491:template<typename Scalar>
+        -:  492:struct is_identically_zero_impl {
+     7132:  493:  static inline bool run(const Scalar& s) {
+     7132:  494:    return numext::is_exactly_zero(s);
+        -:  495:  }
+        -:  496:};
+        -:  497:
+        -:  498:template<typename Scalar> EIGEN_STRONG_INLINE
+     7132:  499:bool is_identically_zero(const Scalar& s) { return is_identically_zero_impl<Scalar>::run(s); }
+        -:  500:
+        -:  501:/// \internal Returns true if its argument is of integer or enum type.
+        -:  502:/// FIXME this has the same purpose as `is_valid_index_type` in XprHelper.h
+        -:  503:template<typename A>
+        -:  504:constexpr bool is_int_or_enum_v = std::is_enum<A>::value || std::is_integral<A>::value;
+        -:  505:
+        -:  506:/// \internal Gets the minimum of two values which may be integers or enums
+        -:  507:template<typename A, typename B>
+        -:  508:inline constexpr int plain_enum_min(A a, B b) {
+        -:  509:  static_assert(is_int_or_enum_v<A>, "Argument a must be an integer or enum");
+        -:  510:  static_assert(is_int_or_enum_v<B>, "Argument b must be an integer or enum");
+        -:  511:  return ((int) a <= (int) b) ? (int) a : (int) b;
+        -:  512:}
+        -:  513:
+        -:  514:/// \internal Gets the maximum of two values which may be integers or enums
+        -:  515:template<typename A, typename B>
+        -:  516:inline constexpr int plain_enum_max(A a, B b) {
+        -:  517:  static_assert(is_int_or_enum_v<A>, "Argument a must be an integer or enum");
+        -:  518:  static_assert(is_int_or_enum_v<B>, "Argument b must be an integer or enum");
+        -:  519:  return ((int) a >= (int) b) ? (int) a : (int) b;
+        -:  520:}
+        -:  521:
+        -:  522:/**
+        -:  523: * \internal
+        -:  524: *  `min_size_prefer_dynamic` gives the min between compile-time sizes. 0 has absolute priority, followed by 1,
+        -:  525: *  followed by Dynamic, followed by other finite values. The reason for giving Dynamic the priority over
+        -:  526: *  finite values is that min(3, Dynamic) should be Dynamic, since that could be anything between 0 and 3.
+        -:  527: */
+        -:  528:template<typename A, typename B>
+        -:  529:inline constexpr int min_size_prefer_dynamic(A a, B b) {
+        -:  530:  static_assert(is_int_or_enum_v<A>, "Argument a must be an integer or enum");
+        -:  531:  static_assert(is_int_or_enum_v<B>, "Argument b must be an integer or enum");
+        -:  532:  if ((int) a == 0 || (int) b == 0) return 0;
+        -:  533:  if ((int) a == 1 || (int) b == 1) return 1;
+        -:  534:  if ((int) a == Dynamic || (int) b == Dynamic) return Dynamic;
+        -:  535:  return plain_enum_min(a, b);
+        -:  536:}
+        -:  537:
+        -:  538:/**
+        -:  539: * \internal
+        -:  540: *  min_size_prefer_fixed is a variant of `min_size_prefer_dynamic` comparing MaxSizes. The difference is that finite values
+        -:  541: *  now have priority over Dynamic, so that min(3, Dynamic) gives 3. Indeed, whatever the actual value is
+        -:  542: *  (between 0 and 3), it is not more than 3.
+        -:  543: */
+        -:  544:template<typename A, typename B>
+        -:  545:inline constexpr int min_size_prefer_fixed(A a, B b) {
+        -:  546:  static_assert(is_int_or_enum_v<A>, "Argument a must be an integer or enum");
+        -:  547:  static_assert(is_int_or_enum_v<B>, "Argument b must be an integer or enum");
+        -:  548:  if ((int) a == 0 || (int) b == 0) return 0;
+        -:  549:  if ((int) a == 1 || (int) b == 1) return 1;
+        -:  550:  if ((int) a == Dynamic && (int) b == Dynamic) return Dynamic;
+        -:  551:  if ((int) a == Dynamic) return (int) b;
+        -:  552:  if ((int) b == Dynamic) return (int) a;
+        -:  553:  return plain_enum_min(a, b);
+        -:  554:}
+        -:  555:
+        -:  556:/// \internal see `min_size_prefer_fixed`. No need for a separate variant for MaxSizes here.
+        -:  557:template<typename A, typename B>
+        -:  558:inline constexpr int max_size_prefer_dynamic(A a, B b) {
+        -:  559:  static_assert(is_int_or_enum_v<A>, "Argument a must be an integer or enum");
+        -:  560:  static_assert(is_int_or_enum_v<B>, "Argument b must be an integer or enum");
+        -:  561:  if ((int) a == Dynamic || (int) b == Dynamic) return Dynamic;
+        -:  562:  return plain_enum_max(a, b);
+        -:  563:}
+        -:  564:
+        -:  565:/// \internal Calculate logical XOR at compile time
+        -:  566:inline constexpr bool logical_xor(bool a, bool b) {
+        -:  567:  return a != b;
+        -:  568:}
+        -:  569:
+        -:  570:/// \internal Calculate logical IMPLIES at compile time
+   262168:  571:inline constexpr bool check_implication(bool a, bool b) {
+   262168:  572:  return !a || b;
+        -:  573:}
+        -:  574:
+        -:  575:/// \internal Provide fallback for std::is_constant_evaluated for pre-C++20.
+        -:  576:#if EIGEN_COMP_CXXVER >= 20
+        -:  577:using std::is_constant_evaluated;
+        -:  578:#else
+        -:  579:constexpr bool is_constant_evaluated() { return false; }
+        -:  580:#endif
+        -:  581:
+        -:  582:} // end namespace internal
+        -:  583:
+        -:  584:} // end namespace Eigen
+        -:  585:
+        -:  586:#endif // EIGEN_META_H

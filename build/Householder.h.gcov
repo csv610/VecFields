@@ -1,0 +1,183 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Householder/Householder.h
+        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
+        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
+        -:    0:Runs:4
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2010 Benoit Jacob <jacob.benoit.1@gmail.com>
+        -:    5:// Copyright (C) 2009 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    6://
+        -:    7:// This Source Code Form is subject to the terms of the Mozilla
+        -:    8:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    9:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:   10:
+        -:   11:#ifndef EIGEN_HOUSEHOLDER_H
+        -:   12:#define EIGEN_HOUSEHOLDER_H
+        -:   13:
+        -:   14:// IWYU pragma: private
+        -:   15:#include "./InternalHeaderCheck.h"
+        -:   16:
+        -:   17:namespace Eigen { 
+        -:   18:
+        -:   19:namespace internal {
+        -:   20:template<int n> struct decrement_size
+        -:   21:{
+        -:   22:  enum {
+        -:   23:    ret = n==Dynamic ? n : n-1
+        -:   24:  };
+        -:   25:};
+        -:   26:}
+        -:   27:
+        -:   28:/** Computes the elementary reflector H such that:
+        -:   29:  * \f$ H *this = [ beta 0 ... 0]^T \f$
+        -:   30:  * where the transformation H is:
+        -:   31:  * \f$ H = I - tau v v^*\f$
+        -:   32:  * and the vector v is:
+        -:   33:  * \f$ v^T = [1 essential^T] \f$
+        -:   34:  *
+        -:   35:  * The essential part of the vector \c v is stored in *this.
+        -:   36:  * 
+        -:   37:  * On output:
+        -:   38:  * \param tau the scaling factor of the Householder transformation
+        -:   39:  * \param beta the result of H * \c *this
+        -:   40:  *
+        -:   41:  * \sa MatrixBase::makeHouseholder(), MatrixBase::applyHouseholderOnTheLeft(),
+        -:   42:  *     MatrixBase::applyHouseholderOnTheRight()
+        -:   43:  */
+        -:   44:template<typename Derived>
+        -:   45:EIGEN_DEVICE_FUNC
+     8622:   46:void MatrixBase<Derived>::makeHouseholderInPlace(Scalar& tau, RealScalar& beta)
+        -:   47:{
+     8622:   48:  VectorBlock<Derived, internal::decrement_size<Base::SizeAtCompileTime>::ret> essentialPart(derived(), 1, size()-1);
+     8622:   49:  makeHouseholder(essentialPart, tau, beta);
+     8622:   50:}
+        -:   51:
+        -:   52:/** Computes the elementary reflector H such that:
+        -:   53:  * \f$ H *this = [ beta 0 ... 0]^T \f$
+        -:   54:  * where the transformation H is:
+        -:   55:  * \f$ H = I - tau v v^*\f$
+        -:   56:  * and the vector v is:
+        -:   57:  * \f$ v^T = [1 essential^T] \f$
+        -:   58:  *
+        -:   59:  * On output:
+        -:   60:  * \param essential the essential part of the vector \c v
+        -:   61:  * \param tau the scaling factor of the Householder transformation
+        -:   62:  * \param beta the result of H * \c *this
+        -:   63:  *
+        -:   64:  * \sa MatrixBase::makeHouseholderInPlace(), MatrixBase::applyHouseholderOnTheLeft(),
+        -:   65:  *     MatrixBase::applyHouseholderOnTheRight()
+        -:   66:  */
+        -:   67:template<typename Derived>
+        -:   68:template<typename EssentialPart>
+        -:   69:EIGEN_DEVICE_FUNC
+     8622:   70:void MatrixBase<Derived>::makeHouseholder(
+        -:   71:  EssentialPart& essential,
+        -:   72:  Scalar& tau,
+        -:   73:  RealScalar& beta) const
+        -:   74:{
+        -:   75:  using numext::sqrt;
+        -:   76:  using numext::conj;
+        -:   77:  
+        -:   78:  EIGEN_STATIC_ASSERT_VECTOR_ONLY(EssentialPart)
+     8622:   79:  VectorBlock<const Derived, EssentialPart::SizeAtCompileTime> tail(derived(), 1, size()-1);
+        -:   80:  
+     8622:   81:  RealScalar tailSqNorm = size()==1 ? RealScalar(0) : tail.squaredNorm();
+     8622:   82:  Scalar c0 = coeff(0);
+     8622:   83:  const RealScalar tol = (std::numeric_limits<RealScalar>::min)();
+        -:   84:
+     8622:   85:  if(tailSqNorm <= tol && numext::abs2(numext::imag(c0))<=tol)
+        -:   86:  {
+     2138:   87:    tau = RealScalar(0);
+     2138:   88:    beta = numext::real(c0);
+     2138:   89:    essential.setZero();
+     2138:   90:  }
+        -:   91:  else
+        -:   92:  {
+     6484:   93:    beta = sqrt(numext::abs2(c0) + tailSqNorm);
+     6484:   94:    if (numext::real(c0)>=RealScalar(0))
+     3310:   95:      beta = -beta;
+     6484:   96:    essential = tail / (c0 - beta);
+     6484:   97:    tau = conj((beta - c0) / beta);
+        -:   98:  }
+     8622:   99:}
+        -:  100:
+        -:  101:/** Apply the elementary reflector H given by
+        -:  102:  * \f$ H = I - tau v v^*\f$
+        -:  103:  * with
+        -:  104:  * \f$ v^T = [1 essential^T] \f$
+        -:  105:  * from the left to a vector or matrix.
+        -:  106:  *
+        -:  107:  * On input:
+        -:  108:  * \param essential the essential part of the vector \c v
+        -:  109:  * \param tau the scaling factor of the Householder transformation
+        -:  110:  * \param workspace a pointer to working space with at least
+        -:  111:  *                  this->cols() entries
+        -:  112:  *
+        -:  113:  * \sa MatrixBase::makeHouseholder(), MatrixBase::makeHouseholderInPlace(), 
+        -:  114:  *     MatrixBase::applyHouseholderOnTheRight()
+        -:  115:  */
+        -:  116:template<typename Derived>
+        -:  117:template<typename EssentialPart>
+        -:  118:EIGEN_DEVICE_FUNC
+    15754:  119:void MatrixBase<Derived>::applyHouseholderOnTheLeft(
+        -:  120:  const EssentialPart& essential,
+        -:  121:  const Scalar& tau,
+        -:  122:  Scalar* workspace)
+        -:  123:{
+    15754:  124:  if(rows() == 1)
+        -:  125:  {
+     2782:  126:    *this *= Scalar(1)-tau;
+     2782:  127:  }
+    12972:  128:  else if(!numext::is_exactly_zero(tau))
+        -:  129:  {
+    12968:  130:    Map<typename internal::plain_row_type<PlainObject>::type> tmp(workspace,cols());
+    12968:  131:    Block<Derived, EssentialPart::SizeAtCompileTime, Derived::ColsAtCompileTime> bottom(derived(), 1, 0, rows()-1, cols());
+    12968:  132:    tmp.noalias() = essential.adjoint() * bottom;
+    12968:  133:    tmp += this->row(0);
+    12968:  134:    this->row(0) -= tau * tmp;
+    12968:  135:    bottom.noalias() -= tau * essential * tmp;
+    12968:  136:  }
+    15754:  137:}
+        -:  138:
+        -:  139:/** Apply the elementary reflector H given by
+        -:  140:  * \f$ H = I - tau v v^*\f$
+        -:  141:  * with
+        -:  142:  * \f$ v^T = [1 essential^T] \f$
+        -:  143:  * from the right to a vector or matrix.
+        -:  144:  *
+        -:  145:  * On input:
+        -:  146:  * \param essential the essential part of the vector \c v
+        -:  147:  * \param tau the scaling factor of the Householder transformation
+        -:  148:  * \param workspace a pointer to working space with at least
+        -:  149:  *                  this->rows() entries
+        -:  150:  *
+        -:  151:  * \sa MatrixBase::makeHouseholder(), MatrixBase::makeHouseholderInPlace(), 
+        -:  152:  *     MatrixBase::applyHouseholderOnTheLeft()
+        -:  153:  */
+        -:  154:template<typename Derived>
+        -:  155:template<typename EssentialPart>
+        -:  156:EIGEN_DEVICE_FUNC
+    #####:  157:void MatrixBase<Derived>::applyHouseholderOnTheRight(
+        -:  158:  const EssentialPart& essential,
+        -:  159:  const Scalar& tau,
+        -:  160:  Scalar* workspace)
+        -:  161:{
+    #####:  162:  if(cols() == 1)
+        -:  163:  {
+    #####:  164:    *this *= Scalar(1)-tau;
+    #####:  165:  }
+    #####:  166:  else if(!numext::is_exactly_zero(tau))
+        -:  167:  {
+    #####:  168:    Map<typename internal::plain_col_type<PlainObject>::type> tmp(workspace,rows());
+    #####:  169:    Block<Derived, Derived::RowsAtCompileTime, EssentialPart::SizeAtCompileTime> right(derived(), 0, 1, rows(), cols()-1);
+    #####:  170:    tmp.noalias() = right * essential;
+    #####:  171:    tmp += this->col(0);
+    #####:  172:    this->col(0) -= tau * tmp;
+    #####:  173:    right.noalias() -= tau * tmp * essential.adjoint();
+    #####:  174:  }
+    #####:  175:}
+        -:  176:
+        -:  177:} // end namespace Eigen
+        -:  178:
+        -:  179:#endif // EIGEN_HOUSEHOLDER_H

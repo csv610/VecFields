@@ -1,0 +1,959 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/util/XprHelper.h
+        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
+        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
+        -:    0:Runs:4
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2008 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    5:// Copyright (C) 2006-2008 Benoit Jacob <jacob.benoit.1@gmail.com>
+        -:    6://
+        -:    7:// This Source Code Form is subject to the terms of the Mozilla
+        -:    8:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    9:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:   10:
+        -:   11:#ifndef EIGEN_XPRHELPER_H
+        -:   12:#define EIGEN_XPRHELPER_H
+        -:   13:
+        -:   14:// IWYU pragma: private
+        -:   15:#include "../InternalHeaderCheck.h"
+        -:   16:
+        -:   17:namespace Eigen {
+        -:   18:
+        -:   19:namespace internal {
+        -:   20:
+        -:   21:
+        -:   22:// useful for unsigned / signed integer comparisons when idx is intended to be non-negative
+        -:   23:template <typename IndexType>
+        -:   24:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE typename make_unsigned<IndexType>::type returnUnsignedIndexValue(
+        -:   25:    const IndexType& idx) {
+        -:   26:  EIGEN_STATIC_ASSERT((NumTraits<IndexType>::IsInteger), THIS FUNCTION IS FOR INTEGER TYPES)
+        -:   27:  eigen_internal_assert(idx >= 0 && "Index value is negative and target type is unsigned");
+        -:   28:  using UnsignedType = typename make_unsigned<IndexType>::type;
+        -:   29:  return static_cast<UnsignedType>(idx);
+        -:   30:}
+        -:   31:
+        -:   32:template <typename IndexDest, typename IndexSrc, 
+        -:   33:          bool IndexDestIsInteger = NumTraits<IndexDest>::IsInteger,
+        -:   34:          bool IndexDestIsSigned = NumTraits<IndexDest>::IsSigned,
+        -:   35:          bool IndexSrcIsInteger = NumTraits<IndexSrc>::IsInteger,
+        -:   36:          bool IndexSrcIsSigned = NumTraits<IndexSrc>::IsSigned>
+        -:   37:struct convert_index_impl {
+        -:   38:  static inline EIGEN_DEVICE_FUNC IndexDest run(const IndexSrc& idx) {
+        -:   39:    eigen_internal_assert(idx <= NumTraits<IndexDest>::highest() && "Index value is too big for target type");
+        -:   40:    return static_cast<IndexDest>(idx);
+        -:   41:  }
+        -:   42:};
+        -:   43:template <typename IndexDest, typename IndexSrc>
+        -:   44:struct convert_index_impl<IndexDest, IndexSrc, true, true, true, false> {
+        -:   45:  // IndexDest is a signed integer
+        -:   46:  // IndexSrc is an unsigned integer
+        -:   47:  static inline EIGEN_DEVICE_FUNC IndexDest run(const IndexSrc& idx) {
+        -:   48:    eigen_internal_assert(idx <= returnUnsignedIndexValue(NumTraits<IndexDest>::highest()) &&
+        -:   49:                          "Index value is too big for target type");
+        -:   50:    return static_cast<IndexDest>(idx);
+        -:   51:  }
+        -:   52:};
+        -:   53:template <typename IndexDest, typename IndexSrc>
+        -:   54:struct convert_index_impl<IndexDest, IndexSrc, true, false, true, true> {
+        -:   55:  // IndexDest is an unsigned integer
+        -:   56:  // IndexSrc is a signed integer
+        -:   57:  static inline EIGEN_DEVICE_FUNC IndexDest run(const IndexSrc& idx) {
+        -:   58:    eigen_internal_assert(returnUnsignedIndexValue(idx) <= NumTraits<IndexDest>::highest() &&
+        -:   59:                          "Index value is too big for target type");
+        -:   60:    return static_cast<IndexDest>(idx);
+        -:   61:  }
+        -:   62:};
+        -:   63:
+        -:   64:template <typename IndexDest, typename IndexSrc>
+        -:   65:EIGEN_DEVICE_FUNC inline IndexDest convert_index(const IndexSrc& idx) {
+        -:   66:  return convert_index_impl<IndexDest, IndexSrc>::run(idx);
+        -:   67:}
+        -:   68:
+        -:   69:// true if T can be considered as an integral index (i.e., and integral type or enum)
+        -:   70:template<typename T> struct is_valid_index_type
+        -:   71:{
+        -:   72:  enum { value = internal::is_integral<T>::value || std::is_enum<T>::value
+        -:   73:  };
+        -:   74:};
+        -:   75:
+        -:   76:// true if both types are not valid index types
+        -:   77:template<typename RowIndices, typename ColIndices>
+        -:   78:struct valid_indexed_view_overload {
+        -:   79:  enum { value = !(internal::is_valid_index_type<RowIndices>::value && internal::is_valid_index_type<ColIndices>::value) };
+        -:   80:};
+        -:   81:
+        -:   82:// promote_scalar_arg is an helper used in operation between an expression and a scalar, like:
+        -:   83://    expression * scalar
+        -:   84:// Its role is to determine how the type T of the scalar operand should be promoted given the scalar type ExprScalar of the given expression.
+        -:   85:// The IsSupported template parameter must be provided by the caller as: internal::has_ReturnType<ScalarBinaryOpTraits<ExprScalar,T,op> >::value using the proper order for ExprScalar and T.
+        -:   86:// Then the logic is as follows:
+        -:   87://  - if the operation is natively supported as defined by IsSupported, then the scalar type is not promoted, and T is returned.
+        -:   88://  - otherwise, NumTraits<ExprScalar>::Literal is returned if T is implicitly convertible to NumTraits<ExprScalar>::Literal AND that this does not imply a float to integer conversion.
+        -:   89://  - otherwise, ExprScalar is returned if T is implicitly convertible to ExprScalar AND that this does not imply a float to integer conversion.
+        -:   90://  - In all other cases, the promoted type is not defined, and the respective operation is thus invalid and not available (SFINAE).
+        -:   91:template<typename ExprScalar,typename T, bool IsSupported>
+        -:   92:struct promote_scalar_arg;
+        -:   93:
+        -:   94:template<typename S,typename T>
+        -:   95:struct promote_scalar_arg<S,T,true>
+        -:   96:{
+        -:   97:  typedef T type;
+        -:   98:};
+        -:   99:
+        -:  100:// Recursively check safe conversion to PromotedType, and then ExprScalar if they are different.
+        -:  101:template<typename ExprScalar,typename T,typename PromotedType,
+        -:  102:  bool ConvertibleToLiteral = internal::is_convertible<T,PromotedType>::value,
+        -:  103:  bool IsSafe = NumTraits<T>::IsInteger || !NumTraits<PromotedType>::IsInteger>
+        -:  104:struct promote_scalar_arg_unsupported;
+        -:  105:
+        -:  106:// Start recursion with NumTraits<ExprScalar>::Literal
+        -:  107:template<typename S,typename T>
+        -:  108:struct promote_scalar_arg<S,T,false> : promote_scalar_arg_unsupported<S,T,typename NumTraits<S>::Literal> {};
+        -:  109:
+        -:  110:// We found a match!
+        -:  111:template<typename S,typename T, typename PromotedType>
+        -:  112:struct promote_scalar_arg_unsupported<S,T,PromotedType,true,true>
+        -:  113:{
+        -:  114:  typedef PromotedType type;
+        -:  115:};
+        -:  116:
+        -:  117:// No match, but no real-to-integer issues, and ExprScalar and current PromotedType are different,
+        -:  118:// so let's try to promote to ExprScalar
+        -:  119:template<typename ExprScalar,typename T, typename PromotedType>
+        -:  120:struct promote_scalar_arg_unsupported<ExprScalar,T,PromotedType,false,true>
+        -:  121:   : promote_scalar_arg_unsupported<ExprScalar,T,ExprScalar>
+        -:  122:{};
+        -:  123:
+        -:  124:// Unsafe real-to-integer, let's stop.
+        -:  125:template<typename S,typename T, typename PromotedType, bool ConvertibleToLiteral>
+        -:  126:struct promote_scalar_arg_unsupported<S,T,PromotedType,ConvertibleToLiteral,false> {};
+        -:  127:
+        -:  128:// T is not even convertible to ExprScalar, let's stop.
+        -:  129:template<typename S,typename T>
+        -:  130:struct promote_scalar_arg_unsupported<S,T,S,false,true> {};
+        -:  131:
+        -:  132://classes inheriting no_assignment_operator don't generate a default operator=.
+        -:  133:class no_assignment_operator
+        -:  134:{
+        -:  135:  private:
+        -:  136:    no_assignment_operator& operator=(const no_assignment_operator&);
+        -:  137:  protected:
+        -:  138:    EIGEN_DEFAULT_COPY_CONSTRUCTOR(no_assignment_operator)
+        -:  139:    EIGEN_DEFAULT_EMPTY_CONSTRUCTOR_AND_DESTRUCTOR(no_assignment_operator)
+        -:  140:};
+        -:  141:
+        -:  142:/** \internal return the index type with the largest number of bits */
+        -:  143:template<typename I1, typename I2>
+        -:  144:struct promote_index_type
+        -:  145:{
+        -:  146:  typedef std::conditional_t<(sizeof(I1)<sizeof(I2)), I2, I1> type;
+        -:  147:};
+        -:  148:
+        -:  149:/** \internal If the template parameter Value is Dynamic, this class is just a wrapper around a T variable that
+        -:  150:  * can be accessed using value() and setValue().
+        -:  151:  * Otherwise, this class is an empty structure and value() just returns the template parameter Value.
+        -:  152:  */
+        -:  153:template<typename T, int Value> class variable_if_dynamic
+        -:  154:{
+        -:  155:  public:
+        -:  156:    EIGEN_DEFAULT_EMPTY_CONSTRUCTOR_AND_DESTRUCTOR(variable_if_dynamic)
+  2993992:  157:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE explicit variable_if_dynamic(T v) { EIGEN_ONLY_USED_FOR_DEBUG(v); eigen_assert(v == T(Value)); }
+        -:  158:    EIGEN_DEVICE_FUNC static EIGEN_STRONG_INLINE EIGEN_CONSTEXPR
+  2441222:  159:    T value() { return T(Value); }
+        -:  160:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE EIGEN_CONSTEXPR
+        -:  161:    operator T() const { return T(Value); }
+        -:  162:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+        -:  163:    void setValue(T v) const { EIGEN_ONLY_USED_FOR_DEBUG(v); eigen_assert(v == T(Value)); }
+        -:  164:};
+        -:  165:
+        -:  166:template<typename T> class variable_if_dynamic<T, Dynamic>
+        -:  167:{
+        -:  168:    T m_value;
+        -:  169:  public:
+  3051336:  170:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE explicit variable_if_dynamic(T value = 0) EIGEN_NO_THROW : m_value(value) {}
+  2204372:  171:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE T value() const { return m_value; }
+        -:  172:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE operator T() const { return m_value; }
+        -:  173:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void setValue(T value) { m_value = value; }
+        -:  174:};
+        -:  175:
+        -:  176:/** \internal like variable_if_dynamic but for DynamicIndex
+        -:  177:  */
+        -:  178:template<typename T, int Value> class variable_if_dynamicindex
+        -:  179:{
+        -:  180:  public:
+    17880:  181:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE explicit variable_if_dynamicindex(T v) { EIGEN_ONLY_USED_FOR_DEBUG(v); eigen_assert(v == T(Value)); }
+        -:  182:    EIGEN_DEVICE_FUNC static EIGEN_STRONG_INLINE EIGEN_CONSTEXPR
+    41720:  183:    T value() { return T(Value); }
+        -:  184:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+        -:  185:    void setValue(T) {}
+        -:  186:};
+        -:  187:
+        -:  188:template<typename T> class variable_if_dynamicindex<T, DynamicIndex>
+        -:  189:{
+        -:  190:    T m_value;
+        -:  191:    EIGEN_DEVICE_FUNC variable_if_dynamicindex() { eigen_assert(false); }
+        -:  192:  public:
+        -:  193:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE explicit variable_if_dynamicindex(T value) : m_value(value) {}
+        -:  194:    EIGEN_DEVICE_FUNC T EIGEN_STRONG_INLINE value() const { return m_value; }
+        -:  195:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void setValue(T value) { m_value = value; }
+        -:  196:};
+        -:  197:
+        -:  198:template<typename T> struct functor_traits
+        -:  199:{
+        -:  200:  enum
+        -:  201:  {
+        -:  202:    Cost = 10,
+        -:  203:    PacketAccess = false,
+        -:  204:    IsRepeatable = false
+        -:  205:  };
+        -:  206:};
+        -:  207:
+        -:  208:template<typename T> struct packet_traits;
+        -:  209:
+        -:  210:template<typename T> struct unpacket_traits;
+        -:  211:
+        -:  212:template<int Size, typename PacketType,
+        -:  213:         bool Stop = Size==Dynamic || (Size%unpacket_traits<PacketType>::size)==0 || is_same<PacketType,typename unpacket_traits<PacketType>::half>::value>
+        -:  214:struct find_best_packet_helper;
+        -:  215:
+        -:  216:template< int Size, typename PacketType>
+        -:  217:struct find_best_packet_helper<Size,PacketType,true>
+        -:  218:{
+        -:  219:  typedef PacketType type;
+        -:  220:};
+        -:  221:
+        -:  222:template<int Size, typename PacketType>
+        -:  223:struct find_best_packet_helper<Size,PacketType,false>
+        -:  224:{
+        -:  225:  typedef typename find_best_packet_helper<Size,typename unpacket_traits<PacketType>::half>::type type;
+        -:  226:};
+        -:  227:
+        -:  228:template<typename T, int Size>
+        -:  229:struct find_best_packet
+        -:  230:{
+        -:  231:  typedef typename find_best_packet_helper<Size,typename packet_traits<T>::type>::type type;
+        -:  232:};
+        -:  233:
+        -:  234:template <int Size, typename PacketType,
+        -:  235:          bool Stop = (Size == unpacket_traits<PacketType>::size) ||
+        -:  236:                      is_same<PacketType, typename unpacket_traits<PacketType>::half>::value>
+        -:  237:struct find_packet_by_size_helper;
+        -:  238:template <int Size, typename PacketType>
+        -:  239:struct find_packet_by_size_helper<Size, PacketType, true> {
+        -:  240:  using type = PacketType;
+        -:  241:};
+        -:  242:template <int Size, typename PacketType>
+        -:  243:struct find_packet_by_size_helper<Size, PacketType, false> {
+        -:  244:  using type = typename find_packet_by_size_helper<Size, typename unpacket_traits<PacketType>::half>::type;
+        -:  245:};
+        -:  246:
+        -:  247:template <typename T, int Size>
+        -:  248:struct find_packet_by_size {
+        -:  249:  using type = typename find_packet_by_size_helper<Size, typename packet_traits<T>::type>::type;
+        -:  250:  static constexpr bool value = (Size == unpacket_traits<type>::size);
+        -:  251:};
+        -:  252:template <typename T>
+        -:  253:struct find_packet_by_size<T, 1> {
+        -:  254:  using type = typename unpacket_traits<T>::type;
+        -:  255:  static constexpr bool value = (unpacket_traits<type>::size == 1);
+        -:  256:};
+        -:  257:
+        -:  258:#if EIGEN_MAX_STATIC_ALIGN_BYTES>0
+        -:  259:constexpr inline int compute_default_alignment_helper(int ArrayBytes, int AlignmentBytes) {
+        -:  260:  if((ArrayBytes % AlignmentBytes) == 0) {
+        -:  261:    return AlignmentBytes;
+        -:  262:  } else if (EIGEN_MIN_ALIGN_BYTES<AlignmentBytes) {
+        -:  263:    return compute_default_alignment_helper(ArrayBytes, AlignmentBytes/2);
+        -:  264:  } else {
+        -:  265:    return 0;
+        -:  266:  }
+        -:  267:}
+        -:  268:#else
+        -:  269:// If static alignment is disabled, no need to bother.
+        -:  270:// This also avoids a division by zero
+        -:  271:constexpr inline int compute_default_alignment_helper(int ArrayBytes, int AlignmentBytes) {
+        -:  272:  EIGEN_UNUSED_VARIABLE(ArrayBytes);
+        -:  273:  EIGEN_UNUSED_VARIABLE(AlignmentBytes);
+        -:  274:  return 0;
+        -:  275:}
+        -:  276:#endif
+        -:  277:
+        -:  278:template<typename T, int Size> struct compute_default_alignment {
+        -:  279:  enum { value = compute_default_alignment_helper(Size*sizeof(T), EIGEN_MAX_STATIC_ALIGN_BYTES) };
+        -:  280:};
+        -:  281:
+        -:  282:template<typename T> struct compute_default_alignment<T,Dynamic> {
+        -:  283:  enum { value = EIGEN_MAX_ALIGN_BYTES };
+        -:  284:};
+        -:  285:
+        -:  286:template<typename Scalar_, int Rows_, int Cols_,
+        -:  287:         int Options_ = AutoAlign |
+        -:  288:                          ( (Rows_==1 && Cols_!=1) ? RowMajor
+        -:  289:                          : (Cols_==1 && Rows_!=1) ? ColMajor
+        -:  290:                          : EIGEN_DEFAULT_MATRIX_STORAGE_ORDER_OPTION ),
+        -:  291:         int MaxRows_ = Rows_,
+        -:  292:         int MaxCols_ = Cols_
+        -:  293:> class make_proper_matrix_type
+        -:  294:{
+        -:  295:    enum {
+        -:  296:      IsColVector = Cols_==1 && Rows_!=1,
+        -:  297:      IsRowVector = Rows_==1 && Cols_!=1,
+        -:  298:      Options = IsColVector ? (Options_ | ColMajor) & ~RowMajor
+        -:  299:              : IsRowVector ? (Options_ | RowMajor) & ~ColMajor
+        -:  300:              : Options_
+        -:  301:    };
+        -:  302:  public:
+        -:  303:    typedef Matrix<Scalar_, Rows_, Cols_, Options, MaxRows_, MaxCols_> type;
+        -:  304:};
+        -:  305:
+        -:  306:constexpr inline unsigned compute_matrix_flags(int Options) {
+        -:  307:  unsigned row_major_bit = Options&RowMajor ? RowMajorBit : 0;
+        -:  308:  // FIXME currently we still have to handle DirectAccessBit at the expression level to handle DenseCoeffsBase<>
+        -:  309:  // and then propagate this information to the evaluator's flags.
+        -:  310:  // However, I (Gael) think that DirectAccessBit should only matter at the evaluation stage.
+        -:  311:  return DirectAccessBit | LvalueBit | NestByRefBit | row_major_bit;
+        -:  312:}
+        -:  313:
+        -:  314:constexpr inline int size_at_compile_time(int rows, int cols) {
+        -:  315:  if (rows == 0 || cols == 0) return 0;
+        -:  316:  if (rows == Dynamic || cols == Dynamic) return Dynamic;
+        -:  317:  return rows * cols;
+        -:  318:}
+        -:  319:
+        -:  320:template<typename XprType> struct size_of_xpr_at_compile_time
+        -:  321:{
+        -:  322:  enum { ret = size_at_compile_time(traits<XprType>::RowsAtCompileTime, traits<XprType>::ColsAtCompileTime) };
+        -:  323:};
+        -:  324:
+        -:  325:/* plain_matrix_type : the difference from eval is that plain_matrix_type is always a plain matrix type,
+        -:  326: * whereas eval is a const reference in the case of a matrix
+        -:  327: */
+        -:  328:
+        -:  329:template<typename T, typename StorageKind = typename traits<T>::StorageKind> struct plain_matrix_type;
+        -:  330:template<typename T, typename BaseClassType, int Flags> struct plain_matrix_type_dense;
+        -:  331:template<typename T> struct plain_matrix_type<T,Dense>
+        -:  332:{
+        -:  333:  typedef typename plain_matrix_type_dense<T,typename traits<T>::XprKind, traits<T>::Flags>::type type;
+        -:  334:};
+        -:  335:template<typename T> struct plain_matrix_type<T,DiagonalShape>
+        -:  336:{
+        -:  337:  typedef typename T::PlainObject type;
+        -:  338:};
+        -:  339:
+        -:  340:template<typename T> struct plain_matrix_type<T,SkewSymmetricShape>
+        -:  341:{
+        -:  342:  typedef typename T::PlainObject type;
+        -:  343:};
+        -:  344:
+        -:  345:template<typename T, int Flags> struct plain_matrix_type_dense<T,MatrixXpr,Flags>
+        -:  346:{
+        -:  347:  typedef Matrix<typename traits<T>::Scalar,
+        -:  348:                traits<T>::RowsAtCompileTime,
+        -:  349:                traits<T>::ColsAtCompileTime,
+        -:  350:                AutoAlign | (Flags&RowMajorBit ? RowMajor : ColMajor),
+        -:  351:                traits<T>::MaxRowsAtCompileTime,
+        -:  352:                traits<T>::MaxColsAtCompileTime
+        -:  353:          > type;
+        -:  354:};
+        -:  355:
+        -:  356:template<typename T, int Flags> struct plain_matrix_type_dense<T,ArrayXpr,Flags>
+        -:  357:{
+        -:  358:  typedef Array<typename traits<T>::Scalar,
+        -:  359:                traits<T>::RowsAtCompileTime,
+        -:  360:                traits<T>::ColsAtCompileTime,
+        -:  361:                AutoAlign | (Flags&RowMajorBit ? RowMajor : ColMajor),
+        -:  362:                traits<T>::MaxRowsAtCompileTime,
+        -:  363:                traits<T>::MaxColsAtCompileTime
+        -:  364:          > type;
+        -:  365:};
+        -:  366:
+        -:  367:/* eval : the return type of eval(). For matrices, this is just a const reference
+        -:  368: * in order to avoid a useless copy
+        -:  369: */
+        -:  370:
+        -:  371:template<typename T, typename StorageKind = typename traits<T>::StorageKind> struct eval;
+        -:  372:
+        -:  373:template<typename T> struct eval<T,Dense>
+        -:  374:{
+        -:  375:  typedef typename plain_matrix_type<T>::type type;
+        -:  376://   typedef typename T::PlainObject type;
+        -:  377://   typedef T::Matrix<typename traits<T>::Scalar,
+        -:  378://                 traits<T>::RowsAtCompileTime,
+        -:  379://                 traits<T>::ColsAtCompileTime,
+        -:  380://                 AutoAlign | (traits<T>::Flags&RowMajorBit ? RowMajor : ColMajor),
+        -:  381://                 traits<T>::MaxRowsAtCompileTime,
+        -:  382://                 traits<T>::MaxColsAtCompileTime
+        -:  383://           > type;
+        -:  384:};
+        -:  385:
+        -:  386:template<typename T> struct eval<T,DiagonalShape>
+        -:  387:{
+        -:  388:  typedef typename plain_matrix_type<T>::type type;
+        -:  389:};
+        -:  390:
+        -:  391:template<typename T> struct eval<T,SkewSymmetricShape>
+        -:  392:{
+        -:  393:  typedef typename plain_matrix_type<T>::type type;
+        -:  394:};
+        -:  395:
+        -:  396:// for matrices, no need to evaluate, just use a const reference to avoid a useless copy
+        -:  397:template<typename Scalar_, int Rows_, int Cols_, int Options_, int MaxRows_, int MaxCols_>
+        -:  398:struct eval<Matrix<Scalar_, Rows_, Cols_, Options_, MaxRows_, MaxCols_>, Dense>
+        -:  399:{
+        -:  400:  typedef const Matrix<Scalar_, Rows_, Cols_, Options_, MaxRows_, MaxCols_>& type;
+        -:  401:};
+        -:  402:
+        -:  403:template<typename Scalar_, int Rows_, int Cols_, int Options_, int MaxRows_, int MaxCols_>
+        -:  404:struct eval<Array<Scalar_, Rows_, Cols_, Options_, MaxRows_, MaxCols_>, Dense>
+        -:  405:{
+        -:  406:  typedef const Array<Scalar_, Rows_, Cols_, Options_, MaxRows_, MaxCols_>& type;
+        -:  407:};
+        -:  408:
+        -:  409:
+        -:  410:/* similar to plain_matrix_type, but using the evaluator's Flags */
+        -:  411:template<typename T, typename StorageKind = typename traits<T>::StorageKind> struct plain_object_eval;
+        -:  412:
+        -:  413:template<typename T>
+        -:  414:struct plain_object_eval<T,Dense>
+        -:  415:{
+        -:  416:  typedef typename plain_matrix_type_dense<T,typename traits<T>::XprKind, evaluator<T>::Flags>::type type;
+        -:  417:};
+        -:  418:
+        -:  419:
+        -:  420:/* plain_matrix_type_column_major : same as plain_matrix_type but guaranteed to be column-major
+        -:  421: */
+        -:  422:template<typename T> struct plain_matrix_type_column_major
+        -:  423:{
+        -:  424:  enum { Rows = traits<T>::RowsAtCompileTime,
+        -:  425:         Cols = traits<T>::ColsAtCompileTime,
+        -:  426:         MaxRows = traits<T>::MaxRowsAtCompileTime,
+        -:  427:         MaxCols = traits<T>::MaxColsAtCompileTime
+        -:  428:  };
+        -:  429:  typedef Matrix<typename traits<T>::Scalar,
+        -:  430:                Rows,
+        -:  431:                Cols,
+        -:  432:                (MaxRows==1&&MaxCols!=1) ? RowMajor : ColMajor,
+        -:  433:                MaxRows,
+        -:  434:                MaxCols
+        -:  435:          > type;
+        -:  436:};
+        -:  437:
+        -:  438:/* plain_matrix_type_row_major : same as plain_matrix_type but guaranteed to be row-major
+        -:  439: */
+        -:  440:template<typename T> struct plain_matrix_type_row_major
+        -:  441:{
+        -:  442:  enum { Rows = traits<T>::RowsAtCompileTime,
+        -:  443:         Cols = traits<T>::ColsAtCompileTime,
+        -:  444:         MaxRows = traits<T>::MaxRowsAtCompileTime,
+        -:  445:         MaxCols = traits<T>::MaxColsAtCompileTime
+        -:  446:  };
+        -:  447:  typedef Matrix<typename traits<T>::Scalar,
+        -:  448:                Rows,
+        -:  449:                Cols,
+        -:  450:                (MaxCols==1&&MaxRows!=1) ? ColMajor : RowMajor,
+        -:  451:                MaxRows,
+        -:  452:                MaxCols
+        -:  453:          > type;
+        -:  454:};
+        -:  455:
+        -:  456:/** \internal The reference selector for template expressions. The idea is that we don't
+        -:  457:  * need to use references for expressions since they are light weight proxy
+        -:  458:  * objects which should generate no copying overhead. */
+        -:  459:template <typename T>
+        -:  460:struct ref_selector
+        -:  461:{
+        -:  462:  typedef std::conditional_t<
+        -:  463:    bool(traits<T>::Flags & NestByRefBit),
+        -:  464:    T const&,
+        -:  465:    const T
+        -:  466:  > type;
+        -:  467:
+        -:  468:  typedef std::conditional_t<
+        -:  469:    bool(traits<T>::Flags & NestByRefBit),
+        -:  470:    T &,
+        -:  471:    T
+        -:  472:  > non_const_type;
+        -:  473:};
+        -:  474:
+        -:  475:/** \internal Adds the const qualifier on the value-type of T2 if and only if T1 is a const type */
+        -:  476:template<typename T1, typename T2>
+        -:  477:struct transfer_constness
+        -:  478:{
+        -:  479:  typedef std::conditional_t<
+        -:  480:    bool(internal::is_const<T1>::value),
+        -:  481:    add_const_on_value_type_t<T2>,
+        -:  482:    T2
+        -:  483:  > type;
+        -:  484:};
+        -:  485:
+        -:  486:
+        -:  487:// However, we still need a mechanism to detect whether an expression which is evaluated multiple time
+        -:  488:// has to be evaluated into a temporary.
+        -:  489:// That's the purpose of this new nested_eval helper:
+        -:  490:/** \internal Determines how a given expression should be nested when evaluated multiple times.
+        -:  491:  * For example, when you do a * (b+c), Eigen will determine how the expression b+c should be
+        -:  492:  * evaluated into the bigger product expression. The choice is between nesting the expression b+c as-is, or
+        -:  493:  * evaluating that expression b+c into a temporary variable d, and nest d so that the resulting expression is
+        -:  494:  * a*d. Evaluating can be beneficial for example if every coefficient access in the resulting expression causes
+        -:  495:  * many coefficient accesses in the nested expressions -- as is the case with matrix product for example.
+        -:  496:  *
+        -:  497:  * \tparam T the type of the expression being nested.
+        -:  498:  * \tparam n the number of coefficient accesses in the nested expression for each coefficient access in the bigger expression.
+        -:  499:  * \tparam PlainObject the type of the temporary if needed.
+        -:  500:  */
+        -:  501:template<typename T, int n, typename PlainObject = typename plain_object_eval<T>::type> struct nested_eval
+        -:  502:{
+        -:  503:  enum {
+        -:  504:    ScalarReadCost = NumTraits<typename traits<T>::Scalar>::ReadCost,
+        -:  505:    CoeffReadCost = evaluator<T>::CoeffReadCost,  // NOTE What if an evaluator evaluate itself into a temporary?
+        -:  506:                                                  //      Then CoeffReadCost will be small (e.g., 1) but we still have to evaluate, especially if n>1.
+        -:  507:                                                  //      This situation is already taken care by the EvalBeforeNestingBit flag, which is turned ON
+        -:  508:                                                  //      for all evaluator creating a temporary. This flag is then propagated by the parent evaluators.
+        -:  509:                                                  //      Another solution could be to count the number of temps?
+        -:  510:    NAsInteger = n == Dynamic ? HugeCost : n,
+        -:  511:    CostEval   = (NAsInteger+1) * ScalarReadCost + CoeffReadCost,
+        -:  512:    CostNoEval = NAsInteger * CoeffReadCost,
+        -:  513:    Evaluate = (int(evaluator<T>::Flags) & EvalBeforeNestingBit) || (int(CostEval) < int(CostNoEval))
+        -:  514:  };
+        -:  515:
+        -:  516:  typedef std::conditional_t<Evaluate, PlainObject, typename ref_selector<T>::type> type;
+        -:  517:};
+        -:  518:
+        -:  519:template<typename T>
+        -:  520:EIGEN_DEVICE_FUNC
+        -:  521:inline T* const_cast_ptr(const T* ptr)
+        -:  522:{
+        -:  523:  return const_cast<T*>(ptr);
+        -:  524:}
+        -:  525:
+        -:  526:template<typename Derived, typename XprKind = typename traits<Derived>::XprKind>
+        -:  527:struct dense_xpr_base
+        -:  528:{
+        -:  529:  /* dense_xpr_base should only ever be used on dense expressions, thus falling either into the MatrixXpr or into the ArrayXpr cases */
+        -:  530:};
+        -:  531:
+        -:  532:template<typename Derived>
+        -:  533:struct dense_xpr_base<Derived, MatrixXpr>
+        -:  534:{
+        -:  535:  typedef MatrixBase<Derived> type;
+        -:  536:};
+        -:  537:
+        -:  538:template<typename Derived>
+        -:  539:struct dense_xpr_base<Derived, ArrayXpr>
+        -:  540:{
+        -:  541:  typedef ArrayBase<Derived> type;
+        -:  542:};
+        -:  543:
+        -:  544:template<typename Derived, typename XprKind = typename traits<Derived>::XprKind, typename StorageKind = typename traits<Derived>::StorageKind>
+        -:  545:struct generic_xpr_base;
+        -:  546:
+        -:  547:template<typename Derived, typename XprKind>
+        -:  548:struct generic_xpr_base<Derived, XprKind, Dense>
+        -:  549:{
+        -:  550:  typedef typename dense_xpr_base<Derived,XprKind>::type type;
+        -:  551:};
+        -:  552:
+        -:  553:template<typename XprType, typename CastType> struct cast_return_type
+        -:  554:{
+        -:  555:  typedef typename XprType::Scalar CurrentScalarType;
+        -:  556:  typedef remove_all_t<CastType> CastType_;
+        -:  557:  typedef typename CastType_::Scalar NewScalarType;
+        -:  558:  typedef std::conditional_t<is_same<CurrentScalarType,NewScalarType>::value,
+        -:  559:                              const XprType&,CastType> type;
+        -:  560:};
+        -:  561:
+        -:  562:template <typename A, typename B> struct promote_storage_type;
+        -:  563:
+        -:  564:template <typename A> struct promote_storage_type<A,A>
+        -:  565:{
+        -:  566:  typedef A ret;
+        -:  567:};
+        -:  568:template <typename A> struct promote_storage_type<A, const A>
+        -:  569:{
+        -:  570:  typedef A ret;
+        -:  571:};
+        -:  572:template <typename A> struct promote_storage_type<const A, A>
+        -:  573:{
+        -:  574:  typedef A ret;
+        -:  575:};
+        -:  576:
+        -:  577:/** \internal Specify the "storage kind" of applying a coefficient-wise
+        -:  578:  * binary operations between two expressions of kinds A and B respectively.
+        -:  579:  * The template parameter Functor permits to specialize the resulting storage kind wrt to
+        -:  580:  * the functor.
+        -:  581:  * The default rules are as follows:
+        -:  582:  * \code
+        -:  583:  * A      op A      -> A
+        -:  584:  * A      op dense  -> dense
+        -:  585:  * dense  op B      -> dense
+        -:  586:  * sparse op dense  -> sparse
+        -:  587:  * dense  op sparse -> sparse
+        -:  588:  * \endcode
+        -:  589:  */
+        -:  590:template <typename A, typename B, typename Functor> struct cwise_promote_storage_type;
+        -:  591:
+        -:  592:template <typename A, typename Functor>                   struct cwise_promote_storage_type<A,A,Functor>                                      { typedef A      ret; };
+        -:  593:template <typename Functor>                               struct cwise_promote_storage_type<Dense,Dense,Functor>                              { typedef Dense  ret; };
+        -:  594:template <typename A, typename Functor>                   struct cwise_promote_storage_type<A,Dense,Functor>                                  { typedef Dense  ret; };
+        -:  595:template <typename B, typename Functor>                   struct cwise_promote_storage_type<Dense,B,Functor>                                  { typedef Dense  ret; };
+        -:  596:template <typename Functor>                               struct cwise_promote_storage_type<Sparse,Dense,Functor>                             { typedef Sparse ret; };
+        -:  597:template <typename Functor>                               struct cwise_promote_storage_type<Dense,Sparse,Functor>                             { typedef Sparse ret; };
+        -:  598:
+        -:  599:template <typename LhsKind, typename RhsKind, int LhsOrder, int RhsOrder> struct cwise_promote_storage_order {
+        -:  600:  enum { value = LhsOrder };
+        -:  601:};
+        -:  602:
+        -:  603:template <typename LhsKind, int LhsOrder, int RhsOrder>   struct cwise_promote_storage_order<LhsKind,Sparse,LhsOrder,RhsOrder>                { enum { value = RhsOrder }; };
+        -:  604:template <typename RhsKind, int LhsOrder, int RhsOrder>   struct cwise_promote_storage_order<Sparse,RhsKind,LhsOrder,RhsOrder>                { enum { value = LhsOrder }; };
+        -:  605:template <int Order>                                      struct cwise_promote_storage_order<Sparse,Sparse,Order,Order>                       { enum { value = Order }; };
+        -:  606:
+        -:  607:
+        -:  608:/** \internal Specify the "storage kind" of multiplying an expression of kind A with kind B.
+        -:  609:  * The template parameter ProductTag permits to specialize the resulting storage kind wrt to
+        -:  610:  * some compile-time properties of the product: GemmProduct, GemvProduct, OuterProduct, InnerProduct.
+        -:  611:  * The default rules are as follows:
+        -:  612:  * \code
+        -:  613:  *  K * K            -> K
+        -:  614:  *  dense * K        -> dense
+        -:  615:  *  K * dense        -> dense
+        -:  616:  *  diag * K         -> K
+        -:  617:  *  K * diag         -> K
+        -:  618:  *  Perm * K         -> K
+        -:  619:  * K * Perm          -> K
+        -:  620:  * \endcode
+        -:  621:  */
+        -:  622:template <typename A, typename B, int ProductTag> struct product_promote_storage_type;
+        -:  623:
+        -:  624:template <typename A, int ProductTag> struct product_promote_storage_type<A,                  A,                  ProductTag> { typedef A     ret;};
+        -:  625:template <int ProductTag>             struct product_promote_storage_type<Dense,              Dense,              ProductTag> { typedef Dense ret;};
+        -:  626:template <typename A, int ProductTag> struct product_promote_storage_type<A,                  Dense,              ProductTag> { typedef Dense ret; };
+        -:  627:template <typename B, int ProductTag> struct product_promote_storage_type<Dense,              B,                  ProductTag> { typedef Dense ret; };
+        -:  628:
+        -:  629:template <typename A, int ProductTag> struct product_promote_storage_type<A,                  DiagonalShape,      ProductTag> { typedef A ret; };
+        -:  630:template <typename B, int ProductTag> struct product_promote_storage_type<DiagonalShape,      B,                  ProductTag> { typedef B ret; };
+        -:  631:template <int ProductTag>             struct product_promote_storage_type<Dense,              DiagonalShape,      ProductTag> { typedef Dense ret; };
+        -:  632:template <int ProductTag>             struct product_promote_storage_type<DiagonalShape,      Dense,              ProductTag> { typedef Dense ret; };
+        -:  633:
+        -:  634:template <typename A, int ProductTag> struct product_promote_storage_type<A,                  SkewSymmetricShape, ProductTag> { typedef A ret; };
+        -:  635:template <typename B, int ProductTag> struct product_promote_storage_type<SkewSymmetricShape, B,                  ProductTag> { typedef B ret; };
+        -:  636:template <int ProductTag>             struct product_promote_storage_type<Dense,              SkewSymmetricShape, ProductTag> { typedef Dense ret; };
+        -:  637:template <int ProductTag>             struct product_promote_storage_type<SkewSymmetricShape, Dense,              ProductTag> { typedef Dense ret; };
+        -:  638:template <int ProductTag>             struct product_promote_storage_type<SkewSymmetricShape, SkewSymmetricShape, ProductTag> { typedef Dense ret; };
+        -:  639:
+        -:  640:template <typename A, int ProductTag> struct product_promote_storage_type<A,                  PermutationStorage, ProductTag> { typedef A ret; };
+        -:  641:template <typename B, int ProductTag> struct product_promote_storage_type<PermutationStorage, B,                  ProductTag> { typedef B ret; };
+        -:  642:template <int ProductTag>             struct product_promote_storage_type<Dense,              PermutationStorage, ProductTag> { typedef Dense ret; };
+        -:  643:template <int ProductTag>             struct product_promote_storage_type<PermutationStorage, Dense,              ProductTag> { typedef Dense ret; };
+        -:  644:
+        -:  645:/** \internal gives the plain matrix or array type to store a row/column/diagonal of a matrix type.
+        -:  646:  * \tparam Scalar optional parameter allowing to pass a different scalar type than the one of the MatrixType.
+        -:  647:  */
+        -:  648:template<typename ExpressionType, typename Scalar = typename ExpressionType::Scalar>
+        -:  649:struct plain_row_type
+        -:  650:{
+        -:  651:  typedef Matrix<Scalar, 1, ExpressionType::ColsAtCompileTime,
+        -:  652:                 int(ExpressionType::PlainObject::Options) | int(RowMajor), 1, ExpressionType::MaxColsAtCompileTime> MatrixRowType;
+        -:  653:  typedef Array<Scalar, 1, ExpressionType::ColsAtCompileTime,
+        -:  654:                 int(ExpressionType::PlainObject::Options) | int(RowMajor), 1, ExpressionType::MaxColsAtCompileTime> ArrayRowType;
+        -:  655:
+        -:  656:  typedef std::conditional_t<
+        -:  657:    is_same< typename traits<ExpressionType>::XprKind, MatrixXpr >::value,
+        -:  658:    MatrixRowType,
+        -:  659:    ArrayRowType
+        -:  660:  > type;
+        -:  661:};
+        -:  662:
+        -:  663:template<typename ExpressionType, typename Scalar = typename ExpressionType::Scalar>
+        -:  664:struct plain_col_type
+        -:  665:{
+        -:  666:  typedef Matrix<Scalar, ExpressionType::RowsAtCompileTime, 1,
+        -:  667:                 ExpressionType::PlainObject::Options & ~RowMajor, ExpressionType::MaxRowsAtCompileTime, 1> MatrixColType;
+        -:  668:  typedef Array<Scalar, ExpressionType::RowsAtCompileTime, 1,
+        -:  669:                 ExpressionType::PlainObject::Options & ~RowMajor, ExpressionType::MaxRowsAtCompileTime, 1> ArrayColType;
+        -:  670:
+        -:  671:  typedef std::conditional_t<
+        -:  672:    is_same< typename traits<ExpressionType>::XprKind, MatrixXpr >::value,
+        -:  673:    MatrixColType,
+        -:  674:    ArrayColType
+        -:  675:  > type;
+        -:  676:};
+        -:  677:
+        -:  678:template<typename ExpressionType, typename Scalar = typename ExpressionType::Scalar>
+        -:  679:struct plain_diag_type
+        -:  680:{
+        -:  681:  enum { diag_size = internal::min_size_prefer_dynamic(ExpressionType::RowsAtCompileTime, ExpressionType::ColsAtCompileTime),
+        -:  682:         max_diag_size = min_size_prefer_fixed(ExpressionType::MaxRowsAtCompileTime,
+        -:  683:                                               ExpressionType::MaxColsAtCompileTime)
+        -:  684:  };
+        -:  685:  typedef Matrix<Scalar, diag_size, 1, ExpressionType::PlainObject::Options & ~RowMajor, max_diag_size, 1> MatrixDiagType;
+        -:  686:  typedef Array<Scalar, diag_size, 1, ExpressionType::PlainObject::Options & ~RowMajor, max_diag_size, 1> ArrayDiagType;
+        -:  687:
+        -:  688:  typedef std::conditional_t<
+        -:  689:    is_same< typename traits<ExpressionType>::XprKind, MatrixXpr >::value,
+        -:  690:    MatrixDiagType,
+        -:  691:    ArrayDiagType
+        -:  692:  > type;
+        -:  693:};
+        -:  694:
+        -:  695:template<typename Expr,typename Scalar = typename Expr::Scalar>
+        -:  696:struct plain_constant_type
+        -:  697:{
+        -:  698:  enum { Options = (traits<Expr>::Flags&RowMajorBit)?RowMajor:0 };
+        -:  699:
+        -:  700:  typedef Array<Scalar,  traits<Expr>::RowsAtCompileTime,   traits<Expr>::ColsAtCompileTime,
+        -:  701:                Options, traits<Expr>::MaxRowsAtCompileTime,traits<Expr>::MaxColsAtCompileTime> array_type;
+        -:  702:
+        -:  703:  typedef Matrix<Scalar,  traits<Expr>::RowsAtCompileTime,   traits<Expr>::ColsAtCompileTime,
+        -:  704:                 Options, traits<Expr>::MaxRowsAtCompileTime,traits<Expr>::MaxColsAtCompileTime> matrix_type;
+        -:  705:
+        -:  706:  typedef CwiseNullaryOp<scalar_constant_op<Scalar>, const std::conditional_t<is_same< typename traits<Expr>::XprKind, MatrixXpr >::value, matrix_type, array_type> > type;
+        -:  707:};
+        -:  708:
+        -:  709:template<typename ExpressionType>
+        -:  710:struct is_lvalue
+        -:  711:{
+        -:  712:  enum { value = (!bool(is_const<ExpressionType>::value)) &&
+        -:  713:                 bool(traits<ExpressionType>::Flags & LvalueBit) };
+        -:  714:};
+        -:  715:
+        -:  716:template<typename T> struct is_diagonal
+        -:  717:{ enum { ret = false }; };
+        -:  718:
+        -:  719:template<typename T> struct is_diagonal<DiagonalBase<T> >
+        -:  720:{ enum { ret = true }; };
+        -:  721:
+        -:  722:template<typename T> struct is_diagonal<DiagonalWrapper<T> >
+        -:  723:{ enum { ret = true }; };
+        -:  724:
+        -:  725:template<typename T, int S> struct is_diagonal<DiagonalMatrix<T,S> >
+        -:  726:{ enum { ret = true }; };
+        -:  727:
+        -:  728:
+        -:  729:template<typename T> struct is_identity
+        -:  730:{ enum { value = false }; };
+        -:  731:
+        -:  732:template<typename T> struct is_identity<CwiseNullaryOp<internal::scalar_identity_op<typename T::Scalar>, T> >
+        -:  733:{ enum { value = true }; };
+        -:  734:
+        -:  735:
+        -:  736:template<typename S1, typename S2> struct glue_shapes;
+        -:  737:template<> struct glue_shapes<DenseShape,TriangularShape> { typedef TriangularShape type;  };
+        -:  738:
+        -:  739:template<typename T1, typename T2>
+        -:  740:struct possibly_same_dense {
+        -:  741:  enum { value = has_direct_access<T1>::ret && has_direct_access<T2>::ret && is_same<typename T1::Scalar,typename T2::Scalar>::value };
+        -:  742:};
+        -:  743:
+        -:  744:template<typename T1, typename T2>
+        -:  745:EIGEN_DEVICE_FUNC
+     1490:  746:bool is_same_dense(const T1 &mat1, const T2 &mat2, std::enable_if_t<possibly_same_dense<T1,T2>::value> * = 0)
+        -:  747:{
+     1490:  748:  return (mat1.data()==mat2.data()) && (mat1.innerStride()==mat2.innerStride()) && (mat1.outerStride()==mat2.outerStride());
+        -:  749:}
+        -:  750:
+        -:  751:template<typename T1, typename T2>
+        -:  752:EIGEN_DEVICE_FUNC
+        -:  753:bool is_same_dense(const T1 &, const T2 &, std::enable_if_t<!possibly_same_dense<T1,T2>::value> * = 0)
+        -:  754:{
+        -:  755:  return false;
+        -:  756:}
+        -:  757:
+        -:  758:// Internal helper defining the cost of a scalar division for the type T.
+        -:  759:// The default heuristic can be specialized for each scalar type and architecture.
+        -:  760:template<typename T,bool Vectorized=false,typename EnableIf = void>
+        -:  761:struct scalar_div_cost {
+        -:  762:  enum { value = 8*NumTraits<T>::MulCost };
+        -:  763:};
+        -:  764:
+        -:  765:template<typename T,bool Vectorized>
+        -:  766:struct scalar_div_cost<std::complex<T>, Vectorized> {
+        -:  767:  enum { value = 2*scalar_div_cost<T>::value
+        -:  768:               + 6*NumTraits<T>::MulCost
+        -:  769:               + 3*NumTraits<T>::AddCost
+        -:  770:  };
+        -:  771:};
+        -:  772:
+        -:  773:
+        -:  774:template<bool Vectorized>
+        -:  775:struct scalar_div_cost<signed long,Vectorized, std::conditional_t<sizeof(long)==8,void,false_type>> { enum { value = 24 }; };
+        -:  776:template<bool Vectorized>
+        -:  777:struct scalar_div_cost<unsigned long,Vectorized, std::conditional_t<sizeof(long)==8,void,false_type>> { enum { value = 21 }; };
+        -:  778:
+        -:  779:
+        -:  780:#ifdef EIGEN_DEBUG_ASSIGN
+        -:  781:std::string demangle_traversal(int t)
+        -:  782:{
+        -:  783:  if(t==DefaultTraversal) return "DefaultTraversal";
+        -:  784:  if(t==LinearTraversal) return "LinearTraversal";
+        -:  785:  if(t==InnerVectorizedTraversal) return "InnerVectorizedTraversal";
+        -:  786:  if(t==LinearVectorizedTraversal) return "LinearVectorizedTraversal";
+        -:  787:  if(t==SliceVectorizedTraversal) return "SliceVectorizedTraversal";
+        -:  788:  return "?";
+        -:  789:}
+        -:  790:std::string demangle_unrolling(int t)
+        -:  791:{
+        -:  792:  if(t==NoUnrolling) return "NoUnrolling";
+        -:  793:  if(t==InnerUnrolling) return "InnerUnrolling";
+        -:  794:  if(t==CompleteUnrolling) return "CompleteUnrolling";
+        -:  795:  return "?";
+        -:  796:}
+        -:  797:std::string demangle_flags(int f)
+        -:  798:{
+        -:  799:  std::string res;
+        -:  800:  if(f&RowMajorBit)                 res += " | RowMajor";
+        -:  801:  if(f&PacketAccessBit)             res += " | Packet";
+        -:  802:  if(f&LinearAccessBit)             res += " | Linear";
+        -:  803:  if(f&LvalueBit)                   res += " | Lvalue";
+        -:  804:  if(f&DirectAccessBit)             res += " | Direct";
+        -:  805:  if(f&NestByRefBit)                res += " | NestByRef";
+        -:  806:  if(f&NoPreferredStorageOrderBit)  res += " | NoPreferredStorageOrderBit";
+        -:  807:
+        -:  808:  return res;
+        -:  809:}
+        -:  810:#endif
+        -:  811:
+        -:  812:template<typename XprType>
+        -:  813:struct is_block_xpr : std::false_type {};
+        -:  814:
+        -:  815:template<typename XprType, int BlockRows, int BlockCols, bool InnerPanel>
+        -:  816:struct is_block_xpr<Block<XprType, BlockRows, BlockCols, InnerPanel>> : std::true_type {};
+        -:  817:
+        -:  818:template <typename XprType, int BlockRows, int BlockCols, bool InnerPanel>
+        -:  819:struct is_block_xpr<const Block<XprType, BlockRows, BlockCols, InnerPanel>> : std::true_type {};
+        -:  820:
+        -:  821:// Helper utility for constructing non-recursive block expressions.
+        -:  822:template<typename XprType>
+        -:  823:struct block_xpr_helper {
+        -:  824:  using BaseType = XprType;
+        -:  825:
+        -:  826:  // For regular block expressions, simply forward along the InnerPanel argument,
+        -:  827:  // which is set when calling row/column expressions.
+        -:  828:  static constexpr bool is_inner_panel(bool inner_panel) { return inner_panel; }
+        -:  829:  
+        -:  830:  // Only enable non-const base function if XprType is not const (otherwise we get a duplicate definition).
+        -:  831:  template<typename T = XprType, typename EnableIf=std::enable_if_t<!std::is_const<T>::value>>
+        -:  832:  static EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE BaseType& base(XprType& xpr) { return xpr; }
+        -:  833:  static EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE const BaseType& base(const XprType& xpr) { return xpr; }
+        -:  834:  static constexpr EIGEN_ALWAYS_INLINE Index row(const XprType& /*xpr*/, Index r) { return r; }
+        -:  835:  static constexpr EIGEN_ALWAYS_INLINE Index col(const XprType& /*xpr*/, Index c) { return c; }
+        -:  836:};
+        -:  837:
+        -:  838:template<typename XprType, int BlockRows, int BlockCols, bool InnerPanel>
+        -:  839:struct block_xpr_helper<Block<XprType, BlockRows, BlockCols, InnerPanel>> {
+        -:  840:  using BlockXprType = Block<XprType, BlockRows, BlockCols, InnerPanel>;
+        -:  841:  // Recursive helper in case of explicit block-of-block expression.
+        -:  842:  using NestedXprHelper = block_xpr_helper<XprType>;
+        -:  843:  using BaseType = typename NestedXprHelper::BaseType;
+        -:  844: 
+        -:  845:  // For block-of-block expressions, we need to combine the InnerPannel trait
+        -:  846:  // with that of the block subexpression.
+        -:  847:  static constexpr bool is_inner_panel(bool inner_panel) { return InnerPanel && inner_panel; }
+        -:  848:
+        -:  849:  // Only enable non-const base function if XprType is not const (otherwise we get a duplicates definition).
+        -:  850:  template<typename T = XprType, typename EnableIf=std::enable_if_t<!std::is_const<T>::value>>
+        -:  851:  static EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE BaseType& base(BlockXprType& xpr) { return NestedXprHelper::base(xpr.nestedExpression()); }
+        -:  852:  static EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE const BaseType& base(const BlockXprType& xpr) { return NestedXprHelper::base(xpr.nestedExpression()); }
+        -:  853:  static constexpr EIGEN_ALWAYS_INLINE Index row(const BlockXprType& xpr, Index r) { return xpr.startRow() + NestedXprHelper::row(xpr.nestedExpression(), r); }
+        -:  854:  static constexpr EIGEN_ALWAYS_INLINE Index col(const BlockXprType& xpr, Index c) { return xpr.startCol() + NestedXprHelper::col(xpr.nestedExpression(), c); }
+        -:  855:};
+        -:  856:
+        -:  857:template<typename XprType, int BlockRows, int BlockCols, bool InnerPanel>
+        -:  858:struct block_xpr_helper<const Block<XprType, BlockRows, BlockCols, InnerPanel>> : block_xpr_helper<Block<XprType, BlockRows, BlockCols, InnerPanel>> {};
+        -:  859:
+        -:  860:} // end namespace internal
+        -:  861:
+        -:  862:
+        -:  863:/** \class ScalarBinaryOpTraits
+        -:  864:  * \ingroup Core_Module
+        -:  865:  *
+        -:  866:  * \brief Determines whether the given binary operation of two numeric types is allowed and what the scalar return type is.
+        -:  867:  *
+        -:  868:  * This class permits to control the scalar return type of any binary operation performed on two different scalar types through (partial) template specializations.
+        -:  869:  *
+        -:  870:  * For instance, let \c U1, \c U2 and \c U3 be three user defined scalar types for which most operations between instances of \c U1 and \c U2 returns an \c U3.
+        -:  871:  * You can let %Eigen knows that by defining:
+        -:  872:    \code
+        -:  873:    template<typename BinaryOp>
+        -:  874:    struct ScalarBinaryOpTraits<U1,U2,BinaryOp> { typedef U3 ReturnType;  };
+        -:  875:    template<typename BinaryOp>
+        -:  876:    struct ScalarBinaryOpTraits<U2,U1,BinaryOp> { typedef U3 ReturnType;  };
+        -:  877:    \endcode
+        -:  878:  * You can then explicitly disable some particular operations to get more explicit error messages:
+        -:  879:    \code
+        -:  880:    template<>
+        -:  881:    struct ScalarBinaryOpTraits<U1,U2,internal::scalar_max_op<U1,U2> > {};
+        -:  882:    \endcode
+        -:  883:  * Or customize the return type for individual operation:
+        -:  884:    \code
+        -:  885:    template<>
+        -:  886:    struct ScalarBinaryOpTraits<U1,U2,internal::scalar_sum_op<U1,U2> > { typedef U1 ReturnType; };
+        -:  887:    \endcode
+        -:  888:  *
+        -:  889:  * By default, the following generic combinations are supported:
+        -:  890:  <table class="manual">
+        -:  891:  <tr><th>ScalarA</th><th>ScalarB</th><th>BinaryOp</th><th>ReturnType</th><th>Note</th></tr>
+        -:  892:  <tr            ><td>\c T </td><td>\c T </td><td>\c * </td><td>\c T </td><td></td></tr>
+        -:  893:  <tr class="alt"><td>\c NumTraits<T>::Real </td><td>\c T </td><td>\c * </td><td>\c T </td><td>Only if \c NumTraits<T>::IsComplex </td></tr>
+        -:  894:  <tr            ><td>\c T </td><td>\c NumTraits<T>::Real </td><td>\c * </td><td>\c T </td><td>Only if \c NumTraits<T>::IsComplex </td></tr>
+        -:  895:  </table>
+        -:  896:  *
+        -:  897:  * \sa CwiseBinaryOp
+        -:  898:  */
+        -:  899:template<typename ScalarA, typename ScalarB, typename BinaryOp=internal::scalar_product_op<ScalarA,ScalarB> >
+        -:  900:struct ScalarBinaryOpTraits
+        -:  901:#ifndef EIGEN_PARSED_BY_DOXYGEN
+        -:  902:  // for backward compatibility, use the hints given by the (deprecated) internal::scalar_product_traits class.
+        -:  903:  : internal::scalar_product_traits<ScalarA,ScalarB>
+        -:  904:#endif // EIGEN_PARSED_BY_DOXYGEN
+        -:  905:{};
+        -:  906:
+        -:  907:template<typename T, typename BinaryOp>
+        -:  908:struct ScalarBinaryOpTraits<T,T,BinaryOp>
+        -:  909:{
+        -:  910:  typedef T ReturnType;
+        -:  911:};
+        -:  912:
+        -:  913:template <typename T, typename BinaryOp>
+        -:  914:struct ScalarBinaryOpTraits<T, typename NumTraits<std::enable_if_t<NumTraits<T>::IsComplex,T>>::Real, BinaryOp>
+        -:  915:{
+        -:  916:  typedef T ReturnType;
+        -:  917:};
+        -:  918:template <typename T, typename BinaryOp>
+        -:  919:struct ScalarBinaryOpTraits<typename NumTraits<std::enable_if_t<NumTraits<T>::IsComplex,T>>::Real, T, BinaryOp>
+        -:  920:{
+        -:  921:  typedef T ReturnType;
+        -:  922:};
+        -:  923:
+        -:  924:// For Matrix * Permutation
+        -:  925:template<typename T, typename BinaryOp>
+        -:  926:struct ScalarBinaryOpTraits<T,void,BinaryOp>
+        -:  927:{
+        -:  928:  typedef T ReturnType;
+        -:  929:};
+        -:  930:
+        -:  931:// For Permutation * Matrix
+        -:  932:template<typename T, typename BinaryOp>
+        -:  933:struct ScalarBinaryOpTraits<void,T,BinaryOp>
+        -:  934:{
+        -:  935:  typedef T ReturnType;
+        -:  936:};
+        -:  937:
+        -:  938:// for Permutation*Permutation
+        -:  939:template<typename BinaryOp>
+        -:  940:struct ScalarBinaryOpTraits<void,void,BinaryOp>
+        -:  941:{
+        -:  942:  typedef void ReturnType;
+        -:  943:};
+        -:  944:
+        -:  945:// We require Lhs and Rhs to have "compatible" scalar types.
+        -:  946:// It is tempting to always allow mixing different types but remember that this is often impossible in the vectorized paths.
+        -:  947:// So allowing mixing different types gives very unexpected errors when enabling vectorization, when the user tries to
+        -:  948:// add together a float matrix and a double matrix.
+        -:  949:#define EIGEN_CHECK_BINARY_COMPATIBILIY(BINOP,LHS,RHS) \
+        -:  950:  EIGEN_STATIC_ASSERT((Eigen::internal::has_ReturnType<ScalarBinaryOpTraits<LHS, RHS,BINOP> >::value), \
+        -:  951:    YOU_MIXED_DIFFERENT_NUMERIC_TYPES__YOU_NEED_TO_USE_THE_CAST_METHOD_OF_MATRIXBASE_TO_CAST_NUMERIC_TYPES_EXPLICITLY)
+        -:  952:
+        -:  953:} // end namespace Eigen
+        -:  954:
+        -:  955:#endif // EIGEN_XPRHELPER_H

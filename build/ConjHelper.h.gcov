@@ -1,0 +1,124 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/arch/Default/ConjHelper.h
+        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
+        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
+        -:    0:Runs:4
+        -:    1:
+        -:    2:// This file is part of Eigen, a lightweight C++ template library
+        -:    3:// for linear algebra.
+        -:    4://
+        -:    5:// Copyright (C) 2017 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    6://
+        -:    7:// This Source Code Form is subject to the terms of the Mozilla
+        -:    8:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    9:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:   10:
+        -:   11:#ifndef EIGEN_ARCH_CONJ_HELPER_H
+        -:   12:#define EIGEN_ARCH_CONJ_HELPER_H
+        -:   13:
+        -:   14:#define EIGEN_MAKE_CONJ_HELPER_CPLX_REAL(PACKET_CPLX, PACKET_REAL)      \
+        -:   15:  template <>                                                           \
+        -:   16:  struct conj_helper<PACKET_REAL, PACKET_CPLX, false, false> {          \
+        -:   17:    EIGEN_STRONG_INLINE PACKET_CPLX pmadd(const PACKET_REAL& x,         \
+        -:   18:                                          const PACKET_CPLX& y,         \
+        -:   19:                                          const PACKET_CPLX& c) const { \
+        -:   20:      return padd(c, this->pmul(x, y));                                 \
+        -:   21:    }                                                                   \
+        -:   22:    EIGEN_STRONG_INLINE PACKET_CPLX pmul(const PACKET_REAL& x,          \
+        -:   23:                                         const PACKET_CPLX& y) const {  \
+        -:   24:      return PACKET_CPLX(Eigen::internal::pmul<PACKET_REAL>(x, y.v));   \
+        -:   25:    }                                                                   \
+        -:   26:  };                                                                    \
+        -:   27:                                                                        \
+        -:   28:  template <>                                                           \
+        -:   29:  struct conj_helper<PACKET_CPLX, PACKET_REAL, false, false> {          \
+        -:   30:    EIGEN_STRONG_INLINE PACKET_CPLX pmadd(const PACKET_CPLX& x,         \
+        -:   31:                                          const PACKET_REAL& y,         \
+        -:   32:                                          const PACKET_CPLX& c) const { \
+        -:   33:      return padd(c, this->pmul(x, y));                                 \
+        -:   34:    }                                                                   \
+        -:   35:    EIGEN_STRONG_INLINE PACKET_CPLX pmul(const PACKET_CPLX& x,          \
+        -:   36:                                         const PACKET_REAL& y) const {  \
+        -:   37:      return PACKET_CPLX(Eigen::internal::pmul<PACKET_REAL>(x.v, y));   \
+        -:   38:    }                                                                   \
+        -:   39:  };
+        -:   40:
+        -:   41:// IWYU pragma: private
+        -:   42:#include "../../InternalHeaderCheck.h"
+        -:   43:
+        -:   44:namespace Eigen {
+        -:   45:namespace internal {
+        -:   46:
+        -:   47:template<bool Conjugate> struct conj_if;
+        -:   48:
+        -:   49:template<> struct conj_if<true> {
+        -:   50:  template<typename T>
+        -:   51:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE T operator()(const T& x) const { return numext::conj(x); }
+        -:   52:  template<typename T>
+        -:   53:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE T pconj(const T& x) const { return internal::pconj(x); }
+        -:   54:};
+        -:   55:
+        -:   56:template<> struct conj_if<false> {
+        -:   57:  template<typename T>
+    #####:   58:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const T& operator()(const T& x) const { return x; }
+        -:   59:  template<typename T>
+   211744:   60:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const T& pconj(const T& x) const { return x; }
+        -:   61:};
+        -:   62:
+        -:   63:// Generic Implementation, assume scalars since the packet-version is
+        -:   64:// specialized below.
+        -:   65:template<typename LhsType, typename RhsType, bool ConjLhs, bool ConjRhs>
+        -:   66:struct conj_helper {
+        -:   67:  typedef typename ScalarBinaryOpTraits<LhsType, RhsType>::ReturnType ResultType;
+        -:   68:
+        -:   69:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE ResultType
+        -:   70:  pmadd(const LhsType& x, const RhsType& y, const ResultType& c) const
+        -:   71:  { return this->pmul(x, y) + c; }
+        -:   72:
+        -:   73:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE ResultType
+        -:   74:  pmul(const LhsType& x, const RhsType& y) const
+        -:   75:  { return conj_if<ConjLhs>()(x) * conj_if<ConjRhs>()(y); }
+        -:   76:};
+        -:   77:
+        -:   78:template<typename LhsScalar, typename RhsScalar>
+        -:   79:struct conj_helper<LhsScalar, RhsScalar, true, true> {
+        -:   80:  typedef typename ScalarBinaryOpTraits<LhsScalar,RhsScalar>::ReturnType ResultType;
+        -:   81:
+        -:   82:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE ResultType
+        -:   83:  pmadd(const LhsScalar& x, const RhsScalar& y, const ResultType& c) const
+        -:   84:  { return this->pmul(x, y) + c; }
+        -:   85:
+        -:   86:  // We save a conjuation by using the identity conj(a)*conj(b) = conj(a*b).
+        -:   87:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE ResultType
+        -:   88:  pmul(const LhsScalar& x, const RhsScalar& y) const
+        -:   89:  { return numext::conj(x * y); }
+        -:   90:};
+        -:   91:
+        -:   92:// Implementation with equal type, use packet operations.
+        -:   93:template<typename Packet, bool ConjLhs, bool ConjRhs>
+        -:   94:struct conj_helper<Packet, Packet, ConjLhs, ConjRhs>
+        -:   95:{
+        -:   96:  typedef Packet ResultType;
+    22654:   97:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet pmadd(const Packet& x, const Packet& y, const Packet& c) const
+    22654:   98:  { return Eigen::internal::pmadd(conj_if<ConjLhs>().pconj(x), conj_if<ConjRhs>().pconj(y), c); }
+        -:   99:
+        -:  100:
+    83218:  101:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet pmul(const Packet& x, const Packet& y) const
+    83218:  102:  { return Eigen::internal::pmul(conj_if<ConjLhs>().pconj(x), conj_if<ConjRhs>().pconj(y)); }
+        -:  103:};
+        -:  104:
+        -:  105:template<typename Packet>
+        -:  106:struct conj_helper<Packet, Packet, true, true>
+        -:  107:{
+        -:  108:  typedef Packet ResultType;
+        -:  109:
+        -:  110:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet pmadd(const Packet& x, const Packet& y, const Packet& c) const
+        -:  111:  { return Eigen::internal::pmadd(pconj(x), pconj(y), c); }
+        -:  112:  // We save a conjuation by using the identity conj(a)*conj(b) = conj(a*b).
+        -:  113:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet pmul(const Packet& x, const Packet& y) const
+        -:  114:  { return pconj(Eigen::internal::pmul(x, y)); }
+        -:  115:};
+        -:  116:
+        -:  117:}  // namespace internal
+        -:  118:}  // namespace Eigen
+        -:  119:
+        -:  120:#endif  // EIGEN_ARCH_CONJ_HELPER_H

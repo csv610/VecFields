@@ -1,0 +1,59 @@
+        -:    0:Source:/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__utility/scope_guard.h
+        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
+        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
+        -:    0:Runs:4
+        -:    1:// -*- C++ -*-
+        -:    2://===----------------------------------------------------------------------===//
+        -:    3://
+        -:    4:// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+        -:    5:// See https://llvm.org/LICENSE.txt for license information.
+        -:    6:// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+        -:    7://
+        -:    8://===----------------------------------------------------------------------===//
+        -:    9:
+        -:   10:#ifndef _LIBCPP___UTILITY_SCOPE_GUARD_H
+        -:   11:#define _LIBCPP___UTILITY_SCOPE_GUARD_H
+        -:   12:
+        -:   13:#include <__config>
+        -:   14:#include <__utility/move.h>
+        -:   15:
+        -:   16:#if !defined(_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER)
+        -:   17:#  pragma GCC system_header
+        -:   18:#endif
+        -:   19:
+        -:   20:_LIBCPP_PUSH_MACROS
+        -:   21:#include <__undef_macros>
+        -:   22:
+        -:   23:_LIBCPP_BEGIN_NAMESPACE_STD
+        -:   24:
+        -:   25:template <class _Func>
+        -:   26:class __scope_guard {
+        -:   27:  _Func __func_;
+        -:   28:
+        -:   29:public:
+        4:   30:  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR explicit __scope_guard(_Func __func) : __func_(std::move(__func)) {}
+        4:   31:  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 ~__scope_guard() { __func_(); }
+        -:   32:
+        -:   33:  __scope_guard(const __scope_guard&)            = delete;
+        -:   34:  __scope_guard& operator=(const __scope_guard&) = delete;
+        -:   35:  __scope_guard& operator=(__scope_guard&&)      = delete;
+        -:   36:
+        -:   37:// C++14 doesn't have mandatory RVO, so we have to provide a declaration even though no compiler will ever generate
+        -:   38:// a call to the move constructor.
+        -:   39:#if _LIBCPP_STD_VER <= 14
+        -:   40:  __scope_guard(__scope_guard&&);
+        -:   41:#else
+        -:   42:  __scope_guard(__scope_guard&&) = delete;
+        -:   43:#endif
+        -:   44:};
+        -:   45:
+        -:   46:template <class _Func>
+        2:   47:_LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 __scope_guard<_Func> __make_scope_guard(_Func __func) {
+        2:   48:  return __scope_guard<_Func>(std::move(__func));
+        -:   49:}
+        -:   50:
+        -:   51:_LIBCPP_END_NAMESPACE_STD
+        -:   52:
+        -:   53:_LIBCPP_POP_MACROS
+        -:   54:
+        -:   55:#endif // _LIBCPP___UTILITY_SCOPE_GUARD_H

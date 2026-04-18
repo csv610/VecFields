@@ -1,0 +1,195 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/Solve.h
+        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
+        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
+        -:    0:Runs:4
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2014 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:#ifndef EIGEN_SOLVE_H
+        -:   11:#define EIGEN_SOLVE_H
+        -:   12:
+        -:   13:// IWYU pragma: private
+        -:   14:#include "./InternalHeaderCheck.h"
+        -:   15:
+        -:   16:namespace Eigen {
+        -:   17:
+        -:   18:template<typename Decomposition, typename RhsType, typename StorageKind> class SolveImpl;
+        -:   19:
+        -:   20:/** \class Solve
+        -:   21:  * \ingroup Core_Module
+        -:   22:  *
+        -:   23:  * \brief Pseudo expression representing a solving operation
+        -:   24:  *
+        -:   25:  * \tparam Decomposition the type of the matrix or decomposition object
+        -:   26:  * \tparam Rhstype the type of the right-hand side
+        -:   27:  *
+        -:   28:  * This class represents an expression of A.solve(B)
+        -:   29:  * and most of the time this is the only way it is used.
+        -:   30:  *
+        -:   31:  */
+        -:   32:namespace internal {
+        -:   33:
+        -:   34:// this solve_traits class permits to determine the evaluation type with respect to storage kind (Dense vs Sparse)
+        -:   35:template<typename Decomposition, typename RhsType,typename StorageKind> struct solve_traits;
+        -:   36:
+        -:   37:template<typename Decomposition, typename RhsType>
+        -:   38:struct solve_traits<Decomposition,RhsType,Dense>
+        -:   39:{
+        -:   40:  typedef typename make_proper_matrix_type<typename RhsType::Scalar,
+        -:   41:                 Decomposition::ColsAtCompileTime,
+        -:   42:                 RhsType::ColsAtCompileTime,
+        -:   43:                 RhsType::PlainObject::Options,
+        -:   44:                 Decomposition::MaxColsAtCompileTime,
+        -:   45:                 RhsType::MaxColsAtCompileTime>::type PlainObject;
+        -:   46:};
+        -:   47:
+        -:   48:template<typename Decomposition, typename RhsType>
+        -:   49:struct traits<Solve<Decomposition, RhsType> >
+        -:   50:  : traits<typename solve_traits<Decomposition,RhsType,typename internal::traits<RhsType>::StorageKind>::PlainObject>
+        -:   51:{
+        -:   52:  typedef typename solve_traits<Decomposition,RhsType,typename internal::traits<RhsType>::StorageKind>::PlainObject PlainObject;
+        -:   53:  typedef typename promote_index_type<typename Decomposition::StorageIndex, typename RhsType::StorageIndex>::type StorageIndex;
+        -:   54:  typedef traits<PlainObject> BaseTraits;
+        -:   55:  enum {
+        -:   56:    Flags = BaseTraits::Flags & RowMajorBit,
+        -:   57:    CoeffReadCost = HugeCost
+        -:   58:  };
+        -:   59:};
+        -:   60:
+        -:   61:}
+        -:   62:
+        -:   63:
+        -:   64:template<typename Decomposition, typename RhsType>
+        -:   65:class Solve : public SolveImpl<Decomposition,RhsType,typename internal::traits<RhsType>::StorageKind>
+        -:   66:{
+        -:   67:public:
+        -:   68:  typedef typename internal::traits<Solve>::PlainObject PlainObject;
+        -:   69:  typedef typename internal::traits<Solve>::StorageIndex StorageIndex;
+        -:   70:
+     2980:   71:  Solve(const Decomposition &dec, const RhsType &rhs)
+     1490:   72:    : m_dec(dec), m_rhs(rhs)
+     2980:   73:  {}
+        -:   74:
+     5960:   75:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR Index rows() const EIGEN_NOEXCEPT { return m_dec.cols(); }
+     5960:   76:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR Index cols() const EIGEN_NOEXCEPT { return m_rhs.cols(); }
+        -:   77:
+     1490:   78:  EIGEN_DEVICE_FUNC const Decomposition& dec() const { return m_dec; }
+     1490:   79:  EIGEN_DEVICE_FUNC const RhsType&       rhs() const { return m_rhs; }
+        -:   80:
+        -:   81:protected:
+        -:   82:  const Decomposition &m_dec;
+        -:   83:  const typename internal::ref_selector<RhsType>::type m_rhs;
+        -:   84:};
+        -:   85:
+        -:   86:
+        -:   87:// Specialization of the Solve expression for dense results
+        -:   88:template<typename Decomposition, typename RhsType>
+        -:   89:class SolveImpl<Decomposition,RhsType,Dense>
+        -:   90:  : public MatrixBase<Solve<Decomposition,RhsType> >
+        -:   91:{
+        -:   92:  typedef Solve<Decomposition,RhsType> Derived;
+        -:   93:
+        -:   94:public:
+        -:   95:
+        -:   96:  typedef MatrixBase<Solve<Decomposition,RhsType> > Base;
+        -:   97:  EIGEN_DENSE_PUBLIC_INTERFACE(Derived)
+        -:   98:
+        -:   99:private:
+        -:  100:
+        -:  101:  Scalar coeff(Index row, Index col) const;
+        -:  102:  Scalar coeff(Index i) const;
+        -:  103:};
+        -:  104:
+        -:  105:// Generic API dispatcher
+        -:  106:template<typename Decomposition, typename RhsType, typename StorageKind>
+        -:  107:class SolveImpl : public internal::generic_xpr_base<Solve<Decomposition,RhsType>, MatrixXpr, StorageKind>::type
+        -:  108:{
+        -:  109:  public:
+        -:  110:    typedef typename internal::generic_xpr_base<Solve<Decomposition,RhsType>, MatrixXpr, StorageKind>::type Base;
+        -:  111:};
+        -:  112:
+        -:  113:namespace internal {
+        -:  114:
+        -:  115:// Evaluator of Solve -> eval into a temporary
+        -:  116:template<typename Decomposition, typename RhsType>
+        -:  117:struct evaluator<Solve<Decomposition,RhsType> >
+        -:  118:  : public evaluator<typename Solve<Decomposition,RhsType>::PlainObject>
+        -:  119:{
+        -:  120:  typedef Solve<Decomposition,RhsType> SolveType;
+        -:  121:  typedef typename SolveType::PlainObject PlainObject;
+        -:  122:  typedef evaluator<PlainObject> Base;
+        -:  123:
+        -:  124:  enum { Flags = Base::Flags | EvalBeforeNestingBit };
+        -:  125:
+        -:  126:  EIGEN_DEVICE_FUNC explicit evaluator(const SolveType& solve)
+        -:  127:    : m_result(solve.rows(), solve.cols())
+        -:  128:  {
+        -:  129:    internal::construct_at<Base>(this, m_result);
+        -:  130:    solve.dec()._solve_impl(solve.rhs(), m_result);
+        -:  131:  }
+        -:  132:
+        -:  133:protected:
+        -:  134:  PlainObject m_result;
+        -:  135:};
+        -:  136:
+        -:  137:// Specialization for "dst = dec.solve(rhs)"
+        -:  138:// NOTE we need to specialize it for Dense2Dense to avoid ambiguous specialization error and a Sparse2Sparse specialization must exist somewhere
+        -:  139:template<typename DstXprType, typename DecType, typename RhsType, typename Scalar>
+        -:  140:struct Assignment<DstXprType, Solve<DecType,RhsType>, internal::assign_op<Scalar,Scalar>, Dense2Dense>
+        -:  141:{
+        -:  142:  typedef Solve<DecType,RhsType> SrcXprType;
+     1490:  143:  static void run(DstXprType &dst, const SrcXprType &src, const internal::assign_op<Scalar,Scalar> &)
+        -:  144:  {
+     1490:  145:    Index dstRows = src.rows();
+     1490:  146:    Index dstCols = src.cols();
+     1490:  147:    if((dst.rows()!=dstRows) || (dst.cols()!=dstCols))
+    #####:  148:      dst.resize(dstRows, dstCols);
+        -:  149:
+     1490:  150:    src.dec()._solve_impl(src.rhs(), dst);
+     1490:  151:  }
+        -:  152:};
+        -:  153:
+        -:  154:// Specialization for "dst = dec.transpose().solve(rhs)"
+        -:  155:template<typename DstXprType, typename DecType, typename RhsType, typename Scalar>
+        -:  156:struct Assignment<DstXprType, Solve<Transpose<const DecType>,RhsType>, internal::assign_op<Scalar,Scalar>, Dense2Dense>
+        -:  157:{
+        -:  158:  typedef Solve<Transpose<const DecType>,RhsType> SrcXprType;
+        -:  159:  static void run(DstXprType &dst, const SrcXprType &src, const internal::assign_op<Scalar,Scalar> &)
+        -:  160:  {
+        -:  161:    Index dstRows = src.rows();
+        -:  162:    Index dstCols = src.cols();
+        -:  163:    if((dst.rows()!=dstRows) || (dst.cols()!=dstCols))
+        -:  164:      dst.resize(dstRows, dstCols);
+        -:  165:
+        -:  166:    src.dec().nestedExpression().template _solve_impl_transposed<false>(src.rhs(), dst);
+        -:  167:  }
+        -:  168:};
+        -:  169:
+        -:  170:// Specialization for "dst = dec.adjoint().solve(rhs)"
+        -:  171:template<typename DstXprType, typename DecType, typename RhsType, typename Scalar>
+        -:  172:struct Assignment<DstXprType, Solve<CwiseUnaryOp<internal::scalar_conjugate_op<typename DecType::Scalar>, const Transpose<const DecType> >,RhsType>,
+        -:  173:                  internal::assign_op<Scalar,Scalar>, Dense2Dense>
+        -:  174:{
+        -:  175:  typedef Solve<CwiseUnaryOp<internal::scalar_conjugate_op<typename DecType::Scalar>, const Transpose<const DecType> >,RhsType> SrcXprType;
+        -:  176:  static void run(DstXprType &dst, const SrcXprType &src, const internal::assign_op<Scalar,Scalar> &)
+        -:  177:  {
+        -:  178:    Index dstRows = src.rows();
+        -:  179:    Index dstCols = src.cols();
+        -:  180:    if((dst.rows()!=dstRows) || (dst.cols()!=dstCols))
+        -:  181:      dst.resize(dstRows, dstCols);
+        -:  182:
+        -:  183:    src.dec().nestedExpression().nestedExpression().template _solve_impl_transposed<true>(src.rhs(), dst);
+        -:  184:  }
+        -:  185:};
+        -:  186:
+        -:  187:} // end namespace internal
+        -:  188:
+        -:  189:} // end namespace Eigen
+        -:  190:
+        -:  191:#endif // EIGEN_SOLVE_H

@@ -1,0 +1,395 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/NumTraits.h
+        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
+        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
+        -:    0:Runs:4
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2006-2010 Benoit Jacob <jacob.benoit.1@gmail.com>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:#ifndef EIGEN_NUMTRAITS_H
+        -:   11:#define EIGEN_NUMTRAITS_H
+        -:   12:
+        -:   13:// IWYU pragma: private
+        -:   14:#include "./InternalHeaderCheck.h"
+        -:   15:
+        -:   16:namespace Eigen {
+        -:   17:
+        -:   18:namespace internal {
+        -:   19:
+        -:   20:// default implementation of digits(), based on numeric_limits if specialized,
+        -:   21:// 0 for integer types, and log2(epsilon()) otherwise.
+        -:   22:template< typename T,
+        -:   23:          bool use_numeric_limits = std::numeric_limits<T>::is_specialized,
+        -:   24:          bool is_integer = NumTraits<T>::IsInteger>
+        -:   25:struct default_digits_impl
+        -:   26:{
+        -:   27:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+        -:   28:  static int run() { return std::numeric_limits<T>::digits; }
+        -:   29:};
+        -:   30:
+        -:   31:template<typename T>
+        -:   32:struct default_digits_impl<T,false,false> // Floating point
+        -:   33:{
+        -:   34:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+        -:   35:  static int run() {
+        -:   36:    using std::log2;
+        -:   37:    using std::ceil;
+        -:   38:    typedef typename NumTraits<T>::Real Real;
+        -:   39:    return int(ceil(-log2(NumTraits<Real>::epsilon())));
+        -:   40:  }
+        -:   41:};
+        -:   42:
+        -:   43:template<typename T>
+        -:   44:struct default_digits_impl<T,false,true> // Integer
+        -:   45:{
+        -:   46:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+        -:   47:  static int run() { return 0; }
+        -:   48:};
+        -:   49:
+        -:   50:// default implementation of digits10(), based on numeric_limits if specialized,
+        -:   51:// 0 for integer types, and floor((digits()-1)*log10(2)) otherwise.
+        -:   52:template< typename T,
+        -:   53:          bool use_numeric_limits = std::numeric_limits<T>::is_specialized,
+        -:   54:          bool is_integer = NumTraits<T>::IsInteger>
+        -:   55:struct default_digits10_impl
+        -:   56:{
+        -:   57:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+        -:   58:  static int run() { return std::numeric_limits<T>::digits10; }
+        -:   59:};
+        -:   60:
+        -:   61:template<typename T>
+        -:   62:struct default_digits10_impl<T,false,false> // Floating point
+        -:   63:{
+        -:   64:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+        -:   65:  static int run() {
+        -:   66:    using std::log10;
+        -:   67:    using std::floor;
+        -:   68:    typedef typename NumTraits<T>::Real Real;
+        -:   69:    return int(floor((internal::default_digits_impl<Real>::run()-1)*log10(2)));
+        -:   70:  }
+        -:   71:};
+        -:   72:
+        -:   73:template<typename T>
+        -:   74:struct default_digits10_impl<T,false,true> // Integer
+        -:   75:{
+        -:   76:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+        -:   77:  static int run() { return 0; }
+        -:   78:};
+        -:   79:
+        -:   80:// default implementation of max_digits10(), based on numeric_limits if specialized,
+        -:   81:// 0 for integer types, and log10(2) * digits() + 1 otherwise.
+        -:   82:template< typename T,
+        -:   83:          bool use_numeric_limits = std::numeric_limits<T>::is_specialized,
+        -:   84:          bool is_integer = NumTraits<T>::IsInteger>
+        -:   85:struct default_max_digits10_impl
+        -:   86:{
+        -:   87:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+        -:   88:  static int run() { return std::numeric_limits<T>::max_digits10; }
+        -:   89:};
+        -:   90:
+        -:   91:template<typename T>
+        -:   92:struct default_max_digits10_impl<T,false,false> // Floating point
+        -:   93:{
+        -:   94:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+        -:   95:  static int run() {
+        -:   96:    using std::log10;
+        -:   97:    using std::ceil;
+        -:   98:    typedef typename NumTraits<T>::Real Real;
+        -:   99:    return int(ceil(internal::default_digits_impl<Real>::run()*log10(2)+1));
+        -:  100:  }
+        -:  101:};
+        -:  102:
+        -:  103:template<typename T>
+        -:  104:struct default_max_digits10_impl<T,false,true> // Integer
+        -:  105:{
+        -:  106:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+        -:  107:  static int run() { return 0; }
+        -:  108:};
+        -:  109:
+        -:  110:} // end namespace internal
+        -:  111:
+        -:  112:namespace numext {
+        -:  113:/** \internal bit-wise cast without changing the underlying bit representation. */
+        -:  114:
+        -:  115:// TODO: Replace by std::bit_cast (available in C++20)
+        -:  116:template <typename Tgt, typename Src>
+        -:  117:EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC Tgt bit_cast(const Src& src) {
+        -:  118:  // The behaviour of memcpy is not specified for non-trivially copyable types
+        -:  119:  EIGEN_STATIC_ASSERT(std::is_trivially_copyable<Src>::value, THIS_TYPE_IS_NOT_SUPPORTED);
+        -:  120:  EIGEN_STATIC_ASSERT(std::is_trivially_copyable<Tgt>::value && std::is_default_constructible<Tgt>::value,
+        -:  121:                      THIS_TYPE_IS_NOT_SUPPORTED);
+        -:  122:  EIGEN_STATIC_ASSERT(sizeof(Src) == sizeof(Tgt), THIS_TYPE_IS_NOT_SUPPORTED);
+        -:  123:
+        -:  124:  Tgt tgt;
+        -:  125:  // Load src into registers first. This allows the memcpy to be elided by CUDA.
+        -:  126:  const Src staged = src;
+        -:  127:  EIGEN_USING_STD(memcpy)
+        -:  128:  memcpy(static_cast<void*>(&tgt),static_cast<const void*>(&staged), sizeof(Tgt));
+        -:  129:  return tgt;
+        -:  130:}
+        -:  131:}  // namespace numext
+        -:  132:
+        -:  133:/** \class NumTraits
+        -:  134:  * \ingroup Core_Module
+        -:  135:  *
+        -:  136:  * \brief Holds information about the various numeric (i.e. scalar) types allowed by Eigen.
+        -:  137:  *
+        -:  138:  * \tparam T the numeric type at hand
+        -:  139:  *
+        -:  140:  * This class stores enums, typedefs and static methods giving information about a numeric type.
+        -:  141:  *
+        -:  142:  * The provided data consists of:
+        -:  143:  * \li A typedef \c Real, giving the "real part" type of \a T. If \a T is already real,
+        -:  144:  *     then \c Real is just a typedef to \a T. If \a T is \c std::complex<U> then \c Real
+        -:  145:  *     is a typedef to \a U.
+        -:  146:  * \li A typedef \c NonInteger, giving the type that should be used for operations producing non-integral values,
+        -:  147:  *     such as quotients, square roots, etc. If \a T is a floating-point type, then this typedef just gives
+        -:  148:  *     \a T again. Note however that many Eigen functions such as internal::sqrt simply refuse to
+        -:  149:  *     take integers. Outside of a few cases, Eigen doesn't do automatic type promotion. Thus, this typedef is
+        -:  150:  *     only intended as a helper for code that needs to explicitly promote types.
+        -:  151:  * \li A typedef \c Literal giving the type to use for numeric literals such as "2" or "0.5". For instance, for \c std::complex<U>, Literal is defined as \c U.
+        -:  152:  *     Of course, this type must be fully compatible with \a T. In doubt, just use \a T here.
+        -:  153:  * \li A typedef \a Nested giving the type to use to nest a value inside of the expression tree. If you don't know what
+        -:  154:  *     this means, just use \a T here.
+        -:  155:  * \li An enum value \a IsComplex. It is equal to 1 if \a T is a \c std::complex
+        -:  156:  *     type, and to 0 otherwise.
+        -:  157:  * \li An enum value \a IsInteger. It is equal to \c 1 if \a T is an integer type such as \c int,
+        -:  158:  *     and to \c 0 otherwise.
+        -:  159:  * \li Enum values ReadCost, AddCost and MulCost representing a rough estimate of the number of CPU cycles needed
+        -:  160:  *     to by move / add / mul instructions respectively, assuming the data is already stored in CPU registers.
+        -:  161:  *     Stay vague here. No need to do architecture-specific stuff. If you don't know what this means, just use \c Eigen::HugeCost.
+        -:  162:  * \li An enum value \a IsSigned. It is equal to \c 1 if \a T is a signed type and to 0 if \a T is unsigned.
+        -:  163:  * \li An enum value \a RequireInitialization. It is equal to \c 1 if the constructor of the numeric type \a T must
+        -:  164:  *     be called, and to 0 if it is safe not to call it. Default is 0 if \a T is an arithmetic type, and 1 otherwise.
+        -:  165:  * \li An epsilon() function which, unlike <a href="http://en.cppreference.com/w/cpp/types/numeric_limits/epsilon">std::numeric_limits::epsilon()</a>,
+        -:  166:  *     it returns a \a Real instead of a \a T.
+        -:  167:  * \li A dummy_precision() function returning a weak epsilon value. It is mainly used as a default
+        -:  168:  *     value by the fuzzy comparison operators.
+        -:  169:  * \li highest() and lowest() functions returning the highest and lowest possible values respectively.
+        -:  170:  * \li digits() function returning the number of radix digits (non-sign digits for integers, mantissa for floating-point). This is
+        -:  171:  *     the analogue of <a href="http://en.cppreference.com/w/cpp/types/numeric_limits/digits">std::numeric_limits<T>::digits</a>
+        -:  172:  *     which is used as the default implementation if specialized.
+        -:  173:  * \li digits10() function returning the number of decimal digits that can be represented without change. This is
+        -:  174:  *     the analogue of <a href="http://en.cppreference.com/w/cpp/types/numeric_limits/digits10">std::numeric_limits<T>::digits10</a>
+        -:  175:  *     which is used as the default implementation if specialized.
+        -:  176:  * \li max_digits10() function returning the number of decimal digits required to uniquely represent all distinct values of the type. This is
+        -:  177:  *     the analogue of <a href="http://en.cppreference.com/w/cpp/types/numeric_limits/max_digits10">std::numeric_limits<T>::max_digits10</a>
+        -:  178:  *     which is used as the default implementation if specialized.
+        -:  179:  * \li min_exponent() and max_exponent() functions returning the highest and lowest possible values, respectively,
+        -:  180:  *     such that the radix raised to the power exponent-1 is a normalized floating-point number.  These are equivalent to
+        -:  181:  *     <a href="http://en.cppreference.com/w/cpp/types/numeric_limits/min_exponent">std::numeric_limits<T>::min_exponent</a>/
+        -:  182:  *     <a href="http://en.cppreference.com/w/cpp/types/numeric_limits/max_exponent">std::numeric_limits<T>::max_exponent</a>.
+        -:  183:  * \li infinity() function returning a representation of positive infinity, if available.
+        -:  184:  * \li quiet_NaN function returning a non-signaling "not-a-number", if available.
+        -:  185:  */
+        -:  186:
+        -:  187:template<typename T> struct GenericNumTraits
+        -:  188:{
+        -:  189:  enum {
+        -:  190:    IsInteger = std::numeric_limits<T>::is_integer,
+        -:  191:    IsSigned = std::numeric_limits<T>::is_signed,
+        -:  192:    IsComplex = 0,
+        -:  193:    RequireInitialization = internal::is_arithmetic<T>::value ? 0 : 1,
+        -:  194:    ReadCost = 1,
+        -:  195:    AddCost = 1,
+        -:  196:    MulCost = 1
+        -:  197:  };
+        -:  198:
+        -:  199:  typedef T Real;
+        -:  200:  typedef std::conditional_t<IsInteger, std::conditional_t<sizeof(T)<=2, float, double>, T> NonInteger;
+        -:  201:  typedef T Nested;
+        -:  202:  typedef T Literal;
+        -:  203:
+        -:  204:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+     4470:  205:  static inline Real epsilon()
+        -:  206:  {
+     4470:  207:    return numext::numeric_limits<T>::epsilon();
+        -:  208:  }
+        -:  209:
+        -:  210:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+        -:  211:  static inline int digits10()
+        -:  212:  {
+        -:  213:    return internal::default_digits10_impl<T>::run();
+        -:  214:  }
+        -:  215:
+        -:  216:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+        -:  217:  static inline int max_digits10()
+        -:  218:  {
+        -:  219:    return internal::default_max_digits10_impl<T>::run();
+        -:  220:  }
+        -:  221:
+        -:  222:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+        -:  223:  static inline int digits()
+        -:  224:  {
+        -:  225:    return internal::default_digits_impl<T>::run();
+        -:  226:  }
+        -:  227:
+        -:  228:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+        -:  229:  static inline int min_exponent()
+        -:  230:  {
+        -:  231:    return numext::numeric_limits<T>::min_exponent;
+        -:  232:  }
+        -:  233:
+        -:  234:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+        -:  235:  static inline int max_exponent()
+        -:  236:  {
+        -:  237:    return numext::numeric_limits<T>::max_exponent;
+        -:  238:  }
+        -:  239:
+        -:  240:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+        -:  241:  static inline Real dummy_precision()
+        -:  242:  {
+        -:  243:    // make sure to override this for floating-point types
+        -:  244:    return Real(0);
+        -:  245:  }
+        -:  246:
+        -:  247:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+     1490:  248:  static inline T highest() {
+     1490:  249:    return (numext::numeric_limits<T>::max)();
+        -:  250:  }
+        -:  251:
+        -:  252:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+        -:  253:  static inline T lowest()  {
+        -:  254:    return IsInteger ? (numext::numeric_limits<T>::min)()
+        -:  255:                     : static_cast<T>(-(numext::numeric_limits<T>::max)());
+        -:  256:  }
+        -:  257:
+        -:  258:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+    #####:  259:  static inline T infinity() {
+    #####:  260:    return numext::numeric_limits<T>::infinity();
+        -:  261:  }
+        -:  262:
+        -:  263:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+    #####:  264:  static inline T quiet_NaN() {
+    #####:  265:    return numext::numeric_limits<T>::quiet_NaN();
+        -:  266:  }
+        -:  267:};
+        -:  268:
+        -:  269:template<typename T> struct NumTraits : GenericNumTraits<T>
+        -:  270:{};
+        -:  271:
+        -:  272:template<> struct NumTraits<float>
+        -:  273:  : GenericNumTraits<float>
+        -:  274:{
+        -:  275:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+        -:  276:  static inline float dummy_precision() { return 1e-5f; }
+        -:  277:};
+        -:  278:
+        -:  279:template<> struct NumTraits<double> : GenericNumTraits<double>
+        -:  280:{
+        -:  281:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+        -:  282:  static inline double dummy_precision() { return 1e-12; }
+        -:  283:};
+        -:  284:
+        -:  285:// GPU devices treat `long double` as `double`.
+        -:  286:#ifndef EIGEN_GPU_COMPILE_PHASE
+        -:  287:template<> struct NumTraits<long double>
+        -:  288:  : GenericNumTraits<long double>
+        -:  289:{
+        -:  290:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+        -:  291:  static inline long double dummy_precision() { return static_cast<long double>(1e-15l); }
+        -:  292:
+        -:  293:#if defined(EIGEN_ARCH_PPC) && (__LDBL_MANT_DIG__ == 106)
+        -:  294:  // PowerPC double double causes issues with some values
+        -:  295:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+        -:  296:  static inline long double epsilon()
+        -:  297:  {
+        -:  298:    // 2^(-(__LDBL_MANT_DIG__)+1)
+        -:  299:    return static_cast<long double>(2.4651903288156618919116517665087e-32l);
+        -:  300:  }
+        -:  301:#endif
+        -:  302:};
+        -:  303:#endif
+        -:  304:
+        -:  305:template<typename Real_> struct NumTraits<std::complex<Real_> >
+        -:  306:  : GenericNumTraits<std::complex<Real_> >
+        -:  307:{
+        -:  308:  typedef Real_ Real;
+        -:  309:  typedef typename NumTraits<Real_>::Literal Literal;
+        -:  310:  enum {
+        -:  311:    IsComplex = 1,
+        -:  312:    RequireInitialization = NumTraits<Real_>::RequireInitialization,
+        -:  313:    ReadCost = 2 * NumTraits<Real_>::ReadCost,
+        -:  314:    AddCost = 2 * NumTraits<Real>::AddCost,
+        -:  315:    MulCost = 4 * NumTraits<Real>::MulCost + 2 * NumTraits<Real>::AddCost
+        -:  316:  };
+        -:  317:
+        -:  318:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+        -:  319:  static inline Real epsilon() { return NumTraits<Real>::epsilon(); }
+        -:  320:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+        -:  321:  static inline Real dummy_precision() { return NumTraits<Real>::dummy_precision(); }
+        -:  322:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+        -:  323:  static inline int digits10() { return NumTraits<Real>::digits10(); }
+        -:  324:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+        -:  325:  static inline int max_digits10() { return NumTraits<Real>::max_digits10(); }
+        -:  326:};
+        -:  327:
+        -:  328:template<typename Scalar, int Rows, int Cols, int Options, int MaxRows, int MaxCols>
+        -:  329:struct NumTraits<Array<Scalar, Rows, Cols, Options, MaxRows, MaxCols> >
+        -:  330:{
+        -:  331:  typedef Array<Scalar, Rows, Cols, Options, MaxRows, MaxCols> ArrayType;
+        -:  332:  typedef typename NumTraits<Scalar>::Real RealScalar;
+        -:  333:  typedef Array<RealScalar, Rows, Cols, Options, MaxRows, MaxCols> Real;
+        -:  334:  typedef typename NumTraits<Scalar>::NonInteger NonIntegerScalar;
+        -:  335:  typedef Array<NonIntegerScalar, Rows, Cols, Options, MaxRows, MaxCols> NonInteger;
+        -:  336:  typedef ArrayType & Nested;
+        -:  337:  typedef typename NumTraits<Scalar>::Literal Literal;
+        -:  338:
+        -:  339:  enum {
+        -:  340:    IsComplex = NumTraits<Scalar>::IsComplex,
+        -:  341:    IsInteger = NumTraits<Scalar>::IsInteger,
+        -:  342:    IsSigned  = NumTraits<Scalar>::IsSigned,
+        -:  343:    RequireInitialization = 1,
+        -:  344:    ReadCost = ArrayType::SizeAtCompileTime==Dynamic ? HugeCost : ArrayType::SizeAtCompileTime * int(NumTraits<Scalar>::ReadCost),
+        -:  345:    AddCost  = ArrayType::SizeAtCompileTime==Dynamic ? HugeCost : ArrayType::SizeAtCompileTime * int(NumTraits<Scalar>::AddCost),
+        -:  346:    MulCost  = ArrayType::SizeAtCompileTime==Dynamic ? HugeCost : ArrayType::SizeAtCompileTime * int(NumTraits<Scalar>::MulCost)
+        -:  347:  };
+        -:  348:
+        -:  349:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+        -:  350:  static inline RealScalar epsilon() { return NumTraits<RealScalar>::epsilon(); }
+        -:  351:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+        -:  352:  static inline RealScalar dummy_precision() { return NumTraits<RealScalar>::dummy_precision(); }
+        -:  353:
+        -:  354:  EIGEN_CONSTEXPR
+        -:  355:  static inline int digits10() { return NumTraits<Scalar>::digits10(); }
+        -:  356:  EIGEN_CONSTEXPR
+        -:  357:  static inline int max_digits10() { return NumTraits<Scalar>::max_digits10(); }
+        -:  358:};
+        -:  359:
+        -:  360:template<> struct NumTraits<std::string>
+        -:  361:  : GenericNumTraits<std::string>
+        -:  362:{
+        -:  363:  enum {
+        -:  364:    RequireInitialization = 1,
+        -:  365:    ReadCost = HugeCost,
+        -:  366:    AddCost  = HugeCost,
+        -:  367:    MulCost  = HugeCost
+        -:  368:  };
+        -:  369:
+        -:  370:  EIGEN_CONSTEXPR
+        -:  371:  static inline int digits10() { return 0; }
+        -:  372:  EIGEN_CONSTEXPR
+        -:  373:  static inline int max_digits10() { return 0; }
+        -:  374:
+        -:  375: private:
+        -:  376:  static inline std::string epsilon();
+        -:  377:  static inline std::string dummy_precision();
+        -:  378:  static inline std::string lowest();
+        -:  379:  static inline std::string highest();
+        -:  380:  static inline std::string infinity();
+        -:  381:  static inline std::string quiet_NaN();
+        -:  382:};
+        -:  383:
+        -:  384:// Empty specialization for void to allow template specialization based on NumTraits<T>::Real with T==void and SFINAE.
+        -:  385:template<> struct NumTraits<void> {};
+        -:  386:
+        -:  387:template<> struct NumTraits<bool> : GenericNumTraits<bool> {};
+        -:  388:
+        -:  389:} // end namespace Eigen
+        -:  390:
+        -:  391:#endif // EIGEN_NUMTRAITS_H

@@ -1,0 +1,200 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/util/IndexedViewHelper.h
+        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
+        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
+        -:    0:Runs:4
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2017 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:
+        -:   11:#ifndef EIGEN_INDEXED_VIEW_HELPER_H
+        -:   12:#define EIGEN_INDEXED_VIEW_HELPER_H
+        -:   13:
+        -:   14:// IWYU pragma: private
+        -:   15:#include "../InternalHeaderCheck.h"
+        -:   16:
+        -:   17:namespace Eigen {
+        -:   18:
+        -:   19:namespace internal {
+        -:   20:struct symbolic_last_tag {};
+        -:   21:}  // namespace internal
+        -:   22:
+        -:   23:namespace placeholders {
+        -:   24:
+        -:   25:typedef symbolic::SymbolExpr<internal::symbolic_last_tag> last_t;
+        -:   26:
+        -:   27:/** \var last
+        -:   28:  * \ingroup Core_Module
+        -:   29:  *
+        -:   30:  * Can be used as a parameter to Eigen::seq and Eigen::seqN functions to symbolically reference the last element/row/columns
+        -:   31:  * of the underlying vector or matrix once passed to DenseBase::operator()(const RowIndices&, const ColIndices&).
+        -:   32:  *
+        -:   33:  * This symbolic placeholder supports standard arithmetic operations.
+        -:   34:  *
+        -:   35:  * A typical usage example would be:
+        -:   36:  * \code
+        -:   37:  * using namespace Eigen;
+        -:   38:  * using Eigen::placeholders::last;
+        -:   39:  * VectorXd v(n);
+        -:   40:  * v(seq(2,last-2)).setOnes();
+        -:   41:  * \endcode
+        -:   42:  *
+        -:   43:  * \sa end
+        -:   44:  */
+        4:   45:static const last_t last;
+        -:   46:
+        -:   47:}  // namespace placeholders
+        -:   48:
+        -:   49:namespace internal {
+        -:   50:
+        -:   51:// Replace symbolic last/end "keywords" by their true runtime value
+        -:   52:inline Index eval_expr_given_size(Index x, Index /* size */)   { return x; }
+        -:   53:
+        -:   54:template<int N>
+        -:   55:FixedInt<N> eval_expr_given_size(FixedInt<N> x, Index /*size*/)   { return x; }
+        -:   56:
+        -:   57:template<typename Derived>
+        -:   58:Index eval_expr_given_size(const symbolic::BaseExpr<Derived> &x, Index size)
+        -:   59:{
+        -:   60:  return x.derived().eval(Eigen::placeholders::last=size-1);
+        -:   61:}
+        -:   62:
+        -:   63:// Extract increment/step at compile time
+        -:   64:template<typename T, typename EnableIf = void> struct get_compile_time_incr {
+        -:   65:  enum { value = UndefinedIncr };
+        -:   66:};
+        -:   67:
+        -:   68:// Analogue of std::get<0>(x), but tailored for our needs.
+        -:   69:template<typename T>
+        -:   70:EIGEN_CONSTEXPR Index first(const T& x) EIGEN_NOEXCEPT { return x.first(); }
+        -:   71:
+        -:   72:// IndexedViewCompatibleType/makeIndexedViewCompatible turn an arbitrary object of type T into something usable by MatrixSlice
+        -:   73:// The generic implementation is a no-op
+        -:   74:template<typename T,int XprSize,typename EnableIf=void>
+        -:   75:struct IndexedViewCompatibleType {
+        -:   76:  typedef T type;
+        -:   77:};
+        -:   78:
+        -:   79:template<typename T,typename Q>
+        -:   80:const T& makeIndexedViewCompatible(const T& x, Index /*size*/, Q) { return x; }
+        -:   81:
+        -:   82://--------------------------------------------------------------------------------
+        -:   83:// Handling of a single Index
+        -:   84://--------------------------------------------------------------------------------
+        -:   85:
+        -:   86:struct SingleRange {
+        -:   87:  enum {
+        -:   88:    SizeAtCompileTime = 1
+        -:   89:  };
+        -:   90:  SingleRange(Index val) : m_value(val) {}
+        -:   91:  Index operator[](Index) const { return m_value; }
+        -:   92:  static EIGEN_CONSTEXPR Index size() EIGEN_NOEXCEPT { return 1; }
+        -:   93:  Index first() const EIGEN_NOEXCEPT { return m_value; }
+        -:   94:  Index m_value;
+        -:   95:};
+        -:   96:
+        -:   97:template<> struct get_compile_time_incr<SingleRange> {
+        -:   98:  enum { value = 1 }; // 1 or 0 ??
+        -:   99:};
+        -:  100:
+        -:  101:// Turn a single index into something that looks like an array (i.e., that exposes a .size(), and operator[](int) methods)
+        -:  102:template<typename T, int XprSize>
+        -:  103:struct IndexedViewCompatibleType<T,XprSize,std::enable_if_t<internal::is_integral<T>::value>> {
+        -:  104:  // Here we could simply use Array, but maybe it's less work for the compiler to use
+        -:  105:  // a simpler wrapper as SingleRange
+        -:  106:  //typedef Eigen::Array<Index,1,1> type;
+        -:  107:  typedef SingleRange type;
+        -:  108:};
+        -:  109:
+        -:  110:template<typename T, int XprSize>
+        -:  111:struct IndexedViewCompatibleType<T, XprSize, std::enable_if_t<symbolic::is_symbolic<T>::value>> {
+        -:  112:  typedef SingleRange type;
+        -:  113:};
+        -:  114:
+        -:  115:
+        -:  116:template<typename T>
+        -:  117:std::enable_if_t<symbolic::is_symbolic<T>::value,SingleRange>
+        -:  118:makeIndexedViewCompatible(const T& id, Index size, SpecializedType) {
+        -:  119:  return eval_expr_given_size(id,size);
+        -:  120:}
+        -:  121:
+        -:  122://--------------------------------------------------------------------------------
+        -:  123:// Handling of all
+        -:  124://--------------------------------------------------------------------------------
+        -:  125:
+        8:  126:struct all_t { all_t() {} };
+        -:  127:
+        -:  128:// Convert a symbolic 'all' into a usable range type
+        -:  129:template<int XprSize>
+        -:  130:struct AllRange {
+        -:  131:  enum { SizeAtCompileTime = XprSize };
+        -:  132:  AllRange(Index size = XprSize) : m_size(size) {}
+        -:  133:  EIGEN_CONSTEXPR Index operator[](Index i) const EIGEN_NOEXCEPT { return i; }
+        -:  134:  EIGEN_CONSTEXPR Index size() const EIGEN_NOEXCEPT { return m_size.value(); }
+        -:  135:  EIGEN_CONSTEXPR Index first() const EIGEN_NOEXCEPT { return 0; }
+        -:  136:  variable_if_dynamic<Index,XprSize> m_size;
+        -:  137:};
+        -:  138:
+        -:  139:template<int XprSize>
+        -:  140:struct IndexedViewCompatibleType<all_t,XprSize> {
+        -:  141:  typedef AllRange<XprSize> type;
+        -:  142:};
+        -:  143:
+        -:  144:template<typename XprSizeType>
+        -:  145:inline AllRange<get_fixed_value<XprSizeType>::value> makeIndexedViewCompatible(all_t , XprSizeType size, SpecializedType) {
+        -:  146:  return AllRange<get_fixed_value<XprSizeType>::value>(size);
+        -:  147:}
+        -:  148:
+        -:  149:template<int Size> struct get_compile_time_incr<AllRange<Size> > {
+        -:  150:  enum { value = 1 };
+        -:  151:};
+        -:  152:
+        -:  153:} // end namespace internal
+        -:  154:
+        -:  155:namespace placeholders {
+        -:  156:
+        -:  157:typedef symbolic::AddExpr<symbolic::SymbolExpr<internal::symbolic_last_tag>,symbolic::ValueExpr<Eigen::internal::FixedInt<1> > > lastp1_t;
+        -:  158:typedef Eigen::internal::all_t all_t;
+        -:  159:
+        -:  160:/** \var lastp1
+        -:  161:  * \ingroup Core_Module
+        -:  162:  *
+        -:  163:  * Can be used as a parameter to Eigen::seq and Eigen::seqN functions to symbolically
+        -:  164:  * reference the last+1 element/row/columns of the underlying vector or matrix once
+        -:  165:  * passed to DenseBase::operator()(const RowIndices&, const ColIndices&).
+        -:  166:  *
+        -:  167:  * This symbolic placeholder supports standard arithmetic operations.
+        -:  168:  * It is essentially an alias to last+fix<1>.
+        -:  169:  *
+        -:  170:  * \sa last
+        -:  171:  */
+        -:  172:#ifdef EIGEN_PARSED_BY_DOXYGEN
+        -:  173:static const auto lastp1 = last+fix<1>;
+        -:  174:#else
+        -:  175:// Using a FixedExpr<1> expression is important here to make sure the compiler
+        -:  176:// can fully optimize the computation starting indices with zero overhead.
+        4:  177:static const lastp1_t lastp1(last+fix<1>());
+        -:  178:#endif
+        -:  179:
+        -:  180:/** \var end
+        -:  181:  * \ingroup Core_Module
+        -:  182:  * \sa lastp1
+        -:  183:  */
+        -:  184:static const lastp1_t end = lastp1;
+        -:  185:
+        -:  186:/** \var all
+        -:  187:  * \ingroup Core_Module
+        -:  188:  * Can be used as a parameter to DenseBase::operator()(const RowIndices&, const ColIndices&) to index all rows or columns
+        -:  189:  */
+        4:  190:static const Eigen::internal::all_t all;
+        -:  191:
+        -:  192:} // namespace placeholders
+        -:  193:
+        -:  194:} // end namespace Eigen
+        -:  195:
+        -:  196:#endif // EIGEN_INDEXED_VIEW_HELPER_H

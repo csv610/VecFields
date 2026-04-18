@@ -1,0 +1,178 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/functors/AssignmentFunctors.h
+        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
+        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
+        -:    0:Runs:4
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2008-2010 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:#ifndef EIGEN_ASSIGNMENT_FUNCTORS_H
+        -:   11:#define EIGEN_ASSIGNMENT_FUNCTORS_H
+        -:   12:
+        -:   13:// IWYU pragma: private
+        -:   14:#include "../InternalHeaderCheck.h"
+        -:   15:
+        -:   16:namespace Eigen {
+        -:   17:
+        -:   18:namespace internal {
+        -:   19:  
+        -:   20:/** \internal
+        -:   21:  * \brief Template functor for scalar/packet assignment
+        -:   22:  *
+        -:   23:  */
+        -:   24:template<typename DstScalar,typename SrcScalar> struct assign_op {
+        -:   25:
+   255240:   26:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void assignCoeff(DstScalar& a, const SrcScalar& b) const { a = b; }
+        -:   27:
+        -:   28:  template<int Alignment, typename Packet>
+    63736:   29:  EIGEN_STRONG_INLINE void assignPacket(DstScalar* a, const Packet& b) const
+    63736:   30:  { internal::pstoret<DstScalar,Packet,Alignment>(a,b); }
+        -:   31:};
+        -:   32:
+        -:   33:// Empty overload for void type (used by PermutationMatrix)
+        -:   34:template<typename DstScalar> struct assign_op<DstScalar,void> {};
+        -:   35:
+        -:   36:template<typename DstScalar,typename SrcScalar>
+        -:   37:struct functor_traits<assign_op<DstScalar,SrcScalar> > {
+        -:   38:  enum {
+        -:   39:    Cost = NumTraits<DstScalar>::ReadCost,
+        -:   40:    PacketAccess = is_same<DstScalar,SrcScalar>::value && packet_traits<DstScalar>::Vectorizable && packet_traits<SrcScalar>::Vectorizable
+        -:   41:  };
+        -:   42:};
+        -:   43:
+        -:   44:/** \internal
+        -:   45:  * \brief Template functor for scalar/packet assignment with addition
+        -:   46:  *
+        -:   47:  */
+        -:   48:template<typename DstScalar,typename SrcScalar> struct add_assign_op {
+        -:   49:
+    48678:   50:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void assignCoeff(DstScalar& a, const SrcScalar& b) const { a += b; }
+        -:   51:
+        -:   52:  template<int Alignment, typename Packet>
+    #####:   53:  EIGEN_STRONG_INLINE void assignPacket(DstScalar* a, const Packet& b) const
+    #####:   54:  { internal::pstoret<DstScalar,Packet,Alignment>(a,internal::padd(internal::ploadt<Packet,Alignment>(a),b)); }
+        -:   55:};
+        -:   56:template<typename DstScalar,typename SrcScalar>
+        -:   57:struct functor_traits<add_assign_op<DstScalar,SrcScalar> > {
+        -:   58:  enum {
+        -:   59:    Cost = NumTraits<DstScalar>::ReadCost + NumTraits<DstScalar>::AddCost,
+        -:   60:    PacketAccess = is_same<DstScalar,SrcScalar>::value && packet_traits<DstScalar>::HasAdd
+        -:   61:  };
+        -:   62:};
+        -:   63:
+        -:   64:/** \internal
+        -:   65:  * \brief Template functor for scalar/packet assignment with subtraction
+        -:   66:  *
+        -:   67:  */
+        -:   68:template<typename DstScalar,typename SrcScalar> struct sub_assign_op {
+        -:   69:
+    41672:   70:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void assignCoeff(DstScalar& a, const SrcScalar& b) const { a -= b; }
+        -:   71:
+        -:   72:  template<int Alignment, typename Packet>
+    33518:   73:  EIGEN_STRONG_INLINE void assignPacket(DstScalar* a, const Packet& b) const
+    33518:   74:  { internal::pstoret<DstScalar,Packet,Alignment>(a,internal::psub(internal::ploadt<Packet,Alignment>(a),b)); }
+        -:   75:};
+        -:   76:template<typename DstScalar,typename SrcScalar>
+        -:   77:struct functor_traits<sub_assign_op<DstScalar,SrcScalar> > {
+        -:   78:  enum {
+        -:   79:    Cost = NumTraits<DstScalar>::ReadCost + NumTraits<DstScalar>::AddCost,
+        -:   80:    PacketAccess = is_same<DstScalar,SrcScalar>::value && packet_traits<DstScalar>::HasSub
+        -:   81:  };
+        -:   82:};
+        -:   83:
+        -:   84:/** \internal
+        -:   85:  * \brief Template functor for scalar/packet assignment with multiplication
+        -:   86:  *
+        -:   87:  */
+        -:   88:template<typename DstScalar, typename SrcScalar=DstScalar>
+        -:   89:struct mul_assign_op {
+        -:   90:
+     2454:   91:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void assignCoeff(DstScalar& a, const SrcScalar& b) const { a *= b; }
+        -:   92:
+        -:   93:  template<int Alignment, typename Packet>
+     1490:   94:  EIGEN_STRONG_INLINE void assignPacket(DstScalar* a, const Packet& b) const
+     1490:   95:  { internal::pstoret<DstScalar,Packet,Alignment>(a,internal::pmul(internal::ploadt<Packet,Alignment>(a),b)); }
+        -:   96:};
+        -:   97:template<typename DstScalar, typename SrcScalar>
+        -:   98:struct functor_traits<mul_assign_op<DstScalar,SrcScalar> > {
+        -:   99:  enum {
+        -:  100:    Cost = NumTraits<DstScalar>::ReadCost + NumTraits<DstScalar>::MulCost,
+        -:  101:    PacketAccess = is_same<DstScalar,SrcScalar>::value && packet_traits<DstScalar>::HasMul
+        -:  102:  };
+        -:  103:};
+        -:  104:
+        -:  105:/** \internal
+        -:  106:  * \brief Template functor for scalar/packet assignment with diviving
+        -:  107:  *
+        -:  108:  */
+        -:  109:template<typename DstScalar, typename SrcScalar=DstScalar> struct div_assign_op {
+        -:  110:
+     8940:  111:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void assignCoeff(DstScalar& a, const SrcScalar& b) const { a /= b; }
+        -:  112:
+        -:  113:  template<int Alignment, typename Packet>
+        -:  114:  EIGEN_STRONG_INLINE void assignPacket(DstScalar* a, const Packet& b) const
+        -:  115:  { internal::pstoret<DstScalar,Packet,Alignment>(a,internal::pdiv(internal::ploadt<Packet,Alignment>(a),b)); }
+        -:  116:};
+        -:  117:template<typename DstScalar, typename SrcScalar>
+        -:  118:struct functor_traits<div_assign_op<DstScalar,SrcScalar> > {
+        -:  119:  enum {
+        -:  120:    Cost = NumTraits<DstScalar>::ReadCost + NumTraits<DstScalar>::MulCost,
+        -:  121:    PacketAccess = is_same<DstScalar,SrcScalar>::value && packet_traits<DstScalar>::HasDiv
+        -:  122:  };
+        -:  123:};
+        -:  124:
+        -:  125:/** \internal
+        -:  126:  * \brief Template functor for scalar/packet assignment with swapping
+        -:  127:  *
+        -:  128:  * It works as follow. For a non-vectorized evaluation loop, we have:
+        -:  129:  *   for(i) func(A.coeffRef(i), B.coeff(i));
+        -:  130:  * where B is a SwapWrapper expression. The trick is to make SwapWrapper::coeff behaves like a non-const coeffRef.
+        -:  131:  * Actually, SwapWrapper might not even be needed since even if B is a plain expression, since it has to be writable
+        -:  132:  * B.coeff already returns a const reference to the underlying scalar value.
+        -:  133:  * 
+        -:  134:  * The case of a vectorized loop is more tricky:
+        -:  135:  *   for(i,j) func.assignPacket<A_Align>(&A.coeffRef(i,j), B.packet<B_Align>(i,j));
+        -:  136:  * Here, B must be a SwapWrapper whose packet function actually returns a proxy object holding a Scalar*,
+        -:  137:  * the actual alignment and Packet type.
+        -:  138:  *
+        -:  139:  */
+        -:  140:template<typename Scalar> struct swap_assign_op {
+        -:  141:
+     2028:  142:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void assignCoeff(Scalar& a, const Scalar& b) const
+        -:  143:  {
+        -:  144:#ifdef EIGEN_GPUCC
+        -:  145:    // FIXME is there some kind of cuda::swap?
+        -:  146:    Scalar t=b; const_cast<Scalar&>(b)=a; a=t;
+        -:  147:#else
+        -:  148:    using std::swap;
+     2028:  149:    swap(a,const_cast<Scalar&>(b));
+        -:  150:#endif
+     2028:  151:  }
+        -:  152:};
+        -:  153:template<typename Scalar>
+        -:  154:struct functor_traits<swap_assign_op<Scalar> > {
+        -:  155:  enum {
+        -:  156:    Cost = 3 * NumTraits<Scalar>::ReadCost,
+        -:  157:    PacketAccess = 
+        -:  158:    #if defined(EIGEN_VECTORIZE_AVX) && (EIGEN_CLANG_STRICT_LESS_THAN(8,0,0) || EIGEN_COMP_CLANGAPPLE)
+        -:  159:    // This is a partial workaround for a bug in clang generating bad code
+        -:  160:    // when mixing 256/512 bits loads and 128 bits moves.
+        -:  161:    // See http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1684
+        -:  162:    //     https://bugs.llvm.org/show_bug.cgi?id=40815
+        -:  163:    0
+        -:  164:    #else
+        -:  165:    packet_traits<Scalar>::Vectorizable
+        -:  166:    #endif
+        -:  167:  };
+        -:  168:};
+        -:  169:
+        -:  170:} // namespace internal
+        -:  171:
+        -:  172:} // namespace Eigen
+        -:  173:
+        -:  174:#endif // EIGEN_ASSIGNMENT_FUNCTORS_H

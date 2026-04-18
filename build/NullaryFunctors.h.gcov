@@ -1,0 +1,228 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/functors/NullaryFunctors.h
+        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
+        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
+        -:    0:Runs:4
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2008-2016 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:#ifndef EIGEN_NULLARY_FUNCTORS_H
+        -:   11:#define EIGEN_NULLARY_FUNCTORS_H
+        -:   12:
+        -:   13:// IWYU pragma: private
+        -:   14:#include "../InternalHeaderCheck.h"
+        -:   15:
+        -:   16:namespace Eigen {
+        -:   17:
+        -:   18:namespace internal {
+        -:   19:
+        -:   20:template<typename Scalar>
+        -:   21:struct scalar_constant_op {
+   788748:   22:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE scalar_constant_op(const scalar_constant_op& other) : m_other(other.m_other) { }
+   236712:   23:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE scalar_constant_op(const Scalar& other) : m_other(other) { }
+   179634:   24:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() () const { return m_other; }
+        -:   25:  template<typename PacketType>
+    61398:   26:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const PacketType packetOp() const { return internal::pset1<PacketType>(m_other); }
+        -:   27:  const Scalar m_other;
+        -:   28:};
+        -:   29:template<typename Scalar>
+        -:   30:struct functor_traits<scalar_constant_op<Scalar> >
+        -:   31:{ enum { Cost = 0 /* as the constant value should be loaded in register only once for the whole expression */,
+        -:   32:         PacketAccess = packet_traits<Scalar>::Vectorizable, IsRepeatable = true }; };
+        -:   33:
+        -:   34:template<typename Scalar> struct scalar_identity_op {
+        -:   35:  template<typename IndexType>
+    #####:   36:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() (IndexType row, IndexType col) const { return row==col ? Scalar(1) : Scalar(0); }
+        -:   37:};
+        -:   38:template<typename Scalar>
+        -:   39:struct functor_traits<scalar_identity_op<Scalar> >
+        -:   40:{ enum { Cost = NumTraits<Scalar>::AddCost, PacketAccess = false, IsRepeatable = true }; };
+        -:   41:
+        -:   42:template <typename Scalar, bool IsInteger> struct linspaced_op_impl;
+        -:   43:
+        -:   44:template <typename Scalar>
+        -:   45:struct linspaced_op_impl<Scalar,/*IsInteger*/false>
+        -:   46:{
+        -:   47:  typedef typename NumTraits<Scalar>::Real RealScalar;
+        -:   48:
+        -:   49:  EIGEN_DEVICE_FUNC linspaced_op_impl(const Scalar& low, const Scalar& high, Index num_steps) :
+        -:   50:    m_low(low), m_high(high), m_size1(num_steps==1 ? 1 : num_steps-1), m_step(num_steps==1 ? Scalar() : Scalar((high-low)/RealScalar(num_steps-1))),
+        -:   51:    m_flip(numext::abs(high)<numext::abs(low))
+        -:   52:  {}
+        -:   53:
+        -:   54:  template<typename IndexType>
+        -:   55:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() (IndexType i) const {
+        -:   56:    if(m_flip)
+        -:   57:      return (i==0)? m_low : Scalar(m_high - RealScalar(m_size1-i)*m_step);
+        -:   58:    else
+        -:   59:      return (i==m_size1)? m_high : Scalar(m_low + RealScalar(i)*m_step);
+        -:   60:  }
+        -:   61:
+        -:   62:  template<typename Packet, typename IndexType>
+        -:   63:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp(IndexType i) const
+        -:   64:  {
+        -:   65:    // Principle:
+        -:   66:    // [low, ..., low] + ( [step, ..., step] * ( [i, ..., i] + [0, ..., size] ) )
+        -:   67:    if(m_flip)
+        -:   68:    {
+        -:   69:      Packet pi = plset<Packet>(Scalar(i-m_size1));
+        -:   70:      Packet res = padd(pset1<Packet>(m_high), pmul(pset1<Packet>(m_step), pi));
+        -:   71:      if (EIGEN_PREDICT_TRUE(i != 0)) return res;
+        -:   72:      Packet mask = pcmp_lt(pset1<Packet>(0), plset<Packet>(0));
+        -:   73:      return pselect<Packet>(mask, res, pset1<Packet>(m_low));
+        -:   74:    }
+        -:   75:    else
+        -:   76:    {
+        -:   77:      Packet pi = plset<Packet>(Scalar(i));
+        -:   78:      Packet res = padd(pset1<Packet>(m_low), pmul(pset1<Packet>(m_step), pi));
+        -:   79:      if(EIGEN_PREDICT_TRUE(i != m_size1-unpacket_traits<Packet>::size+1)) return res;
+        -:   80:      Packet mask = pcmp_lt(plset<Packet>(0), pset1<Packet>(unpacket_traits<Packet>::size-1));
+        -:   81:      return pselect<Packet>(mask, res, pset1<Packet>(m_high));
+        -:   82:    }
+        -:   83:  }
+        -:   84:
+        -:   85:  const Scalar m_low;
+        -:   86:  const Scalar m_high;
+        -:   87:  const Index m_size1;
+        -:   88:  const Scalar m_step;
+        -:   89:  const bool m_flip;
+        -:   90:};
+        -:   91:
+        -:   92:template <typename Scalar>
+        -:   93:struct linspaced_op_impl<Scalar,/*IsInteger*/true>
+        -:   94:{
+        -:   95:  EIGEN_DEVICE_FUNC linspaced_op_impl(const Scalar& low, const Scalar& high, Index num_steps) :
+        -:   96:    m_low(low),
+        -:   97:    m_multiplier((high-low)/convert_index<Scalar>(num_steps<=1 ? 1 : num_steps-1)),
+        -:   98:    m_divisor(convert_index<Scalar>((high>=low?num_steps:-num_steps)+(high-low))/((numext::abs(high-low)+1)==0?1:(numext::abs(high-low)+1))),
+        -:   99:    m_use_divisor(num_steps>1 && (numext::abs(high-low)+1)<num_steps)
+        -:  100:  {}
+        -:  101:
+        -:  102:  template<typename IndexType>
+        -:  103:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+        -:  104:  const Scalar operator() (IndexType i) const
+        -:  105:  {
+        -:  106:    if(m_use_divisor) return m_low + convert_index<Scalar>(i)/m_divisor;
+        -:  107:    else              return m_low + convert_index<Scalar>(i)*m_multiplier;
+        -:  108:  }
+        -:  109:
+        -:  110:  const Scalar m_low;
+        -:  111:  const Scalar m_multiplier;
+        -:  112:  const Scalar m_divisor;
+        -:  113:  const bool m_use_divisor;
+        -:  114:};
+        -:  115:
+        -:  116:// ----- Linspace functor ----------------------------------------------------------------
+        -:  117:
+        -:  118:// Forward declaration (we default to random access which does not really give
+        -:  119:// us a speed gain when using packet access but it allows to use the functor in
+        -:  120:// nested expressions).
+        -:  121:template <typename Scalar> struct linspaced_op;
+        -:  122:template <typename Scalar> struct functor_traits< linspaced_op<Scalar> >
+        -:  123:{
+        -:  124:  enum
+        -:  125:  {
+        -:  126:    Cost = 1,
+        -:  127:    PacketAccess =   (!NumTraits<Scalar>::IsInteger) && packet_traits<Scalar>::HasSetLinear && packet_traits<Scalar>::HasBlend,
+        -:  128:                  /*&& ((!NumTraits<Scalar>::IsInteger) || packet_traits<Scalar>::HasDiv),*/ // <- vectorization for integer is currently disabled
+        -:  129:    IsRepeatable = true
+        -:  130:  };
+        -:  131:};
+        -:  132:template <typename Scalar> struct linspaced_op
+        -:  133:{
+        -:  134:  EIGEN_DEVICE_FUNC linspaced_op(const Scalar& low, const Scalar& high, Index num_steps)
+        -:  135:    : impl((num_steps==1 ? high : low),high,num_steps)
+        -:  136:  {}
+        -:  137:
+        -:  138:  template<typename IndexType>
+        -:  139:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() (IndexType i) const { return impl(i); }
+        -:  140:
+        -:  141:  template<typename Packet,typename IndexType>
+        -:  142:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp(IndexType i) const { return impl.template packetOp<Packet>(i); }
+        -:  143:
+        -:  144:  // This proxy object handles the actual required temporaries and the different
+        -:  145:  // implementations (integer vs. floating point).
+        -:  146:  const linspaced_op_impl<Scalar,NumTraits<Scalar>::IsInteger> impl;
+        -:  147:};
+        -:  148:
+        -:  149:template <typename Scalar>
+        -:  150:struct equalspaced_op {
+        -:  151:  typedef typename NumTraits<Scalar>::Real RealScalar;
+        -:  152:
+        -:  153:  EIGEN_DEVICE_FUNC equalspaced_op(const Scalar& start, const Scalar& step) : m_start(start), m_step(step) {}
+        -:  154:  template <typename IndexType>
+        -:  155:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator()(IndexType i) const {
+        -:  156:    return m_start + m_step * static_cast<Scalar>(i);
+        -:  157:  }
+        -:  158:  template <typename Packet, typename IndexType>
+        -:  159:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packetOp(IndexType i) const {
+        -:  160:    const Packet cst_start = pset1<Packet>(m_start);
+        -:  161:    const Packet cst_step = pset1<Packet>(m_step);
+        -:  162:    const Packet cst_lin0 = plset<Packet>(Scalar(0));
+        -:  163:    const Packet cst_offset = pmadd(cst_lin0, cst_step, cst_start);
+        -:  164:
+        -:  165:    Packet i_packet = pset1<Packet>(static_cast<Scalar>(i));
+        -:  166:    return pmadd(i_packet, cst_step, cst_offset);
+        -:  167:  }
+        -:  168:  const Scalar m_start;
+        -:  169:  const Scalar m_step;
+        -:  170:};
+        -:  171:
+        -:  172:template <typename Scalar>
+        -:  173:struct functor_traits<equalspaced_op<Scalar> > {
+        -:  174:  enum {
+        -:  175:    Cost = NumTraits<Scalar>::AddCost + NumTraits<Scalar>::MulCost,
+        -:  176:    PacketAccess =
+        -:  177:        packet_traits<Scalar>::HasSetLinear && packet_traits<Scalar>::HasMul && packet_traits<Scalar>::HasAdd,
+        -:  178:    IsRepeatable = true
+        -:  179:  };
+        -:  180:};
+        -:  181:
+        -:  182:// Linear access is automatically determined from the operator() prototypes available for the given functor.
+        -:  183:// If it exposes an operator()(i,j), then we assume the i and j coefficients are required independently
+        -:  184:// and linear access is not possible. In all other cases, linear access is enabled.
+        -:  185:// Users should not have to deal with this structure.
+        -:  186:template<typename Functor> struct functor_has_linear_access { enum { ret = !has_binary_operator<Functor>::value }; };
+        -:  187:
+        -:  188:// For unreliable compilers, let's specialize the has_*ary_operator
+        -:  189:// helpers so that at least built-in nullary functors work fine.
+        -:  190:#if !( EIGEN_COMP_MSVC || EIGEN_COMP_GNUC || (EIGEN_COMP_ICC>=1600))
+        -:  191:template<typename Scalar,typename IndexType>
+        -:  192:struct has_nullary_operator<scalar_constant_op<Scalar>,IndexType> { enum { value = 1}; };
+        -:  193:template<typename Scalar,typename IndexType>
+        -:  194:struct has_unary_operator<scalar_constant_op<Scalar>,IndexType> { enum { value = 0}; };
+        -:  195:template<typename Scalar,typename IndexType>
+        -:  196:struct has_binary_operator<scalar_constant_op<Scalar>,IndexType> { enum { value = 0}; };
+        -:  197:
+        -:  198:template<typename Scalar,typename IndexType>
+        -:  199:struct has_nullary_operator<scalar_identity_op<Scalar>,IndexType> { enum { value = 0}; };
+        -:  200:template<typename Scalar,typename IndexType>
+        -:  201:struct has_unary_operator<scalar_identity_op<Scalar>,IndexType> { enum { value = 0}; };
+        -:  202:template<typename Scalar,typename IndexType>
+        -:  203:struct has_binary_operator<scalar_identity_op<Scalar>,IndexType> { enum { value = 1}; };
+        -:  204:
+        -:  205:template<typename Scalar,typename IndexType>
+        -:  206:struct has_nullary_operator<linspaced_op<Scalar>,IndexType> { enum { value = 0}; };
+        -:  207:template<typename Scalar,typename IndexType>
+        -:  208:struct has_unary_operator<linspaced_op<Scalar>,IndexType> { enum { value = 1}; };
+        -:  209:template<typename Scalar,typename IndexType>
+        -:  210:struct has_binary_operator<linspaced_op<Scalar>,IndexType> { enum { value = 0}; };
+        -:  211:
+        -:  212:template<typename Scalar,typename IndexType>
+        -:  213:struct has_nullary_operator<scalar_random_op<Scalar>,IndexType> { enum { value = 1}; };
+        -:  214:template<typename Scalar,typename IndexType>
+        -:  215:struct has_unary_operator<scalar_random_op<Scalar>,IndexType> { enum { value = 0}; };
+        -:  216:template<typename Scalar,typename IndexType>
+        -:  217:struct has_binary_operator<scalar_random_op<Scalar>,IndexType> { enum { value = 0}; };
+        -:  218:#endif
+        -:  219:
+        -:  220:} // end namespace internal
+        -:  221:
+        -:  222:} // end namespace Eigen
+        -:  223:
+        -:  224:#endif // EIGEN_NULLARY_FUNCTORS_H

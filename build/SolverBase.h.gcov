@@ -1,0 +1,174 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/SolverBase.h
+        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
+        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
+        -:    0:Runs:4
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2015 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:#ifndef EIGEN_SOLVERBASE_H
+        -:   11:#define EIGEN_SOLVERBASE_H
+        -:   12:
+        -:   13:// IWYU pragma: private
+        -:   14:#include "./InternalHeaderCheck.h"
+        -:   15:
+        -:   16:namespace Eigen {
+        -:   17:
+        -:   18:namespace internal {
+        -:   19:
+        -:   20:template<typename Derived>
+        -:   21:struct solve_assertion {
+        -:   22:    template<bool Transpose_, typename Rhs>
+     1490:   23:    static void run(const Derived& solver, const Rhs& b) { solver.template _check_solve_assertion<Transpose_>(b); }
+        -:   24:};
+        -:   25:
+        -:   26:template<typename Derived>
+        -:   27:struct solve_assertion<Transpose<Derived> >
+        -:   28:{
+        -:   29:    typedef Transpose<Derived> type;
+        -:   30:
+        -:   31:    template<bool Transpose_, typename Rhs>
+        -:   32:    static void run(const type& transpose, const Rhs& b)
+        -:   33:    {
+        -:   34:        internal::solve_assertion<internal::remove_all_t<Derived>>::template run<true>(transpose.nestedExpression(), b);
+        -:   35:    }
+        -:   36:};
+        -:   37:
+        -:   38:template<typename Scalar, typename Derived>
+        -:   39:struct solve_assertion<CwiseUnaryOp<Eigen::internal::scalar_conjugate_op<Scalar>, const Transpose<Derived> > >
+        -:   40:{
+        -:   41:    typedef CwiseUnaryOp<Eigen::internal::scalar_conjugate_op<Scalar>, const Transpose<Derived> > type;
+        -:   42:
+        -:   43:    template<bool Transpose_, typename Rhs>
+        -:   44:    static void run(const type& adjoint, const Rhs& b)
+        -:   45:    {
+        -:   46:        internal::solve_assertion<internal::remove_all_t<Transpose<Derived> >>::template run<true>(adjoint.nestedExpression(), b);
+        -:   47:    }
+        -:   48:};
+        -:   49:} // end namespace internal
+        -:   50:
+        -:   51:/** \class SolverBase
+        -:   52:  * \brief A base class for matrix decomposition and solvers
+        -:   53:  *
+        -:   54:  * \tparam Derived the actual type of the decomposition/solver.
+        -:   55:  *
+        -:   56:  * Any matrix decomposition inheriting this base class provide the following API:
+        -:   57:  *
+        -:   58:  * \code
+        -:   59:  * MatrixType A, b, x;
+        -:   60:  * DecompositionType dec(A);
+        -:   61:  * x = dec.solve(b);             // solve A   * x = b
+        -:   62:  * x = dec.transpose().solve(b); // solve A^T * x = b
+        -:   63:  * x = dec.adjoint().solve(b);   // solve A'  * x = b
+        -:   64:  * \endcode
+        -:   65:  *
+        -:   66:  * \warning Currently, any other usage of transpose() and adjoint() are not supported and will produce compilation errors.
+        -:   67:  *
+        -:   68:  * \sa class PartialPivLU, class FullPivLU, class HouseholderQR, class ColPivHouseholderQR, class FullPivHouseholderQR, class CompleteOrthogonalDecomposition, class LLT, class LDLT, class SVDBase
+        -:   69:  */
+        -:   70:template<typename Derived>
+        -:   71:class SolverBase : public EigenBase<Derived>
+        -:   72:{
+        -:   73:  public:
+        -:   74:
+        -:   75:    typedef EigenBase<Derived> Base;
+        -:   76:    typedef typename internal::traits<Derived>::Scalar Scalar;
+        -:   77:    typedef Scalar CoeffReturnType;
+        -:   78:
+        -:   79:    template<typename Derived_>
+        -:   80:    friend struct internal::solve_assertion;
+        -:   81:
+        -:   82:    enum {
+        -:   83:      RowsAtCompileTime = internal::traits<Derived>::RowsAtCompileTime,
+        -:   84:      ColsAtCompileTime = internal::traits<Derived>::ColsAtCompileTime,
+        -:   85:      SizeAtCompileTime = (internal::size_of_xpr_at_compile_time<Derived>::ret),
+        -:   86:      MaxRowsAtCompileTime = internal::traits<Derived>::MaxRowsAtCompileTime,
+        -:   87:      MaxColsAtCompileTime = internal::traits<Derived>::MaxColsAtCompileTime,
+        -:   88:      MaxSizeAtCompileTime = internal::size_at_compile_time(internal::traits<Derived>::MaxRowsAtCompileTime,
+        -:   89:                                                            internal::traits<Derived>::MaxColsAtCompileTime),
+        -:   90:      IsVectorAtCompileTime = internal::traits<Derived>::MaxRowsAtCompileTime == 1
+        -:   91:                           || internal::traits<Derived>::MaxColsAtCompileTime == 1,
+        -:   92:      NumDimensions = int(MaxSizeAtCompileTime) == 1 ? 0 : bool(IsVectorAtCompileTime) ? 1 : 2
+        -:   93:    };
+        -:   94:
+        -:   95:    /** Default constructor */
+     1490:   96:    SolverBase()
+     1490:   97:    {}
+        -:   98:
+     1490:   99:    ~SolverBase()
+     1490:  100:    {}
+        -:  101:
+        -:  102:    using Base::derived;
+        -:  103:
+        -:  104:    /** \returns an expression of the solution x of \f$ A x = b \f$ using the current decomposition of A.
+        -:  105:      */
+        -:  106:    template<typename Rhs>
+        -:  107:    inline const Solve<Derived, Rhs>
+     1490:  108:    solve(const MatrixBase<Rhs>& b) const
+        -:  109:    {
+     1490:  110:      internal::solve_assertion<internal::remove_all_t<Derived>>::template run<false>(derived(), b);
+     1490:  111:      return Solve<Derived, Rhs>(derived(), b.derived());
+        -:  112:    }
+        -:  113:
+        -:  114:    /** \internal the return type of transpose() */
+        -:  115:    typedef Transpose<const Derived> ConstTransposeReturnType;
+        -:  116:    /** \returns an expression of the transposed of the factored matrix.
+        -:  117:      *
+        -:  118:      * A typical usage is to solve for the transposed problem A^T x = b:
+        -:  119:      * \code x = dec.transpose().solve(b); \endcode
+        -:  120:      *
+        -:  121:      * \sa adjoint(), solve()
+        -:  122:      */
+        -:  123:    inline const ConstTransposeReturnType transpose() const
+        -:  124:    {
+        -:  125:      return ConstTransposeReturnType(derived());
+        -:  126:    }
+        -:  127:
+        -:  128:    /** \internal the return type of adjoint() */
+        -:  129:    typedef std::conditional_t<NumTraits<Scalar>::IsComplex,
+        -:  130:               CwiseUnaryOp<internal::scalar_conjugate_op<Scalar>, const ConstTransposeReturnType>,
+        -:  131:               const ConstTransposeReturnType
+        -:  132:            > AdjointReturnType;
+        -:  133:    /** \returns an expression of the adjoint of the factored matrix
+        -:  134:      *
+        -:  135:      * A typical usage is to solve for the adjoint problem A' x = b:
+        -:  136:      * \code x = dec.adjoint().solve(b); \endcode
+        -:  137:      *
+        -:  138:      * For real scalar types, this function is equivalent to transpose().
+        -:  139:      *
+        -:  140:      * \sa transpose(), solve()
+        -:  141:      */
+        -:  142:    inline const AdjointReturnType adjoint() const
+        -:  143:    {
+        -:  144:      return AdjointReturnType(derived().transpose());
+        -:  145:    }
+        -:  146:
+        -:  147:  protected:
+        -:  148:
+        -:  149:    template<bool Transpose_, typename Rhs>
+     1490:  150:    void _check_solve_assertion(const Rhs& b) const {
+        -:  151:        EIGEN_ONLY_USED_FOR_DEBUG(b);
+     2980:  152:        eigen_assert(derived().m_isInitialized && "Solver is not initialized.");
+     2980:  153:        eigen_assert((Transpose_?derived().cols():derived().rows())==b.rows() && "SolverBase::solve(): invalid number of rows of the right hand side matrix b");
+     1490:  154:    }
+        -:  155:};
+        -:  156:
+        -:  157:namespace internal {
+        -:  158:
+        -:  159:template<typename Derived>
+        -:  160:struct generic_xpr_base<Derived, MatrixXpr, SolverStorage>
+        -:  161:{
+        -:  162:  typedef SolverBase<Derived> type;
+        -:  163:
+        -:  164:};
+        -:  165:
+        -:  166:} // end namespace internal
+        -:  167:
+        -:  168:} // end namespace Eigen
+        -:  169:
+        -:  170:#endif // EIGEN_SOLVERBASE_H

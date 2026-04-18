@@ -1,0 +1,328 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/MapBase.h
+        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
+        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
+        -:    0:Runs:4
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2007-2010 Benoit Jacob <jacob.benoit.1@gmail.com>
+        -:    5:// Copyright (C) 2008 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    6://
+        -:    7:// This Source Code Form is subject to the terms of the Mozilla
+        -:    8:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    9:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:   10:
+        -:   11:#ifndef EIGEN_MAPBASE_H
+        -:   12:#define EIGEN_MAPBASE_H
+        -:   13:
+        -:   14:#define EIGEN_STATIC_ASSERT_INDEX_BASED_ACCESS(Derived) \
+        -:   15:      EIGEN_STATIC_ASSERT((int(internal::evaluator<Derived>::Flags) & LinearAccessBit) || Derived::IsVectorAtCompileTime, \
+        -:   16:                          YOU_ARE_TRYING_TO_USE_AN_INDEX_BASED_ACCESSOR_ON_AN_EXPRESSION_THAT_DOES_NOT_SUPPORT_THAT)
+        -:   17:
+        -:   18:// IWYU pragma: private
+        -:   19:#include "./InternalHeaderCheck.h"
+        -:   20:
+        -:   21:namespace Eigen {
+        -:   22:
+        -:   23:/** \ingroup Core_Module
+        -:   24:  *
+        -:   25:  * \brief Base class for dense Map and Block expression with direct access
+        -:   26:  *
+        -:   27:  * This base class provides the const low-level accessors (e.g. coeff, coeffRef) of dense
+        -:   28:  * Map and Block objects with direct access.
+        -:   29:  * Typical users do not have to directly deal with this class.
+        -:   30:  *
+        -:   31:  * This class can be extended by through the macro plugin \c EIGEN_MAPBASE_PLUGIN.
+        -:   32:  * See \link TopicCustomizing_Plugins customizing Eigen \endlink for details.
+        -:   33:  *
+        -:   34:  * The \c Derived class has to provide the following two methods describing the memory layout:
+        -:   35:  *  \code Index innerStride() const; \endcode
+        -:   36:  *  \code Index outerStride() const; \endcode
+        -:   37:  *
+        -:   38:  * \sa class Map, class Block
+        -:   39:  */
+        -:   40:template<typename Derived> class MapBase<Derived, ReadOnlyAccessors>
+        -:   41:  : public internal::dense_xpr_base<Derived>::type
+        -:   42:{
+        -:   43:  public:
+        -:   44:
+        -:   45:    typedef typename internal::dense_xpr_base<Derived>::type Base;
+        -:   46:    enum {
+        -:   47:      RowsAtCompileTime = internal::traits<Derived>::RowsAtCompileTime,
+        -:   48:      ColsAtCompileTime = internal::traits<Derived>::ColsAtCompileTime,
+        -:   49:      InnerStrideAtCompileTime = internal::traits<Derived>::InnerStrideAtCompileTime,
+        -:   50:      SizeAtCompileTime = Base::SizeAtCompileTime
+        -:   51:    };
+        -:   52:
+        -:   53:    typedef typename internal::traits<Derived>::StorageKind StorageKind;
+        -:   54:    typedef typename internal::traits<Derived>::Scalar Scalar;
+        -:   55:    typedef typename internal::packet_traits<Scalar>::type PacketScalar;
+        -:   56:    typedef typename NumTraits<Scalar>::Real RealScalar;
+        -:   57:    typedef std::conditional_t<
+        -:   58:                bool(internal::is_lvalue<Derived>::value),
+        -:   59:                Scalar *,
+        -:   60:                const Scalar *>
+        -:   61:            PointerType;
+        -:   62:
+        -:   63:    using Base::derived;
+        -:   64://    using Base::RowsAtCompileTime;
+        -:   65://    using Base::ColsAtCompileTime;
+        -:   66://    using Base::SizeAtCompileTime;
+        -:   67:    using Base::MaxRowsAtCompileTime;
+        -:   68:    using Base::MaxColsAtCompileTime;
+        -:   69:    using Base::MaxSizeAtCompileTime;
+        -:   70:    using Base::IsVectorAtCompileTime;
+        -:   71:    using Base::Flags;
+        -:   72:    using Base::IsRowMajor;
+        -:   73:
+        -:   74:    using Base::rows;
+        -:   75:    using Base::cols;
+        -:   76:    using Base::size;
+        -:   77:    using Base::coeff;
+        -:   78:    using Base::coeffRef;
+        -:   79:    using Base::lazyAssign;
+        -:   80:    using Base::eval;
+        -:   81:
+        -:   82:    using Base::innerStride;
+        -:   83:    using Base::outerStride;
+        -:   84:    using Base::rowStride;
+        -:   85:    using Base::colStride;
+        -:   86:
+        -:   87:    // bug 217 - compile error on ICC 11.1
+        -:   88:    using Base::operator=;
+        -:   89:
+        -:   90:    typedef typename Base::CoeffReturnType CoeffReturnType;
+        -:   91:
+        -:   92:    /** \copydoc DenseBase::rows() */
+        -:   93:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+  1499380:   94:    inline Index rows() const EIGEN_NOEXCEPT { return m_rows.value(); }
+        -:   95:    /** \copydoc DenseBase::cols() */
+        -:   96:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+  1407450:   97:    inline Index cols() const EIGEN_NOEXCEPT { return m_cols.value(); }
+        -:   98:
+        -:   99:    /** Returns a pointer to the first coefficient of the matrix or vector.
+        -:  100:      *
+        -:  101:      * \note When addressing this data, make sure to honor the strides returned by innerStride() and outerStride().
+        -:  102:      *
+        -:  103:      * \sa innerStride(), outerStride()
+        -:  104:      */
+   115684:  105:    EIGEN_DEVICE_FUNC inline const Scalar* data() const { return m_data; }
+        -:  106:
+        -:  107:    /** \copydoc PlainObjectBase::coeff(Index,Index) const */
+        -:  108:    EIGEN_DEVICE_FUNC
+     6176:  109:    inline const Scalar& coeff(Index rowId, Index colId) const
+        -:  110:    {
+     6176:  111:      return m_data[colId * colStride() + rowId * rowStride()];
+        -:  112:    }
+        -:  113:
+        -:  114:    /** \copydoc PlainObjectBase::coeff(Index) const */
+        -:  115:    EIGEN_DEVICE_FUNC
+     2980:  116:    inline const Scalar& coeff(Index index) const
+        -:  117:    {
+        -:  118:      EIGEN_STATIC_ASSERT_INDEX_BASED_ACCESS(Derived)
+     2980:  119:      return m_data[index * innerStride()];
+        -:  120:    }
+        -:  121:
+        -:  122:    /** \copydoc PlainObjectBase::coeffRef(Index,Index) const */
+        -:  123:    EIGEN_DEVICE_FUNC
+     1490:  124:    inline const Scalar& coeffRef(Index rowId, Index colId) const
+        -:  125:    {
+     1490:  126:      return this->m_data[colId * colStride() + rowId * rowStride()];
+        -:  127:    }
+        -:  128:
+        -:  129:    /** \copydoc PlainObjectBase::coeffRef(Index) const */
+        -:  130:    EIGEN_DEVICE_FUNC
+    #####:  131:    inline const Scalar& coeffRef(Index index) const
+        -:  132:    {
+        -:  133:      EIGEN_STATIC_ASSERT_INDEX_BASED_ACCESS(Derived)
+    #####:  134:      return this->m_data[index * innerStride()];
+        -:  135:    }
+        -:  136:
+        -:  137:    /** \internal */
+        -:  138:    template<int LoadMode>
+        -:  139:    inline PacketScalar packet(Index rowId, Index colId) const
+        -:  140:    {
+        -:  141:      return internal::ploadt<PacketScalar, LoadMode>
+        -:  142:               (m_data + (colId * colStride() + rowId * rowStride()));
+        -:  143:    }
+        -:  144:
+        -:  145:    /** \internal */
+        -:  146:    template<int LoadMode>
+        -:  147:    inline PacketScalar packet(Index index) const
+        -:  148:    {
+        -:  149:      EIGEN_STATIC_ASSERT_INDEX_BASED_ACCESS(Derived)
+        -:  150:      return internal::ploadt<PacketScalar, LoadMode>(m_data + index * innerStride());
+        -:  151:    }
+        -:  152:
+        -:  153:    /** \internal Constructor for fixed size matrices or vectors */
+        -:  154:    EIGEN_DEVICE_FUNC
+        -:  155:    explicit inline MapBase(PointerType dataPtr) : m_data(dataPtr), m_rows(RowsAtCompileTime), m_cols(ColsAtCompileTime)
+        -:  156:    {
+        -:  157:      EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived)
+        -:  158:      checkSanity<Derived>();
+        -:  159:    }
+        -:  160:
+        -:  161:    /** \internal Constructor for dynamically sized vectors */
+        -:  162:    EIGEN_DEVICE_FUNC
+    19392:  163:    inline MapBase(PointerType dataPtr, Index vecSize)
+    19392:  164:            : m_data(dataPtr),
+    19392:  165:              m_rows(RowsAtCompileTime == Dynamic ? vecSize : Index(RowsAtCompileTime)),
+    19392:  166:              m_cols(ColsAtCompileTime == Dynamic ? vecSize : Index(ColsAtCompileTime))
+        -:  167:    {
+        -:  168:      EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived)
+    19392:  169:      eigen_assert(vecSize >= 0);
+    19392:  170:      eigen_assert(dataPtr == 0 || SizeAtCompileTime == Dynamic || SizeAtCompileTime == vecSize);
+    19392:  171:      checkSanity<Derived>();
+    19392:  172:    }
+        -:  173:
+        -:  174:    /** \internal Constructor for dynamically sized matrices */
+        -:  175:    EIGEN_DEVICE_FUNC
+   397122:  176:    inline MapBase(PointerType dataPtr, Index rows, Index cols)
+   397122:  177:            : m_data(dataPtr), m_rows(rows), m_cols(cols)
+        -:  178:    {
+   590478:  179:      eigen_assert( (dataPtr == 0)
+        -:  180:              || (   rows >= 0 && (RowsAtCompileTime == Dynamic || RowsAtCompileTime == rows)
+        -:  181:                  && cols >= 0 && (ColsAtCompileTime == Dynamic || ColsAtCompileTime == cols)));
+   397122:  182:      checkSanity<Derived>();
+   397122:  183:    }
+        -:  184:
+        -:  185:    #ifdef EIGEN_MAPBASE_PLUGIN
+        -:  186:    #include EIGEN_MAPBASE_PLUGIN
+        -:  187:    #endif
+        -:  188:
+        -:  189:  protected:
+        -:  190:    EIGEN_DEFAULT_COPY_CONSTRUCTOR(MapBase)
+        -:  191:    EIGEN_DEFAULT_EMPTY_CONSTRUCTOR_AND_DESTRUCTOR(MapBase)
+        -:  192:
+        -:  193:    template<typename T>
+        -:  194:    EIGEN_DEVICE_FUNC
+     6484:  195:    void checkSanity(std::enable_if_t<(internal::traits<T>::Alignment>0),void*> = 0) const
+        -:  196:    {
+        -:  197:// Temporary macro to allow scalars to not be properly aligned.  This is while we sort out failures
+        -:  198:// in TensorFlow Lite that are currently relying on this UB.
+        -:  199:#ifndef EIGEN_ALLOW_UNALIGNED_SCALARS
+        -:  200:      // Pointer must be aligned to the Scalar type, otherwise we get UB.
+    12968:  201:      eigen_assert((std::uintptr_t(m_data) % alignof(Scalar) == 0) && "data is not scalar-aligned");
+        -:  202:#endif
+        -:  203:#if EIGEN_MAX_ALIGN_BYTES>0
+        -:  204:      // innerStride() is not set yet when this function is called, so we optimistically assume the lowest plausible value:
+     6484:  205:      const Index minInnerStride = InnerStrideAtCompileTime == Dynamic ? 1 : Index(InnerStrideAtCompileTime);
+        -:  206:      EIGEN_ONLY_USED_FOR_DEBUG(minInnerStride);
+    12968:  207:      eigen_assert((   ((std::uintptr_t(m_data) % internal::traits<Derived>::Alignment) == 0)
+        -:  208:                    || (cols() * rows() * minInnerStride * sizeof(Scalar)) < internal::traits<Derived>::Alignment ) && "data is not aligned");
+        -:  209:#endif
+     6484:  210:    }
+        -:  211:
+        -:  212:    template<typename T>
+        -:  213:    EIGEN_DEVICE_FUNC
+   410030:  214:    void checkSanity(std::enable_if_t<internal::traits<T>::Alignment==0,void*> = 0) const
+        -:  215:    {
+        -:  216:#ifndef EIGEN_ALLOW_UNALIGNED_SCALARS
+        -:  217:      // Pointer must be aligned to the Scalar type, otherwise we get UB.
+   820060:  218:      eigen_assert((std::uintptr_t(m_data) % alignof(Scalar) == 0) && "data is not scalar-aligned");
+        -:  219:#endif
+   410030:  220:    }
+        -:  221:
+        -:  222:    PointerType m_data;
+        -:  223:    const internal::variable_if_dynamic<Index, RowsAtCompileTime> m_rows;
+        -:  224:    const internal::variable_if_dynamic<Index, ColsAtCompileTime> m_cols;
+        -:  225:};
+        -:  226:
+        -:  227:/** \ingroup Core_Module
+        -:  228:  *
+        -:  229:  * \brief Base class for non-const dense Map and Block expression with direct access
+        -:  230:  *
+        -:  231:  * This base class provides the non-const low-level accessors (e.g. coeff and coeffRef) of
+        -:  232:  * dense Map and Block objects with direct access.
+        -:  233:  * It inherits MapBase<Derived, ReadOnlyAccessors> which defines the const variant for reading specific entries.
+        -:  234:  *
+        -:  235:  * \sa class Map, class Block
+        -:  236:  */
+        -:  237:template<typename Derived> class MapBase<Derived, WriteAccessors>
+        -:  238:  : public MapBase<Derived, ReadOnlyAccessors>
+        -:  239:{
+        -:  240:    typedef MapBase<Derived, ReadOnlyAccessors> ReadOnlyMapBase;
+        -:  241:  public:
+        -:  242:
+        -:  243:    typedef MapBase<Derived, ReadOnlyAccessors> Base;
+        -:  244:
+        -:  245:    typedef typename Base::Scalar Scalar;
+        -:  246:    typedef typename Base::PacketScalar PacketScalar;
+        -:  247:    typedef typename Base::StorageIndex StorageIndex;
+        -:  248:    typedef typename Base::PointerType PointerType;
+        -:  249:
+        -:  250:    using Base::derived;
+        -:  251:    using Base::rows;
+        -:  252:    using Base::cols;
+        -:  253:    using Base::size;
+        -:  254:    using Base::coeff;
+        -:  255:    using Base::coeffRef;
+        -:  256:
+        -:  257:    using Base::innerStride;
+        -:  258:    using Base::outerStride;
+        -:  259:    using Base::rowStride;
+        -:  260:    using Base::colStride;
+        -:  261:
+        -:  262:    typedef std::conditional_t<
+        -:  263:                    internal::is_lvalue<Derived>::value,
+        -:  264:                    Scalar,
+        -:  265:                    const Scalar
+        -:  266:                  > ScalarWithConstIfNotLvalue;
+        -:  267:
+        -:  268:    EIGEN_DEVICE_FUNC
+   344274:  269:    inline const Scalar* data() const { return this->m_data; }
+        -:  270:    EIGEN_DEVICE_FUNC
+   162990:  271:    inline ScalarWithConstIfNotLvalue* data() { return this->m_data; } // no const-cast here so non-const-correct code will give a compile error
+        -:  272:
+        -:  273:    EIGEN_DEVICE_FUNC
+    61412:  274:    inline ScalarWithConstIfNotLvalue& coeffRef(Index row, Index col)
+        -:  275:    {
+    61412:  276:      return this->m_data[col * colStride() + row * rowStride()];
+        -:  277:    }
+        -:  278:
+        -:  279:    EIGEN_DEVICE_FUNC
+     5364:  280:    inline ScalarWithConstIfNotLvalue& coeffRef(Index index)
+        -:  281:    {
+        -:  282:      EIGEN_STATIC_ASSERT_INDEX_BASED_ACCESS(Derived)
+     5364:  283:      return this->m_data[index * innerStride()];
+        -:  284:    }
+        -:  285:
+        -:  286:    template<int StoreMode>
+        -:  287:    inline void writePacket(Index row, Index col, const PacketScalar& val)
+        -:  288:    {
+        -:  289:      internal::pstoret<Scalar, PacketScalar, StoreMode>
+        -:  290:               (this->m_data + (col * colStride() + row * rowStride()), val);
+        -:  291:    }
+        -:  292:
+        -:  293:    template<int StoreMode>
+        -:  294:    inline void writePacket(Index index, const PacketScalar& val)
+        -:  295:    {
+        -:  296:      EIGEN_STATIC_ASSERT_INDEX_BASED_ACCESS(Derived)
+        -:  297:      internal::pstoret<Scalar, PacketScalar, StoreMode>
+        -:  298:                (this->m_data + index * innerStride(), val);
+        -:  299:    }
+        -:  300:
+        -:  301:    EIGEN_DEVICE_FUNC explicit inline MapBase(PointerType dataPtr) : Base(dataPtr) {}
+    19392:  302:    EIGEN_DEVICE_FUNC inline MapBase(PointerType dataPtr, Index vecSize) : Base(dataPtr, vecSize) {}
+   304724:  303:    EIGEN_DEVICE_FUNC inline MapBase(PointerType dataPtr, Index rows, Index cols) : Base(dataPtr, rows, cols) {}
+        -:  304:
+        -:  305:    EIGEN_DEVICE_FUNC
+     7132:  306:    Derived& operator=(const MapBase& other)
+        -:  307:    {
+     7132:  308:      ReadOnlyMapBase::Base::operator=(other);
+     7132:  309:      return derived();
+        -:  310:    }
+        -:  311:
+        -:  312:    // In theory we could simply refer to Base:Base::operator=, but MSVC does not like Base::Base,
+        -:  313:    // see bugs 821 and 920.
+        -:  314:    using ReadOnlyMapBase::Base::operator=;
+        -:  315:  protected:
+        -:  316:    EIGEN_DEFAULT_COPY_CONSTRUCTOR(MapBase)
+        -:  317:    EIGEN_DEFAULT_EMPTY_CONSTRUCTOR_AND_DESTRUCTOR(MapBase)
+        -:  318:};
+        -:  319:
+        -:  320:#undef EIGEN_STATIC_ASSERT_INDEX_BASED_ACCESS
+        -:  321:
+        -:  322:} // end namespace Eigen
+        -:  323:
+        -:  324:#endif // EIGEN_MAPBASE_H

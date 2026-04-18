@@ -1,0 +1,286 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Geometry/OrthoMethods.h
+        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
+        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
+        -:    0:Runs:4
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2008-2009 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    5:// Copyright (C) 2006-2008 Benoit Jacob <jacob.benoit.1@gmail.com>
+        -:    6://
+        -:    7:// This Source Code Form is subject to the terms of the Mozilla
+        -:    8:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    9:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:   10:
+        -:   11:#ifndef EIGEN_ORTHOMETHODS_H
+        -:   12:#define EIGEN_ORTHOMETHODS_H
+        -:   13:
+        -:   14:// IWYU pragma: private
+        -:   15:#include "./InternalHeaderCheck.h"
+        -:   16:
+        -:   17:namespace Eigen { 
+        -:   18:
+        -:   19:namespace internal {
+        -:   20:
+        -:   21:// Vector3 version (default)
+        -:   22:template<typename Derived, typename OtherDerived, int Size>
+        -:   23:struct cross_impl
+        -:   24:{
+        -:   25:  typedef typename ScalarBinaryOpTraits<typename internal::traits<Derived>::Scalar,typename internal::traits<OtherDerived>::Scalar>::ReturnType Scalar;
+        -:   26:  typedef Matrix<Scalar,MatrixBase<Derived>::RowsAtCompileTime,MatrixBase<Derived>::ColsAtCompileTime> return_type;
+        -:   27:
+        -:   28:  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+     6970:   29:  return_type run(const MatrixBase<Derived>& first, const MatrixBase<OtherDerived>& second)
+        -:   30:  {
+        -:   31:    EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived,3)
+        -:   32:    EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(OtherDerived,3)
+        -:   33:
+        -:   34:    // Note that there is no need for an expression here since the compiler
+        -:   35:    // optimize such a small temporary very well (even within a complex expression)
+     6970:   36:    typename internal::nested_eval<Derived,2>::type lhs(first.derived());
+     6970:   37:    typename internal::nested_eval<OtherDerived,2>::type rhs(second.derived());
+     6970:   38:    return return_type(
+     6970:   39:      numext::conj(lhs.coeff(1) * rhs.coeff(2) - lhs.coeff(2) * rhs.coeff(1)),
+     6970:   40:      numext::conj(lhs.coeff(2) * rhs.coeff(0) - lhs.coeff(0) * rhs.coeff(2)),
+     6970:   41:      numext::conj(lhs.coeff(0) * rhs.coeff(1) - lhs.coeff(1) * rhs.coeff(0))
+        -:   42:    );
+        -:   43:  }
+        -:   44:};
+        -:   45:
+        -:   46:// Vector2 version
+        -:   47:template<typename Derived, typename OtherDerived>
+        -:   48:struct cross_impl<Derived, OtherDerived, 2>
+        -:   49:{
+        -:   50:  typedef typename ScalarBinaryOpTraits<typename internal::traits<Derived>::Scalar,typename internal::traits<OtherDerived>::Scalar>::ReturnType Scalar;
+        -:   51:  typedef Scalar return_type;
+        -:   52:
+        -:   53:  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+        -:   54:  return_type run(const MatrixBase<Derived>& first, const MatrixBase<OtherDerived>& second)
+        -:   55:  {
+        -:   56:    EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived,2);
+        -:   57:    EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(OtherDerived,2);
+        -:   58:    typename internal::nested_eval<Derived,2>::type lhs(first.derived());
+        -:   59:    typename internal::nested_eval<OtherDerived,2>::type rhs(second.derived());
+        -:   60:    return numext::conj(lhs.coeff(0) * rhs.coeff(1) - lhs.coeff(1) * rhs.coeff(0));
+        -:   61:  }
+        -:   62:};
+        -:   63:
+        -:   64:} // end namespace internal
+        -:   65:
+        -:   66:/** \geometry_module \ingroup Geometry_Module
+        -:   67:  *
+        -:   68:  * \returns the cross product of \c *this and \a other. This is either a scalar for size-2 vectors or a size-3 vector for size-3 vectors.
+        -:   69:  *
+        -:   70:  * This method is implemented for two different cases: between vectors of fixed size 2 and between vectors of fixed size 3.
+        -:   71:  * 
+        -:   72:  * For vectors of size 3, the output is simply the traditional cross product.
+        -:   73:  *
+        -:   74:  * For vectors of size 2, the output is a scalar.
+        -:   75:  * Given vectors \f$ v = \begin{bmatrix} v_1 & v_2 \end{bmatrix} \f$ and \f$ w = \begin{bmatrix} w_1 & w_2 \end{bmatrix} \f$,
+        -:   76:  * the result is simply \f$ v\times w = \overline{v_1 w_2 - v_2 w_1} = \text{conj}\left|\begin{smallmatrix} v_1 & w_1 \\ v_2 & w_2 \end{smallmatrix}\right| \f$;
+        -:   77:  * or, to put it differently, it is the third coordinate of the cross product of \f$ \begin{bmatrix} v_1 & v_2 & v_3 \end{bmatrix} \f$ and \f$ \begin{bmatrix} w_1 & w_2 & w_3 \end{bmatrix} \f$.
+        -:   78:  * For real-valued inputs, the result can be interpreted as the signed area of a parallelogram spanned by the two vectors.
+        -:   79:  * 
+        -:   80:  * \note With complex numbers, the cross product is implemented as
+        -:   81:  * \f$ (\mathbf{a}+i\mathbf{b}) \times (\mathbf{c}+i\mathbf{d}) = (\mathbf{a} \times \mathbf{c} - \mathbf{b} \times \mathbf{d}) - i(\mathbf{a} \times \mathbf{d} + \mathbf{b} \times \mathbf{c})\f$
+        -:   82:  * 
+        -:   83:  * \sa MatrixBase::cross3()
+        -:   84:  */
+        -:   85:template<typename Derived>
+        -:   86:template<typename OtherDerived>
+        -:   87:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+        -:   88:#ifndef EIGEN_PARSED_BY_DOXYGEN
+        -:   89:typename internal::cross_impl<Derived, OtherDerived>::return_type
+        -:   90:#else
+        -:   91:inline std::conditional_t<SizeAtCompileTime==2, Scalar, PlainObject>
+        -:   92:#endif
+     6970:   93:MatrixBase<Derived>::cross(const MatrixBase<OtherDerived>& other) const
+        -:   94:{
+     6970:   95:  return internal::cross_impl<Derived, OtherDerived>::run(*this, other);
+        -:   96:}
+        -:   97:
+        -:   98:namespace internal {
+        -:   99:
+        -:  100:template< int Arch,typename VectorLhs,typename VectorRhs,
+        -:  101:          typename Scalar = typename VectorLhs::Scalar,
+        -:  102:          bool Vectorizable = bool((VectorLhs::Flags&VectorRhs::Flags)&PacketAccessBit)>
+        -:  103:struct cross3_impl {
+        -:  104:  EIGEN_DEVICE_FUNC static inline typename internal::plain_matrix_type<VectorLhs>::type
+        -:  105:  run(const VectorLhs& lhs, const VectorRhs& rhs)
+        -:  106:  {
+        -:  107:    return typename internal::plain_matrix_type<VectorLhs>::type(
+        -:  108:      numext::conj(lhs.coeff(1) * rhs.coeff(2) - lhs.coeff(2) * rhs.coeff(1)),
+        -:  109:      numext::conj(lhs.coeff(2) * rhs.coeff(0) - lhs.coeff(0) * rhs.coeff(2)),
+        -:  110:      numext::conj(lhs.coeff(0) * rhs.coeff(1) - lhs.coeff(1) * rhs.coeff(0)),
+        -:  111:      0
+        -:  112:    );
+        -:  113:  }
+        -:  114:};
+        -:  115:
+        -:  116:}
+        -:  117:
+        -:  118:/** \geometry_module \ingroup Geometry_Module
+        -:  119:  *
+        -:  120:  * \returns the cross product of \c *this and \a other using only the x, y, and z coefficients
+        -:  121:  *
+        -:  122:  * The size of \c *this and \a other must be four. This function is especially useful
+        -:  123:  * when using 4D vectors instead of 3D ones to get advantage of SSE/AltiVec vectorization.
+        -:  124:  *
+        -:  125:  * \sa MatrixBase::cross()
+        -:  126:  */
+        -:  127:template<typename Derived>
+        -:  128:template<typename OtherDerived>
+        -:  129:EIGEN_DEVICE_FUNC inline typename MatrixBase<Derived>::PlainObject
+        -:  130:MatrixBase<Derived>::cross3(const MatrixBase<OtherDerived>& other) const
+        -:  131:{
+        -:  132:  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived,4)
+        -:  133:  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(OtherDerived,4)
+        -:  134:
+        -:  135:  typedef typename internal::nested_eval<Derived,2>::type DerivedNested;
+        -:  136:  typedef typename internal::nested_eval<OtherDerived,2>::type OtherDerivedNested;
+        -:  137:  DerivedNested lhs(derived());
+        -:  138:  OtherDerivedNested rhs(other.derived());
+        -:  139:
+        -:  140:  return internal::cross3_impl<Architecture::Target,
+        -:  141:                        internal::remove_all_t<DerivedNested>,
+        -:  142:                        internal::remove_all_t<OtherDerivedNested>>::run(lhs,rhs);
+        -:  143:}
+        -:  144:
+        -:  145:/** \geometry_module \ingroup Geometry_Module
+        -:  146:  *
+        -:  147:  * \returns a matrix expression of the cross product of each column or row
+        -:  148:  * of the referenced expression with the \a other vector.
+        -:  149:  *
+        -:  150:  * The referenced matrix must have one dimension equal to 3.
+        -:  151:  * The result matrix has the same dimensions than the referenced one.
+        -:  152:  *
+        -:  153:  * \sa MatrixBase::cross() */
+        -:  154:template<typename ExpressionType, int Direction>
+        -:  155:template<typename OtherDerived>
+        -:  156:EIGEN_DEVICE_FUNC 
+        -:  157:const typename VectorwiseOp<ExpressionType,Direction>::CrossReturnType
+        -:  158:VectorwiseOp<ExpressionType,Direction>::cross(const MatrixBase<OtherDerived>& other) const
+        -:  159:{
+        -:  160:  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(OtherDerived,3)
+        -:  161:  EIGEN_STATIC_ASSERT((internal::is_same<Scalar, typename OtherDerived::Scalar>::value),
+        -:  162:    YOU_MIXED_DIFFERENT_NUMERIC_TYPES__YOU_NEED_TO_USE_THE_CAST_METHOD_OF_MATRIXBASE_TO_CAST_NUMERIC_TYPES_EXPLICITLY)
+        -:  163:  
+        -:  164:  typename internal::nested_eval<ExpressionType,2>::type mat(_expression());
+        -:  165:  typename internal::nested_eval<OtherDerived,2>::type vec(other.derived());
+        -:  166:
+        -:  167:  CrossReturnType res(_expression().rows(),_expression().cols());
+        -:  168:  if(Direction==Vertical)
+        -:  169:  {
+        -:  170:    eigen_assert(CrossReturnType::RowsAtCompileTime==3 && "the matrix must have exactly 3 rows");
+        -:  171:    res.row(0) = (mat.row(1) * vec.coeff(2) - mat.row(2) * vec.coeff(1)).conjugate();
+        -:  172:    res.row(1) = (mat.row(2) * vec.coeff(0) - mat.row(0) * vec.coeff(2)).conjugate();
+        -:  173:    res.row(2) = (mat.row(0) * vec.coeff(1) - mat.row(1) * vec.coeff(0)).conjugate();
+        -:  174:  }
+        -:  175:  else
+        -:  176:  {
+        -:  177:    eigen_assert(CrossReturnType::ColsAtCompileTime==3 && "the matrix must have exactly 3 columns");
+        -:  178:    res.col(0) = (mat.col(1) * vec.coeff(2) - mat.col(2) * vec.coeff(1)).conjugate();
+        -:  179:    res.col(1) = (mat.col(2) * vec.coeff(0) - mat.col(0) * vec.coeff(2)).conjugate();
+        -:  180:    res.col(2) = (mat.col(0) * vec.coeff(1) - mat.col(1) * vec.coeff(0)).conjugate();
+        -:  181:  }
+        -:  182:  return res;
+        -:  183:}
+        -:  184:
+        -:  185:namespace internal {
+        -:  186:
+        -:  187:template<typename Derived, int Size = Derived::SizeAtCompileTime>
+        -:  188:struct unitOrthogonal_selector
+        -:  189:{
+        -:  190:  typedef typename plain_matrix_type<Derived>::type VectorType;
+        -:  191:  typedef typename traits<Derived>::Scalar Scalar;
+        -:  192:  typedef typename NumTraits<Scalar>::Real RealScalar;
+        -:  193:  typedef Matrix<Scalar,2,1> Vector2;
+        -:  194:  EIGEN_DEVICE_FUNC
+        -:  195:  static inline VectorType run(const Derived& src)
+        -:  196:  {
+        -:  197:    VectorType perp = VectorType::Zero(src.size());
+        -:  198:    Index maxi = 0;
+        -:  199:    Index sndi = 0;
+        -:  200:    src.cwiseAbs().maxCoeff(&maxi);
+        -:  201:    if (maxi==0)
+        -:  202:      sndi = 1;
+        -:  203:    RealScalar invnm = RealScalar(1)/(Vector2() << src.coeff(sndi),src.coeff(maxi)).finished().norm();
+        -:  204:    perp.coeffRef(maxi) = -numext::conj(src.coeff(sndi)) * invnm;
+        -:  205:    perp.coeffRef(sndi) =  numext::conj(src.coeff(maxi)) * invnm;
+        -:  206:
+        -:  207:    return perp;
+        -:  208:   }
+        -:  209:};
+        -:  210:
+        -:  211:template<typename Derived>
+        -:  212:struct unitOrthogonal_selector<Derived,3>
+        -:  213:{
+        -:  214:  typedef typename plain_matrix_type<Derived>::type VectorType;
+        -:  215:  typedef typename traits<Derived>::Scalar Scalar;
+        -:  216:  typedef typename NumTraits<Scalar>::Real RealScalar;
+        -:  217:  EIGEN_DEVICE_FUNC
+        -:  218:  static inline VectorType run(const Derived& src)
+        -:  219:  {
+        -:  220:    VectorType perp;
+        -:  221:    /* Let us compute the crossed product of *this with a vector
+        -:  222:     * that is not too close to being colinear to *this.
+        -:  223:     */
+        -:  224:
+        -:  225:    /* unless the x and y coords are both close to zero, we can
+        -:  226:     * simply take ( -y, x, 0 ) and normalize it.
+        -:  227:     */
+        -:  228:    if((!isMuchSmallerThan(src.x(), src.z()))
+        -:  229:    || (!isMuchSmallerThan(src.y(), src.z())))
+        -:  230:    {
+        -:  231:      RealScalar invnm = RealScalar(1)/src.template head<2>().norm();
+        -:  232:      perp.coeffRef(0) = -numext::conj(src.y())*invnm;
+        -:  233:      perp.coeffRef(1) = numext::conj(src.x())*invnm;
+        -:  234:      perp.coeffRef(2) = 0;
+        -:  235:    }
+        -:  236:    /* if both x and y are close to zero, then the vector is close
+        -:  237:     * to the z-axis, so it's far from colinear to the x-axis for instance.
+        -:  238:     * So we take the crossed product with (1,0,0) and normalize it.
+        -:  239:     */
+        -:  240:    else
+        -:  241:    {
+        -:  242:      RealScalar invnm = RealScalar(1)/src.template tail<2>().norm();
+        -:  243:      perp.coeffRef(0) = 0;
+        -:  244:      perp.coeffRef(1) = -numext::conj(src.z())*invnm;
+        -:  245:      perp.coeffRef(2) = numext::conj(src.y())*invnm;
+        -:  246:    }
+        -:  247:
+        -:  248:    return perp;
+        -:  249:   }
+        -:  250:};
+        -:  251:
+        -:  252:template<typename Derived>
+        -:  253:struct unitOrthogonal_selector<Derived,2>
+        -:  254:{
+        -:  255:  typedef typename plain_matrix_type<Derived>::type VectorType;
+        -:  256:  EIGEN_DEVICE_FUNC
+        -:  257:  static inline VectorType run(const Derived& src)
+        -:  258:  { return VectorType(-numext::conj(src.y()), numext::conj(src.x())).normalized(); }
+        -:  259:};
+        -:  260:
+        -:  261:} // end namespace internal
+        -:  262:
+        -:  263:/** \geometry_module \ingroup Geometry_Module
+        -:  264:  *
+        -:  265:  * \returns a unit vector which is orthogonal to \c *this
+        -:  266:  *
+        -:  267:  * The size of \c *this must be at least 2. If the size is exactly 2,
+        -:  268:  * then the returned vector is a counter clock wise rotation of \c *this, i.e., (-y,x).normalized().
+        -:  269:  *
+        -:  270:  * \sa cross()
+        -:  271:  */
+        -:  272:template<typename Derived>
+        -:  273:EIGEN_DEVICE_FUNC typename MatrixBase<Derived>::PlainObject
+        -:  274:MatrixBase<Derived>::unitOrthogonal() const
+        -:  275:{
+        -:  276:  EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived)
+        -:  277:  return internal::unitOrthogonal_selector<Derived>::run(derived());
+        -:  278:}
+        -:  279:
+        -:  280:} // end namespace Eigen
+        -:  281:
+        -:  282:#endif // EIGEN_ORTHOMETHODS_H

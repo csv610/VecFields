@@ -1,0 +1,261 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/arch/NEON/GeneralBlockPanelKernel.h
+        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
+        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
+        -:    0:Runs:4
+        -:    1:// IWYU pragma: private
+        -:    2:#include "../../InternalHeaderCheck.h"
+        -:    3:
+        -:    4:namespace Eigen {
+        -:    5:namespace internal {
+        -:    6:
+        -:    7:#if EIGEN_ARCH_ARM && EIGEN_COMP_CLANG
+        -:    8:
+        -:    9:// Clang seems to excessively spill registers in the GEBP kernel on 32-bit arm.
+        -:   10:// Here we specialize gebp_traits to eliminate these register spills.
+        -:   11:// See #2138.
+        -:   12:template<>
+        -:   13:struct gebp_traits <float,float,false,false,Architecture::NEON,GEBPPacketFull>
+        -:   14: : gebp_traits<float,float,false,false,Architecture::Generic,GEBPPacketFull>
+        -:   15:{
+        -:   16:  EIGEN_STRONG_INLINE void acc(const AccPacket& c, const ResPacket& alpha, ResPacket& r) const
+        -:   17:  { 
+        -:   18:    // This volatile inline ASM both acts as a barrier to prevent reordering,
+        -:   19:    // as well as enforces strict register use.
+        -:   20:    asm volatile(
+        -:   21:      "vmla.f32 %q[r], %q[c], %q[alpha]"
+        -:   22:      : [r] "+w" (r)
+        -:   23:      : [c] "w" (c),
+        -:   24:        [alpha] "w" (alpha)
+        -:   25:      : );
+        -:   26:  }
+        -:   27:
+        -:   28:  template <typename LaneIdType>
+        -:   29:  EIGEN_STRONG_INLINE void madd(const Packet4f& a, const Packet4f& b,
+        -:   30:                                Packet4f& c, Packet4f&,
+        -:   31:                                const LaneIdType&) const {
+        -:   32:    acc(a, b, c);
+        -:   33:  }
+        -:   34:  
+        -:   35:  template <typename LaneIdType>
+        -:   36:  EIGEN_STRONG_INLINE void madd(const Packet4f& a, const QuadPacket<Packet4f>& b,
+        -:   37:                                Packet4f& c, Packet4f& tmp,
+        -:   38:                                const LaneIdType& lane) const {
+        -:   39:    madd(a, b.get(lane), c, tmp, lane);
+        -:   40:  }
+        -:   41:};
+        -:   42:
+        -:   43:#endif // EIGEN_ARCH_ARM && EIGEN_COMP_CLANG
+        -:   44:
+        -:   45:#if EIGEN_ARCH_ARM64
+        -:   46:
+        -:   47:#ifndef EIGEN_NEON_GEBP_NR
+        -:   48:#define EIGEN_NEON_GEBP_NR 8
+        -:   49:#endif
+        -:   50:
+        -:   51:template<>
+        -:   52:struct gebp_traits <float,float,false,false,Architecture::NEON,GEBPPacketFull>
+        -:   53: : gebp_traits<float,float,false,false,Architecture::Generic,GEBPPacketFull>
+        -:   54:{
+        -:   55:  typedef float RhsPacket;
+        -:   56:  typedef float32x4_t RhsPacketx4;
+        -:   57:  enum { nr = EIGEN_NEON_GEBP_NR };
+        -:   58:  EIGEN_STRONG_INLINE void loadRhs(const RhsScalar* b, RhsPacket& dest) const {
+        -:   59:    dest = *b;
+        -:   60:  }
+        -:   61:
+        -:   62:  EIGEN_STRONG_INLINE void loadRhs(const RhsScalar* b, RhsPacketx4& dest) const
+        -:   63:  {
+        -:   64:    dest = vld1q_f32(b);
+        -:   65:  }
+        -:   66:
+        -:   67:  EIGEN_STRONG_INLINE void updateRhs(const RhsScalar* b, RhsPacket& dest) const
+        -:   68:  {
+        -:   69:    dest = *b;
+        -:   70:  }
+        -:   71:
+        -:   72:  EIGEN_STRONG_INLINE void updateRhs(const RhsScalar*, RhsPacketx4&) const
+        -:   73:  {}
+        -:   74:
+        -:   75:  EIGEN_STRONG_INLINE void loadRhsQuad(const RhsScalar* b, RhsPacket& dest) const
+        -:   76:  {
+        -:   77:    loadRhs(b,dest);
+        -:   78:  }
+        -:   79:
+        -:   80:  EIGEN_STRONG_INLINE void madd(const LhsPacket& a, const RhsPacket& b, AccPacket& c, RhsPacket& /*tmp*/, const FixedInt<0>&) const
+        -:   81:  {
+        -:   82:    c = vfmaq_n_f32(c, a, b);
+        -:   83:  }
+        -:   84:  // NOTE: Template parameter inference failed when compiled with Android NDK:
+        -:   85:  // "candidate template ignored: could not match 'FixedInt<N>' against 'Eigen::internal::FixedInt<0>".
+        -:   86:
+        -:   87:  EIGEN_STRONG_INLINE void madd(const LhsPacket& a, const RhsPacketx4& b, AccPacket& c, RhsPacket& /*tmp*/, const FixedInt<0>&) const
+        -:   88:  { madd_helper<0>(a, b, c); }
+        -:   89:  EIGEN_STRONG_INLINE void madd(const LhsPacket& a, const RhsPacketx4& b, AccPacket& c, RhsPacket& /*tmp*/, const FixedInt<1>&) const
+        -:   90:  { madd_helper<1>(a, b, c); }
+        -:   91:  EIGEN_STRONG_INLINE void madd(const LhsPacket& a, const RhsPacketx4& b, AccPacket& c, RhsPacket& /*tmp*/, const FixedInt<2>&) const
+        -:   92:  { madd_helper<2>(a, b, c); }
+        -:   93:  EIGEN_STRONG_INLINE void madd(const LhsPacket& a, const RhsPacketx4& b, AccPacket& c, RhsPacket& /*tmp*/, const FixedInt<3>&) const
+        -:   94:  { madd_helper<3>(a, b, c); }
+        -:   95:
+        -:   96: private:
+        -:   97:  template<int LaneID>
+        -:   98:  EIGEN_STRONG_INLINE void madd_helper(const LhsPacket& a, const RhsPacketx4& b, AccPacket& c) const
+        -:   99:  {
+        -:  100:    #if EIGEN_GNUC_STRICT_LESS_THAN(9,0,0)
+        -:  101:    // 1. workaround gcc issue https://gcc.gnu.org/bugzilla/show_bug.cgi?id=89101
+        -:  102:    //    vfmaq_laneq_f32 is implemented through a costly dup, which was fixed in gcc9
+        -:  103:    // 2. workaround the gcc register split problem on arm64-neon
+        -:  104:         if(LaneID==0)  asm("fmla %0.4s, %1.4s, %2.s[0]\n" : "+w" (c) : "w" (a), "w" (b) :  );
+        -:  105:    else if(LaneID==1)  asm("fmla %0.4s, %1.4s, %2.s[1]\n" : "+w" (c) : "w" (a), "w" (b) :  );
+        -:  106:    else if(LaneID==2)  asm("fmla %0.4s, %1.4s, %2.s[2]\n" : "+w" (c) : "w" (a), "w" (b) :  );
+        -:  107:    else if(LaneID==3)  asm("fmla %0.4s, %1.4s, %2.s[3]\n" : "+w" (c) : "w" (a), "w" (b) :  );
+        -:  108:    #else
+        -:  109:    c = vfmaq_laneq_f32(c, a, b, LaneID);
+        -:  110:    #endif
+        -:  111:  }
+        -:  112:};
+        -:  113:
+        -:  114:
+        -:  115:template<>
+        -:  116:struct gebp_traits <double,double,false,false,Architecture::NEON>
+        -:  117: : gebp_traits<double,double,false,false,Architecture::Generic>
+        -:  118:{
+        -:  119:  typedef double RhsPacket;
+        -:  120:  enum { nr = EIGEN_NEON_GEBP_NR };
+        -:  121:  struct RhsPacketx4 {
+        -:  122:    float64x2_t B_0, B_1;
+        -:  123:  };
+        -:  124:
+    #####:  125:  EIGEN_STRONG_INLINE void loadRhs(const RhsScalar* b, RhsPacket& dest) const
+        -:  126:  {
+    #####:  127:    dest = *b;
+    #####:  128:  }
+        -:  129:
+    #####:  130:  EIGEN_STRONG_INLINE void loadRhs(const RhsScalar* b, RhsPacketx4& dest) const
+        -:  131:  {
+    #####:  132:    dest.B_0 = vld1q_f64(b);
+    #####:  133:    dest.B_1 = vld1q_f64(b+2);
+    #####:  134:  }
+        -:  135:
+        -:  136:  EIGEN_STRONG_INLINE void updateRhs(const RhsScalar* b, RhsPacket& dest) const
+        -:  137:  {
+        -:  138:    loadRhs(b,dest);
+        -:  139:  }
+        -:  140:
+    #####:  141:  EIGEN_STRONG_INLINE void updateRhs(const RhsScalar*, RhsPacketx4&) const
+    #####:  142:  {}
+        -:  143:
+        -:  144:  EIGEN_STRONG_INLINE void loadRhsQuad(const RhsScalar* b, RhsPacket& dest) const
+        -:  145:  {
+        -:  146:    loadRhs(b,dest);
+        -:  147:  }
+        -:  148:
+    #####:  149:  EIGEN_STRONG_INLINE void madd(const LhsPacket& a, const RhsPacket& b, AccPacket& c, RhsPacket& /*tmp*/, const FixedInt<0>&) const
+        -:  150:  {
+    #####:  151:    c = vfmaq_n_f64(c, a, b);
+    #####:  152:  }
+        -:  153:
+        -:  154:  // NOTE: Template parameter inference failed when compiled with Android NDK:
+        -:  155:  // "candidate template ignored: could not match 'FixedInt<N>' against 'Eigen::internal::FixedInt<0>".
+        -:  156:
+    #####:  157:  EIGEN_STRONG_INLINE void madd(const LhsPacket& a, const RhsPacketx4& b, AccPacket& c, RhsPacket& /*tmp*/, const FixedInt<0>&) const
+    #####:  158:  { madd_helper<0>(a, b, c); }
+    #####:  159:  EIGEN_STRONG_INLINE void madd(const LhsPacket& a, const RhsPacketx4& b, AccPacket& c, RhsPacket& /*tmp*/, const FixedInt<1>&) const
+    #####:  160:  { madd_helper<1>(a, b, c); }
+    #####:  161:  EIGEN_STRONG_INLINE void madd(const LhsPacket& a, const RhsPacketx4& b, AccPacket& c, RhsPacket& /*tmp*/, const FixedInt<2>&) const
+    #####:  162:  { madd_helper<2>(a, b, c); }
+    #####:  163:  EIGEN_STRONG_INLINE void madd(const LhsPacket& a, const RhsPacketx4& b, AccPacket& c, RhsPacket& /*tmp*/, const FixedInt<3>&) const
+    #####:  164:  { madd_helper<3>(a, b, c); }
+        -:  165:
+        -:  166: private:
+        -:  167:  template <int LaneID>
+    #####:  168:  EIGEN_STRONG_INLINE void madd_helper(const LhsPacket& a, const RhsPacketx4& b, AccPacket& c) const
+        -:  169:  {
+        -:  170:    #if EIGEN_GNUC_STRICT_LESS_THAN(9,0,0)
+        -:  171:    // 1. workaround gcc issue https://gcc.gnu.org/bugzilla/show_bug.cgi?id=89101
+        -:  172:    //    vfmaq_laneq_f64 is implemented through a costly dup, which was fixed in gcc9
+        -:  173:    // 2. workaround the gcc register split problem on arm64-neon
+        -:  174:         if(LaneID==0)  asm("fmla %0.2d, %1.2d, %2.d[0]\n" : "+w" (c) : "w" (a), "w" (b.B_0) :  );
+        -:  175:    else if(LaneID==1)  asm("fmla %0.2d, %1.2d, %2.d[1]\n" : "+w" (c) : "w" (a), "w" (b.B_0) :  );
+        -:  176:    else if(LaneID==2)  asm("fmla %0.2d, %1.2d, %2.d[0]\n" : "+w" (c) : "w" (a), "w" (b.B_1) :  );
+        -:  177:    else if(LaneID==3)  asm("fmla %0.2d, %1.2d, %2.d[1]\n" : "+w" (c) : "w" (a), "w" (b.B_1) :  );
+        -:  178:    #else
+    #####:  179:         if(LaneID==0) c = vfmaq_laneq_f64(c, a, b.B_0, 0);
+    #####:  180:    else if(LaneID==1) c = vfmaq_laneq_f64(c, a, b.B_0, 1);
+    #####:  181:    else if(LaneID==2) c = vfmaq_laneq_f64(c, a, b.B_1, 0);
+    #####:  182:    else if(LaneID==3) c = vfmaq_laneq_f64(c, a, b.B_1, 1);
+        -:  183:    #endif
+    #####:  184:  }
+        -:  185:};
+        -:  186:
+        -:  187:// The register at operand 3 of fmla for data type half must be v0~v15, the compiler may not
+        -:  188:// allocate a required register for the '%2' of inline asm 'fmla %0.8h, %1.8h, %2.h[id]',
+        -:  189:// so inline assembly can't be used here to advoid the bug that vfmaq_lane_f16 is implemented
+        -:  190:// through a costly dup in gcc compiler.
+        -:  191:#if EIGEN_HAS_ARM64_FP16_VECTOR_ARITHMETIC && EIGEN_COMP_CLANG
+        -:  192:
+        -:  193:template<>
+        -:  194:struct gebp_traits <half,half,false,false,Architecture::NEON>
+        -:  195: : gebp_traits<half,half,false,false,Architecture::Generic>
+        -:  196:{
+        -:  197:  typedef half RhsPacket;
+        -:  198:  typedef float16x4_t RhsPacketx4;
+        -:  199:  typedef float16x4_t PacketHalf;
+        -:  200:  enum { nr = EIGEN_NEON_GEBP_NR };
+        -:  201:
+        -:  202:  EIGEN_STRONG_INLINE void loadRhs(const RhsScalar* b, RhsPacket& dest) const
+        -:  203:  {
+        -:  204:    dest = *b;
+        -:  205:  }
+        -:  206:
+        -:  207:  EIGEN_STRONG_INLINE void loadRhs(const RhsScalar* b, RhsPacketx4& dest) const
+        -:  208:  {
+        -:  209:    dest = vld1_f16((const __fp16 *)b);
+        -:  210:  }
+        -:  211:
+        -:  212:  EIGEN_STRONG_INLINE void updateRhs(const RhsScalar* b, RhsPacket& dest) const
+        -:  213:  {
+        -:  214:    dest = *b;
+        -:  215:  }
+        -:  216:
+        -:  217:  EIGEN_STRONG_INLINE void updateRhs(const RhsScalar*, RhsPacketx4&) const
+        -:  218:  {}
+        -:  219:
+        -:  220:  EIGEN_STRONG_INLINE void loadRhsQuad(const RhsScalar*, RhsPacket&) const
+        -:  221:  {
+        -:  222:    // If LHS is a Packet8h, we cannot correctly mimic a ploadquad of the RHS
+        -:  223:    // using a single scalar value.
+        -:  224:    eigen_assert(false && "Cannot loadRhsQuad for a scalar RHS.");
+        -:  225:  }
+        -:  226:
+        -:  227:  EIGEN_STRONG_INLINE void madd(const LhsPacket& a, const RhsPacket& b, AccPacket& c, RhsPacket& /*tmp*/, const FixedInt<0>&) const
+        -:  228:  {
+        -:  229:    c = vfmaq_n_f16(c, a, b);
+        -:  230:  }
+        -:  231:  EIGEN_STRONG_INLINE void madd(const PacketHalf& a, const RhsPacket& b, PacketHalf& c, RhsPacket& /*tmp*/, const FixedInt<0>&) const
+        -:  232:  {
+        -:  233:    c = vfma_n_f16(c, a, b);
+        -:  234:  }
+        -:  235:
+        -:  236:  // NOTE: Template parameter inference failed when compiled with Android NDK:
+        -:  237:  // "candidate template ignored: could not match 'FixedInt<N>' against 'Eigen::internal::FixedInt<0>".
+        -:  238:  EIGEN_STRONG_INLINE void madd(const LhsPacket& a, const RhsPacketx4& b, AccPacket& c, RhsPacket& /*tmp*/, const FixedInt<0>&) const
+        -:  239:  { madd_helper<0>(a, b, c); }
+        -:  240:  EIGEN_STRONG_INLINE void madd(const LhsPacket& a, const RhsPacketx4& b, AccPacket& c, RhsPacket& /*tmp*/, const FixedInt<1>&) const
+        -:  241:  { madd_helper<1>(a, b, c); }
+        -:  242:  EIGEN_STRONG_INLINE void madd(const LhsPacket& a, const RhsPacketx4& b, AccPacket& c, RhsPacket& /*tmp*/, const FixedInt<2>&) const
+        -:  243:  { madd_helper<2>(a, b, c); }
+        -:  244:  EIGEN_STRONG_INLINE void madd(const LhsPacket& a, const RhsPacketx4& b, AccPacket& c, RhsPacket& /*tmp*/, const FixedInt<3>&) const
+        -:  245:  { madd_helper<3>(a, b, c); }
+        -:  246: private:
+        -:  247:  template<int LaneID>
+        -:  248:  EIGEN_STRONG_INLINE void madd_helper(const LhsPacket& a, const RhsPacketx4& b, AccPacket& c) const
+        -:  249:  {
+        -:  250:    c = vfmaq_lane_f16(c, a, b, LaneID);
+        -:  251:  }
+        -:  252:};
+        -:  253:#endif // EIGEN_HAS_ARM64_FP16_VECTOR_ARITHMETIC && EIGEN_COMP_CLANG
+        -:  254:#endif // EIGEN_ARCH_ARM64
+        -:  255:
+        -:  256:}  // namespace internal
+        -:  257:}  // namespace Eigen

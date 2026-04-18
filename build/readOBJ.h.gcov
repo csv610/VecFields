@@ -1,0 +1,85 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/include/directional/readOBJ.h
+        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
+        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
+        -:    0:Runs:4
+        -:    1:// This file is part of Directional, a library for directional field processing.
+        -:    2:// Copyright (C) 2022 Amir Vaxman <avaxman@gmail.com>
+        -:    3://
+        -:    4:// This Source Code Form is subject to the terms of the Mozilla Public License
+        -:    5:// v. 2.0. If a copy of the MPL was not distributed with this file, You can
+        -:    6:// obtain one at http://mozilla.org/MPL/2.0/.
+        -:    7:
+        -:    8:#ifndef DIRECTIONAL_READ_OBJ_H
+        -:    9:#define DIRECTIONAL_READ_OBJ_H
+        -:   10:#include <cmath>
+        -:   11:#include <Eigen/Core>
+        -:   12:#include <string>
+        -:   13:#include <sys/types.h>
+        -:   14:#include <sys/stat.h>
+        -:   15:#include <fstream>
+        -:   16:#include <directional/TriMesh.h>
+        -:   17:
+        -:   18:
+        -:   19:namespace directional
+        -:   20:{
+        -:   21:
+        -:   22://Reading an OBJ file into a surface TriMesh class.
+        4:   23:bool inline readOBJ(const std::string objFileName,
+        -:   24:                    directional::TriMesh& mesh) {
+        4:   25:    Eigen::MatrixXd V;
+        4:   26:    Eigen::MatrixXi F;
+        4:   27:    std::ifstream file(objFileName);
+        4:   28:    if (!file.is_open()) {
+        2:   29:        std::cerr << "Failed to open file: " << objFileName << std::endl;
+        2:   30:        return false;
+        -:   31:    }
+        -:   32:    
+        2:   33:    std::string line;
+        2:   34:    std::vector<Eigen::RowVector3d> vertexList;
+        2:   35:    std::vector<Eigen::RowVector3i> faceList;
+        -:   36:    
+      494:   37:    while (std::getline(file, line)) {
+      492:   38:        std::stringstream ss(line);
+      492:   39:        std::string type;
+      492:   40:        ss >> type;
+        -:   41:        
+      492:   42:        if (type == "v") {
+      240:   43:            Eigen::RowVector3d newVertex;
+      240:   44:            ss >> newVertex(0) >> newVertex(1) >> newVertex(2);
+      240:   45:            vertexList.push_back(newVertex);
+      492:   46:        } else if (type == "f") {
+      240:   47:            Eigen::RowVector3i newFace;
+      240:   48:            std::string v_str;
+        -:   49:            
+      960:   50:            for (int i = 0; i < 3; ++i) {
+      720:   51:                ss >> v_str;
+      720:   52:                std::stringstream vs(v_str);
+      720:   53:                std::string idx_str;
+      720:   54:                std::getline(vs, idx_str, '/'); // take only the first part
+      720:   55:                newFace(i) = std::stoi(idx_str); // OBJ is 1-indexed
+      720:   56:            }
+        -:   57:            
+      240:   58:            faceList.push_back(newFace);
+      240:   59:        }
+      492:   60:    }
+        -:   61:    
+        2:   62:    file.close();
+        -:   63:    
+        2:   64:    V.resize(vertexList.size(), 3);
+      242:   65:    for (int i = 0; i < vertexList.size(); ++i)
+      240:   66:        V.row(i) = vertexList[i];
+        -:   67:    
+        2:   68:    F.resize(faceList.size(), 3);
+      242:   69:    for (int i = 0; i < faceList.size(); ++i)
+      240:   70:        F.row(i) = faceList[i];
+        -:   71:    
+        -:   72:    // Convert to 0-indexing
+        2:   73:    int minIndex = F.minCoeff();
+        2:   74:    F.array() -= minIndex;
+        -:   75:    
+        2:   76:    mesh.set_mesh(V, F);
+        2:   77:    return true;
+        4:   78:}
+        -:   79:}
+        -:   80:
+        -:   81:#endif

@@ -1,0 +1,267 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/util/SymbolicIndex.h
+        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
+        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
+        -:    0:Runs:4
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2017 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:#ifndef EIGEN_SYMBOLIC_INDEX_H
+        -:   11:#define EIGEN_SYMBOLIC_INDEX_H
+        -:   12:
+        -:   13:// IWYU pragma: private
+        -:   14:#include "../InternalHeaderCheck.h"
+        -:   15:
+        -:   16:namespace Eigen {
+        -:   17:
+        -:   18:/** \namespace Eigen::symbolic
+        -:   19:  * \ingroup Core_Module
+        -:   20:  *
+        -:   21:  * This namespace defines a set of classes and functions to build and evaluate symbolic expressions of scalar type Index.
+        -:   22:  * Here is a simple example:
+        -:   23:  *
+        -:   24:  * \code
+        -:   25:  * // First step, defines symbols:
+        -:   26:  * struct x_tag {};  static const symbolic::SymbolExpr<x_tag> x;
+        -:   27:  * struct y_tag {};  static const symbolic::SymbolExpr<y_tag> y;
+        -:   28:  * struct z_tag {};  static const symbolic::SymbolExpr<z_tag> z;
+        -:   29:  *
+        -:   30:  * // Defines an expression:
+        -:   31:  * auto expr = (x+3)/y+z;
+        -:   32:  *
+        -:   33:  * // And evaluate it: (c++14)
+        -:   34:  * std::cout << expr.eval(x=6,y=3,z=-13) << "\n";
+        -:   35:  *
+        -:   36:  * \endcode
+        -:   37:  *
+        -:   38:  * It is currently only used internally to define and manipulate the
+        -:   39:  * Eigen::placeholders::last and Eigen::placeholders::lastp1 symbols in
+        -:   40:  * Eigen::seq and Eigen::seqN.
+        -:   41:  *
+        -:   42:  */
+        -:   43:namespace symbolic {
+        -:   44:
+        -:   45:template<typename Tag> class Symbol;
+        -:   46:template<typename Arg0> class NegateExpr;
+        -:   47:template<typename Arg1,typename Arg2> class AddExpr;
+        -:   48:template<typename Arg1,typename Arg2> class ProductExpr;
+        -:   49:template<typename Arg1,typename Arg2> class QuotientExpr;
+        -:   50:
+        -:   51:// A simple wrapper around an integral value to provide the eval method.
+        -:   52:// We could also use a free-function symbolic_eval...
+        -:   53:template<typename IndexType=Index>
+        -:   54:class ValueExpr {
+        -:   55:public:
+        -:   56:  ValueExpr(IndexType val) : m_value(val) {}
+        -:   57:  template<typename T>
+        -:   58:  IndexType eval_impl(const T&) const { return m_value; }
+        -:   59:protected:
+        -:   60:  IndexType m_value;
+        -:   61:};
+        -:   62:
+        -:   63:// Specialization for compile-time value,
+        -:   64:// It is similar to ValueExpr(N) but this version helps the compiler to generate better code.
+        -:   65:template<int N>
+        -:   66:class ValueExpr<internal::FixedInt<N> > {
+        -:   67:public:
+        8:   68:  ValueExpr() {}
+        -:   69:  template<typename T>
+        -:   70:  EIGEN_CONSTEXPR Index eval_impl(const T&) const { return N; }
+        -:   71:};
+        -:   72:
+        -:   73:
+        -:   74:/** \class BaseExpr
+        -:   75:  * \ingroup Core_Module
+        -:   76:  * Common base class of any symbolic expressions
+        -:   77:  */
+        -:   78:template<typename Derived>
+        -:   79:class BaseExpr
+        -:   80:{
+        -:   81:public:
+        4:   82:  const Derived& derived() const { return *static_cast<const Derived*>(this); }
+        -:   83:
+        -:   84:  /** Evaluate the expression given the \a values of the symbols.
+        -:   85:    *
+        -:   86:    * \param values defines the values of the symbols, it can either be a SymbolValue or a std::tuple of SymbolValue
+        -:   87:    *               as constructed by SymbolExpr::operator= operator.
+        -:   88:    *
+        -:   89:    */
+        -:   90:  template<typename T>
+        -:   91:  Index eval(const T& values) const { return derived().eval_impl(values); }
+        -:   92:
+        -:   93:  template<typename... Types>
+        -:   94:  Index eval(Types&&... values) const { return derived().eval_impl(std::make_tuple(values...)); }
+        -:   95:
+        -:   96:  NegateExpr<Derived> operator-() const { return NegateExpr<Derived>(derived()); }
+        -:   97:
+        -:   98:  AddExpr<Derived,ValueExpr<> > operator+(Index b) const
+        -:   99:  { return AddExpr<Derived,ValueExpr<> >(derived(),  b); }
+        -:  100:  AddExpr<Derived,ValueExpr<> > operator-(Index a) const
+        -:  101:  { return AddExpr<Derived,ValueExpr<> >(derived(), -a); }
+        -:  102:  ProductExpr<Derived,ValueExpr<> > operator*(Index a) const
+        -:  103:  { return ProductExpr<Derived,ValueExpr<> >(derived(),a); }
+        -:  104:  QuotientExpr<Derived,ValueExpr<> > operator/(Index a) const
+        -:  105:  { return QuotientExpr<Derived,ValueExpr<> >(derived(),a); }
+        -:  106:
+        -:  107:  friend AddExpr<Derived,ValueExpr<> > operator+(Index a, const BaseExpr& b)
+        -:  108:  { return AddExpr<Derived,ValueExpr<> >(b.derived(), a); }
+        -:  109:  friend AddExpr<NegateExpr<Derived>,ValueExpr<> > operator-(Index a, const BaseExpr& b)
+        -:  110:  { return AddExpr<NegateExpr<Derived>,ValueExpr<> >(-b.derived(), a); }
+        -:  111:  friend ProductExpr<ValueExpr<>,Derived> operator*(Index a, const BaseExpr& b)
+        -:  112:  { return ProductExpr<ValueExpr<>,Derived>(a,b.derived()); }
+        -:  113:  friend QuotientExpr<ValueExpr<>,Derived> operator/(Index a, const BaseExpr& b)
+        -:  114:  { return QuotientExpr<ValueExpr<>,Derived>(a,b.derived()); }
+        -:  115:
+        -:  116:  template<int N>
+        4:  117:  AddExpr<Derived,ValueExpr<internal::FixedInt<N> > > operator+(internal::FixedInt<N>) const
+        4:  118:  { return AddExpr<Derived,ValueExpr<internal::FixedInt<N> > >(derived(), ValueExpr<internal::FixedInt<N> >()); }
+        -:  119:  template<int N>
+        -:  120:  AddExpr<Derived,ValueExpr<internal::FixedInt<-N> > > operator-(internal::FixedInt<N>) const
+        -:  121:  { return AddExpr<Derived,ValueExpr<internal::FixedInt<-N> > >(derived(), ValueExpr<internal::FixedInt<-N> >()); }
+        -:  122:  template<int N>
+        -:  123:  ProductExpr<Derived,ValueExpr<internal::FixedInt<N> > > operator*(internal::FixedInt<N>) const
+        -:  124:  { return ProductExpr<Derived,ValueExpr<internal::FixedInt<N> > >(derived(),ValueExpr<internal::FixedInt<N> >()); }
+        -:  125:  template<int N>
+        -:  126:  QuotientExpr<Derived,ValueExpr<internal::FixedInt<N> > > operator/(internal::FixedInt<N>) const
+        -:  127:  { return QuotientExpr<Derived,ValueExpr<internal::FixedInt<N> > >(derived(),ValueExpr<internal::FixedInt<N> >()); }
+        -:  128:
+        -:  129:  template<int N>
+        -:  130:  friend AddExpr<Derived,ValueExpr<internal::FixedInt<N> > > operator+(internal::FixedInt<N>, const BaseExpr& b)
+        -:  131:  { return AddExpr<Derived,ValueExpr<internal::FixedInt<N> > >(b.derived(), ValueExpr<internal::FixedInt<N> >()); }
+        -:  132:  template<int N>
+        -:  133:  friend AddExpr<NegateExpr<Derived>,ValueExpr<internal::FixedInt<N> > > operator-(internal::FixedInt<N>, const BaseExpr& b)
+        -:  134:  { return AddExpr<NegateExpr<Derived>,ValueExpr<internal::FixedInt<N> > >(-b.derived(), ValueExpr<internal::FixedInt<N> >()); }
+        -:  135:  template<int N>
+        -:  136:  friend ProductExpr<ValueExpr<internal::FixedInt<N> >,Derived> operator*(internal::FixedInt<N>, const BaseExpr& b)
+        -:  137:  { return ProductExpr<ValueExpr<internal::FixedInt<N> >,Derived>(ValueExpr<internal::FixedInt<N> >(),b.derived()); }
+        -:  138:  template<int N>
+        -:  139:  friend QuotientExpr<ValueExpr<internal::FixedInt<N> >,Derived> operator/(internal::FixedInt<N>, const BaseExpr& b)
+        -:  140:  { return QuotientExpr<ValueExpr<internal::FixedInt<N> > ,Derived>(ValueExpr<internal::FixedInt<N> >(),b.derived()); }
+        -:  141:
+        -:  142:
+        -:  143:  template<typename OtherDerived>
+        -:  144:  AddExpr<Derived,OtherDerived> operator+(const BaseExpr<OtherDerived> &b) const
+        -:  145:  { return AddExpr<Derived,OtherDerived>(derived(),  b.derived()); }
+        -:  146:
+        -:  147:  template<typename OtherDerived>
+        -:  148:  AddExpr<Derived,NegateExpr<OtherDerived> > operator-(const BaseExpr<OtherDerived> &b) const
+        -:  149:  { return AddExpr<Derived,NegateExpr<OtherDerived> >(derived(), -b.derived()); }
+        -:  150:
+        -:  151:  template<typename OtherDerived>
+        -:  152:  ProductExpr<Derived,OtherDerived> operator*(const BaseExpr<OtherDerived> &b) const
+        -:  153:  { return ProductExpr<Derived,OtherDerived>(derived(), b.derived()); }
+        -:  154:
+        -:  155:  template<typename OtherDerived>
+        -:  156:  QuotientExpr<Derived,OtherDerived> operator/(const BaseExpr<OtherDerived> &b) const
+        -:  157:  { return QuotientExpr<Derived,OtherDerived>(derived(), b.derived()); }
+        -:  158:};
+        -:  159:
+        -:  160:template<typename T>
+        -:  161:struct is_symbolic {
+        -:  162:  // BaseExpr has no conversion ctor, so we only have to check whether T can be statically cast to its base class BaseExpr<T>.
+        -:  163:  enum { value = internal::is_convertible<T,BaseExpr<T> >::value };
+        -:  164:};
+        -:  165:
+        -:  166:/** Represents the actual value of a symbol identified by its tag
+        -:  167:  *
+        -:  168:  * It is the return type of SymbolValue::operator=, and most of the time this is only way it is used.
+        -:  169:  */
+        -:  170:template<typename Tag>
+        -:  171:class SymbolValue
+        -:  172:{
+        -:  173:public:
+        -:  174:  /** Default constructor from the value \a val */
+        -:  175:  SymbolValue(Index val) : m_value(val) {}
+        -:  176:
+        -:  177:  /** \returns the stored value of the symbol */
+        -:  178:  Index value() const { return m_value; }
+        -:  179:protected:
+        -:  180:  Index m_value;
+        -:  181:};
+        -:  182:
+        -:  183:/** Expression of a symbol uniquely identified by the template parameter type \c tag */
+        -:  184:template<typename tag>
+        -:  185:class SymbolExpr : public BaseExpr<SymbolExpr<tag> >
+        -:  186:{
+        -:  187:public:
+        -:  188:  /** Alias to the template parameter \c tag */
+        -:  189:  typedef tag Tag;
+        -:  190:
+        8:  191:  SymbolExpr() {}
+        -:  192:
+        -:  193:  /** Associate the value \a val to the given symbol \c *this, uniquely identified by its \c Tag.
+        -:  194:    *
+        -:  195:    * The returned object should be passed to ExprBase::eval() to evaluate a given expression with this specified runtime-time value.
+        -:  196:    */
+        -:  197:  SymbolValue<Tag> operator=(Index val) const {
+        -:  198:    return SymbolValue<Tag>(val);
+        -:  199:  }
+        -:  200:
+        -:  201:  Index eval_impl(const SymbolValue<Tag> &values) const { return values.value(); }
+        -:  202:
+        -:  203:  // C++14 versions suitable for multiple symbols
+        -:  204:  template<typename... Types>
+        -:  205:  Index eval_impl(const std::tuple<Types...>& values) const { return std::get<SymbolValue<Tag> >(values).value(); }
+        -:  206:};
+        -:  207:
+        -:  208:template<typename Arg0>
+        -:  209:class NegateExpr : public BaseExpr<NegateExpr<Arg0> >
+        -:  210:{
+        -:  211:public:
+        -:  212:  NegateExpr(const Arg0& arg0) : m_arg0(arg0) {}
+        -:  213:
+        -:  214:  template<typename T>
+        -:  215:  Index eval_impl(const T& values) const { return -m_arg0.eval_impl(values); }
+        -:  216:protected:
+        -:  217:  Arg0 m_arg0;
+        -:  218:};
+        -:  219:
+        -:  220:template<typename Arg0, typename Arg1>
+        -:  221:class AddExpr : public BaseExpr<AddExpr<Arg0,Arg1> >
+        -:  222:{
+        -:  223:public:
+        8:  224:  AddExpr(const Arg0& arg0, const Arg1& arg1) : m_arg0(arg0), m_arg1(arg1) {}
+        -:  225:
+        -:  226:  template<typename T>
+        -:  227:  Index eval_impl(const T& values) const { return m_arg0.eval_impl(values) + m_arg1.eval_impl(values); }
+        -:  228:protected:
+        -:  229:  Arg0 m_arg0;
+        -:  230:  Arg1 m_arg1;
+        -:  231:};
+        -:  232:
+        -:  233:template<typename Arg0, typename Arg1>
+        -:  234:class ProductExpr : public BaseExpr<ProductExpr<Arg0,Arg1> >
+        -:  235:{
+        -:  236:public:
+        -:  237:  ProductExpr(const Arg0& arg0, const Arg1& arg1) : m_arg0(arg0), m_arg1(arg1) {}
+        -:  238:
+        -:  239:  template<typename T>
+        -:  240:  Index eval_impl(const T& values) const { return m_arg0.eval_impl(values) * m_arg1.eval_impl(values); }
+        -:  241:protected:
+        -:  242:  Arg0 m_arg0;
+        -:  243:  Arg1 m_arg1;
+        -:  244:};
+        -:  245:
+        -:  246:template<typename Arg0, typename Arg1>
+        -:  247:class QuotientExpr : public BaseExpr<QuotientExpr<Arg0,Arg1> >
+        -:  248:{
+        -:  249:public:
+        -:  250:  QuotientExpr(const Arg0& arg0, const Arg1& arg1) : m_arg0(arg0), m_arg1(arg1) {}
+        -:  251:
+        -:  252:  template<typename T>
+        -:  253:  Index eval_impl(const T& values) const { return m_arg0.eval_impl(values) / m_arg1.eval_impl(values); }
+        -:  254:protected:
+        -:  255:  Arg0 m_arg0;
+        -:  256:  Arg1 m_arg1;
+        -:  257:};
+        -:  258:
+        -:  259:} // end namespace symbolic
+        -:  260:
+        -:  261:} // end namespace Eigen
+        -:  262:
+        -:  263:#endif // EIGEN_SYMBOLIC_INDEX_H

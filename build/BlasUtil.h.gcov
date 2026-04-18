@@ -1,0 +1,652 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/util/BlasUtil.h
+        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
+        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
+        -:    0:Runs:4
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2009-2010 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:#ifndef EIGEN_BLASUTIL_H
+        -:   11:#define EIGEN_BLASUTIL_H
+        -:   12:
+        -:   13:// This file contains many lightweight helper classes used to
+        -:   14:// implement and control fast level 2 and level 3 BLAS-like routines.
+        -:   15:
+        -:   16:// IWYU pragma: private
+        -:   17:#include "../InternalHeaderCheck.h"
+        -:   18:
+        -:   19:namespace Eigen {
+        -:   20:
+        -:   21:namespace internal {
+        -:   22:
+        -:   23:// forward declarations
+        -:   24:template<typename LhsScalar, typename RhsScalar, typename Index, typename DataMapper, int mr, int nr, bool ConjugateLhs=false, bool ConjugateRhs=false>
+        -:   25:struct gebp_kernel;
+        -:   26:
+        -:   27:template<typename Scalar, typename Index, typename DataMapper, int nr, int StorageOrder, bool Conjugate = false, bool PanelMode=false>
+        -:   28:struct gemm_pack_rhs;
+        -:   29:
+        -:   30:template<typename Scalar, typename Index, typename DataMapper, int Pack1, int Pack2, typename Packet, int StorageOrder, bool Conjugate = false, bool PanelMode = false>
+        -:   31:struct gemm_pack_lhs;
+        -:   32:
+        -:   33:template<
+        -:   34:  typename Index,
+        -:   35:  typename LhsScalar, int LhsStorageOrder, bool ConjugateLhs,
+        -:   36:  typename RhsScalar, int RhsStorageOrder, bool ConjugateRhs,
+        -:   37:  int ResStorageOrder, int ResInnerStride>
+        -:   38:struct general_matrix_matrix_product;
+        -:   39:
+        -:   40:template<typename Index,
+        -:   41:         typename LhsScalar, typename LhsMapper, int LhsStorageOrder, bool ConjugateLhs,
+        -:   42:         typename RhsScalar, typename RhsMapper, bool ConjugateRhs, int Version=Specialized>
+        -:   43:struct general_matrix_vector_product;
+        -:   44:
+        -:   45:template<typename From,typename To> struct get_factor {
+        -:   46:  EIGEN_DEVICE_FUNC static EIGEN_STRONG_INLINE To run(const From& x) { return To(x); }
+        -:   47:};
+        -:   48:
+        -:   49:template<typename Scalar> struct get_factor<Scalar,typename NumTraits<Scalar>::Real> {
+        -:   50:  EIGEN_DEVICE_FUNC
+    #####:   51:  static EIGEN_STRONG_INLINE typename NumTraits<Scalar>::Real run(const Scalar& x) { return numext::real(x); }
+        -:   52:};
+        -:   53:
+        -:   54:
+        -:   55:template<typename Scalar, typename Index>
+        -:   56:class BlasVectorMapper {
+        -:   57:  public:
+        -:   58:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE BlasVectorMapper(Scalar *data) : m_data(data) {}
+        -:   59:
+        -:   60:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Scalar operator()(Index i) const {
+        -:   61:    return m_data[i];
+        -:   62:  }
+        -:   63:  template <typename Packet, int AlignmentType>
+        -:   64:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet load(Index i) const {
+        -:   65:    return ploadt<Packet, AlignmentType>(m_data + i);
+        -:   66:  }
+        -:   67:
+        -:   68:  template <typename Packet>
+        -:   69:  EIGEN_DEVICE_FUNC bool aligned(Index i) const {
+        -:   70:    return (std::uintptr_t(m_data+i)%sizeof(Packet))==0;
+        -:   71:  }
+        -:   72:
+        -:   73:  protected:
+        -:   74:  Scalar* m_data;
+        -:   75:};
+        -:   76:
+        -:   77:template<typename Scalar, typename Index, int AlignmentType, int Incr=1>
+        -:   78:class BlasLinearMapper;
+        -:   79:
+        -:   80:template<typename Scalar, typename Index, int AlignmentType>
+        -:   81:class BlasLinearMapper<Scalar,Index,AlignmentType>
+        -:   82:{
+        -:   83:public:
+    #####:   84:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE BlasLinearMapper(Scalar *data, Index incr=1)
+    #####:   85:    : m_data(data)
+    #####:   86:  {
+        -:   87:    EIGEN_ONLY_USED_FOR_DEBUG(incr);
+    #####:   88:    eigen_assert(incr==1);
+    #####:   89:  }
+        -:   90:
+    #####:   91:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void prefetch(Index i) const {
+    #####:   92:    internal::prefetch(&operator()(i));
+    #####:   93:  }
+        -:   94:
+    #####:   95:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Scalar& operator()(Index i) const {
+    #####:   96:    return m_data[i];
+        -:   97:  }
+        -:   98:
+        -:   99:  template<typename PacketType>
+    #####:  100:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE PacketType loadPacket(Index i) const {
+    #####:  101:    return ploadt<PacketType, AlignmentType>(m_data + i);
+        -:  102:  }
+        -:  103:
+        -:  104:  template<typename PacketType>
+        -:  105:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE PacketType loadPacketPartial(Index i, Index n, Index offset = 0) const {
+        -:  106:    return ploadt_partial<PacketType, AlignmentType>(m_data + i, n, offset);
+        -:  107:  }
+        -:  108:
+        -:  109:  template<typename PacketType, int AlignmentT>
+        -:  110:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE PacketType load(Index i) const {
+        -:  111:    return ploadt<PacketType, AlignmentT>(m_data + i);
+        -:  112:  }
+        -:  113:
+        -:  114:  template<typename PacketType>
+    #####:  115:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void storePacket(Index i, const PacketType &p) const {
+    #####:  116:    pstoret<Scalar, PacketType, AlignmentType>(m_data + i, p);
+    #####:  117:  }
+        -:  118:
+        -:  119:  template<typename PacketType>
+        -:  120:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void storePacketPartial(Index i, const PacketType &p, Index n, Index offset = 0) const {
+        -:  121:    pstoret_partial<Scalar, PacketType, AlignmentType>(m_data + i, p, n, offset);
+        -:  122:  }
+        -:  123:
+        -:  124:protected:
+        -:  125:  Scalar *m_data;
+        -:  126:};
+        -:  127:
+        -:  128:// Lightweight helper class to access matrix coefficients.
+        -:  129:template<typename Scalar, typename Index, int StorageOrder, int AlignmentType = Unaligned, int Incr = 1>
+        -:  130:class blas_data_mapper;
+        -:  131:
+        -:  132:// TMP to help PacketBlock store implementation.
+        -:  133:// There's currently no known use case for PacketBlock load.
+        -:  134:// The default implementation assumes ColMajor order.
+        -:  135:// It always store each packet sequentially one `stride` apart.
+        -:  136:template<typename Index, typename Scalar, typename Packet, int n, int idx, int StorageOrder>
+        -:  137:struct PacketBlockManagement
+        -:  138:{
+        -:  139:  PacketBlockManagement<Index, Scalar, Packet, n, idx - 1, StorageOrder> pbm;
+        -:  140:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void store(Scalar *to, const Index stride, Index i, Index j, const PacketBlock<Packet, n> &block) const {
+        -:  141:    pbm.store(to, stride, i, j, block);
+        -:  142:    pstoreu<Scalar>(to + i + (j + idx)*stride, block.packet[idx]);
+        -:  143:  }
+        -:  144:};
+        -:  145:
+        -:  146:// PacketBlockManagement specialization to take care of RowMajor order without ifs.
+        -:  147:template<typename Index, typename Scalar, typename Packet, int n, int idx>
+        -:  148:struct PacketBlockManagement<Index, Scalar, Packet, n, idx, RowMajor>
+        -:  149:{
+        -:  150:  PacketBlockManagement<Index, Scalar, Packet, n, idx - 1, RowMajor> pbm;
+        -:  151:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void store(Scalar *to, const Index stride, Index i, Index j, const PacketBlock<Packet, n> &block) const {
+        -:  152:    pbm.store(to, stride, i, j, block);
+        -:  153:    pstoreu<Scalar>(to + j + (i + idx)*stride, block.packet[idx]);
+        -:  154:  }
+        -:  155:};
+        -:  156:
+        -:  157:template<typename Index, typename Scalar, typename Packet, int n, int StorageOrder>
+        -:  158:struct PacketBlockManagement<Index, Scalar, Packet, n, -1, StorageOrder>
+        -:  159:{
+        -:  160:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void store(Scalar *to, const Index stride, Index i, Index j, const PacketBlock<Packet, n> &block) const {
+        -:  161:    EIGEN_UNUSED_VARIABLE(to);
+        -:  162:    EIGEN_UNUSED_VARIABLE(stride);
+        -:  163:    EIGEN_UNUSED_VARIABLE(i);
+        -:  164:    EIGEN_UNUSED_VARIABLE(j);
+        -:  165:    EIGEN_UNUSED_VARIABLE(block);
+        -:  166:  }
+        -:  167:};
+        -:  168:
+        -:  169:template<typename Index, typename Scalar, typename Packet, int n>
+        -:  170:struct PacketBlockManagement<Index, Scalar, Packet, n, -1, RowMajor>
+        -:  171:{
+        -:  172:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void store(Scalar *to, const Index stride, Index i, Index j, const PacketBlock<Packet, n> &block) const {
+        -:  173:    EIGEN_UNUSED_VARIABLE(to);
+        -:  174:    EIGEN_UNUSED_VARIABLE(stride);
+        -:  175:    EIGEN_UNUSED_VARIABLE(i);
+        -:  176:    EIGEN_UNUSED_VARIABLE(j);
+        -:  177:    EIGEN_UNUSED_VARIABLE(block);
+        -:  178:  }
+        -:  179:};
+        -:  180:
+        -:  181:template<typename Scalar, typename Index, int StorageOrder, int AlignmentType>
+        -:  182:class blas_data_mapper<Scalar,Index,StorageOrder,AlignmentType,1>
+        -:  183:{
+        -:  184:public:
+        -:  185:  typedef BlasLinearMapper<Scalar, Index, AlignmentType> LinearMapper;
+        -:  186:  typedef blas_data_mapper<Scalar, Index, StorageOrder, AlignmentType> SubMapper;
+        -:  187:  typedef BlasVectorMapper<Scalar, Index> VectorMapper;
+        -:  188:
+    10592:  189:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE blas_data_mapper(Scalar* data, Index stride, Index incr=1)
+    10592:  190:   : m_data(data), m_stride(stride)
+    #####:  191:  {
+        -:  192:    EIGEN_ONLY_USED_FOR_DEBUG(incr);
+    10592:  193:    eigen_assert(incr==1);
+    10592:  194:  }
+        -:  195:
+        -:  196:  EIGEN_DEVICE_FUNC  EIGEN_ALWAYS_INLINE SubMapper
+    #####:  197:  getSubMapper(Index i, Index j) const {
+    #####:  198:    return SubMapper(&operator()(i, j), m_stride);
+        -:  199:  }
+        -:  200:
+    #####:  201:  EIGEN_DEVICE_FUNC  EIGEN_ALWAYS_INLINE LinearMapper getLinearMapper(Index i, Index j) const {
+    #####:  202:    return LinearMapper(&operator()(i, j));
+        -:  203:  }
+        -:  204:
+        -:  205:  EIGEN_DEVICE_FUNC  EIGEN_ALWAYS_INLINE VectorMapper getVectorMapper(Index i, Index j) const {
+        -:  206:    return VectorMapper(&operator()(i, j));
+        -:  207:  }
+        -:  208:
+        -:  209:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void prefetch(Index i, Index j) const {
+        -:  210:    internal::prefetch(&operator()(i, j));
+        -:  211:  }
+        -:  212:
+        -:  213:  EIGEN_DEVICE_FUNC
+    42094:  214:  EIGEN_ALWAYS_INLINE Scalar& operator()(Index i, Index j) const {
+    42094:  215:    return m_data[StorageOrder==RowMajor ? j + i*m_stride : i + j*m_stride];
+        -:  216:  }
+        -:  217:
+        -:  218:  template<typename PacketType>
+    #####:  219:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE PacketType loadPacket(Index i, Index j) const {
+    #####:  220:    return ploadt<PacketType, AlignmentType>(&operator()(i, j));
+        -:  221:  }
+        -:  222:
+        -:  223:  template<typename PacketType>
+        -:  224:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE PacketType loadPacketPartial(Index i, Index j, Index n, Index offset = 0) const {
+        -:  225:    return ploadt_partial<PacketType, AlignmentType>(&operator()(i, j), n, offset);
+        -:  226:  }
+        -:  227:
+        -:  228:  template <typename PacketT, int AlignmentT>
+    32128:  229:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE PacketT load(Index i, Index j) const {
+    32128:  230:    return ploadt<PacketT, AlignmentT>(&operator()(i, j));
+        -:  231:  }
+        -:  232:
+        -:  233:  template<typename PacketType>
+        -:  234:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void storePacket(Index i, Index j, const PacketType &p) const {
+        -:  235:    pstoret<Scalar, PacketType, AlignmentType>(&operator()(i, j), p);
+        -:  236:  }
+        -:  237:
+        -:  238:  template<typename PacketType>
+        -:  239:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void storePacketPartial(Index i, Index j, const PacketType &p, Index n, Index offset = 0) const {
+        -:  240:    pstoret_partial<Scalar, PacketType, AlignmentType>(&operator()(i, j), p, n, offset);
+        -:  241:  }
+        -:  242:
+        -:  243:  template<typename SubPacket>
+        -:  244:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void scatterPacket(Index i, Index j, const SubPacket &p) const {
+        -:  245:    pscatter<Scalar, SubPacket>(&operator()(i, j), p, m_stride);
+        -:  246:  }
+        -:  247:
+        -:  248:  template<typename SubPacket>
+        -:  249:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE SubPacket gatherPacket(Index i, Index j) const {
+        -:  250:    return pgather<Scalar, SubPacket>(&operator()(i, j), m_stride);
+        -:  251:  }
+        -:  252:
+     5296:  253:  EIGEN_DEVICE_FUNC const Index stride() const { return m_stride; }
+        -:  254:  EIGEN_DEVICE_FUNC const Index incr() const { return 1; }
+        -:  255:  EIGEN_DEVICE_FUNC const Scalar* data() const { return m_data; }
+        -:  256:
+        -:  257:  EIGEN_DEVICE_FUNC Index firstAligned(Index size) const {
+        -:  258:    if (std::uintptr_t(m_data)%sizeof(Scalar)) {
+        -:  259:      return -1;
+        -:  260:    }
+        -:  261:    return internal::first_default_aligned(m_data, size);
+        -:  262:  }
+        -:  263:
+        -:  264:  template<typename SubPacket, int n>
+        -:  265:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void storePacketBlock(Index i, Index j, const PacketBlock<SubPacket, n> &block) const {
+        -:  266:    PacketBlockManagement<Index, Scalar, SubPacket, n, n-1, StorageOrder> pbm;
+        -:  267:    pbm.store(m_data, m_stride, i, j, block);
+        -:  268:  }
+        -:  269:protected:
+        -:  270:  Scalar* EIGEN_RESTRICT m_data;
+        -:  271:  const Index m_stride;
+        -:  272:};
+        -:  273:
+        -:  274:// Implementation of non-natural increment (i.e. inner-stride != 1)
+        -:  275:// The exposed API is not complete yet compared to the Incr==1 case
+        -:  276:// because some features makes less sense in this case.
+        -:  277:template<typename Scalar, typename Index, int AlignmentType, int Incr>
+        -:  278:class BlasLinearMapper
+        -:  279:{
+        -:  280:public:
+        -:  281:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE BlasLinearMapper(Scalar *data,Index incr) : m_data(data), m_incr(incr) {}
+        -:  282:
+        -:  283:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void prefetch(int i) const {
+        -:  284:    internal::prefetch(&operator()(i));
+        -:  285:  }
+        -:  286:
+        -:  287:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Scalar& operator()(Index i) const {
+        -:  288:    return m_data[i*m_incr.value()];
+        -:  289:  }
+        -:  290:
+        -:  291:  template<typename PacketType>
+        -:  292:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE PacketType loadPacket(Index i) const {
+        -:  293:    return pgather<Scalar,PacketType>(m_data + i*m_incr.value(), m_incr.value());
+        -:  294:  }
+        -:  295:
+        -:  296:  template<typename PacketType>
+        -:  297:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE PacketType loadPacketPartial(Index i, Index n, Index /*offset*/ = 0) const {
+        -:  298:    return pgather_partial<Scalar,PacketType>(m_data + i*m_incr.value(), m_incr.value(), n);
+        -:  299:  }
+        -:  300:
+        -:  301:  template<typename PacketType>
+        -:  302:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void storePacket(Index i, const PacketType &p) const {
+        -:  303:    pscatter<Scalar, PacketType>(m_data + i*m_incr.value(), p, m_incr.value());
+        -:  304:  }
+        -:  305:
+        -:  306:  template<typename PacketType>
+        -:  307:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void storePacketPartial(Index i, const PacketType &p, Index n, Index /*offset*/ = 0) const {
+        -:  308:    pscatter_partial<Scalar, PacketType>(m_data + i*m_incr.value(), p, m_incr.value(), n);
+        -:  309:  }
+        -:  310:
+        -:  311:protected:
+        -:  312:  Scalar *m_data;
+        -:  313:  const internal::variable_if_dynamic<Index,Incr> m_incr;
+        -:  314:};
+        -:  315:
+        -:  316:template<typename Scalar, typename Index, int StorageOrder, int AlignmentType,int Incr>
+        -:  317:class blas_data_mapper
+        -:  318:{
+        -:  319:public:
+        -:  320:  typedef BlasLinearMapper<Scalar, Index, AlignmentType,Incr> LinearMapper;
+        -:  321:  typedef blas_data_mapper SubMapper;
+        -:  322:
+        -:  323:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE blas_data_mapper(Scalar* data, Index stride, Index incr) : m_data(data), m_stride(stride), m_incr(incr) {}
+        -:  324:
+        -:  325:  EIGEN_DEVICE_FUNC  EIGEN_ALWAYS_INLINE SubMapper
+        -:  326:  getSubMapper(Index i, Index j) const {
+        -:  327:    return SubMapper(&operator()(i, j), m_stride, m_incr.value());
+        -:  328:  }
+        -:  329:
+        -:  330:  EIGEN_DEVICE_FUNC  EIGEN_ALWAYS_INLINE LinearMapper getLinearMapper(Index i, Index j) const {
+        -:  331:    return LinearMapper(&operator()(i, j), m_incr.value());
+        -:  332:  }
+        -:  333:
+        -:  334:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void prefetch(Index i, Index j) const {
+        -:  335:    internal::prefetch(&operator()(i, j));
+        -:  336:  }
+        -:  337:
+        -:  338:  EIGEN_DEVICE_FUNC
+        -:  339:  EIGEN_ALWAYS_INLINE Scalar& operator()(Index i, Index j) const {
+        -:  340:    return m_data[StorageOrder==RowMajor ? j*m_incr.value() + i*m_stride : i*m_incr.value() + j*m_stride];
+        -:  341:  }
+        -:  342:
+        -:  343:  template<typename PacketType>
+        -:  344:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE PacketType loadPacket(Index i, Index j) const {
+        -:  345:    return pgather<Scalar,PacketType>(&operator()(i, j),m_incr.value());
+        -:  346:  }
+        -:  347:
+        -:  348:  template<typename PacketType>
+        -:  349:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE PacketType loadPacketPartial(Index i, Index j, Index n, Index /*offset*/ = 0) const {
+        -:  350:    return pgather_partial<Scalar,PacketType>(&operator()(i, j),m_incr.value(),n);
+        -:  351:  }
+        -:  352:
+        -:  353:  template <typename PacketT, int AlignmentT>
+        -:  354:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE PacketT load(Index i, Index j) const {
+        -:  355:    return pgather<Scalar,PacketT>(&operator()(i, j),m_incr.value());
+        -:  356:  }
+        -:  357:
+        -:  358:  template<typename PacketType>
+        -:  359:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void storePacket(Index i, Index j, const PacketType &p) const {
+        -:  360:    pscatter<Scalar, PacketType>(&operator()(i, j), p, m_incr.value());
+        -:  361:  }
+        -:  362:
+        -:  363:  template<typename PacketType>
+        -:  364:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void storePacketPartial(Index i, Index j, const PacketType &p, Index n, Index /*offset*/ = 0) const {
+        -:  365:    pscatter_partial<Scalar, PacketType>(&operator()(i, j), p, m_incr.value(), n);
+        -:  366:  }
+        -:  367:
+        -:  368:  template<typename SubPacket>
+        -:  369:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void scatterPacket(Index i, Index j, const SubPacket &p) const {
+        -:  370:    pscatter<Scalar, SubPacket>(&operator()(i, j), p, m_stride);
+        -:  371:  }
+        -:  372:
+        -:  373:  template<typename SubPacket>
+        -:  374:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE SubPacket gatherPacket(Index i, Index j) const {
+        -:  375:    return pgather<Scalar, SubPacket>(&operator()(i, j), m_stride);
+        -:  376:  }
+        -:  377:
+        -:  378:  // storePacketBlock_helper defines a way to access values inside the PacketBlock, this is essentially required by the Complex types.
+        -:  379:  template<typename SubPacket, typename Scalar_, int n, int idx>
+        -:  380:  struct storePacketBlock_helper
+        -:  381:  {
+        -:  382:    storePacketBlock_helper<SubPacket, Scalar_, n, idx-1> spbh;
+        -:  383:    EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void store(const blas_data_mapper<Scalar, Index, StorageOrder, AlignmentType, Incr>* sup, Index i, Index j, const PacketBlock<SubPacket, n>& block) const {
+        -:  384:      spbh.store(sup, i,j,block);
+        -:  385:      sup->template storePacket<SubPacket>(i, j+idx, block.packet[idx]);
+        -:  386:    }
+        -:  387:  };
+        -:  388:
+        -:  389:  template<typename SubPacket, int n, int idx>
+        -:  390:  struct storePacketBlock_helper<SubPacket, std::complex<float>, n, idx>
+        -:  391:  {
+        -:  392:    storePacketBlock_helper<SubPacket, std::complex<float>, n, idx-1> spbh;
+        -:  393:    EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void store(const blas_data_mapper<Scalar, Index, StorageOrder, AlignmentType, Incr>* sup, Index i, Index j, const PacketBlock<SubPacket, n>& block) const {
+        -:  394:      spbh.store(sup,i,j,block);
+        -:  395:      sup->template storePacket<SubPacket>(i, j+idx, block.packet[idx]);
+        -:  396:    }
+        -:  397:  };
+        -:  398:
+        -:  399:  template<typename SubPacket, int n, int idx>
+        -:  400:  struct storePacketBlock_helper<SubPacket, std::complex<double>, n, idx>
+        -:  401:  {
+        -:  402:    storePacketBlock_helper<SubPacket, std::complex<double>, n, idx-1> spbh;
+        -:  403:    EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void store(const blas_data_mapper<Scalar, Index, StorageOrder, AlignmentType, Incr>* sup, Index i, Index j, const PacketBlock<SubPacket, n>& block) const {
+        -:  404:      spbh.store(sup,i,j,block);
+        -:  405:      for(int l = 0; l < unpacket_traits<SubPacket>::size; l++)
+        -:  406:      {
+        -:  407:        std::complex<double> *v = &sup->operator()(i+l, j+idx);
+        -:  408:        v->real(block.packet[idx].v[2*l+0]);
+        -:  409:        v->imag(block.packet[idx].v[2*l+1]);
+        -:  410:      }
+        -:  411:    }
+        -:  412:  };
+        -:  413:
+        -:  414:  template<typename SubPacket, typename Scalar_, int n>
+        -:  415:  struct storePacketBlock_helper<SubPacket, Scalar_, n, -1>
+        -:  416:  {
+        -:  417:    EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void store(const blas_data_mapper<Scalar, Index, StorageOrder, AlignmentType, Incr>*, Index, Index, const PacketBlock<SubPacket, n>& ) const {
+        -:  418:    }
+        -:  419:  };
+        -:  420:
+        -:  421:  template<typename SubPacket, int n>
+        -:  422:  struct storePacketBlock_helper<SubPacket, std::complex<float>, n, -1>
+        -:  423:  {
+        -:  424:    EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void store(const blas_data_mapper<Scalar, Index, StorageOrder, AlignmentType, Incr>*, Index, Index, const PacketBlock<SubPacket, n>& ) const {
+        -:  425:    }
+        -:  426:  };
+        -:  427:
+        -:  428:  template<typename SubPacket, int n>
+        -:  429:  struct storePacketBlock_helper<SubPacket, std::complex<double>, n, -1>
+        -:  430:  {
+        -:  431:    EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void store(const blas_data_mapper<Scalar, Index, StorageOrder, AlignmentType, Incr>*, Index, Index, const PacketBlock<SubPacket, n>& ) const {
+        -:  432:    }
+        -:  433:  };
+        -:  434:  // This function stores a PacketBlock on m_data, this approach is really quite slow compare to Incr=1 and should be avoided when possible.
+        -:  435:  template<typename SubPacket, int n>
+        -:  436:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void storePacketBlock(Index i, Index j, const PacketBlock<SubPacket, n>&block) const {
+        -:  437:    storePacketBlock_helper<SubPacket, Scalar, n, n-1> spb;
+        -:  438:    spb.store(this, i,j,block);
+        -:  439:  }
+        -:  440:
+        -:  441:  EIGEN_DEVICE_FUNC const Index stride() const { return m_stride; }
+        -:  442:  EIGEN_DEVICE_FUNC const Index incr() const { return m_incr.value(); }
+        -:  443:  EIGEN_DEVICE_FUNC Scalar* data() const { return m_data; }
+        -:  444:protected:
+        -:  445:  Scalar* EIGEN_RESTRICT m_data;
+        -:  446:  const Index m_stride;
+        -:  447:  const internal::variable_if_dynamic<Index,Incr> m_incr;
+        -:  448:};
+        -:  449:
+        -:  450:// lightweight helper class to access matrix coefficients (const version)
+        -:  451:template<typename Scalar, typename Index, int StorageOrder>
+        -:  452:class const_blas_data_mapper : public blas_data_mapper<const Scalar, Index, StorageOrder> {
+        -:  453:  public:
+        -:  454:  typedef const_blas_data_mapper<Scalar, Index, StorageOrder> SubMapper;
+        -:  455:
+    21184:  456:  EIGEN_ALWAYS_INLINE const_blas_data_mapper(const Scalar *data, Index stride) : blas_data_mapper<const Scalar, Index, StorageOrder>(data, stride) {}
+        -:  457:
+    #####:  458:  EIGEN_ALWAYS_INLINE SubMapper getSubMapper(Index i, Index j) const {
+    #####:  459:    return SubMapper(&(this->operator()(i, j)), this->m_stride);
+        -:  460:  }
+        -:  461:};
+        -:  462:
+        -:  463:
+        -:  464:/* Helper class to analyze the factors of a Product expression.
+        -:  465: * In particular it allows to pop out operator-, scalar multiples,
+        -:  466: * and conjugate */
+        -:  467:template<typename XprType> struct blas_traits
+        -:  468:{
+        -:  469:  typedef typename traits<XprType>::Scalar Scalar;
+        -:  470:  typedef const XprType& ExtractType;
+        -:  471:  typedef XprType ExtractType_;
+        -:  472:  enum {
+        -:  473:    IsComplex = NumTraits<Scalar>::IsComplex,
+        -:  474:    IsTransposed = false,
+        -:  475:    NeedToConjugate = false,
+        -:  476:    HasUsableDirectAccess = (    (int(XprType::Flags)&DirectAccessBit)
+        -:  477:                              && (   bool(XprType::IsVectorAtCompileTime)
+        -:  478:                                  || int(inner_stride_at_compile_time<XprType>::ret) == 1)
+        -:  479:                             ) ?  1 : 0,
+        -:  480:    HasScalarFactor = false
+        -:  481:  };
+        -:  482:  typedef std::conditional_t<bool(HasUsableDirectAccess),
+        -:  483:    ExtractType,
+        -:  484:    typename ExtractType_::PlainObject
+        -:  485:    > DirectLinearAccessType;
+    18042:  486:  EIGEN_DEVICE_FUNC static inline EIGEN_DEVICE_FUNC ExtractType extract(const XprType& x) { return x; }
+    16552:  487:  EIGEN_DEVICE_FUNC static inline EIGEN_DEVICE_FUNC const Scalar extractScalarFactor(const XprType&) { return Scalar(1); }
+        -:  488:};
+        -:  489:
+        -:  490:// pop conjugate
+        -:  491:template<typename Scalar, typename NestedXpr>
+        -:  492:struct blas_traits<CwiseUnaryOp<scalar_conjugate_op<Scalar>, NestedXpr> >
+        -:  493: : blas_traits<NestedXpr>
+        -:  494:{
+        -:  495:  typedef blas_traits<NestedXpr> Base;
+        -:  496:  typedef CwiseUnaryOp<scalar_conjugate_op<Scalar>, NestedXpr> XprType;
+        -:  497:  typedef typename Base::ExtractType ExtractType;
+        -:  498:
+        -:  499:  enum {
+        -:  500:    IsComplex = NumTraits<Scalar>::IsComplex,
+        -:  501:    NeedToConjugate = Base::NeedToConjugate ? 0 : IsComplex
+        -:  502:  };
+        -:  503:  EIGEN_DEVICE_FUNC static inline ExtractType extract(const XprType& x) { return Base::extract(x.nestedExpression()); }
+        -:  504:  EIGEN_DEVICE_FUNC static inline Scalar extractScalarFactor(const XprType& x) { return conj(Base::extractScalarFactor(x.nestedExpression())); }
+        -:  505:};
+        -:  506:
+        -:  507:// pop scalar multiple
+        -:  508:template<typename Scalar, typename NestedXpr, typename Plain>
+        -:  509:struct blas_traits<CwiseBinaryOp<scalar_product_op<Scalar>, const CwiseNullaryOp<scalar_constant_op<Scalar>,Plain>, NestedXpr> >
+        -:  510: : blas_traits<NestedXpr>
+        -:  511:{
+        -:  512:  enum {
+        -:  513:    HasScalarFactor = true
+        -:  514:  };
+        -:  515:  typedef blas_traits<NestedXpr> Base;
+        -:  516:  typedef CwiseBinaryOp<scalar_product_op<Scalar>, const CwiseNullaryOp<scalar_constant_op<Scalar>,Plain>, NestedXpr> XprType;
+        -:  517:  typedef typename Base::ExtractType ExtractType;
+     1490:  518:  EIGEN_DEVICE_FUNC static inline EIGEN_DEVICE_FUNC ExtractType extract(const XprType& x) { return Base::extract(x.rhs()); }
+     1490:  519:  EIGEN_DEVICE_FUNC static inline EIGEN_DEVICE_FUNC Scalar extractScalarFactor(const XprType& x)
+     1490:  520:  { return x.lhs().functor().m_other * Base::extractScalarFactor(x.rhs()); }
+        -:  521:};
+        -:  522:template<typename Scalar, typename NestedXpr, typename Plain>
+        -:  523:struct blas_traits<CwiseBinaryOp<scalar_product_op<Scalar>, NestedXpr, const CwiseNullaryOp<scalar_constant_op<Scalar>,Plain> > >
+        -:  524: : blas_traits<NestedXpr>
+        -:  525:{
+        -:  526:  enum {
+        -:  527:    HasScalarFactor = true
+        -:  528:  };
+        -:  529:  typedef blas_traits<NestedXpr> Base;
+        -:  530:  typedef CwiseBinaryOp<scalar_product_op<Scalar>, NestedXpr, const CwiseNullaryOp<scalar_constant_op<Scalar>,Plain> > XprType;
+        -:  531:  typedef typename Base::ExtractType ExtractType;
+        -:  532:  EIGEN_DEVICE_FUNC static inline ExtractType extract(const XprType& x) { return Base::extract(x.lhs()); }
+        -:  533:  EIGEN_DEVICE_FUNC static inline Scalar extractScalarFactor(const XprType& x)
+        -:  534:  { return Base::extractScalarFactor(x.lhs()) * x.rhs().functor().m_other; }
+        -:  535:};
+        -:  536:template<typename Scalar, typename Plain1, typename Plain2>
+        -:  537:struct blas_traits<CwiseBinaryOp<scalar_product_op<Scalar>, const CwiseNullaryOp<scalar_constant_op<Scalar>,Plain1>,
+        -:  538:                                                            const CwiseNullaryOp<scalar_constant_op<Scalar>,Plain2> > >
+        -:  539: : blas_traits<CwiseNullaryOp<scalar_constant_op<Scalar>,Plain1> >
+        -:  540:{};
+        -:  541:
+        -:  542:// pop opposite
+        -:  543:template<typename Scalar, typename NestedXpr>
+        -:  544:struct blas_traits<CwiseUnaryOp<scalar_opposite_op<Scalar>, NestedXpr> >
+        -:  545: : blas_traits<NestedXpr>
+        -:  546:{
+        -:  547:  enum {
+        -:  548:    HasScalarFactor = true
+        -:  549:  };
+        -:  550:  typedef blas_traits<NestedXpr> Base;
+        -:  551:  typedef CwiseUnaryOp<scalar_opposite_op<Scalar>, NestedXpr> XprType;
+        -:  552:  typedef typename Base::ExtractType ExtractType;
+        -:  553:  EIGEN_DEVICE_FUNC static inline ExtractType extract(const XprType& x) { return Base::extract(x.nestedExpression()); }
+        -:  554:  EIGEN_DEVICE_FUNC static inline Scalar extractScalarFactor(const XprType& x)
+        -:  555:  { return - Base::extractScalarFactor(x.nestedExpression()); }
+        -:  556:};
+        -:  557:
+        -:  558:// pop/push transpose
+        -:  559:template<typename NestedXpr>
+        -:  560:struct blas_traits<Transpose<NestedXpr> >
+        -:  561: : blas_traits<NestedXpr>
+        -:  562:{
+        -:  563:  typedef typename NestedXpr::Scalar Scalar;
+        -:  564:  typedef blas_traits<NestedXpr> Base;
+        -:  565:  typedef Transpose<NestedXpr> XprType;
+        -:  566:  typedef Transpose<const typename Base::ExtractType_>  ExtractType; // const to get rid of a compile error; anyway blas traits are only used on the RHS
+        -:  567:  typedef Transpose<const typename Base::ExtractType_> ExtractType_;
+        -:  568:  typedef std::conditional_t<bool(Base::HasUsableDirectAccess),
+        -:  569:    ExtractType,
+        -:  570:    typename ExtractType::PlainObject
+        -:  571:    > DirectLinearAccessType;
+        -:  572:  enum {
+        -:  573:    IsTransposed = Base::IsTransposed ? 0 : 1
+        -:  574:  };
+    15888:  575:  EIGEN_DEVICE_FUNC static inline ExtractType extract(const XprType& x) { return ExtractType(Base::extract(x.nestedExpression())); }
+    15888:  576:  EIGEN_DEVICE_FUNC static inline Scalar extractScalarFactor(const XprType& x) { return Base::extractScalarFactor(x.nestedExpression()); }
+        -:  577:};
+        -:  578:
+        -:  579:template<typename T>
+        -:  580:struct blas_traits<const T>
+        -:  581:     : blas_traits<T>
+        -:  582:{};
+        -:  583:
+        -:  584:template<typename T, bool HasUsableDirectAccess=blas_traits<T>::HasUsableDirectAccess>
+        -:  585:struct extract_data_selector {
+        -:  586:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE static const typename T::Scalar* run(const T& m)
+        -:  587:  {
+        -:  588:    return blas_traits<T>::extract(m).data();
+        -:  589:  }
+        -:  590:};
+        -:  591:
+        -:  592:template<typename T>
+        -:  593:struct extract_data_selector<T,false> {
+        -:  594:  EIGEN_DEVICE_FUNC static typename T::Scalar* run(const T&) { return 0; }
+        -:  595:};
+        -:  596:
+        -:  597:template<typename T>
+        -:  598:EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE const typename T::Scalar* extract_data(const T& m)
+        -:  599:{
+        -:  600:  return extract_data_selector<T>::run(m);
+        -:  601:}
+        -:  602:
+        -:  603:/**
+        -:  604: * \c combine_scalar_factors extracts and multiplies factors from GEMM and GEMV products.
+        -:  605: * There is a specialization for booleans
+        -:  606: */
+        -:  607:template<typename ResScalar, typename Lhs, typename Rhs>
+        -:  608:struct combine_scalar_factors_impl
+        -:  609:{
+        -:  610:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE static ResScalar run(const Lhs& lhs, const Rhs& rhs)
+        -:  611:  {
+        -:  612:    return blas_traits<Lhs>::extractScalarFactor(lhs) * blas_traits<Rhs>::extractScalarFactor(rhs);
+        -:  613:  }
+     5296:  614:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE static ResScalar run(const ResScalar& alpha, const Lhs& lhs, const Rhs& rhs)
+        -:  615:  {
+     5296:  616:    return alpha * blas_traits<Lhs>::extractScalarFactor(lhs) * blas_traits<Rhs>::extractScalarFactor(rhs);
+        -:  617:  }
+        -:  618:};
+        -:  619:template<typename Lhs, typename Rhs>
+        -:  620:struct combine_scalar_factors_impl<bool, Lhs, Rhs>
+        -:  621:{
+        -:  622:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE static bool run(const Lhs& lhs, const Rhs& rhs)
+        -:  623:  {
+        -:  624:    return blas_traits<Lhs>::extractScalarFactor(lhs) && blas_traits<Rhs>::extractScalarFactor(rhs);
+        -:  625:  }
+        -:  626:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE static bool run(const bool& alpha, const Lhs& lhs, const Rhs& rhs)
+        -:  627:  {
+        -:  628:    return alpha && blas_traits<Lhs>::extractScalarFactor(lhs) && blas_traits<Rhs>::extractScalarFactor(rhs);
+        -:  629:  }
+        -:  630:};
+        -:  631:
+        -:  632:template<typename ResScalar, typename Lhs, typename Rhs>
+     5296:  633:EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE ResScalar combine_scalar_factors(const ResScalar& alpha, const Lhs& lhs, const Rhs& rhs)
+        -:  634:{
+     5296:  635:  return combine_scalar_factors_impl<ResScalar,Lhs,Rhs>::run(alpha, lhs, rhs);
+        -:  636:}
+        -:  637:template<typename ResScalar, typename Lhs, typename Rhs>
+        -:  638:EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE ResScalar combine_scalar_factors(const Lhs& lhs, const Rhs& rhs)
+        -:  639:{
+        -:  640:  return combine_scalar_factors_impl<ResScalar,Lhs,Rhs>::run(lhs, rhs);
+        -:  641:}
+        -:  642:
+        -:  643:
+        -:  644:} // end namespace internal
+        -:  645:
+        -:  646:} // end namespace Eigen
+        -:  647:
+        -:  648:#endif // EIGEN_BLASUTIL_H

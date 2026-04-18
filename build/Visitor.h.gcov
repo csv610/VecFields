@@ -1,0 +1,846 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/Visitor.h
+        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
+        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
+        -:    0:Runs:4
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2008 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:#ifndef EIGEN_VISITOR_H
+        -:   11:#define EIGEN_VISITOR_H
+        -:   12:
+        -:   13:// IWYU pragma: private
+        -:   14:#include "./InternalHeaderCheck.h"
+        -:   15:
+        -:   16:namespace Eigen {
+        -:   17:
+        -:   18:namespace internal {
+        -:   19:
+        -:   20:template <typename Visitor, typename Derived, int UnrollCount,
+        -:   21:          bool Vectorize = (Derived::PacketAccess && functor_traits<Visitor>::PacketAccess), bool LinearAccess = false,
+        -:   22:          bool ShortCircuitEvaluation = false>
+        -:   23:struct visitor_impl;
+        -:   24:
+        -:   25:template <typename Visitor, bool ShortCircuitEvaluation = false>
+        -:   26:struct short_circuit_eval_impl {
+        -:   27:  // if short circuit evaluation is not used, do nothing
+    14578:   28:  static EIGEN_CONSTEXPR EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE bool run(const Visitor&) { return false; }
+        -:   29:};
+        -:   30:template <typename Visitor>
+        -:   31:struct short_circuit_eval_impl<Visitor, true> {
+        -:   32:  // if short circuit evaluation is used, check the visitor
+        -:   33:  static EIGEN_CONSTEXPR EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE bool run(const Visitor& visitor) {
+        -:   34:    return visitor.done();
+        -:   35:  }
+        -:   36:};
+        -:   37:
+        -:   38:// unrolled inner-outer traversal
+        -:   39:template <typename Visitor, typename Derived, int UnrollCount, bool Vectorize, bool ShortCircuitEvaluation>
+        -:   40:struct visitor_impl<Visitor, Derived, UnrollCount, Vectorize, false, ShortCircuitEvaluation> {
+        -:   41:  // don't use short circuit evaulation for unrolled version
+        -:   42:  using Scalar = typename Derived::Scalar;
+        -:   43:  using Packet = typename packet_traits<Scalar>::type;
+        -:   44:  static constexpr bool RowMajor = Derived::IsRowMajor;
+        -:   45:  static constexpr int RowsAtCompileTime = Derived::RowsAtCompileTime;
+        -:   46:  static constexpr int ColsAtCompileTime = Derived::ColsAtCompileTime;
+        -:   47:  static constexpr int PacketSize = packet_traits<Scalar>::size;
+        -:   48:
+        -:   49:  static constexpr bool CanVectorize(int K) {
+        -:   50:    constexpr int InnerSizeAtCompileTime = RowMajor ? ColsAtCompileTime : RowsAtCompileTime;
+        -:   51:    if(InnerSizeAtCompileTime < PacketSize) return false;
+        -:   52:    return Vectorize && (InnerSizeAtCompileTime - (K % InnerSizeAtCompileTime) >= PacketSize);
+        -:   53:  }
+        -:   54:
+        -:   55:  template <int K = 0,
+        -:   56:      bool Empty = (K == UnrollCount),
+        -:   57:      std::enable_if_t<Empty, bool> = true>
+     1490:   58:  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void run(const Derived&, Visitor&) {}
+        -:   59:
+        -:   60:  template <int K = 0,
+        -:   61:      bool Empty = (K == UnrollCount),
+        -:   62:      bool Initialize = (K == 0),
+        -:   63:      bool DoVectorOp = CanVectorize(K),
+        -:   64:      std::enable_if_t<!Empty && Initialize && !DoVectorOp, bool> = true>
+        -:   65:  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void run(const Derived& mat, Visitor& visitor)
+        -:   66:  {
+        -:   67:    visitor.init(mat.coeff(0, 0), 0, 0);
+        -:   68:    run<1>(mat, visitor);
+        -:   69:  }
+        -:   70:
+        -:   71:  template <int K = 0,
+        -:   72:      bool Empty = (K == UnrollCount),
+        -:   73:      bool Initialize = (K == 0),
+        -:   74:      bool DoVectorOp = CanVectorize(K),
+        -:   75:      std::enable_if_t<!Empty && !Initialize && !DoVectorOp, bool> = true>
+        -:   76:  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void run(const Derived& mat, Visitor& visitor)
+        -:   77:  {
+        -:   78:    static constexpr int R = RowMajor ? (K / ColsAtCompileTime) : (K % RowsAtCompileTime);
+        -:   79:    static constexpr int C = RowMajor ? (K % ColsAtCompileTime) : (K / RowsAtCompileTime);
+        -:   80:    visitor(mat.coeff(R, C), R, C);
+        -:   81:    run<K + 1>(mat, visitor);
+        -:   82:  }
+        -:   83:
+        -:   84:  template <int K = 0,
+        -:   85:      bool Empty = (K == UnrollCount),
+        -:   86:      bool Initialize = (K == 0),
+        -:   87:      bool DoVectorOp = CanVectorize(K),
+        -:   88:      std::enable_if_t<!Empty && Initialize && DoVectorOp, bool> = true>
+     1490:   89:  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void run(const Derived& mat, Visitor& visitor)
+        -:   90:  {
+     1490:   91:    Packet P = mat.template packet<Packet>(0, 0);
+     1490:   92:    visitor.initpacket(P, 0, 0);
+     1490:   93:    run<PacketSize>(mat, visitor);
+     1490:   94:  }
+        -:   95:
+        -:   96:  template <int K = 0,
+        -:   97:      bool Empty = (K == UnrollCount),
+        -:   98:      bool Initialize = (K == 0),
+        -:   99:      bool DoVectorOp = CanVectorize(K),
+        -:  100:      std::enable_if_t<!Empty && !Initialize && DoVectorOp, bool> = true>
+        -:  101:  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void run(const Derived& mat, Visitor& visitor)
+        -:  102:  {
+        -:  103:    static constexpr int R = RowMajor ? (K / ColsAtCompileTime) : (K % RowsAtCompileTime);
+        -:  104:    static constexpr int C = RowMajor ? (K % ColsAtCompileTime) : (K / RowsAtCompileTime);
+        -:  105:    Packet P = mat.template packet<Packet>(R, C);
+        -:  106:    visitor.packet(P, R, C);
+        -:  107:    run<K + PacketSize>(mat, visitor);
+        -:  108:  }
+        -:  109:};
+        -:  110:
+        -:  111:// unrolled linear traversal
+        -:  112:template <typename Visitor, typename Derived, int UnrollCount, bool Vectorize, bool ShortCircuitEvaluation>
+        -:  113:struct visitor_impl<Visitor, Derived, UnrollCount, Vectorize, true, ShortCircuitEvaluation> {
+        -:  114:  // don't use short circuit evaulation for unrolled version
+        -:  115:  using Scalar = typename Derived::Scalar;
+        -:  116:  using Packet = typename packet_traits<Scalar>::type;
+        -:  117:  static constexpr int PacketSize = packet_traits<Scalar>::size;
+        -:  118:
+        -:  119:  static constexpr bool CanVectorize(int K) {
+        -:  120:      return Vectorize && ((UnrollCount - K) >= PacketSize);
+        -:  121:  }
+        -:  122:
+        -:  123:  // empty
+        -:  124:  template <int K = 0,
+        -:  125:      bool Empty = (K == UnrollCount),
+        -:  126:      std::enable_if_t<Empty, bool> = true>
+        -:  127:  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void run(const Derived&, Visitor&) {}
+        -:  128:
+        -:  129:  // scalar initialization
+        -:  130:  template <int K = 0,
+        -:  131:      bool Empty = (K == UnrollCount),
+        -:  132:      bool Initialize = (K == 0),
+        -:  133:      bool DoVectorOp = CanVectorize(K),
+        -:  134:      std::enable_if_t<!Empty && Initialize && !DoVectorOp, bool> = true>
+        -:  135:  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void run(const Derived& mat, Visitor& visitor) {
+        -:  136:    visitor.init(mat.coeff(0), 0);
+        -:  137:    run<1>(mat, visitor);
+        -:  138:  }
+        -:  139:
+        -:  140:  // scalar iteration
+        -:  141:  template <int K = 0,
+        -:  142:      bool Empty = (K == UnrollCount),
+        -:  143:      bool Initialize = (K == 0),
+        -:  144:      bool DoVectorOp = CanVectorize(K),
+        -:  145:      std::enable_if_t<!Empty && !Initialize && !DoVectorOp, bool> = true>
+        -:  146:  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void run(const Derived& mat, Visitor& visitor) {
+        -:  147:    visitor(mat.coeff(K), K);
+        -:  148:    run<K + 1>(mat, visitor);
+        -:  149:  }
+        -:  150:
+        -:  151:  // vector initialization
+        -:  152:  template <int K = 0,
+        -:  153:      bool Empty = (K == UnrollCount),
+        -:  154:      bool Initialize = (K == 0),
+        -:  155:      bool DoVectorOp = CanVectorize(K),
+        -:  156:      std::enable_if_t<!Empty && Initialize && DoVectorOp, bool> = true>
+        -:  157:  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void run(const Derived& mat, Visitor& visitor) {
+        -:  158:    Packet P = mat.template packet<Packet>(0);
+        -:  159:    visitor.initpacket(P, 0);
+        -:  160:    run<PacketSize>(mat, visitor);
+        -:  161:  }
+        -:  162:
+        -:  163:  // vector iteration
+        -:  164:  template <int K = 0,
+        -:  165:      bool Empty = (K == UnrollCount),
+        -:  166:      bool Initialize = (K == 0),
+        -:  167:      bool DoVectorOp = CanVectorize(K),
+        -:  168:      std::enable_if_t<!Empty && !Initialize && DoVectorOp, bool> = true>
+        -:  169:  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void run(const Derived& mat, Visitor& visitor) {
+        -:  170:    Packet P = mat.template packet<Packet>(K);
+        -:  171:    visitor.packet(P, K);
+        -:  172:    run<K + PacketSize>(mat, visitor);
+        -:  173:  }
+        -:  174:};
+        -:  175:
+        -:  176:// dynamic scalar outer-inner traversal
+        -:  177:template <typename Visitor, typename Derived, bool ShortCircuitEvaluation>
+        -:  178:struct visitor_impl<Visitor, Derived, Dynamic, /*Vectorize=*/false, /*LinearAccess=*/false, ShortCircuitEvaluation> {
+        -:  179:  using short_circuit = short_circuit_eval_impl<Visitor, ShortCircuitEvaluation>;
+        -:  180:  static constexpr bool RowMajor = Derived::IsRowMajor;
+        -:  181:
+        -:  182:  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void run(const Derived& mat, Visitor& visitor) {
+        -:  183:    const Index innerSize = RowMajor ? mat.cols() : mat.rows();
+        -:  184:    const Index outerSize = RowMajor ? mat.rows() : mat.cols();
+        -:  185:    if (innerSize == 0 || outerSize == 0) return;
+        -:  186:    {
+        -:  187:      visitor.init(mat.coeff(0, 0), 0, 0);
+        -:  188:      if (short_circuit::run(visitor)) return;
+        -:  189:      for (Index i = 1; i < innerSize; ++i) {
+        -:  190:        Index r = RowMajor ? 0 : i;
+        -:  191:        Index c = RowMajor ? i : 0;
+        -:  192:        visitor(mat.coeff(r, c), r, c);
+        -:  193:        if EIGEN_PREDICT_FALSE(short_circuit::run(visitor)) return;
+        -:  194:      }
+        -:  195:    }
+        -:  196:    for (Index j = 1; j < outerSize; j++) {
+        -:  197:      for (Index i = 0; i < innerSize; ++i) {
+        -:  198:        Index r = RowMajor ? j : i;
+        -:  199:        Index c = RowMajor ? i : j;
+        -:  200:        visitor(mat.coeff(r, c), r, c);
+        -:  201:        if EIGEN_PREDICT_FALSE(short_circuit::run(visitor)) return;
+        -:  202:      }
+        -:  203:    }
+        -:  204:  }
+        -:  205:};
+        -:  206:
+        -:  207:// dynamic vectorized outer-inner traversal
+        -:  208:template <typename Visitor, typename Derived, bool ShortCircuitEvaluation>
+        -:  209:struct visitor_impl<Visitor, Derived, Dynamic, /*Vectorize=*/true, /*LinearAccess=*/false, ShortCircuitEvaluation> {
+        -:  210:  using Scalar = typename Derived::Scalar;
+        -:  211:  using Packet = typename packet_traits<Scalar>::type;
+        -:  212:  static constexpr int PacketSize = packet_traits<Scalar>::size;
+        -:  213:  using short_circuit = short_circuit_eval_impl<Visitor, ShortCircuitEvaluation>;
+        -:  214:  static constexpr bool RowMajor = Derived::IsRowMajor;
+        -:  215:
+     8622:  216:  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void run(const Derived& mat, Visitor& visitor) {
+     8622:  217:    const Index innerSize = RowMajor ? mat.cols() : mat.rows();
+     8622:  218:    const Index outerSize = RowMajor ? mat.rows() : mat.cols();
+     8622:  219:    if (innerSize == 0 || outerSize == 0) return;
+        -:  220:    {
+     8622:  221:      Index i = 0;
+     8622:  222:      if (innerSize < PacketSize) {
+     1188:  223:        visitor.init(mat.coeff(0, 0), 0, 0);
+     1188:  224:        i = 1;
+     1188:  225:      } else {
+     7434:  226:        Packet p = mat.template packet<Packet>(0, 0);
+     7434:  227:        visitor.initpacket(p, 0, 0);
+     7434:  228:        i = PacketSize;
+        -:  229:      }
+     8622:  230:      if EIGEN_PREDICT_FALSE(short_circuit::run(visitor)) return;
+    11602:  231:      for (; i + PacketSize - 1 < innerSize; i += PacketSize) {
+     2980:  232:        Index r = RowMajor ? 0 : i;
+     2980:  233:        Index c = RowMajor ? i : 0;
+     2980:  234:        Packet p = mat.template packet<Packet>(r, c);
+     2980:  235:        visitor.packet(p, r, c);
+     2980:  236:        if EIGEN_PREDICT_FALSE(short_circuit::run(visitor)) return;
+     2980:  237:      }
+    11598:  238:      for (; i < innerSize; ++i) {
+     2976:  239:        Index r = RowMajor ? 0 : i;
+     2976:  240:        Index c = RowMajor ? i : 0;
+     2976:  241:        visitor(mat.coeff(r, c), r, c);
+     2976:  242:        if EIGEN_PREDICT_FALSE(short_circuit::run(visitor)) return;
+     2976:  243:      }
+        -:  244:    }
+     8622:  245:    for (Index j = 1; j < outerSize; j++) {
+    #####:  246:      Index i = 0;
+    #####:  247:      for (; i + PacketSize - 1 < innerSize; i += PacketSize) {
+    #####:  248:        Index r = RowMajor ? j : i;
+    #####:  249:        Index c = RowMajor ? i : j;
+    #####:  250:        Packet p = mat.template packet<Packet>(r, c);
+    #####:  251:        visitor.packet(p, r, c);
+    #####:  252:        if EIGEN_PREDICT_FALSE(short_circuit::run(visitor)) return;
+    #####:  253:      }
+    #####:  254:      for (; i < innerSize; ++i) {
+    #####:  255:        Index r = RowMajor ? j : i;
+    #####:  256:        Index c = RowMajor ? i : j;
+    #####:  257:        visitor(mat.coeff(r, c), r, c);
+    #####:  258:        if EIGEN_PREDICT_FALSE(short_circuit::run(visitor)) return;
+    #####:  259:      }
+    #####:  260:    }
+     8622:  261:  }
+        -:  262:};
+        -:  263:
+        -:  264:// dynamic scalar linear traversal
+        -:  265:template <typename Visitor, typename Derived, bool ShortCircuitEvaluation>
+        -:  266:struct visitor_impl<Visitor, Derived, Dynamic, /*Vectorize=*/false, /*LinearAccess=*/true, ShortCircuitEvaluation> {
+        -:  267:  using short_circuit = short_circuit_eval_impl<Visitor, ShortCircuitEvaluation>;
+        -:  268:
+        -:  269:  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void run(const Derived& mat, Visitor& visitor) {
+        -:  270:    const Index size = mat.size();
+        -:  271:    if (size == 0) return;
+        -:  272:    visitor.init(mat.coeff(0), 0);
+        -:  273:    if EIGEN_PREDICT_FALSE(short_circuit::run(visitor)) return;
+        -:  274:    for (Index k = 1; k < size; k++) {
+        -:  275:      visitor(mat.coeff(k), k);
+        -:  276:      if EIGEN_PREDICT_FALSE(short_circuit::run(visitor)) return;
+        -:  277:    }
+        -:  278:  }
+        -:  279:};
+        -:  280:
+        -:  281:// dynamic vectorized linear traversal
+        -:  282:template <typename Visitor, typename Derived, bool ShortCircuitEvaluation>
+        -:  283:struct visitor_impl<Visitor, Derived, Dynamic, /*Vectorize=*/true, /*LinearAccess=*/true, ShortCircuitEvaluation> {
+        -:  284:  using Scalar = typename Derived::Scalar;
+        -:  285:  using Packet = typename packet_traits<Scalar>::type;
+        -:  286:  static constexpr int PacketSize = packet_traits<Scalar>::size;
+        -:  287:  using short_circuit = short_circuit_eval_impl<Visitor, ShortCircuitEvaluation>;
+        -:  288:
+        -:  289:  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void run(const Derived& mat, Visitor& visitor) {
+        -:  290:    const Index size = mat.size();
+        -:  291:    if (size == 0) return;
+        -:  292:    Index k = 0;
+        -:  293:    if (size < PacketSize) {
+        -:  294:      visitor.init(mat.coeff(0), 0);
+        -:  295:      k = 1;
+        -:  296:    } else {
+        -:  297:      Packet p = mat.template packet<Packet>(k);
+        -:  298:      visitor.initpacket(p, k);
+        -:  299:      k = PacketSize;
+        -:  300:    }
+        -:  301:    if EIGEN_PREDICT_FALSE(short_circuit::run(visitor)) return;
+        -:  302:    for (; k + PacketSize - 1 < size; k += PacketSize) {
+        -:  303:      Packet p = mat.template packet<Packet>(k);
+        -:  304:      visitor.packet(p, k);
+        -:  305:      if EIGEN_PREDICT_FALSE(short_circuit::run(visitor)) return;
+        -:  306:    }
+        -:  307:    for (; k < size; k++) {
+        -:  308:      visitor(mat.coeff(k), k);
+        -:  309:      if EIGEN_PREDICT_FALSE(short_circuit::run(visitor)) return;
+        -:  310:    }
+        -:  311:  }
+        -:  312:};
+        -:  313:
+        -:  314:// evaluator adaptor
+        -:  315:template<typename XprType>
+        -:  316:class visitor_evaluator
+        -:  317:{
+        -:  318:public:
+        -:  319:  typedef evaluator<XprType> Evaluator;
+        -:  320:  typedef typename XprType::Scalar Scalar;
+        -:  321:  using Packet = typename packet_traits<Scalar>::type;
+        -:  322:  typedef std::remove_const_t<typename XprType::CoeffReturnType> CoeffReturnType;
+        -:  323:
+        -:  324:  static constexpr bool PacketAccess = static_cast<bool>(Evaluator::Flags & PacketAccessBit);
+        -:  325:  static constexpr bool LinearAccess = static_cast<bool>(Evaluator::Flags & LinearAccessBit);
+        -:  326:  static constexpr bool IsRowMajor = static_cast<bool>(XprType::IsRowMajor);
+        -:  327:  static constexpr int RowsAtCompileTime = XprType::RowsAtCompileTime;
+        -:  328:  static constexpr int ColsAtCompileTime = XprType::ColsAtCompileTime;
+        -:  329:  static constexpr int XprAlignment = Evaluator::Alignment;
+        -:  330:  static constexpr int CoeffReadCost = Evaluator::CoeffReadCost;
+        -:  331:
+        -:  332:  EIGEN_DEVICE_FUNC
+    20224:  333:  explicit visitor_evaluator(const XprType &xpr) : m_evaluator(xpr), m_xpr(xpr) { }
+        -:  334:
+     8622:  335:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR Index rows() const EIGEN_NOEXCEPT { return m_xpr.rows(); }
+     8622:  336:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR Index cols() const EIGEN_NOEXCEPT { return m_xpr.cols(); }
+        -:  337:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR Index size() const EIGEN_NOEXCEPT { return m_xpr.size(); }
+        -:  338:  // outer-inner access
+     4164:  339:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE CoeffReturnType coeff(Index row, Index col) const { return m_evaluator.coeff(row, col); }
+        -:  340:  template <typename Packet, int Alignment = Unaligned>
+    11904:  341:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packet(Index row, Index col) const {
+    11904:  342:    return m_evaluator.template packet<Alignment, Packet>(row, col);
+        -:  343:  }
+        -:  344:  // linear access
+        -:  345:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE CoeffReturnType coeff(Index index) const { return m_evaluator.coeff(index); }
+        -:  346:  template <typename Packet, int Alignment = XprAlignment>
+        -:  347:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packet(Index index) const {
+        -:  348:    return m_evaluator.template packet<Alignment, Packet>(index);
+        -:  349:  }
+        -:  350:
+        -:  351:protected:
+        -:  352:  Evaluator m_evaluator;
+        -:  353:  const XprType &m_xpr;
+        -:  354:};
+        -:  355:
+        -:  356:template <typename Derived, typename Visitor, bool ShortCircuitEvaulation>
+        -:  357:struct visit_impl {
+        -:  358:  using Evaluator = visitor_evaluator<Derived>;
+        -:  359:  using Scalar = typename DenseBase<Derived>::Scalar;
+        -:  360:
+        -:  361:  static constexpr bool IsRowMajor = DenseBase<Derived>::IsRowMajor;
+        -:  362:  static constexpr int SizeAtCompileTime = DenseBase<Derived>::SizeAtCompileTime;
+        -:  363:  static constexpr int RowsAtCompileTime = DenseBase<Derived>::RowsAtCompileTime;
+        -:  364:  static constexpr int ColsAtCompileTime = DenseBase<Derived>::ColsAtCompileTime;
+        -:  365:  static constexpr int InnerSizeAtCompileTime = IsRowMajor ? ColsAtCompileTime : RowsAtCompileTime;
+        -:  366:  static constexpr int OuterSizeAtCompileTime = IsRowMajor ? RowsAtCompileTime : ColsAtCompileTime;
+        -:  367:
+        -:  368:  static constexpr bool LinearAccess = Evaluator::LinearAccess && static_cast<bool>(functor_traits<Visitor>::LinearAccess);
+        -:  369:  static constexpr bool Vectorize = Evaluator::PacketAccess && static_cast<bool>(functor_traits<Visitor>::PacketAccess);
+        -:  370:
+        -:  371:  static constexpr int PacketSize = packet_traits<Scalar>::size;
+        -:  372:  static constexpr int VectorOps = Vectorize ? (LinearAccess ? (SizeAtCompileTime / PacketSize) : (OuterSizeAtCompileTime * (InnerSizeAtCompileTime / PacketSize))) : 0;
+        -:  373:  static constexpr int ScalarOps = SizeAtCompileTime - (VectorOps * PacketSize);
+        -:  374:  // treat vector op and scalar op as same cost for unroll logic
+        -:  375:  static constexpr int TotalOps = VectorOps + ScalarOps;
+        -:  376:
+        -:  377:  static constexpr int UnrollCost = int(Evaluator::CoeffReadCost) + int(functor_traits<Visitor>::Cost);
+        -:  378:  static constexpr bool Unroll = (SizeAtCompileTime != Dynamic) && ((TotalOps * UnrollCost) <= EIGEN_UNROLLING_LIMIT);
+        -:  379:  static constexpr int UnrollCount = Unroll ? int(SizeAtCompileTime) : Dynamic;
+        -:  380:
+        -:  381:
+        -:  382:  using impl = visitor_impl<Visitor, Evaluator, UnrollCount, Vectorize, LinearAccess, ShortCircuitEvaulation>;
+        -:  383:
+    10112:  384:  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void run(const DenseBase<Derived>& mat, Visitor& visitor) {
+    10112:  385:    Evaluator evaluator(mat.derived());
+    10112:  386:    impl::run(evaluator, visitor);
+    10112:  387:  }
+        -:  388:};
+        -:  389:
+        -:  390:} // end namespace internal
+        -:  391:
+        -:  392:/** Applies the visitor \a visitor to the whole coefficients of the matrix or vector.
+        -:  393:  *
+        -:  394:  * The template parameter \a Visitor is the type of the visitor and provides the following interface:
+        -:  395:  * \code
+        -:  396:  * struct MyVisitor {
+        -:  397:  *   // called for the first coefficient
+        -:  398:  *   void init(const Scalar& value, Index i, Index j);
+        -:  399:  *   // called for all other coefficients
+        -:  400:  *   void operator() (const Scalar& value, Index i, Index j);
+        -:  401:  * };
+        -:  402:  * \endcode
+        -:  403:  *
+        -:  404:  * \note compared to one or two \em for \em loops, visitors offer automatic
+        -:  405:  * unrolling for small fixed size matrix.
+        -:  406:  *
+        -:  407:  * \note if the matrix is empty, then the visitor is left unchanged.
+        -:  408:  *
+        -:  409:  * \sa minCoeff(Index*,Index*), maxCoeff(Index*,Index*), DenseBase::redux()
+        -:  410:  */
+        -:  411:template<typename Derived>
+        -:  412:template<typename Visitor>
+        -:  413:EIGEN_DEVICE_FUNC
+    10112:  414:void DenseBase<Derived>::visit(Visitor& visitor) const
+        -:  415:{
+        -:  416:  using impl = internal::visit_impl<Derived, Visitor, /*ShortCircuitEvaulation*/false>;
+    10112:  417:  impl::run(derived(), visitor);
+    10112:  418:}
+        -:  419:
+        -:  420:namespace internal {
+        -:  421:
+        -:  422:/** \internal
+        -:  423:  * \brief Base class to implement min and max visitors
+        -:  424:  */
+        -:  425:template <typename Derived>
+        -:  426:struct coeff_visitor
+        -:  427:{
+        -:  428:  // default initialization to avoid countless invalid maybe-uninitialized warnings by gcc
+        -:  429:  EIGEN_DEVICE_FUNC
+    10112:  430:  coeff_visitor() : row(-1), col(-1), res(0) {}
+        -:  431:  typedef typename Derived::Scalar Scalar;
+        -:  432:  Index row, col;
+        -:  433:  Scalar res;
+        -:  434:  EIGEN_DEVICE_FUNC
+     1188:  435:  inline void init(const Scalar& value, Index i, Index j)
+        -:  436:  {
+     1188:  437:    res = value;
+     1188:  438:    row = i;
+     1188:  439:    col = j;
+     1188:  440:  }
+        -:  441:};
+        -:  442:
+        -:  443:
+        -:  444:template <typename Scalar, int NaNPropagation, bool is_min = true>
+        -:  445:struct minmax_compare {
+        -:  446:  typedef typename packet_traits<Scalar>::type Packet;
+    #####:  447:  static EIGEN_DEVICE_FUNC inline bool compare(Scalar a, Scalar b) { return a < b; }
+     2980:  448:  static EIGEN_DEVICE_FUNC inline Scalar predux(const Packet& p) { return predux_min<NaNPropagation>(p); }
+        -:  449:};
+        -:  450:
+        -:  451:template <typename Scalar, int NaNPropagation>
+        -:  452:struct minmax_compare<Scalar, NaNPropagation, false> {
+        -:  453:  typedef typename packet_traits<Scalar>::type Packet;
+     5956:  454:  static EIGEN_DEVICE_FUNC inline bool compare(Scalar a, Scalar b) { return a > b; }
+     8924:  455:  static EIGEN_DEVICE_FUNC inline Scalar predux(const Packet& p) { return predux_max<NaNPropagation>(p); }
+        -:  456:};
+        -:  457:
+        -:  458:// Default implementation used by non-floating types, where we do not
+        -:  459:// need special logic for NaN handling.
+        -:  460:template <typename Derived, bool is_min, int NaNPropagation,
+        -:  461:          bool isInt = NumTraits<typename Derived::Scalar>::IsInteger>
+        -:  462:struct minmax_coeff_visitor : coeff_visitor<Derived> {
+        -:  463:  using Scalar = typename Derived::Scalar;
+        -:  464:  using Packet = typename packet_traits<Scalar>::type;
+        -:  465:  using Comparator = minmax_compare<Scalar, NaNPropagation, is_min>;
+        -:  466:  static constexpr Index PacketSize = packet_traits<Scalar>::size;
+        -:  467:
+        -:  468:  EIGEN_DEVICE_FUNC inline void operator()(const Scalar& value, Index i, Index j) {
+        -:  469:    if (Comparator::compare(value, this->res)) {
+        -:  470:      this->res = value;
+        -:  471:      this->row = i;
+        -:  472:      this->col = j;
+        -:  473:    }
+        -:  474:  }
+        -:  475:  EIGEN_DEVICE_FUNC inline void packet(const Packet& p, Index i, Index j) {
+        -:  476:    Scalar value = Comparator::predux(p);
+        -:  477:    if (Comparator::compare(value, this->res)) {
+        -:  478:      const Packet range = preverse(plset<Packet>(Scalar(1)));
+        -:  479:      Packet mask = pcmp_eq(pset1<Packet>(value), p);
+        -:  480:      Index max_idx = PacketSize - static_cast<Index>(predux_max(pand(range, mask)));
+        -:  481:      this->res = value;
+        -:  482:      this->row = Derived::IsRowMajor ? i : i + max_idx;
+        -:  483:      this->col = Derived::IsRowMajor ? j + max_idx : j;
+        -:  484:    }
+        -:  485:  }
+        -:  486:  EIGEN_DEVICE_FUNC inline void initpacket(const Packet& p, Index i, Index j) {
+        -:  487:    Scalar value = Comparator::predux(p);
+        -:  488:    const Packet range = preverse(plset<Packet>(Scalar(1)));
+        -:  489:    Packet mask = pcmp_eq(pset1<Packet>(value), p);
+        -:  490:    Index max_idx = PacketSize - static_cast<Index>(predux_max(pand(range, mask)));
+        -:  491:    this->res = value;
+        -:  492:    this->row = Derived::IsRowMajor ? i : i + max_idx;
+        -:  493:    this->col = Derived::IsRowMajor ? j + max_idx : j;
+        -:  494:  }
+        -:  495:};
+        -:  496:
+        -:  497:// Suppress NaN. The only case in which we return NaN is if the matrix is all NaN,
+        -:  498:// in which case, row=0, col=0 is returned for the location.
+        -:  499:template <typename Derived, bool is_min>
+        -:  500:struct minmax_coeff_visitor<Derived, is_min, PropagateNumbers, false> : coeff_visitor<Derived> {
+        -:  501:  typedef typename Derived::Scalar Scalar;
+        -:  502:  using Packet = typename packet_traits<Scalar>::type;
+        -:  503:  using Comparator = minmax_compare<Scalar, PropagateNumbers, is_min>;
+        -:  504:
+        -:  505:  EIGEN_DEVICE_FUNC inline void operator()(const Scalar& value, Index i, Index j) {
+        -:  506:    if ((!(numext::isnan)(value) && (numext::isnan)(this->res)) || Comparator::compare(value, this->res)) {
+        -:  507:      this->res = value;
+        -:  508:      this->row = i;
+        -:  509:      this->col = j;
+        -:  510:    }
+        -:  511:  }
+        -:  512:  EIGEN_DEVICE_FUNC inline void packet(const Packet& p, Index i, Index j) {
+        -:  513:    const Index PacketSize = packet_traits<Scalar>::size;
+        -:  514:    Scalar value = Comparator::predux(p);
+        -:  515:    if ((!(numext::isnan)(value) && (numext::isnan)(this->res)) || Comparator::compare(value, this->res)) {
+        -:  516:      const Packet range = preverse(plset<Packet>(Scalar(1)));
+        -:  517:      /* mask will be zero for NaNs, so they will be ignored. */
+        -:  518:      Packet mask = pcmp_eq(pset1<Packet>(value), p);
+        -:  519:      Index max_idx = PacketSize - static_cast<Index>(predux_max(pand(range, mask)));
+        -:  520:      this->res = value;
+        -:  521:      this->row = Derived::IsRowMajor ? i : i + max_idx;
+        -:  522:      this->col = Derived::IsRowMajor ? j + max_idx : j;
+        -:  523:    }
+        -:  524:  }
+        -:  525:  EIGEN_DEVICE_FUNC inline void initpacket(const Packet& p, Index i, Index j) {
+        -:  526:    const Index PacketSize = packet_traits<Scalar>::size;
+        -:  527:    Scalar value = Comparator::predux(p);
+        -:  528:    if ((numext::isnan)(value)) {
+        -:  529:      this->res = value;
+        -:  530:      this->row = 0;
+        -:  531:      this->col = 0;
+        -:  532:      return;
+        -:  533:    }
+        -:  534:    const Packet range = preverse(plset<Packet>(Scalar(1)));
+        -:  535:    /* mask will be zero for NaNs, so they will be ignored. */
+        -:  536:    Packet mask = pcmp_eq(pset1<Packet>(value), p);
+        -:  537:    Index max_idx = PacketSize - static_cast<Index>(predux_max(pand(range, mask)));
+        -:  538:    this->res = value;
+        -:  539:    this->row = Derived::IsRowMajor ? i : i + max_idx;
+        -:  540:    this->col = Derived::IsRowMajor ? j + max_idx : j;
+        -:  541:  }
+        -:  542:};
+        -:  543:
+        -:  544:// Propagate NaNs. If the matrix contains NaN, the location of the first NaN
+        -:  545:// will be returned in row and col.
+        -:  546:template <typename Derived, bool is_min, int NaNPropagation>
+        -:  547:    struct minmax_coeff_visitor<Derived, is_min, NaNPropagation, false> : coeff_visitor<Derived> {
+        -:  548:  typedef typename Derived::Scalar Scalar;
+        -:  549:  using Packet = typename packet_traits<Scalar>::type;
+        -:  550:  using Comparator = minmax_compare<Scalar, PropagateNaN, is_min>;
+        -:  551:
+     2976:  552:  EIGEN_DEVICE_FUNC inline void operator()(const Scalar& value, Index i, Index j) {
+     2976:  553:    const bool value_is_nan = (numext::isnan)(value);
+     2976:  554:    if ((value_is_nan && !(numext::isnan)(this->res)) || Comparator::compare(value, this->res)) {
+      578:  555:      this->res = value;
+      578:  556:      this->row = i;
+      578:  557:      this->col = j;
+      578:  558:    }
+     2976:  559:  }
+     2980:  560:  EIGEN_DEVICE_FUNC inline void packet(const Packet& p, Index i, Index j) {
+     2980:  561:    const Index PacketSize = packet_traits<Scalar>::size;
+     2980:  562:    Scalar value = Comparator::predux(p);
+     2980:  563:    const bool value_is_nan = (numext::isnan)(value);
+     2980:  564:    if ((value_is_nan && !(numext::isnan)(this->res)) || Comparator::compare(value, this->res)) {
+     2980:  565:      const Packet range = preverse(plset<Packet>(Scalar(1)));
+        -:  566:      // If the value is NaN, pick the first position of a NaN, otherwise pick the first extremal value.
+     2980:  567:      Packet mask = value_is_nan ? pnot(pcmp_eq(p, p)) : pcmp_eq(pset1<Packet>(value), p);
+     2980:  568:      Index max_idx = PacketSize - static_cast<Index>(predux_max(pand(range, mask)));
+     2980:  569:      this->res = value;
+     2980:  570:      this->row = Derived::IsRowMajor ? i : i + max_idx;
+     2980:  571:      this->col = Derived::IsRowMajor ? j + max_idx : j;
+     2980:  572:    }
+     2980:  573:  }
+     8924:  574:  EIGEN_DEVICE_FUNC inline void initpacket(const Packet& p, Index i, Index j) {
+     8924:  575:    const Index PacketSize = packet_traits<Scalar>::size;
+     8924:  576:    Scalar value = Comparator::predux(p);
+     8924:  577:    const bool value_is_nan = (numext::isnan)(value);
+     8924:  578:    const Packet range = preverse(plset<Packet>(Scalar(1)));
+        -:  579:    // If the value is NaN, pick the first position of a NaN, otherwise pick the first extremal value.
+     8924:  580:    Packet mask = value_is_nan ? pnot(pcmp_eq(p, p)) : pcmp_eq(pset1<Packet>(value), p);
+     8924:  581:    Index max_idx = PacketSize - static_cast<Index>(predux_max(pand(range, mask)));
+     8924:  582:    this->res = value;
+     8924:  583:    this->row = Derived::IsRowMajor ? i : i + max_idx;
+     8924:  584:    this->col = Derived::IsRowMajor ? j + max_idx : j;
+     8924:  585:  }
+        -:  586:};
+        -:  587:
+        -:  588:template<typename Derived, bool is_min, int NaNPropagation>
+        -:  589:struct functor_traits<minmax_coeff_visitor<Derived, is_min, NaNPropagation> > {
+        -:  590:  using Scalar = typename Derived::Scalar;
+        -:  591:  enum {
+        -:  592:    Cost = NumTraits<Scalar>::AddCost,
+        -:  593:    LinearAccess = false,
+        -:  594:    PacketAccess = packet_traits<Scalar>::HasCmp
+        -:  595:  };
+        -:  596:};
+        -:  597:
+        -:  598:template <typename Scalar>
+        -:  599:struct all_visitor {
+        -:  600:  using result_type = bool;
+        -:  601:  using Packet = typename packet_traits<Scalar>::type;
+        -:  602:  EIGEN_DEVICE_FUNC inline void init(const Scalar& value, Index, Index) { res = (value != Scalar(0)); }
+        -:  603:  EIGEN_DEVICE_FUNC inline void init(const Scalar& value, Index) { res = (value != Scalar(0)); }
+        -:  604:  EIGEN_DEVICE_FUNC inline bool all_predux(const Packet& p) const { return !predux_any(pcmp_eq(p, pzero(p))); }
+        -:  605:  EIGEN_DEVICE_FUNC inline void initpacket(const Packet& p, Index, Index) { res = all_predux(p); }
+        -:  606:  EIGEN_DEVICE_FUNC inline void initpacket(const Packet& p, Index) { res = all_predux(p); }
+        -:  607:  EIGEN_DEVICE_FUNC inline void operator()(const Scalar& value, Index, Index) { res = res && (value != Scalar(0)); }
+        -:  608:  EIGEN_DEVICE_FUNC inline void operator()(const Scalar& value, Index) { res = res && (value != Scalar(0)); }
+        -:  609:  EIGEN_DEVICE_FUNC inline void packet(const Packet& p, Index, Index) { res = res && all_predux(p); }
+        -:  610:  EIGEN_DEVICE_FUNC inline void packet(const Packet& p, Index) { res = res && all_predux(p); }
+        -:  611:  EIGEN_DEVICE_FUNC inline bool done() const { return !res; }
+        -:  612:  bool res = true;
+        -:  613:};
+        -:  614:template <typename Scalar>
+        -:  615:struct functor_traits<all_visitor<Scalar>> {
+        -:  616:  enum { Cost = NumTraits<Scalar>::ReadCost, LinearAccess = true, PacketAccess = packet_traits<Scalar>::HasCmp };
+        -:  617:};
+        -:  618:
+        -:  619:template <typename Scalar>
+        -:  620:struct any_visitor {
+        -:  621:  using result_type = bool;
+        -:  622:  using Packet = typename packet_traits<Scalar>::type;
+        -:  623:  EIGEN_DEVICE_FUNC inline void init(const Scalar& value, Index, Index) { res = (value != Scalar(0)); }
+        -:  624:  EIGEN_DEVICE_FUNC inline void init(const Scalar& value, Index) { res = (value != Scalar(0)); }
+        -:  625:  EIGEN_DEVICE_FUNC inline bool any_predux(const Packet& p) const {
+        -:  626:    return predux_any(pandnot(ptrue(p), pcmp_eq(p, pzero(p))));
+        -:  627:  }
+        -:  628:  EIGEN_DEVICE_FUNC inline void initpacket(const Packet& p, Index, Index) { res = any_predux(p); }
+        -:  629:  EIGEN_DEVICE_FUNC inline void initpacket(const Packet& p, Index) { res = any_predux(p); }
+        -:  630:  EIGEN_DEVICE_FUNC inline void operator()(const Scalar& value, Index, Index) { res = res || (value != Scalar(0)); }
+        -:  631:  EIGEN_DEVICE_FUNC inline void operator()(const Scalar& value, Index) { res = res || (value != Scalar(0)); }
+        -:  632:  EIGEN_DEVICE_FUNC inline void packet(const Packet& p, Index, Index) { res = res || any_predux(p); }
+        -:  633:  EIGEN_DEVICE_FUNC inline void packet(const Packet& p, Index) { res = res || any_predux(p); }
+        -:  634:  EIGEN_DEVICE_FUNC inline bool done() const { return res; }
+        -:  635:  bool res = false;
+        -:  636:};
+        -:  637:template <typename Scalar>
+        -:  638:struct functor_traits<any_visitor<Scalar>> {
+        -:  639:  enum { Cost = NumTraits<Scalar>::ReadCost, LinearAccess = true, PacketAccess = packet_traits<Scalar>::HasCmp };
+        -:  640:};
+        -:  641:
+        -:  642:template <typename Scalar>
+        -:  643:struct count_visitor {
+        -:  644:  using result_type = Index;
+        -:  645:  using Packet = typename packet_traits<Scalar>::type;
+        -:  646:  EIGEN_DEVICE_FUNC inline void init(const Scalar& value, Index, Index) { res = value != Scalar(0) ? 1 : 0; }
+        -:  647:  EIGEN_DEVICE_FUNC inline void init(const Scalar& value, Index) { res = value != Scalar(0) ? 1 : 0; }
+        -:  648:  EIGEN_DEVICE_FUNC inline Index count_redux(const Packet& p) const {
+        -:  649:    const Packet cst_one = pset1<Packet>(Scalar(1));
+        -:  650:    Packet true_vals = pandnot(cst_one, pcmp_eq(p, pzero(p)));
+        -:  651:    Scalar num_true = predux(true_vals);
+        -:  652:    return static_cast<Index>(num_true);
+        -:  653:  }
+        -:  654:  EIGEN_DEVICE_FUNC inline void initpacket(const Packet& p, Index, Index) { res = count_redux(p); }
+        -:  655:  EIGEN_DEVICE_FUNC inline void initpacket(const Packet& p, Index) { res = count_redux(p); }
+        -:  656:  EIGEN_DEVICE_FUNC inline void operator()(const Scalar& value, Index, Index) {
+        -:  657:    if (value != Scalar(0)) res++;
+        -:  658:  }
+        -:  659:  EIGEN_DEVICE_FUNC inline void operator()(const Scalar& value, Index) {
+        -:  660:    if (value != Scalar(0)) res++;
+        -:  661:  }
+        -:  662:  EIGEN_DEVICE_FUNC inline void packet(const Packet& p, Index, Index) { res += count_redux(p); }
+        -:  663:  EIGEN_DEVICE_FUNC inline void packet(const Packet& p, Index) { res += count_redux(p); }
+        -:  664:  Index res = 0;
+        -:  665:};
+        -:  666:
+        -:  667:template <typename Scalar>
+        -:  668:struct functor_traits<count_visitor<Scalar>> {
+        -:  669:  enum {
+        -:  670:    Cost = NumTraits<Scalar>::AddCost,
+        -:  671:    LinearAccess = true,
+        -:  672:    // predux is problematic for bool
+        -:  673:    PacketAccess = packet_traits<Scalar>::HasCmp && packet_traits<Scalar>::HasAdd && !is_same<Scalar, bool>::value
+        -:  674:  };
+        -:  675:};
+        -:  676:
+        -:  677:} // end namespace internal
+        -:  678:
+        -:  679:/** \fn DenseBase<Derived>::minCoeff(IndexType* rowId, IndexType* colId) const
+        -:  680:  * \returns the minimum of all coefficients of *this and puts in *row and *col its location.
+        -:  681:  *
+        -:  682:  * In case \c *this contains NaN, NaNPropagation determines the behavior:
+        -:  683:  *   NaNPropagation == PropagateFast : undefined
+        -:  684:  *   NaNPropagation == PropagateNaN : result is NaN
+        -:  685:  *   NaNPropagation == PropagateNumbers : result is maximum of elements that are not NaN
+        -:  686:  * \warning the matrix must be not empty, otherwise an assertion is triggered.
+        -:  687:  *
+        -:  688:  * \sa DenseBase::minCoeff(Index*), DenseBase::maxCoeff(Index*,Index*), DenseBase::visit(), DenseBase::minCoeff()
+        -:  689:  */
+        -:  690:template<typename Derived>
+        -:  691:template<int NaNPropagation, typename IndexType>
+        -:  692:EIGEN_DEVICE_FUNC
+        -:  693:typename internal::traits<Derived>::Scalar
+        -:  694:DenseBase<Derived>::minCoeff(IndexType* rowId, IndexType* colId) const
+        -:  695:{
+        -:  696:  eigen_assert(this->rows()>0 && this->cols()>0 && "you are using an empty matrix");
+        -:  697:
+        -:  698:  internal::minmax_coeff_visitor<Derived, true, NaNPropagation> minVisitor;
+        -:  699:  this->visit(minVisitor);
+        -:  700:  *rowId = minVisitor.row;
+        -:  701:  if (colId) *colId = minVisitor.col;
+        -:  702:  return minVisitor.res;
+        -:  703:}
+        -:  704:
+        -:  705:/** \returns the minimum of all coefficients of *this and puts in *index its location.
+        -:  706:  *
+        -:  707:  * In case \c *this contains NaN, NaNPropagation determines the behavior:
+        -:  708:  *   NaNPropagation == PropagateFast : undefined
+        -:  709:  *   NaNPropagation == PropagateNaN : result is NaN
+        -:  710:  *   NaNPropagation == PropagateNumbers : result is maximum of elements that are not NaN
+        -:  711:  * \warning the matrix must be not empty, otherwise an assertion is triggered.
+        -:  712:  *
+        -:  713:  * \sa DenseBase::minCoeff(IndexType*,IndexType*), DenseBase::maxCoeff(IndexType*,IndexType*), DenseBase::visit(), DenseBase::minCoeff()
+        -:  714:  */
+        -:  715:template<typename Derived>
+        -:  716:template<int NaNPropagation, typename IndexType>
+        -:  717:EIGEN_DEVICE_FUNC
+        -:  718:typename internal::traits<Derived>::Scalar
+     2980:  719:DenseBase<Derived>::minCoeff(IndexType* index) const
+        -:  720:{
+     5960:  721:  eigen_assert(this->rows() > 0 && this->cols() > 0 && "you are using an empty matrix");
+        -:  722:  EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived)
+        -:  723:
+     2980:  724:  internal::minmax_coeff_visitor<Derived, true, NaNPropagation> minVisitor;
+     2980:  725:  this->visit(minVisitor);
+     2980:  726:  *index = IndexType((RowsAtCompileTime==1) ? minVisitor.col : minVisitor.row);
+     2980:  727:  return minVisitor.res;
+        -:  728:}
+        -:  729:
+        -:  730:/** \fn DenseBase<Derived>::maxCoeff(IndexType* rowId, IndexType* colId) const
+        -:  731:  * \returns the maximum of all coefficients of *this and puts in *row and *col its location.
+        -:  732:  *
+        -:  733:  * In case \c *this contains NaN, NaNPropagation determines the behavior:
+        -:  734:  *   NaNPropagation == PropagateFast : undefined
+        -:  735:  *   NaNPropagation == PropagateNaN : result is NaN
+        -:  736:  *   NaNPropagation == PropagateNumbers : result is maximum of elements that are not NaN
+        -:  737:  * \warning the matrix must be not empty, otherwise an assertion is triggered.
+        -:  738:  *
+        -:  739:  * \sa DenseBase::minCoeff(IndexType*,IndexType*), DenseBase::visit(), DenseBase::maxCoeff()
+        -:  740:  */
+        -:  741:template<typename Derived>
+        -:  742:template<int NaNPropagation, typename IndexType>
+        -:  743:EIGEN_DEVICE_FUNC
+        -:  744:typename internal::traits<Derived>::Scalar
+        -:  745:DenseBase<Derived>::maxCoeff(IndexType* rowPtr, IndexType* colPtr) const
+        -:  746:{
+        -:  747:  eigen_assert(this->rows()>0 && this->cols()>0 && "you are using an empty matrix");
+        -:  748:
+        -:  749:  internal::minmax_coeff_visitor<Derived, false, NaNPropagation> maxVisitor;
+        -:  750:  this->visit(maxVisitor);
+        -:  751:  *rowPtr = maxVisitor.row;
+        -:  752:  if (colPtr) *colPtr = maxVisitor.col;
+        -:  753:  return maxVisitor.res;
+        -:  754:}
+        -:  755:
+        -:  756:/** \returns the maximum of all coefficients of *this and puts in *index its location.
+        -:  757:  *
+        -:  758:  * In case \c *this contains NaN, NaNPropagation determines the behavior:
+        -:  759:  *   NaNPropagation == PropagateFast : undefined
+        -:  760:  *   NaNPropagation == PropagateNaN : result is NaN
+        -:  761:  *   NaNPropagation == PropagateNumbers : result is maximum of elements that are not NaN
+        -:  762:  * \warning the matrix must be not empty, otherwise an assertion is triggered.
+        -:  763:  *
+        -:  764:  * \sa DenseBase::maxCoeff(IndexType*,IndexType*), DenseBase::minCoeff(IndexType*,IndexType*), DenseBase::visitor(), DenseBase::maxCoeff()
+        -:  765:  */
+        -:  766:template<typename Derived>
+        -:  767:template<int NaNPropagation, typename IndexType>
+        -:  768:EIGEN_DEVICE_FUNC
+        -:  769:typename internal::traits<Derived>::Scalar
+     7132:  770:DenseBase<Derived>::maxCoeff(IndexType* index) const
+        -:  771:{
+    14264:  772:  eigen_assert(this->rows()>0 && this->cols()>0 && "you are using an empty matrix");
+        -:  773:
+        -:  774:  EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived)
+     7132:  775:  internal::minmax_coeff_visitor<Derived, false, NaNPropagation> maxVisitor;
+     7132:  776:  this->visit(maxVisitor);
+     7132:  777:  *index = (RowsAtCompileTime==1) ? maxVisitor.col : maxVisitor.row;
+     7132:  778:  return maxVisitor.res;
+        -:  779:}
+        -:  780:
+        -:  781:/** \returns true if all coefficients are true
+        -:  782:  *
+        -:  783:  * Example: \include MatrixBase_all.cpp
+        -:  784:  * Output: \verbinclude MatrixBase_all.out
+        -:  785:  *
+        -:  786:  * \sa any(), Cwise::operator<()
+        -:  787:  */
+        -:  788:template <typename Derived>
+        -:  789:EIGEN_DEVICE_FUNC inline bool DenseBase<Derived>::all() const {
+        -:  790:  using Visitor = internal::all_visitor<Scalar>;
+        -:  791:  using impl = internal::visit_impl<Derived, Visitor, /*ShortCircuitEvaulation*/true>;
+        -:  792:  Visitor visitor;
+        -:  793:  impl::run(derived(), visitor);
+        -:  794:  return visitor.res;
+        -:  795:}
+        -:  796:
+        -:  797:/** \returns true if at least one coefficient is true
+        -:  798:  *
+        -:  799:  * \sa all()
+        -:  800:  */
+        -:  801:template <typename Derived>
+        -:  802:EIGEN_DEVICE_FUNC inline bool DenseBase<Derived>::any() const {
+        -:  803:  using Visitor = internal::any_visitor<Scalar>;
+        -:  804:  using impl = internal::visit_impl<Derived, Visitor, /*ShortCircuitEvaulation*/true>;
+        -:  805:  Visitor visitor;
+        -:  806:  impl::run(derived(), visitor);
+        -:  807:  return visitor.res;
+        -:  808:}
+        -:  809:
+        -:  810:/** \returns the number of coefficients which evaluate to true
+        -:  811:  *
+        -:  812:  * \sa all(), any()
+        -:  813:  */
+        -:  814:template<typename Derived>
+        -:  815:EIGEN_DEVICE_FUNC
+        -:  816:Index DenseBase<Derived>::count() const
+        -:  817:{
+        -:  818:  using Visitor = internal::count_visitor<Scalar>;
+        -:  819:  using impl = internal::visit_impl<Derived, Visitor, /*ShortCircuitEvaulation*/false>;
+        -:  820:  Visitor visitor;
+        -:  821:  impl::run(derived(), visitor);
+        -:  822:  return visitor.res;
+        -:  823:
+        -:  824:}
+        -:  825:
+        -:  826:template <typename Derived>
+        -:  827:EIGEN_DEVICE_FUNC inline bool DenseBase<Derived>::hasNaN() const {
+        -:  828:  return derived().cwiseTypedNotEqual(derived()).any();
+        -:  829:}
+        -:  830:
+        -:  831:/** \returns true if \c *this contains only finite numbers, i.e., no NaN and no +/-INF values.
+        -:  832:  *
+        -:  833:  * \sa hasNaN()
+        -:  834:  */
+        -:  835:template <typename Derived>
+        -:  836:EIGEN_DEVICE_FUNC inline bool DenseBase<Derived>::allFinite() const {
+        -:  837:  return derived().array().isFinite().all(); 
+        -:  838:}
+        -:  839:
+        -:  840:} // end namespace Eigen
+        -:  841:
+        -:  842:#endif // EIGEN_VISITOR_H

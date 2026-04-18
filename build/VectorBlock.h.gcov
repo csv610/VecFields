@@ -1,0 +1,99 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/VectorBlock.h
+        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
+        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
+        -:    0:Runs:4
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2008-2010 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    5:// Copyright (C) 2006-2008 Benoit Jacob <jacob.benoit.1@gmail.com>
+        -:    6://
+        -:    7:// This Source Code Form is subject to the terms of the Mozilla
+        -:    8:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    9:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:   10:
+        -:   11:#ifndef EIGEN_VECTORBLOCK_H
+        -:   12:#define EIGEN_VECTORBLOCK_H
+        -:   13:
+        -:   14:// IWYU pragma: private
+        -:   15:#include "./InternalHeaderCheck.h"
+        -:   16:
+        -:   17:namespace Eigen { 
+        -:   18:
+        -:   19:namespace internal {
+        -:   20:template<typename VectorType, int Size>
+        -:   21:struct traits<VectorBlock<VectorType, Size> >
+        -:   22:  : public traits<Block<VectorType,
+        -:   23:                     traits<VectorType>::Flags & RowMajorBit ? 1 : Size,
+        -:   24:                     traits<VectorType>::Flags & RowMajorBit ? Size : 1> >
+        -:   25:{
+        -:   26:};
+        -:   27:}
+        -:   28:
+        -:   29:/** \class VectorBlock
+        -:   30:  * \ingroup Core_Module
+        -:   31:  *
+        -:   32:  * \brief Expression of a fixed-size or dynamic-size sub-vector
+        -:   33:  *
+        -:   34:  * \tparam VectorType the type of the object in which we are taking a sub-vector
+        -:   35:  * \tparam Size size of the sub-vector we are taking at compile time (optional)
+        -:   36:  *
+        -:   37:  * This class represents an expression of either a fixed-size or dynamic-size sub-vector.
+        -:   38:  * It is the return type of DenseBase::segment(Index,Index) and DenseBase::segment<int>(Index) and
+        -:   39:  * most of the time this is the only way it is used.
+        -:   40:  *
+        -:   41:  * However, if you want to directly manipulate sub-vector expressions,
+        -:   42:  * for instance if you want to write a function returning such an expression, you
+        -:   43:  * will need to use this class.
+        -:   44:  *
+        -:   45:  * Here is an example illustrating the dynamic case:
+        -:   46:  * \include class_VectorBlock.cpp
+        -:   47:  * Output: \verbinclude class_VectorBlock.out
+        -:   48:  *
+        -:   49:  * \note Even though this expression has dynamic size, in the case where \a VectorType
+        -:   50:  * has fixed size, this expression inherits a fixed maximal size which means that evaluating
+        -:   51:  * it does not cause a dynamic memory allocation.
+        -:   52:  *
+        -:   53:  * Here is an example illustrating the fixed-size case:
+        -:   54:  * \include class_FixedVectorBlock.cpp
+        -:   55:  * Output: \verbinclude class_FixedVectorBlock.out
+        -:   56:  *
+        -:   57:  * \sa class Block, DenseBase::segment(Index,Index,Index,Index), DenseBase::segment(Index,Index)
+        -:   58:  */
+        -:   59:template<typename VectorType, int Size> class VectorBlock
+        -:   60:  : public Block<VectorType,
+        -:   61:                     internal::traits<VectorType>::Flags & RowMajorBit ? 1 : Size,
+        -:   62:                     internal::traits<VectorType>::Flags & RowMajorBit ? Size : 1>
+        -:   63:{
+        -:   64:    typedef Block<VectorType,
+        -:   65:                     internal::traits<VectorType>::Flags & RowMajorBit ? 1 : Size,
+        -:   66:                     internal::traits<VectorType>::Flags & RowMajorBit ? Size : 1> Base;
+        -:   67:    enum {
+        -:   68:      IsColVector = !(internal::traits<VectorType>::Flags & RowMajorBit)
+        -:   69:    };
+        -:   70:  public:
+        -:   71:    EIGEN_DENSE_PUBLIC_INTERFACE(VectorBlock)
+        -:   72:    EIGEN_STATIC_ASSERT_VECTOR_ONLY(VectorBlock)
+     6484:   73:    EIGEN_INHERIT_ASSIGNMENT_OPERATORS(VectorBlock)
+        -:   74:
+        -:   75:    /** Dynamic-size constructor
+        -:   76:      */
+        -:   77:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+   129756:   78:    VectorBlock(VectorType& vector, Index start, Index size)
+   129756:   79:      : Base(vector,
+    64878:   80:             IsColVector ? start : 0, IsColVector ? 0 : start,
+    64878:   81:             IsColVector ? size  : 1, IsColVector ? 1 : size)
+   129756:   82:    { }
+        -:   83:
+        -:   84:    /** Fixed-size constructor
+        -:   85:      */
+        -:   86:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+        -:   87:    VectorBlock(VectorType& vector, Index start)
+        -:   88:      : Base(vector, IsColVector ? start : 0, IsColVector ? 0 : start)
+        -:   89:    { }
+        -:   90:};
+        -:   91:
+        -:   92:
+        -:   93:} // end namespace Eigen
+        -:   94:
+        -:   95:#endif // EIGEN_VECTORBLOCK_H

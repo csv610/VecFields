@@ -1,0 +1,100 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/products/SelfadjointRank2Update.h
+        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
+        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
+        -:    0:Runs:4
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2009 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:#ifndef EIGEN_SELFADJOINTRANK2UPTADE_H
+        -:   11:#define EIGEN_SELFADJOINTRANK2UPTADE_H
+        -:   12:
+        -:   13:// IWYU pragma: private
+        -:   14:#include "../InternalHeaderCheck.h"
+        -:   15:
+        -:   16:namespace Eigen { 
+        -:   17:
+        -:   18:namespace internal {
+        -:   19:
+        -:   20:/* Optimized selfadjoint matrix += alpha * uv' + conj(alpha)*vu'
+        -:   21: * It corresponds to the Level2 syr2 BLAS routine
+        -:   22: */
+        -:   23:
+        -:   24:template<typename Scalar, typename Index, typename UType, typename VType, int UpLo>
+        -:   25:struct selfadjoint_rank2_update_selector;
+        -:   26:
+        -:   27:template<typename Scalar, typename Index, typename UType, typename VType>
+        -:   28:struct selfadjoint_rank2_update_selector<Scalar,Index,UType,VType,Lower>
+        -:   29:{
+        -:   30:  static EIGEN_DEVICE_FUNC
+     1490:   31:  void run(Scalar* mat, Index stride, const UType& u, const VType& v, const Scalar& alpha)
+        -:   32:  {
+     1490:   33:    const Index size = u.size();
+     2980:   34:    for (Index i=0; i<size; ++i)
+        -:   35:    {
+     1490:   36:      Map<Matrix<Scalar,Dynamic,1> >(mat+stride*i+i, size-i) +=
+     1490:   37:                        (numext::conj(alpha) * numext::conj(u.coeff(i))) * v.tail(size-i)
+     1490:   38:                      + (alpha * numext::conj(v.coeff(i))) * u.tail(size-i);
+     1490:   39:    }
+     1490:   40:  }
+        -:   41:};
+        -:   42:
+        -:   43:template<typename Scalar, typename Index, typename UType, typename VType>
+        -:   44:struct selfadjoint_rank2_update_selector<Scalar,Index,UType,VType,Upper>
+        -:   45:{
+        -:   46:  static void run(Scalar* mat, Index stride, const UType& u, const VType& v, const Scalar& alpha)
+        -:   47:  {
+        -:   48:    const Index size = u.size();
+        -:   49:    for (Index i=0; i<size; ++i)
+        -:   50:      Map<Matrix<Scalar,Dynamic,1> >(mat+stride*i, i+1) +=
+        -:   51:                        (numext::conj(alpha)  * numext::conj(u.coeff(i))) * v.head(i+1)
+        -:   52:                      + (alpha * numext::conj(v.coeff(i))) * u.head(i+1);
+        -:   53:  }
+        -:   54:};
+        -:   55:
+        -:   56:template<bool Cond, typename T>
+        -:   57:using conj_expr_if = std::conditional<!Cond, const T&, CwiseUnaryOp<scalar_conjugate_op<typename traits<T>::Scalar>,T>>;
+        -:   58:
+        -:   59:} // end namespace internal
+        -:   60:
+        -:   61:template<typename MatrixType, unsigned int UpLo>
+        -:   62:template<typename DerivedU, typename DerivedV>
+        -:   63:EIGEN_DEVICE_FUNC SelfAdjointView<MatrixType,UpLo>& SelfAdjointView<MatrixType,UpLo>
+     1490:   64:::rankUpdate(const MatrixBase<DerivedU>& u, const MatrixBase<DerivedV>& v, const Scalar& alpha)
+        -:   65:{
+        -:   66:  typedef internal::blas_traits<DerivedU> UBlasTraits;
+        -:   67:  typedef typename UBlasTraits::DirectLinearAccessType ActualUType;
+        -:   68:  typedef internal::remove_all_t<ActualUType> ActualUType_;
+     1490:   69:  internal::add_const_on_value_type_t<ActualUType> actualU = UBlasTraits::extract(u.derived());
+        -:   70:
+        -:   71:  typedef internal::blas_traits<DerivedV> VBlasTraits;
+        -:   72:  typedef typename VBlasTraits::DirectLinearAccessType ActualVType;
+        -:   73:  typedef internal::remove_all_t<ActualVType> ActualVType_;
+     1490:   74:  internal::add_const_on_value_type_t<ActualVType> actualV = VBlasTraits::extract(v.derived());
+        -:   75:
+        -:   76:  // If MatrixType is row major, then we use the routine for lower triangular in the upper triangular case and
+        -:   77:  // vice versa, and take the complex conjugate of all coefficients and vector entries.
+        -:   78:
+        -:   79:  enum { IsRowMajor = (internal::traits<MatrixType>::Flags&RowMajorBit) ? 1 : 0 };
+     2980:   80:  Scalar actualAlpha = alpha * UBlasTraits::extractScalarFactor(u.derived())
+     1490:   81:                             * numext::conj(VBlasTraits::extractScalarFactor(v.derived()));
+        -:   82:  if (IsRowMajor)
+        -:   83:    actualAlpha = numext::conj(actualAlpha);
+        -:   84:
+        -:   85:  typedef internal::remove_all_t<typename internal::conj_expr_if<int(IsRowMajor) ^ int(UBlasTraits::NeedToConjugate), ActualUType_>::type> UType;
+        -:   86:  typedef internal::remove_all_t<typename internal::conj_expr_if<int(IsRowMajor) ^ int(VBlasTraits::NeedToConjugate), ActualVType_>::type> VType;
+     1490:   87:  internal::selfadjoint_rank2_update_selector<Scalar, Index, UType, VType,
+        -:   88:    (IsRowMajor ? int(UpLo==Upper ? Lower : Upper) : UpLo)>
+     1490:   89:    ::run(_expression().const_cast_derived().data(),_expression().outerStride(),UType(actualU),VType(actualV),actualAlpha);
+        -:   90:
+     1490:   91:  return *this;
+        -:   92:}
+        -:   93:
+        -:   94:} // end namespace Eigen
+        -:   95:
+        -:   96:#endif // EIGEN_SELFADJOINTRANK2UPTADE_H

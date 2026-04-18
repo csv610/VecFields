@@ -1,0 +1,97 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/Assign.h
+        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
+        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
+        -:    0:Runs:4
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2007 Michael Olbrich <michael.olbrich@gmx.net>
+        -:    5:// Copyright (C) 2006-2010 Benoit Jacob <jacob.benoit.1@gmail.com>
+        -:    6:// Copyright (C) 2008 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    7://
+        -:    8:// This Source Code Form is subject to the terms of the Mozilla
+        -:    9:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:   10:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:   11:
+        -:   12:#ifndef EIGEN_ASSIGN_H
+        -:   13:#define EIGEN_ASSIGN_H
+        -:   14:
+        -:   15:// IWYU pragma: private
+        -:   16:#include "./InternalHeaderCheck.h"
+        -:   17:
+        -:   18:namespace Eigen {
+        -:   19:
+        -:   20:template<typename Derived>
+        -:   21:template<typename OtherDerived>
+        -:   22:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Derived& DenseBase<Derived>
+        -:   23:  ::lazyAssign(const DenseBase<OtherDerived>& other)
+        -:   24:{
+        -:   25:  enum{
+        -:   26:    SameType = internal::is_same<typename Derived::Scalar,typename OtherDerived::Scalar>::value
+        -:   27:  };
+        -:   28:
+        -:   29:  EIGEN_STATIC_ASSERT_LVALUE(Derived)
+        -:   30:  EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(Derived,OtherDerived)
+        -:   31:  EIGEN_STATIC_ASSERT(SameType,YOU_MIXED_DIFFERENT_NUMERIC_TYPES__YOU_NEED_TO_USE_THE_CAST_METHOD_OF_MATRIXBASE_TO_CAST_NUMERIC_TYPES_EXPLICITLY)
+        -:   32:
+        -:   33:  eigen_assert(rows() == other.rows() && cols() == other.cols());
+        -:   34:  internal::call_assignment_no_alias(derived(),other.derived());
+        -:   35:  
+        -:   36:  return derived();
+        -:   37:}
+        -:   38:
+        -:   39:template<typename Derived>
+        -:   40:template<typename OtherDerived>
+        -:   41:EIGEN_DEVICE_FUNC
+        -:   42:EIGEN_STRONG_INLINE Derived& DenseBase<Derived>::operator=(const DenseBase<OtherDerived>& other)
+        -:   43:{
+        -:   44:  internal::call_assignment(derived(), other.derived());
+        -:   45:  return derived();
+        -:   46:}
+        -:   47:
+        -:   48:template<typename Derived>
+        -:   49:EIGEN_DEVICE_FUNC
+        -:   50:EIGEN_STRONG_INLINE Derived& DenseBase<Derived>::operator=(const DenseBase& other)
+        -:   51:{
+        -:   52:  internal::call_assignment(derived(), other.derived());
+        -:   53:  return derived();
+        -:   54:}
+        -:   55:
+        -:   56:template<typename Derived>
+        -:   57:EIGEN_DEVICE_FUNC
+     7132:   58:EIGEN_STRONG_INLINE Derived& MatrixBase<Derived>::operator=(const MatrixBase& other)
+        -:   59:{
+     7132:   60:  internal::call_assignment(derived(), other.derived());
+     7132:   61:  return derived();
+        -:   62:}
+        -:   63:
+        -:   64:template<typename Derived>
+        -:   65:template <typename OtherDerived>
+        -:   66:EIGEN_DEVICE_FUNC
+    49498:   67:EIGEN_STRONG_INLINE Derived& MatrixBase<Derived>::operator=(const DenseBase<OtherDerived>& other)
+        -:   68:{
+    49498:   69:  internal::call_assignment(derived(), other.derived());
+    49498:   70:  return derived();
+        -:   71:}
+        -:   72:
+        -:   73:template<typename Derived>
+        -:   74:template <typename OtherDerived>
+        -:   75:EIGEN_DEVICE_FUNC
+     1490:   76:EIGEN_STRONG_INLINE Derived& MatrixBase<Derived>::operator=(const EigenBase<OtherDerived>& other)
+        -:   77:{
+     1490:   78:  internal::call_assignment(derived(), other.derived());
+     1490:   79:  return derived();
+        -:   80:}
+        -:   81:
+        -:   82:template<typename Derived>
+        -:   83:template<typename OtherDerived>
+        -:   84:EIGEN_DEVICE_FUNC
+        -:   85:EIGEN_STRONG_INLINE Derived& MatrixBase<Derived>::operator=(const ReturnByValue<OtherDerived>& other)
+        -:   86:{
+        -:   87:  other.derived().evalTo(derived());
+        -:   88:  return derived();
+        -:   89:}
+        -:   90:
+        -:   91:} // end namespace Eigen
+        -:   92:
+        -:   93:#endif // EIGEN_ASSIGN_H

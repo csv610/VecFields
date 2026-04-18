@@ -1,0 +1,258 @@
+        -:    0:Source:/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/copy.h
+        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
+        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
+        -:    0:Runs:4
+        -:    1://===----------------------------------------------------------------------===//
+        -:    2://
+        -:    3:// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+        -:    4:// See https://llvm.org/LICENSE.txt for license information.
+        -:    5:// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+        -:    6://
+        -:    7://===----------------------------------------------------------------------===//
+        -:    8:
+        -:    9:#ifndef _LIBCPP___ALGORITHM_COPY_H
+        -:   10:#define _LIBCPP___ALGORITHM_COPY_H
+        -:   11:
+        -:   12:#include <__algorithm/copy_move_common.h>
+        -:   13:#include <__algorithm/for_each_segment.h>
+        -:   14:#include <__algorithm/min.h>
+        -:   15:#include <__config>
+        -:   16:#include <__fwd/bit_reference.h>
+        -:   17:#include <__iterator/iterator_traits.h>
+        -:   18:#include <__iterator/segmented_iterator.h>
+        -:   19:#include <__memory/pointer_traits.h>
+        -:   20:#include <__type_traits/common_type.h>
+        -:   21:#include <__type_traits/enable_if.h>
+        -:   22:#include <__utility/move.h>
+        -:   23:#include <__utility/pair.h>
+        -:   24:
+        -:   25:#if !defined(_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER)
+        -:   26:#  pragma GCC system_header
+        -:   27:#endif
+        -:   28:
+        -:   29:_LIBCPP_PUSH_MACROS
+        -:   30:#include <__undef_macros>
+        -:   31:
+        -:   32:_LIBCPP_BEGIN_NAMESPACE_STD
+        -:   33:
+        -:   34:template <class _InputIterator, class _OutputIterator>
+        -:   35:inline _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 _OutputIterator
+        -:   36:copy(_InputIterator __first, _InputIterator __last, _OutputIterator __result);
+        -:   37:
+        -:   38:template <class _InIter, class _Sent, class _OutIter>
+        -:   39:inline _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 pair<_InIter, _OutIter> __copy(_InIter, _Sent, _OutIter);
+        -:   40:
+        -:   41:template <class _Cp, bool _IsConst>
+        -:   42:_LIBCPP_CONSTEXPR_SINCE_CXX20 _LIBCPP_HIDE_FROM_ABI __bit_iterator<_Cp, false> __copy_aligned(
+        -:   43:    __bit_iterator<_Cp, _IsConst> __first, __bit_iterator<_Cp, _IsConst> __last, __bit_iterator<_Cp, false> __result) {
+        -:   44:  using _In             = __bit_iterator<_Cp, _IsConst>;
+        -:   45:  using difference_type = typename _In::difference_type;
+        -:   46:  using __storage_type  = typename _In::__storage_type;
+        -:   47:
+        -:   48:  const int __bits_per_word = _In::__bits_per_word;
+        -:   49:  difference_type __n       = __last - __first;
+        -:   50:  if (__n > 0) {
+        -:   51:    // do first word
+        -:   52:    if (__first.__ctz_ != 0) {
+        -:   53:      unsigned __clz       = __bits_per_word - __first.__ctz_;
+        -:   54:      difference_type __dn = std::min(static_cast<difference_type>(__clz), __n);
+        -:   55:      __n -= __dn;
+        -:   56:      __storage_type __m = std::__middle_mask<__storage_type>(__clz - __dn, __first.__ctz_);
+        -:   57:      __storage_type __b = *__first.__seg_ & __m;
+        -:   58:      *__result.__seg_ &= ~__m;
+        -:   59:      *__result.__seg_ |= __b;
+        -:   60:      __result.__seg_ += (__dn + __result.__ctz_) / __bits_per_word;
+        -:   61:      __result.__ctz_ = static_cast<unsigned>((__dn + __result.__ctz_) % __bits_per_word);
+        -:   62:      ++__first.__seg_;
+        -:   63:      // __first.__ctz_ = 0;
+        -:   64:    }
+        -:   65:    // __first.__ctz_ == 0;
+        -:   66:    // do middle words
+        -:   67:    __storage_type __nw = __n / __bits_per_word;
+        -:   68:    std::copy(std::__to_address(__first.__seg_),
+        -:   69:              std::__to_address(__first.__seg_ + __nw),
+        -:   70:              std::__to_address(__result.__seg_));
+        -:   71:    __n -= __nw * __bits_per_word;
+        -:   72:    __result.__seg_ += __nw;
+        -:   73:    // do last word
+        -:   74:    if (__n > 0) {
+        -:   75:      __first.__seg_ += __nw;
+        -:   76:      __storage_type __m = std::__trailing_mask<__storage_type>(__bits_per_word - __n);
+        -:   77:      __storage_type __b = *__first.__seg_ & __m;
+        -:   78:      *__result.__seg_ &= ~__m;
+        -:   79:      *__result.__seg_ |= __b;
+        -:   80:      __result.__ctz_ = static_cast<unsigned>(__n);
+        -:   81:    }
+        -:   82:  }
+        -:   83:  return __result;
+        -:   84:}
+        -:   85:
+        -:   86:template <class _Cp, bool _IsConst>
+        -:   87:_LIBCPP_CONSTEXPR_SINCE_CXX20 _LIBCPP_HIDE_FROM_ABI __bit_iterator<_Cp, false> __copy_unaligned(
+        -:   88:    __bit_iterator<_Cp, _IsConst> __first, __bit_iterator<_Cp, _IsConst> __last, __bit_iterator<_Cp, false> __result) {
+        -:   89:  using _In             = __bit_iterator<_Cp, _IsConst>;
+        -:   90:  using difference_type = typename _In::difference_type;
+        -:   91:  using __storage_type  = typename _In::__storage_type;
+        -:   92:
+        -:   93:  const int __bits_per_word = _In::__bits_per_word;
+        -:   94:  difference_type __n       = __last - __first;
+        -:   95:  if (__n > 0) {
+        -:   96:    // do first word
+        -:   97:    if (__first.__ctz_ != 0) {
+        -:   98:      unsigned __clz_f     = __bits_per_word - __first.__ctz_;
+        -:   99:      difference_type __dn = std::min(static_cast<difference_type>(__clz_f), __n);
+        -:  100:      __n -= __dn;
+        -:  101:      __storage_type __m   = std::__middle_mask<__storage_type>(__clz_f - __dn, __first.__ctz_);
+        -:  102:      __storage_type __b   = *__first.__seg_ & __m;
+        -:  103:      unsigned __clz_r     = __bits_per_word - __result.__ctz_;
+        -:  104:      __storage_type __ddn = std::min<__storage_type>(__dn, __clz_r);
+        -:  105:      __m                  = std::__middle_mask<__storage_type>(__clz_r - __ddn, __result.__ctz_);
+        -:  106:      *__result.__seg_ &= ~__m;
+        -:  107:      if (__result.__ctz_ > __first.__ctz_)
+        -:  108:        *__result.__seg_ |= __b << (__result.__ctz_ - __first.__ctz_);
+        -:  109:      else
+        -:  110:        *__result.__seg_ |= __b >> (__first.__ctz_ - __result.__ctz_);
+        -:  111:      __result.__seg_ += (__ddn + __result.__ctz_) / __bits_per_word;
+        -:  112:      __result.__ctz_ = static_cast<unsigned>((__ddn + __result.__ctz_) % __bits_per_word);
+        -:  113:      __dn -= __ddn;
+        -:  114:      if (__dn > 0) {
+        -:  115:        __m = std::__trailing_mask<__storage_type>(__bits_per_word - __dn);
+        -:  116:        *__result.__seg_ &= ~__m;
+        -:  117:        *__result.__seg_ |= __b >> (__first.__ctz_ + __ddn);
+        -:  118:        __result.__ctz_ = static_cast<unsigned>(__dn);
+        -:  119:      }
+        -:  120:      ++__first.__seg_;
+        -:  121:      // __first.__ctz_ = 0;
+        -:  122:    }
+        -:  123:    // __first.__ctz_ == 0;
+        -:  124:    // do middle words
+        -:  125:    unsigned __clz_r   = __bits_per_word - __result.__ctz_;
+        -:  126:    __storage_type __m = std::__leading_mask<__storage_type>(__result.__ctz_);
+        -:  127:    for (; __n >= __bits_per_word; __n -= __bits_per_word, ++__first.__seg_) {
+        -:  128:      __storage_type __b = *__first.__seg_;
+        -:  129:      *__result.__seg_ &= ~__m;
+        -:  130:      *__result.__seg_ |= __b << __result.__ctz_;
+        -:  131:      ++__result.__seg_;
+        -:  132:      *__result.__seg_ &= __m;
+        -:  133:      *__result.__seg_ |= __b >> __clz_r;
+        -:  134:    }
+        -:  135:    // do last word
+        -:  136:    if (__n > 0) {
+        -:  137:      __m                 = std::__trailing_mask<__storage_type>(__bits_per_word - __n);
+        -:  138:      __storage_type __b  = *__first.__seg_ & __m;
+        -:  139:      __storage_type __dn = std::min(__n, static_cast<difference_type>(__clz_r));
+        -:  140:      __m                 = std::__middle_mask<__storage_type>(__clz_r - __dn, __result.__ctz_);
+        -:  141:      *__result.__seg_ &= ~__m;
+        -:  142:      *__result.__seg_ |= __b << __result.__ctz_;
+        -:  143:      __result.__seg_ += (__dn + __result.__ctz_) / __bits_per_word;
+        -:  144:      __result.__ctz_ = static_cast<unsigned>((__dn + __result.__ctz_) % __bits_per_word);
+        -:  145:      __n -= __dn;
+        -:  146:      if (__n > 0) {
+        -:  147:        __m = std::__trailing_mask<__storage_type>(__bits_per_word - __n);
+        -:  148:        *__result.__seg_ &= ~__m;
+        -:  149:        *__result.__seg_ |= __b >> __dn;
+        -:  150:        __result.__ctz_ = static_cast<unsigned>(__n);
+        -:  151:      }
+        -:  152:    }
+        -:  153:  }
+        -:  154:  return __result;
+        -:  155:}
+        -:  156:
+        -:  157:struct __copy_impl {
+        -:  158:  template <class _InIter, class _Sent, class _OutIter>
+        -:  159:  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 pair<_InIter, _OutIter>
+        -:  160:  operator()(_InIter __first, _Sent __last, _OutIter __result) const {
+        -:  161:    while (__first != __last) {
+        -:  162:      *__result = *__first;
+        -:  163:      ++__first;
+        -:  164:      ++__result;
+        -:  165:    }
+        -:  166:
+        -:  167:    return std::make_pair(std::move(__first), std::move(__result));
+        -:  168:  }
+        -:  169:
+        -:  170:  template <class _InIter, class _OutIter>
+        -:  171:  struct _CopySegment {
+        -:  172:    using _Traits _LIBCPP_NODEBUG = __segmented_iterator_traits<_InIter>;
+        -:  173:
+        -:  174:    _OutIter& __result_;
+        -:  175:
+        -:  176:    _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 explicit _CopySegment(_OutIter& __result)
+        -:  177:        : __result_(__result) {}
+        -:  178:
+        -:  179:    _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 void
+        -:  180:    operator()(typename _Traits::__local_iterator __lfirst, typename _Traits::__local_iterator __llast) {
+        -:  181:      __result_ = std::__copy(__lfirst, __llast, std::move(__result_)).second;
+        -:  182:    }
+        -:  183:  };
+        -:  184:
+        -:  185:  template <class _InIter, class _OutIter, __enable_if_t<__is_segmented_iterator<_InIter>::value, int> = 0>
+        -:  186:  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 pair<_InIter, _OutIter>
+        -:  187:  operator()(_InIter __first, _InIter __last, _OutIter __result) const {
+        -:  188:    std::__for_each_segment(__first, __last, _CopySegment<_InIter, _OutIter>(__result));
+        -:  189:    return std::make_pair(__last, std::move(__result));
+        -:  190:  }
+        -:  191:
+        -:  192:  template <class _InIter,
+        -:  193:            class _OutIter,
+        -:  194:            __enable_if_t<__has_random_access_iterator_category<_InIter>::value &&
+        -:  195:                              !__is_segmented_iterator<_InIter>::value && __is_segmented_iterator<_OutIter>::value,
+        -:  196:                          int> = 0>
+        -:  197:  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 pair<_InIter, _OutIter>
+        -:  198:  operator()(_InIter __first, _InIter __last, _OutIter __result) const {
+        -:  199:    using _Traits = __segmented_iterator_traits<_OutIter>;
+        -:  200:    using _DiffT  = typename common_type<__iter_diff_t<_InIter>, __iter_diff_t<_OutIter> >::type;
+        -:  201:
+        -:  202:    if (__first == __last)
+        -:  203:      return std::make_pair(std::move(__first), std::move(__result));
+        -:  204:
+        -:  205:    auto __local_first      = _Traits::__local(__result);
+        -:  206:    auto __segment_iterator = _Traits::__segment(__result);
+        -:  207:    while (true) {
+        -:  208:      auto __local_last = _Traits::__end(__segment_iterator);
+        -:  209:      auto __size       = std::min<_DiffT>(__local_last - __local_first, __last - __first);
+        -:  210:      auto __iters      = std::__copy(__first, __first + __size, __local_first);
+        -:  211:      __first           = std::move(__iters.first);
+        -:  212:
+        -:  213:      if (__first == __last)
+        -:  214:        return std::make_pair(std::move(__first), _Traits::__compose(__segment_iterator, std::move(__iters.second)));
+        -:  215:
+        -:  216:      __local_first = _Traits::__begin(++__segment_iterator);
+        -:  217:    }
+        -:  218:  }
+        -:  219:
+        -:  220:  template <class _Cp, bool _IsConst>
+        -:  221:  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 pair<__bit_iterator<_Cp, _IsConst>, __bit_iterator<_Cp, false> >
+        -:  222:  operator()(__bit_iterator<_Cp, _IsConst> __first,
+        -:  223:             __bit_iterator<_Cp, _IsConst> __last,
+        -:  224:             __bit_iterator<_Cp, false> __result) const {
+        -:  225:    if (__first.__ctz_ == __result.__ctz_)
+        -:  226:      return std::make_pair(__last, std::__copy_aligned(__first, __last, __result));
+        -:  227:    return std::make_pair(__last, std::__copy_unaligned(__first, __last, __result));
+        -:  228:  }
+        -:  229:
+        -:  230:  // At this point, the iterators have been unwrapped so any `contiguous_iterator` has been unwrapped to a pointer.
+        -:  231:  template <class _In, class _Out, __enable_if_t<__can_lower_copy_assignment_to_memmove<_In, _Out>::value, int> = 0>
+        -:  232:  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 pair<_In*, _Out*>
+        4:  233:  operator()(_In* __first, _In* __last, _Out* __result) const {
+        4:  234:    return std::__copy_trivial_impl(__first, __last, __result);
+        -:  235:  }
+        -:  236:};
+        -:  237:
+        -:  238:template <class _InIter, class _Sent, class _OutIter>
+        -:  239:pair<_InIter, _OutIter> inline _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14
+        4:  240:__copy(_InIter __first, _Sent __last, _OutIter __result) {
+        4:  241:  return std::__copy_move_unwrap_iters<__copy_impl>(std::move(__first), std::move(__last), std::move(__result));
+        -:  242:}
+        -:  243:
+        -:  244:template <class _InputIterator, class _OutputIterator>
+        -:  245:_LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 _OutputIterator
+        4:  246:copy(_InputIterator __first, _InputIterator __last, _OutputIterator __result) {
+        4:  247:  return std::__copy(__first, __last, __result).second;
+        -:  248:}
+        -:  249:
+        -:  250:_LIBCPP_END_NAMESPACE_STD
+        -:  251:
+        -:  252:_LIBCPP_POP_MACROS
+        -:  253:
+        -:  254:#endif // _LIBCPP___ALGORITHM_COPY_H

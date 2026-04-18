@@ -1,0 +1,562 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/Matrix.h
+        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
+        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
+        -:    0:Runs:4
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2006-2010 Benoit Jacob <jacob.benoit.1@gmail.com>
+        -:    5:// Copyright (C) 2008-2009 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    6://
+        -:    7:// This Source Code Form is subject to the terms of the Mozilla
+        -:    8:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    9:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:   10:
+        -:   11:#ifndef EIGEN_MATRIX_H
+        -:   12:#define EIGEN_MATRIX_H
+        -:   13:
+        -:   14:// IWYU pragma: private
+        -:   15:#include "./InternalHeaderCheck.h"
+        -:   16:
+        -:   17:namespace Eigen {
+        -:   18:
+        -:   19:namespace internal {
+        -:   20:template<typename Scalar_, int Rows_, int Cols_, int Options_, int MaxRows_, int MaxCols_>
+        -:   21:struct traits<Matrix<Scalar_, Rows_, Cols_, Options_, MaxRows_, MaxCols_> >
+        -:   22:{
+        -:   23:private:
+        -:   24:  constexpr static int size = internal::size_at_compile_time(Rows_,Cols_);
+        -:   25:  typedef typename find_best_packet<Scalar_,size>::type PacketScalar;
+        -:   26:  enum {
+        -:   27:      row_major_bit = Options_&RowMajor ? RowMajorBit : 0,
+        -:   28:      is_dynamic_size_storage = MaxRows_==Dynamic || MaxCols_==Dynamic,
+        -:   29:      max_size = is_dynamic_size_storage ? Dynamic : MaxRows_*MaxCols_,
+        -:   30:      default_alignment = compute_default_alignment<Scalar_,max_size>::value,
+        -:   31:      actual_alignment = ((Options_&DontAlign)==0) ? default_alignment : 0,
+        -:   32:      required_alignment = unpacket_traits<PacketScalar>::alignment,
+        -:   33:      packet_access_bit = (packet_traits<Scalar_>::Vectorizable && (EIGEN_UNALIGNED_VECTORIZE || (actual_alignment>=required_alignment))) ? PacketAccessBit : 0
+        -:   34:    };
+        -:   35:
+        -:   36:public:
+        -:   37:  typedef Scalar_ Scalar;
+        -:   38:  typedef Dense StorageKind;
+        -:   39:  typedef Eigen::Index StorageIndex;
+        -:   40:  typedef MatrixXpr XprKind;
+        -:   41:  enum {
+        -:   42:    RowsAtCompileTime = Rows_,
+        -:   43:    ColsAtCompileTime = Cols_,
+        -:   44:    MaxRowsAtCompileTime = MaxRows_,
+        -:   45:    MaxColsAtCompileTime = MaxCols_,
+        -:   46:    Flags = compute_matrix_flags(Options_),
+        -:   47:    Options = Options_,
+        -:   48:    InnerStrideAtCompileTime = 1,
+        -:   49:    OuterStrideAtCompileTime = (Options&RowMajor) ? ColsAtCompileTime : RowsAtCompileTime,
+        -:   50:
+        -:   51:    // FIXME, the following flag in only used to define NeedsToAlign in PlainObjectBase
+        -:   52:    EvaluatorFlags = LinearAccessBit | DirectAccessBit | packet_access_bit | row_major_bit,
+        -:   53:    Alignment = actual_alignment
+        -:   54:  };
+        -:   55:};
+        -:   56:}
+        -:   57:
+        -:   58:/** \class Matrix
+        -:   59:  * \ingroup Core_Module
+        -:   60:  *
+        -:   61:  * \brief The matrix class, also used for vectors and row-vectors
+        -:   62:  *
+        -:   63:  * The %Matrix class is the work-horse for all \em dense (\ref dense "note") matrices and vectors within Eigen.
+        -:   64:  * Vectors are matrices with one column, and row-vectors are matrices with one row.
+        -:   65:  *
+        -:   66:  * The %Matrix class encompasses \em both fixed-size and dynamic-size objects (\ref fixedsize "note").
+        -:   67:  *
+        -:   68:  * The first three template parameters are required:
+        -:   69:  * \tparam Scalar_ Numeric type, e.g. float, double, int or std::complex<float>.
+        -:   70:  *                 User defined scalar types are supported as well (see \ref user_defined_scalars "here").
+        -:   71:  * \tparam Rows_ Number of rows, or \b Dynamic
+        -:   72:  * \tparam Cols_ Number of columns, or \b Dynamic
+        -:   73:  *
+        -:   74:  * The remaining template parameters are optional -- in most cases you don't have to worry about them.
+        -:   75:  * \tparam Options_ A combination of either \b #RowMajor or \b #ColMajor, and of either
+        -:   76:  *                 \b #AutoAlign or \b #DontAlign.
+        -:   77:  *                 The former controls \ref TopicStorageOrders "storage order", and defaults to column-major. The latter controls alignment, which is required
+        -:   78:  *                 for vectorization. It defaults to aligning matrices except for fixed sizes that aren't a multiple of the packet size.
+        -:   79:  * \tparam MaxRows_ Maximum number of rows. Defaults to \a Rows_ (\ref maxrows "note").
+        -:   80:  * \tparam MaxCols_ Maximum number of columns. Defaults to \a Cols_ (\ref maxrows "note").
+        -:   81:  *
+        -:   82:  * Eigen provides a number of typedefs covering the usual cases. Here are some examples:
+        -:   83:  *
+        -:   84:  * \li \c Matrix2d is a 2x2 square matrix of doubles (\c Matrix<double, 2, 2>)
+        -:   85:  * \li \c Vector4f is a vector of 4 floats (\c Matrix<float, 4, 1>)
+        -:   86:  * \li \c RowVector3i is a row-vector of 3 ints (\c Matrix<int, 1, 3>)
+        -:   87:  *
+        -:   88:  * \li \c MatrixXf is a dynamic-size matrix of floats (\c Matrix<float, Dynamic, Dynamic>)
+        -:   89:  * \li \c VectorXf is a dynamic-size vector of floats (\c Matrix<float, Dynamic, 1>)
+        -:   90:  *
+        -:   91:  * \li \c Matrix2Xf is a partially fixed-size (dynamic-size) matrix of floats (\c Matrix<float, 2, Dynamic>)
+        -:   92:  * \li \c MatrixX3d is a partially dynamic-size (fixed-size) matrix of double (\c Matrix<double, Dynamic, 3>)
+        -:   93:  *
+        -:   94:  * See \link matrixtypedefs this page \endlink for a complete list of predefined \em %Matrix and \em Vector typedefs.
+        -:   95:  *
+        -:   96:  * You can access elements of vectors and matrices using normal subscripting:
+        -:   97:  *
+        -:   98:  * \code
+        -:   99:  * Eigen::VectorXd v(10);
+        -:  100:  * v[0] = 0.1;
+        -:  101:  * v[1] = 0.2;
+        -:  102:  * v(0) = 0.3;
+        -:  103:  * v(1) = 0.4;
+        -:  104:  *
+        -:  105:  * Eigen::MatrixXi m(10, 10);
+        -:  106:  * m(0, 1) = 1;
+        -:  107:  * m(0, 2) = 2;
+        -:  108:  * m(0, 3) = 3;
+        -:  109:  * \endcode
+        -:  110:  *
+        -:  111:  * This class can be extended with the help of the plugin mechanism described on the page
+        -:  112:  * \ref TopicCustomizing_Plugins by defining the preprocessor symbol \c EIGEN_MATRIX_PLUGIN.
+        -:  113:  *
+        -:  114:  * <i><b>Some notes:</b></i>
+        -:  115:  *
+        -:  116:  * <dl>
+        -:  117:  * <dt><b>\anchor dense Dense versus sparse:</b></dt>
+        -:  118:  * <dd>This %Matrix class handles dense, not sparse matrices and vectors. For sparse matrices and vectors, see the Sparse module.
+        -:  119:  *
+        -:  120:  * Dense matrices and vectors are plain usual arrays of coefficients. All the coefficients are stored, in an ordinary contiguous array.
+        -:  121:  * This is unlike Sparse matrices and vectors where the coefficients are stored as a list of nonzero coefficients.</dd>
+        -:  122:  *
+        -:  123:  * <dt><b>\anchor fixedsize Fixed-size versus dynamic-size:</b></dt>
+        -:  124:  * <dd>Fixed-size means that the numbers of rows and columns are known are compile-time. In this case, Eigen allocates the array
+        -:  125:  * of coefficients as a fixed-size array, as a class member. This makes sense for very small matrices, typically up to 4x4, sometimes up
+        -:  126:  * to 16x16. Larger matrices should be declared as dynamic-size even if one happens to know their size at compile-time.
+        -:  127:  *
+        -:  128:  * Dynamic-size means that the numbers of rows or columns are not necessarily known at compile-time. In this case they are runtime
+        -:  129:  * variables, and the array of coefficients is allocated dynamically on the heap.
+        -:  130:  *
+        -:  131:  * Note that \em dense matrices, be they Fixed-size or Dynamic-size, <em>do not</em> expand dynamically in the sense of a std::map.
+        -:  132:  * If you want this behavior, see the Sparse module.</dd>
+        -:  133:  *
+        -:  134:  * <dt><b>\anchor maxrows MaxRows_ and MaxCols_:</b></dt>
+        -:  135:  * <dd>In most cases, one just leaves these parameters to the default values.
+        -:  136:  * These parameters mean the maximum size of rows and columns that the matrix may have. They are useful in cases
+        -:  137:  * when the exact numbers of rows and columns are not known are compile-time, but it is known at compile-time that they cannot
+        -:  138:  * exceed a certain value. This happens when taking dynamic-size blocks inside fixed-size matrices: in this case MaxRows_ and MaxCols_
+        -:  139:  * are the dimensions of the original matrix, while Rows_ and Cols_ are Dynamic.</dd>
+        -:  140:  * </dl>
+        -:  141:  *
+        -:  142:  * <i><b>ABI and storage layout</b></i>
+        -:  143:  *
+        -:  144:  * The table below summarizes the ABI of some possible Matrix instances which is fixed thorough the lifetime of Eigen 3.
+        -:  145:  * <table  class="manual">
+        -:  146:  * <tr><th>Matrix type</th><th>Equivalent C structure</th></tr>
+        -:  147:  * <tr><td>\code Matrix<T,Dynamic,Dynamic> \endcode</td><td>\code
+        -:  148:  * struct {
+        -:  149:  *   T *data;                  // with (size_t(data)%EIGEN_MAX_ALIGN_BYTES)==0
+        -:  150:  *   Eigen::Index rows, cols;
+        -:  151:  *  };
+        -:  152:  * \endcode</td></tr>
+        -:  153:  * <tr class="alt"><td>\code
+        -:  154:  * Matrix<T,Dynamic,1>
+        -:  155:  * Matrix<T,1,Dynamic> \endcode</td><td>\code
+        -:  156:  * struct {
+        -:  157:  *   T *data;                  // with (size_t(data)%EIGEN_MAX_ALIGN_BYTES)==0
+        -:  158:  *   Eigen::Index size;
+        -:  159:  *  };
+        -:  160:  * \endcode</td></tr>
+        -:  161:  * <tr><td>\code Matrix<T,Rows,Cols> \endcode</td><td>\code
+        -:  162:  * struct {
+        -:  163:  *   T data[Rows*Cols];        // with (size_t(data)%A(Rows*Cols*sizeof(T)))==0
+        -:  164:  *  };
+        -:  165:  * \endcode</td></tr>
+        -:  166:  * <tr class="alt"><td>\code Matrix<T,Dynamic,Dynamic,0,MaxRows,MaxCols> \endcode</td><td>\code
+        -:  167:  * struct {
+        -:  168:  *   T data[MaxRows*MaxCols];  // with (size_t(data)%A(MaxRows*MaxCols*sizeof(T)))==0
+        -:  169:  *   Eigen::Index rows, cols;
+        -:  170:  *  };
+        -:  171:  * \endcode</td></tr>
+        -:  172:  * </table>
+        -:  173:  * Note that in this table Rows, Cols, MaxRows and MaxCols are all positive integers. A(S) is defined to the largest possible power-of-two
+        -:  174:  * smaller to EIGEN_MAX_STATIC_ALIGN_BYTES.
+        -:  175:  *
+        -:  176:  * \see MatrixBase for the majority of the API methods for matrices, \ref TopicClassHierarchy,
+        -:  177:  * \ref TopicStorageOrders
+        -:  178:  */
+        -:  179:
+        -:  180:template<typename Scalar_, int Rows_, int Cols_, int Options_, int MaxRows_, int MaxCols_>
+        -:  181:class Matrix
+        -:  182:  : public PlainObjectBase<Matrix<Scalar_, Rows_, Cols_, Options_, MaxRows_, MaxCols_> >
+        -:  183:{
+        -:  184:  public:
+        -:  185:
+        -:  186:    /** \brief Base class typedef.
+        -:  187:      * \sa PlainObjectBase
+        -:  188:      */
+        -:  189:    typedef PlainObjectBase<Matrix> Base;
+        -:  190:
+        -:  191:    enum { Options = Options_ };
+        -:  192:
+        -:  193:    EIGEN_DENSE_PUBLIC_INTERFACE(Matrix)
+        -:  194:
+        -:  195:    typedef typename Base::PlainObject PlainObject;
+        -:  196:
+        -:  197:    using Base::base;
+        -:  198:    using Base::coeffRef;
+        -:  199:
+        -:  200:    /**
+        -:  201:      * \brief Assigns matrices to each other.
+        -:  202:      *
+        -:  203:      * \note This is a special case of the templated operator=. Its purpose is
+        -:  204:      * to prevent a default operator= from hiding the templated operator=.
+        -:  205:      *
+        -:  206:      * \callgraph
+        -:  207:      */
+        -:  208:    EIGEN_DEVICE_FUNC
+     1498:  209:    EIGEN_STRONG_INLINE Matrix& operator=(const Matrix& other)
+        -:  210:    {
+     1498:  211:      return Base::_set(other);
+        -:  212:    }
+        -:  213:
+        -:  214:    /** \internal
+        -:  215:      * \brief Copies the value of the expression \a other into \c *this with automatic resizing.
+        -:  216:      *
+        -:  217:      * *this might be resized to match the dimensions of \a other. If *this was a null matrix (not already initialized),
+        -:  218:      * it will be initialized.
+        -:  219:      *
+        -:  220:      * Note that copying a row-vector into a vector (and conversely) is allowed.
+        -:  221:      * The resizing, if any, is then done in the appropriate way so that row-vectors
+        -:  222:      * remain row-vectors and vectors remain vectors.
+        -:  223:      */
+        -:  224:    template<typename OtherDerived>
+        -:  225:    EIGEN_DEVICE_FUNC
+     4514:  226:    EIGEN_STRONG_INLINE Matrix& operator=(const DenseBase<OtherDerived>& other)
+        -:  227:    {
+     4514:  228:      return Base::_set(other);
+        -:  229:    }
+        -:  230:
+        -:  231:    /* Here, doxygen failed to copy the brief information when using \copydoc */
+        -:  232:
+        -:  233:    /**
+        -:  234:      * \brief Copies the generic expression \a other into *this.
+        -:  235:      * \copydetails DenseBase::operator=(const EigenBase<OtherDerived> &other)
+        -:  236:      */
+        -:  237:    template<typename OtherDerived>
+        -:  238:    EIGEN_DEVICE_FUNC
+     1490:  239:    EIGEN_STRONG_INLINE Matrix& operator=(const EigenBase<OtherDerived> &other)
+        -:  240:    {
+     1490:  241:      return Base::operator=(other);
+        -:  242:    }
+        -:  243:
+        -:  244:    template<typename OtherDerived>
+        -:  245:    EIGEN_DEVICE_FUNC
+        -:  246:    EIGEN_STRONG_INLINE Matrix& operator=(const ReturnByValue<OtherDerived>& func)
+        -:  247:    {
+        -:  248:      return Base::operator=(func);
+        -:  249:    }
+        -:  250:
+        -:  251:    /** \brief Default constructor.
+        -:  252:      *
+        -:  253:      * For fixed-size matrices, does nothing.
+        -:  254:      *
+        -:  255:      * For dynamic-size matrices, creates an empty matrix of size 0. Does not allocate any array. Such a matrix
+        -:  256:      * is called a null matrix. This constructor is the unique way to create null matrices: resizing
+        -:  257:      * a matrix to 0 is not supported.
+        -:  258:      *
+        -:  259:      * \sa resize(Index,Index)
+        -:  260:      */
+        -:  261:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+    25384:  262:    Matrix() : Base()
+    12692:  263:    {
+        -:  264:      EIGEN_INITIALIZE_COEFFS_IF_THAT_OPTION_IS_ENABLED
+    25384:  265:    }
+        -:  266:
+        -:  267:    // FIXME is it still needed
+        -:  268:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+    #####:  269:    explicit Matrix(internal::constructor_without_unaligned_array_assert)
+    #####:  270:      : Base(internal::constructor_without_unaligned_array_assert())
+    #####:  271:    { EIGEN_INITIALIZE_COEFFS_IF_THAT_OPTION_IS_ENABLED }
+        -:  272:
+        -:  273:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+     1016:  274:    Matrix(Matrix&& other) EIGEN_NOEXCEPT_IF(std::is_nothrow_move_constructible<Scalar>::value)
+     1016:  275:      : Base(std::move(other)) {}
+        -:  276:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+     2740:  277:    Matrix& operator=(Matrix&& other) EIGEN_NOEXCEPT_IF(std::is_nothrow_move_assignable<Scalar>::value)
+        -:  278:    {
+     2740:  279:      Base::operator=(std::move(other));
+     2740:  280:      return *this;
+        -:  281:    }
+        -:  282:
+        -:  283:    /** \copydoc PlainObjectBase(const Scalar&, const Scalar&, const Scalar&,  const Scalar&, const ArgTypes&... args)
+        -:  284:     *
+        -:  285:     * Example: \include Matrix_variadic_ctor_cxx11.cpp
+        -:  286:     * Output: \verbinclude Matrix_variadic_ctor_cxx11.out
+        -:  287:     *
+        -:  288:     * \sa Matrix(const std::initializer_list<std::initializer_list<Scalar>>&)
+        -:  289:     */
+        -:  290:    template <typename... ArgTypes>
+        -:  291:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+        -:  292:    Matrix(const Scalar& a0, const Scalar& a1, const Scalar& a2,  const Scalar& a3, const ArgTypes&... args)
+        -:  293:      : Base(a0, a1, a2, a3, args...) {}
+        -:  294:
+        -:  295:    /** \brief Constructs a Matrix and initializes it from the coefficients given as initializer-lists grouped by row. \cpp11
+        -:  296:      *
+        -:  297:      * In the general case, the constructor takes a list of rows, each row being represented as a list of coefficients:
+        -:  298:      *
+        -:  299:      * Example: \include Matrix_initializer_list_23_cxx11.cpp
+        -:  300:      * Output: \verbinclude Matrix_initializer_list_23_cxx11.out
+        -:  301:      *
+        -:  302:      * Each of the inner initializer lists must contain the exact same number of elements, otherwise an assertion is triggered.
+        -:  303:      *
+        -:  304:      * In the case of a compile-time column vector, implicit transposition from a single row is allowed.
+        -:  305:      * Therefore <code>VectorXd{{1,2,3,4,5}}</code> is legal and the more verbose syntax
+        -:  306:      * <code>RowVectorXd{{1},{2},{3},{4},{5}}</code> can be avoided:
+        -:  307:      *
+        -:  308:      * Example: \include Matrix_initializer_list_vector_cxx11.cpp
+        -:  309:      * Output: \verbinclude Matrix_initializer_list_vector_cxx11.out
+        -:  310:      *
+        -:  311:      * In the case of fixed-sized matrices, the initializer list sizes must exactly match the matrix sizes,
+        -:  312:      * and implicit transposition is allowed for compile-time vectors only.
+        -:  313:      *
+        -:  314:      * \sa Matrix(const Scalar& a0, const Scalar& a1, const Scalar& a2,  const Scalar& a3, const ArgTypes&... args)
+        -:  315:      */
+        -:  316:    EIGEN_DEVICE_FUNC explicit constexpr EIGEN_STRONG_INLINE Matrix(
+        -:  317:        const std::initializer_list<std::initializer_list<Scalar>>& list)
+        -:  318:        : Base(list) {}
+        -:  319:
+        -:  320:#ifndef EIGEN_PARSED_BY_DOXYGEN
+        -:  321:
+        -:  322:    // This constructor is for both 1x1 matrices and dynamic vectors
+        -:  323:    template<typename T>
+        -:  324:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+    14908:  325:    explicit Matrix(const T& x)
+     7454:  326:    {
+     7454:  327:      Base::template _init1<T>(x);
+    14908:  328:    }
+        -:  329:
+        -:  330:    template<typename T0, typename T1>
+        -:  331:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+     8940:  332:    Matrix(const T0& x, const T1& y)
+     4470:  333:    {
+     4470:  334:      Base::template _init2<T0,T1>(x, y);
+     8940:  335:    }
+        -:  336:
+        -:  337:
+        -:  338:#else
+        -:  339:    /** \brief Constructs a fixed-sized matrix initialized with coefficients starting at \a data */
+        -:  340:    EIGEN_DEVICE_FUNC
+        -:  341:    explicit Matrix(const Scalar *data);
+        -:  342:
+        -:  343:    /** \brief Constructs a vector or row-vector with given dimension. \only_for_vectors
+        -:  344:      *
+        -:  345:      * This is useful for dynamic-size vectors. For fixed-size vectors,
+        -:  346:      * it is redundant to pass these parameters, so one should use the default constructor
+        -:  347:      * Matrix() instead.
+        -:  348:      *
+        -:  349:      * \warning This constructor is disabled for fixed-size \c 1x1 matrices. For instance,
+        -:  350:      * calling Matrix<double,1,1>(1) will call the initialization constructor: Matrix(const Scalar&).
+        -:  351:      * For fixed-size \c 1x1 matrices it is therefore recommended to use the default
+        -:  352:      * constructor Matrix() instead, especially when using one of the non standard
+        -:  353:      * \c EIGEN_INITIALIZE_MATRICES_BY_{ZERO,\c NAN} macros (see \ref TopicPreprocessorDirectives).
+        -:  354:      */
+        -:  355:    EIGEN_STRONG_INLINE explicit Matrix(Index dim);
+        -:  356:    /** \brief Constructs an initialized 1x1 matrix with the given coefficient
+        -:  357:      * \sa Matrix(const Scalar&, const Scalar&, const Scalar&,  const Scalar&, const ArgTypes&...) */
+        -:  358:    Matrix(const Scalar& x);
+        -:  359:    /** \brief Constructs an uninitialized matrix with \a rows rows and \a cols columns.
+        -:  360:      *
+        -:  361:      * This is useful for dynamic-size matrices. For fixed-size matrices,
+        -:  362:      * it is redundant to pass these parameters, so one should use the default constructor
+        -:  363:      * Matrix() instead.
+        -:  364:      *
+        -:  365:      * \warning This constructor is disabled for fixed-size \c 1x2 and \c 2x1 vectors. For instance,
+        -:  366:      * calling Matrix2f(2,1) will call the initialization constructor: Matrix(const Scalar& x, const Scalar& y).
+        -:  367:      * For fixed-size \c 1x2 or \c 2x1 vectors it is therefore recommended to use the default
+        -:  368:      * constructor Matrix() instead, especially when using one of the non standard
+        -:  369:      * \c EIGEN_INITIALIZE_MATRICES_BY_{ZERO,\c NAN} macros (see \ref TopicPreprocessorDirectives).
+        -:  370:      */
+        -:  371:    EIGEN_DEVICE_FUNC
+        -:  372:    Matrix(Index rows, Index cols);
+        -:  373:
+        -:  374:    /** \brief Constructs an initialized 2D vector with given coefficients
+        -:  375:      * \sa Matrix(const Scalar&, const Scalar&, const Scalar&,  const Scalar&, const ArgTypes&...) */
+        -:  376:    Matrix(const Scalar& x, const Scalar& y);
+        -:  377:    #endif  // end EIGEN_PARSED_BY_DOXYGEN
+        -:  378:
+        -:  379:    /** \brief Constructs an initialized 3D vector with given coefficients
+        -:  380:      * \sa Matrix(const Scalar&, const Scalar&, const Scalar&,  const Scalar&, const ArgTypes&...)
+        -:  381:      */
+        -:  382:    EIGEN_DEVICE_FUNC
+    13940:  383:    EIGEN_STRONG_INLINE Matrix(const Scalar& x, const Scalar& y, const Scalar& z)
+     6970:  384:    {
+        -:  385:      EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Matrix, 3)
+     6970:  386:      m_storage.data()[0] = x;
+     6970:  387:      m_storage.data()[1] = y;
+     6970:  388:      m_storage.data()[2] = z;
+    13940:  389:    }
+        -:  390:    /** \brief Constructs an initialized 4D vector with given coefficients
+        -:  391:      * \sa Matrix(const Scalar&, const Scalar&, const Scalar&,  const Scalar&, const ArgTypes&...)
+        -:  392:      */
+        -:  393:    EIGEN_DEVICE_FUNC
+        -:  394:    EIGEN_STRONG_INLINE Matrix(const Scalar& x, const Scalar& y, const Scalar& z, const Scalar& w)
+        -:  395:    {
+        -:  396:      EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Matrix, 4)
+        -:  397:      m_storage.data()[0] = x;
+        -:  398:      m_storage.data()[1] = y;
+        -:  399:      m_storage.data()[2] = z;
+        -:  400:      m_storage.data()[3] = w;
+        -:  401:    }
+        -:  402:
+        -:  403:
+        -:  404:    /** \brief Copy constructor */
+        -:  405:    EIGEN_DEVICE_FUNC
+     6920:  406:    EIGEN_STRONG_INLINE Matrix(const Matrix& other) : Base(other)
+     6920:  407:    { }
+        -:  408:
+        -:  409:    /** \brief Copy constructor for generic expressions.
+        -:  410:      * \sa MatrixBase::operator=(const EigenBase<OtherDerived>&)
+        -:  411:      */
+        -:  412:    template<typename OtherDerived>
+        -:  413:    EIGEN_DEVICE_FUNC
+   115956:  414:    EIGEN_STRONG_INLINE Matrix(const EigenBase<OtherDerived> &other)
+    57978:  415:      : Base(other.derived())
+   115956:  416:    { }
+        -:  417:
+        -:  418:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+   838666:  419:    inline Index innerStride() const EIGEN_NOEXCEPT { return 1; }
+        -:  420:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+   947758:  421:    inline Index outerStride() const EIGEN_NOEXCEPT { return this->innerSize(); }
+        -:  422:
+        -:  423:    /////////// Geometry module ///////////
+        -:  424:
+        -:  425:    template<typename OtherDerived>
+        -:  426:    EIGEN_DEVICE_FUNC
+        -:  427:    explicit Matrix(const RotationBase<OtherDerived,ColsAtCompileTime>& r);
+        -:  428:    template<typename OtherDerived>
+        -:  429:    EIGEN_DEVICE_FUNC
+        -:  430:    Matrix& operator=(const RotationBase<OtherDerived,ColsAtCompileTime>& r);
+        -:  431:
+        -:  432:    // allow to extend Matrix outside Eigen
+        -:  433:    #ifdef EIGEN_MATRIX_PLUGIN
+        -:  434:    #include EIGEN_MATRIX_PLUGIN
+        -:  435:    #endif
+        -:  436:
+        -:  437:  protected:
+        -:  438:    template <typename Derived, typename OtherDerived, bool IsVector>
+        -:  439:    friend struct internal::conservative_resize_like_impl;
+        -:  440:
+        -:  441:    using Base::m_storage;
+        -:  442:};
+        -:  443:
+        -:  444:/** \defgroup matrixtypedefs Global matrix typedefs
+        -:  445:  *
+        -:  446:  * \ingroup Core_Module
+        -:  447:  *
+        -:  448:  * %Eigen defines several typedef shortcuts for most common matrix and vector types.
+        -:  449:  *
+        -:  450:  * The general patterns are the following:
+        -:  451:  *
+        -:  452:  * \c MatrixSizeType where \c Size can be \c 2,\c 3,\c 4 for fixed size square matrices or \c X for dynamic size,
+        -:  453:  * and where \c Type can be \c i for integer, \c f for float, \c d for double, \c cf for complex float, \c cd
+        -:  454:  * for complex double.
+        -:  455:  *
+        -:  456:  * For example, \c Matrix3d is a fixed-size 3x3 matrix type of doubles, and \c MatrixXf is a dynamic-size matrix of floats.
+        -:  457:  *
+        -:  458:  * There are also \c VectorSizeType and \c RowVectorSizeType which are self-explanatory. For example, \c Vector4cf is
+        -:  459:  * a fixed-size vector of 4 complex floats.
+        -:  460:  *
+        -:  461:  * With \cpp11, template alias are also defined for common sizes.
+        -:  462:  * They follow the same pattern as above except that the scalar type suffix is replaced by a
+        -:  463:  * template parameter, i.e.:
+        -:  464:  *   - `MatrixSize<Type>` where `Size` can be \c 2,\c 3,\c 4 for fixed size square matrices or \c X for dynamic size.
+        -:  465:  *   - `MatrixXSize<Type>` and `MatrixSizeX<Type>` where `Size` can be \c 2,\c 3,\c 4 for hybrid dynamic/fixed matrices.
+        -:  466:  *   - `VectorSize<Type>` and `RowVectorSize<Type>` for column and row vectors.
+        -:  467:  *
+        -:  468:  * With \cpp11, you can also use fully generic column and row vector types: `Vector<Type,Size>` and `RowVector<Type,Size>`.
+        -:  469:  *
+        -:  470:  * \sa class Matrix
+        -:  471:  */
+        -:  472:
+        -:  473:#define EIGEN_MAKE_TYPEDEFS(Type, TypeSuffix, Size, SizeSuffix)   \
+        -:  474:/** \ingroup matrixtypedefs */                                    \
+        -:  475:/** \brief `Size`&times;`Size` matrix of type `Type`. */          \
+        -:  476:typedef Matrix<Type, Size, Size> Matrix##SizeSuffix##TypeSuffix;  \
+        -:  477:/** \ingroup matrixtypedefs */                                    \
+        -:  478:/** \brief `Size`&times;`1` vector of type `Type`. */             \
+        -:  479:typedef Matrix<Type, Size, 1>    Vector##SizeSuffix##TypeSuffix;  \
+        -:  480:/** \ingroup matrixtypedefs */                                    \
+        -:  481:/** \brief `1`&times;`Size` vector of type `Type`. */             \
+        -:  482:typedef Matrix<Type, 1, Size>    RowVector##SizeSuffix##TypeSuffix;
+        -:  483:
+        -:  484:#define EIGEN_MAKE_FIXED_TYPEDEFS(Type, TypeSuffix, Size)         \
+        -:  485:/** \ingroup matrixtypedefs */                                    \
+        -:  486:/** \brief `Size`&times;`Dynamic` matrix of type `Type`. */       \
+        -:  487:typedef Matrix<Type, Size, Dynamic> Matrix##Size##X##TypeSuffix;  \
+        -:  488:/** \ingroup matrixtypedefs */                                    \
+        -:  489:/** \brief `Dynamic`&times;`Size` matrix of type `Type`. */       \
+        -:  490:typedef Matrix<Type, Dynamic, Size> Matrix##X##Size##TypeSuffix;
+        -:  491:
+        -:  492:#define EIGEN_MAKE_TYPEDEFS_ALL_SIZES(Type, TypeSuffix) \
+        -:  493:EIGEN_MAKE_TYPEDEFS(Type, TypeSuffix, 2, 2) \
+        -:  494:EIGEN_MAKE_TYPEDEFS(Type, TypeSuffix, 3, 3) \
+        -:  495:EIGEN_MAKE_TYPEDEFS(Type, TypeSuffix, 4, 4) \
+        -:  496:EIGEN_MAKE_TYPEDEFS(Type, TypeSuffix, Dynamic, X) \
+        -:  497:EIGEN_MAKE_FIXED_TYPEDEFS(Type, TypeSuffix, 2) \
+        -:  498:EIGEN_MAKE_FIXED_TYPEDEFS(Type, TypeSuffix, 3) \
+        -:  499:EIGEN_MAKE_FIXED_TYPEDEFS(Type, TypeSuffix, 4)
+        -:  500:
+        -:  501:EIGEN_MAKE_TYPEDEFS_ALL_SIZES(int,                  i)
+        -:  502:EIGEN_MAKE_TYPEDEFS_ALL_SIZES(float,                f)
+        -:  503:EIGEN_MAKE_TYPEDEFS_ALL_SIZES(double,               d)
+        -:  504:EIGEN_MAKE_TYPEDEFS_ALL_SIZES(std::complex<float>,  cf)
+        -:  505:EIGEN_MAKE_TYPEDEFS_ALL_SIZES(std::complex<double>, cd)
+        -:  506:
+        -:  507:#undef EIGEN_MAKE_TYPEDEFS_ALL_SIZES
+        -:  508:#undef EIGEN_MAKE_TYPEDEFS
+        -:  509:#undef EIGEN_MAKE_FIXED_TYPEDEFS
+        -:  510:
+        -:  511:#define EIGEN_MAKE_TYPEDEFS(Size, SizeSuffix)                        \
+        -:  512:/** \ingroup matrixtypedefs */                                       \
+        -:  513:/** \brief \cpp11 `Size`&times;`Size` matrix of type `Type`.*/       \
+        -:  514:template <typename Type>                                             \
+        -:  515:using Matrix##SizeSuffix = Matrix<Type, Size, Size>;                 \
+        -:  516:/** \ingroup matrixtypedefs */                                       \
+        -:  517:/** \brief \cpp11 `Size`&times;`1` vector of type `Type`.*/          \
+        -:  518:template <typename Type>                                             \
+        -:  519:using Vector##SizeSuffix = Matrix<Type, Size, 1>;                    \
+        -:  520:/** \ingroup matrixtypedefs */                                       \
+        -:  521:/** \brief \cpp11 `1`&times;`Size` vector of type `Type`.*/          \
+        -:  522:template <typename Type>                                             \
+        -:  523:using RowVector##SizeSuffix = Matrix<Type, 1, Size>;
+        -:  524:
+        -:  525:#define EIGEN_MAKE_FIXED_TYPEDEFS(Size)                            \
+        -:  526:/** \ingroup matrixtypedefs */                                     \
+        -:  527:/** \brief \cpp11 `Size`&times;`Dynamic` matrix of type `Type` */  \
+        -:  528:template <typename Type>                                           \
+        -:  529:using Matrix##Size##X = Matrix<Type, Size, Dynamic>;               \
+        -:  530:/** \ingroup matrixtypedefs */                                     \
+        -:  531:/** \brief \cpp11 `Dynamic`&times;`Size` matrix of type `Type`. */ \
+        -:  532:template <typename Type>                                           \
+        -:  533:using Matrix##X##Size = Matrix<Type, Dynamic, Size>;
+        -:  534:
+        -:  535:EIGEN_MAKE_TYPEDEFS(2, 2)
+        -:  536:EIGEN_MAKE_TYPEDEFS(3, 3)
+        -:  537:EIGEN_MAKE_TYPEDEFS(4, 4)
+        -:  538:EIGEN_MAKE_TYPEDEFS(Dynamic, X)
+        -:  539:EIGEN_MAKE_FIXED_TYPEDEFS(2)
+        -:  540:EIGEN_MAKE_FIXED_TYPEDEFS(3)
+        -:  541:EIGEN_MAKE_FIXED_TYPEDEFS(4)
+        -:  542:
+        -:  543:/** \ingroup matrixtypedefs
+        -:  544:  * \brief \cpp11 `Size`&times;`1` vector of type `Type`. */
+        -:  545:template <typename Type, int Size>
+        -:  546:using Vector = Matrix<Type, Size, 1>;
+        -:  547:
+        -:  548:/** \ingroup matrixtypedefs
+        -:  549:  * \brief \cpp11 `1`&times;`Size` vector of type `Type`. */
+        -:  550:template <typename Type, int Size>
+        -:  551:using RowVector = Matrix<Type, 1, Size>;
+        -:  552:
+        -:  553:#undef EIGEN_MAKE_TYPEDEFS
+        -:  554:#undef EIGEN_MAKE_FIXED_TYPEDEFS
+        -:  555:
+        -:  556:} // end namespace Eigen
+        -:  557:
+        -:  558:#endif // EIGEN_MATRIX_H

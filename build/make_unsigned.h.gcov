@@ -1,0 +1,98 @@
+        -:    0:Source:/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__type_traits/make_unsigned.h
+        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
+        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
+        -:    0:Runs:4
+        -:    1://===----------------------------------------------------------------------===//
+        -:    2://
+        -:    3:// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+        -:    4:// See https://llvm.org/LICENSE.txt for license information.
+        -:    5:// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+        -:    6://
+        -:    7://===----------------------------------------------------------------------===//
+        -:    8:
+        -:    9:#ifndef _LIBCPP___TYPE_TRAITS_MAKE_UNSIGNED_H
+        -:   10:#define _LIBCPP___TYPE_TRAITS_MAKE_UNSIGNED_H
+        -:   11:
+        -:   12:#include <__config>
+        -:   13:#include <__type_traits/conditional.h>
+        -:   14:#include <__type_traits/copy_cv.h>
+        -:   15:#include <__type_traits/is_enum.h>
+        -:   16:#include <__type_traits/is_integral.h>
+        -:   17:#include <__type_traits/is_unsigned.h>
+        -:   18:#include <__type_traits/remove_cv.h>
+        -:   19:#include <__type_traits/type_list.h>
+        -:   20:
+        -:   21:#if !defined(_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER)
+        -:   22:#  pragma GCC system_header
+        -:   23:#endif
+        -:   24:
+        -:   25:_LIBCPP_BEGIN_NAMESPACE_STD
+        -:   26:
+        -:   27:#if __has_builtin(__make_unsigned)
+        -:   28:
+        -:   29:template <class _Tp>
+        -:   30:using __make_unsigned_t _LIBCPP_NODEBUG = __make_unsigned(_Tp);
+        -:   31:
+        -:   32:#else
+        -:   33:using __unsigned_types =
+        -:   34:    __type_list<unsigned char,
+        -:   35:                unsigned short,
+        -:   36:                unsigned int,
+        -:   37:                unsigned long,
+        -:   38:                unsigned long long
+        -:   39:#  if _LIBCPP_HAS_INT128
+        -:   40:                ,
+        -:   41:                __uint128_t
+        -:   42:#  endif
+        -:   43:                >;
+        -:   44:
+        -:   45:template <class _Tp, bool = is_integral<_Tp>::value || is_enum<_Tp>::value>
+        -:   46:struct __make_unsigned{};
+        -:   47:
+        -:   48:template <class _Tp>
+        -:   49:struct __make_unsigned<_Tp, true> {
+        -:   50:  typedef typename __find_first<__unsigned_types, sizeof(_Tp)>::type type;
+        -:   51:};
+        -:   52:
+        -:   53:// clang-format off
+        -:   54:template <> struct __make_unsigned<bool,               true> {};
+        -:   55:template <> struct __make_unsigned<  signed short,     true> {typedef unsigned short     type;};
+        -:   56:template <> struct __make_unsigned<unsigned short,     true> {typedef unsigned short     type;};
+        -:   57:template <> struct __make_unsigned<  signed int,       true> {typedef unsigned int       type;};
+        -:   58:template <> struct __make_unsigned<unsigned int,       true> {typedef unsigned int       type;};
+        -:   59:template <> struct __make_unsigned<  signed long,      true> {typedef unsigned long      type;};
+        -:   60:template <> struct __make_unsigned<unsigned long,      true> {typedef unsigned long      type;};
+        -:   61:template <> struct __make_unsigned<  signed long long, true> {typedef unsigned long long type;};
+        -:   62:template <> struct __make_unsigned<unsigned long long, true> {typedef unsigned long long type;};
+        -:   63:#  if _LIBCPP_HAS_INT128
+        -:   64:template <> struct __make_unsigned<__int128_t,         true> {typedef __uint128_t        type;};
+        -:   65:template <> struct __make_unsigned<__uint128_t,        true> {typedef __uint128_t        type;};
+        -:   66:#  endif
+        -:   67:// clang-format on
+        -:   68:
+        -:   69:template <class _Tp>
+        -:   70:using __make_unsigned_t = __copy_cv_t<_Tp, typename __make_unsigned<__remove_cv_t<_Tp> >::type>;
+        -:   71:
+        -:   72:#endif // __has_builtin(__make_unsigned)
+        -:   73:
+        -:   74:template <class _Tp>
+        -:   75:struct _LIBCPP_NO_SPECIALIZATIONS make_unsigned {
+        -:   76:  using type _LIBCPP_NODEBUG = __make_unsigned_t<_Tp>;
+        -:   77:};
+        -:   78:
+        -:   79:#if _LIBCPP_STD_VER >= 14
+        -:   80:template <class _Tp>
+        -:   81:using make_unsigned_t = __make_unsigned_t<_Tp>;
+        -:   82:#endif
+        -:   83:
+        -:   84:template <class _Tp>
+    #####:   85:_LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR __make_unsigned_t<_Tp> __to_unsigned_like(_Tp __x) _NOEXCEPT {
+    #####:   86:  return static_cast<__make_unsigned_t<_Tp> >(__x);
+        -:   87:}
+        -:   88:
+        -:   89:template <class _Tp, class _Up>
+        -:   90:using __copy_unsigned_t _LIBCPP_NODEBUG = __conditional_t<is_unsigned<_Tp>::value, __make_unsigned_t<_Up>, _Up>;
+        -:   91:
+        -:   92:_LIBCPP_END_NAMESPACE_STD
+        -:   93:
+        -:   94:#endif // _LIBCPP___TYPE_TRAITS_MAKE_UNSIGNED_H

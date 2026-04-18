@@ -1,0 +1,472 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/GeneralProduct.h
+        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
+        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
+        -:    0:Runs:4
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2006-2008 Benoit Jacob <jacob.benoit.1@gmail.com>
+        -:    5:// Copyright (C) 2008-2011 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    6://
+        -:    7:// This Source Code Form is subject to the terms of the Mozilla
+        -:    8:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    9:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:   10:
+        -:   11:#ifndef EIGEN_GENERAL_PRODUCT_H
+        -:   12:#define EIGEN_GENERAL_PRODUCT_H
+        -:   13:
+        -:   14:// IWYU pragma: private
+        -:   15:#include "./InternalHeaderCheck.h"
+        -:   16:
+        -:   17:namespace Eigen {
+        -:   18:
+        -:   19:enum {
+        -:   20:  Large = 2,
+        -:   21:  Small = 3
+        -:   22:};
+        -:   23:
+        -:   24:// Define the threshold value to fallback from the generic matrix-matrix product
+        -:   25:// implementation (heavy) to the lightweight coeff-based product one.
+        -:   26:// See generic_product_impl<Lhs,Rhs,DenseShape,DenseShape,GemmProduct>
+        -:   27:// in products/GeneralMatrixMatrix.h for more details.
+        -:   28:// TODO This threshold should also be used in the compile-time selector below.
+        -:   29:#ifndef EIGEN_GEMM_TO_COEFFBASED_THRESHOLD
+        -:   30:// This default value has been obtained on a Haswell architecture.
+        -:   31:#define EIGEN_GEMM_TO_COEFFBASED_THRESHOLD 20
+        -:   32:#endif
+        -:   33:
+        -:   34:namespace internal {
+        -:   35:
+        -:   36:template<int Rows, int Cols, int Depth> struct product_type_selector;
+        -:   37:
+        -:   38:template<int Size, int MaxSize> struct product_size_category
+        -:   39:{
+        -:   40:  enum {
+        -:   41:    #ifndef EIGEN_GPU_COMPILE_PHASE
+        -:   42:    is_large = MaxSize == Dynamic ||
+        -:   43:               Size >= EIGEN_CACHEFRIENDLY_PRODUCT_THRESHOLD ||
+        -:   44:               (Size==Dynamic && MaxSize>=EIGEN_CACHEFRIENDLY_PRODUCT_THRESHOLD),
+        -:   45:    #else
+        -:   46:    is_large = 0,
+        -:   47:    #endif
+        -:   48:    value = is_large  ? Large
+        -:   49:          : Size == 1 ? 1
+        -:   50:                      : Small
+        -:   51:  };
+        -:   52:};
+        -:   53:
+        -:   54:template<typename Lhs, typename Rhs> struct product_type
+        -:   55:{
+        -:   56:  typedef remove_all_t<Lhs> Lhs_;
+        -:   57:  typedef remove_all_t<Rhs> Rhs_;
+        -:   58:  enum {
+        -:   59:    MaxRows = traits<Lhs_>::MaxRowsAtCompileTime,
+        -:   60:    Rows    = traits<Lhs_>::RowsAtCompileTime,
+        -:   61:    MaxCols = traits<Rhs_>::MaxColsAtCompileTime,
+        -:   62:    Cols    = traits<Rhs_>::ColsAtCompileTime,
+        -:   63:    MaxDepth = min_size_prefer_fixed(traits<Lhs_>::MaxColsAtCompileTime,
+        -:   64:                                     traits<Rhs_>::MaxRowsAtCompileTime),
+        -:   65:    Depth = min_size_prefer_fixed(traits<Lhs_>::ColsAtCompileTime,
+        -:   66:                                  traits<Rhs_>::RowsAtCompileTime)
+        -:   67:  };
+        -:   68:
+        -:   69:  // the splitting into different lines of code here, introducing the _select enums and the typedef below,
+        -:   70:  // is to work around an internal compiler error with gcc 4.1 and 4.2.
+        -:   71:private:
+        -:   72:  enum {
+        -:   73:    rows_select = product_size_category<Rows,MaxRows>::value,
+        -:   74:    cols_select = product_size_category<Cols,MaxCols>::value,
+        -:   75:    depth_select = product_size_category<Depth,MaxDepth>::value
+        -:   76:  };
+        -:   77:  typedef product_type_selector<rows_select, cols_select, depth_select> selector;
+        -:   78:
+        -:   79:public:
+        -:   80:  enum {
+        -:   81:    value = selector::ret,
+        -:   82:    ret = selector::ret
+        -:   83:  };
+        -:   84:#ifdef EIGEN_DEBUG_PRODUCT
+        -:   85:  static void debug()
+        -:   86:  {
+        -:   87:      EIGEN_DEBUG_VAR(Rows);
+        -:   88:      EIGEN_DEBUG_VAR(Cols);
+        -:   89:      EIGEN_DEBUG_VAR(Depth);
+        -:   90:      EIGEN_DEBUG_VAR(rows_select);
+        -:   91:      EIGEN_DEBUG_VAR(cols_select);
+        -:   92:      EIGEN_DEBUG_VAR(depth_select);
+        -:   93:      EIGEN_DEBUG_VAR(value);
+        -:   94:  }
+        -:   95:#endif
+        -:   96:};
+        -:   97:
+        -:   98:/* The following allows to select the kind of product at compile time
+        -:   99: * based on the three dimensions of the product.
+        -:  100: * This is a compile time mapping from {1,Small,Large}^3 -> {product types} */
+        -:  101:// FIXME I'm not sure the current mapping is the ideal one.
+        -:  102:template<int M, int N>  struct product_type_selector<M,N,1>              { enum { ret = OuterProduct }; };
+        -:  103:template<int M>         struct product_type_selector<M, 1, 1>            { enum { ret = LazyCoeffBasedProductMode }; };
+        -:  104:template<int N>         struct product_type_selector<1, N, 1>            { enum { ret = LazyCoeffBasedProductMode }; };
+        -:  105:template<int Depth>     struct product_type_selector<1,    1,    Depth>  { enum { ret = InnerProduct }; };
+        -:  106:template<>              struct product_type_selector<1,    1,    1>      { enum { ret = InnerProduct }; };
+        -:  107:template<>              struct product_type_selector<Small,1,    Small>  { enum { ret = CoeffBasedProductMode }; };
+        -:  108:template<>              struct product_type_selector<1,    Small,Small>  { enum { ret = CoeffBasedProductMode }; };
+        -:  109:template<>              struct product_type_selector<Small,Small,Small>  { enum { ret = CoeffBasedProductMode }; };
+        -:  110:template<>              struct product_type_selector<Small, Small, 1>    { enum { ret = LazyCoeffBasedProductMode }; };
+        -:  111:template<>              struct product_type_selector<Small, Large, 1>    { enum { ret = LazyCoeffBasedProductMode }; };
+        -:  112:template<>              struct product_type_selector<Large, Small, 1>    { enum { ret = LazyCoeffBasedProductMode }; };
+        -:  113:template<>              struct product_type_selector<1,    Large,Small>  { enum { ret = CoeffBasedProductMode }; };
+        -:  114:template<>              struct product_type_selector<1,    Large,Large>  { enum { ret = GemvProduct }; };
+        -:  115:template<>              struct product_type_selector<1,    Small,Large>  { enum { ret = CoeffBasedProductMode }; };
+        -:  116:template<>              struct product_type_selector<Large,1,    Small>  { enum { ret = CoeffBasedProductMode }; };
+        -:  117:template<>              struct product_type_selector<Large,1,    Large>  { enum { ret = GemvProduct }; };
+        -:  118:template<>              struct product_type_selector<Small,1,    Large>  { enum { ret = CoeffBasedProductMode }; };
+        -:  119:template<>              struct product_type_selector<Small,Small,Large>  { enum { ret = GemmProduct }; };
+        -:  120:template<>              struct product_type_selector<Large,Small,Large>  { enum { ret = GemmProduct }; };
+        -:  121:template<>              struct product_type_selector<Small,Large,Large>  { enum { ret = GemmProduct }; };
+        -:  122:template<>              struct product_type_selector<Large,Large,Large>  { enum { ret = GemmProduct }; };
+        -:  123:template<>              struct product_type_selector<Large,Small,Small>  { enum { ret = CoeffBasedProductMode }; };
+        -:  124:template<>              struct product_type_selector<Small,Large,Small>  { enum { ret = CoeffBasedProductMode }; };
+        -:  125:template<>              struct product_type_selector<Large,Large,Small>  { enum { ret = GemmProduct }; };
+        -:  126:
+        -:  127:} // end namespace internal
+        -:  128:
+        -:  129:/***********************************************************************
+        -:  130:*  Implementation of Inner Vector Vector Product
+        -:  131:***********************************************************************/
+        -:  132:
+        -:  133:// FIXME : maybe the "inner product" could return a Scalar
+        -:  134:// instead of a 1x1 matrix ??
+        -:  135:// Pro: more natural for the user
+        -:  136:// Cons: this could be a problem if in a meta unrolled algorithm a matrix-matrix
+        -:  137:// product ends up to a row-vector times col-vector product... To tackle this use
+        -:  138:// case, we could have a specialization for Block<MatrixType,1,1> with: operator=(Scalar x);
+        -:  139:
+        -:  140:/***********************************************************************
+        -:  141:*  Implementation of Outer Vector Vector Product
+        -:  142:***********************************************************************/
+        -:  143:
+        -:  144:/***********************************************************************
+        -:  145:*  Implementation of General Matrix Vector Product
+        -:  146:***********************************************************************/
+        -:  147:
+        -:  148:/*  According to the shape/flags of the matrix we have to distinghish 3 different cases:
+        -:  149: *   1 - the matrix is col-major, BLAS compatible and M is large => call fast BLAS-like colmajor routine
+        -:  150: *   2 - the matrix is row-major, BLAS compatible and N is large => call fast BLAS-like rowmajor routine
+        -:  151: *   3 - all other cases are handled using a simple loop along the outer-storage direction.
+        -:  152: *  Therefore we need a lower level meta selector.
+        -:  153: *  Furthermore, if the matrix is the rhs, then the product has to be transposed.
+        -:  154: */
+        -:  155:namespace internal {
+        -:  156:
+        -:  157:template<int Side, int StorageOrder, bool BlasCompatible>
+        -:  158:struct gemv_dense_selector;
+        -:  159:
+        -:  160:} // end namespace internal
+        -:  161:
+        -:  162:namespace internal {
+        -:  163:
+        -:  164:template<typename Scalar,int Size,int MaxSize,bool Cond> struct gemv_static_vector_if;
+        -:  165:
+        -:  166:template<typename Scalar,int Size,int MaxSize>
+        -:  167:struct gemv_static_vector_if<Scalar,Size,MaxSize,false>
+        -:  168:{
+    #####:  169:  EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC Scalar* data() { eigen_internal_assert(false && "should never be called"); return 0; }
+        -:  170:};
+        -:  171:
+        -:  172:template<typename Scalar,int Size>
+        -:  173:struct gemv_static_vector_if<Scalar,Size,Dynamic,true>
+        -:  174:{
+        -:  175:  EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC Scalar* data() { return 0; }
+        -:  176:};
+        -:  177:
+        -:  178:template<typename Scalar,int Size,int MaxSize>
+        -:  179:struct gemv_static_vector_if<Scalar,Size,MaxSize,true>
+        -:  180:{
+        -:  181:  enum {
+        -:  182:    ForceAlignment  = internal::packet_traits<Scalar>::Vectorizable,
+        -:  183:    PacketSize      = internal::packet_traits<Scalar>::size
+        -:  184:  };
+        -:  185:  #if EIGEN_MAX_STATIC_ALIGN_BYTES!=0
+        -:  186:  internal::plain_array<Scalar, internal::min_size_prefer_fixed(Size, MaxSize), 0,
+        -:  187:                        internal::plain_enum_min(AlignedMax, PacketSize)> m_data;
+        -:  188:  EIGEN_STRONG_INLINE Scalar* data() { return m_data.array; }
+        -:  189:  #else
+        -:  190:  // Some architectures cannot align on the stack,
+        -:  191:  // => let's manually enforce alignment by allocating more data and return the address of the first aligned element.
+        -:  192:  internal::plain_array<Scalar, internal::min_size_prefer_fixed(Size, MaxSize)+(ForceAlignment?EIGEN_MAX_ALIGN_BYTES:0),0> m_data;
+        -:  193:  EIGEN_STRONG_INLINE Scalar* data() {
+        -:  194:    return ForceAlignment
+        -:  195:            ? reinterpret_cast<Scalar*>((std::uintptr_t(m_data.array) & ~(std::size_t(EIGEN_MAX_ALIGN_BYTES-1))) + EIGEN_MAX_ALIGN_BYTES)
+        -:  196:            : m_data.array;
+        -:  197:  }
+        -:  198:  #endif
+        -:  199:};
+        -:  200:
+        -:  201:// The vector is on the left => transposition
+        -:  202:template<int StorageOrder, bool BlasCompatible>
+        -:  203:struct gemv_dense_selector<OnTheLeft,StorageOrder,BlasCompatible>
+        -:  204:{
+        -:  205:  template<typename Lhs, typename Rhs, typename Dest>
+     5296:  206:  static void run(const Lhs &lhs, const Rhs &rhs, Dest& dest, const typename Dest::Scalar& alpha)
+        -:  207:  {
+     5296:  208:    Transpose<Dest> destT(dest);
+        -:  209:    enum { OtherStorageOrder = StorageOrder == RowMajor ? ColMajor : RowMajor };
+     5296:  210:    gemv_dense_selector<OnTheRight,OtherStorageOrder,BlasCompatible>
+     5296:  211:      ::run(rhs.transpose(), lhs.transpose(), destT, alpha);
+     5296:  212:  }
+        -:  213:};
+        -:  214:
+        -:  215:template<> struct gemv_dense_selector<OnTheRight,ColMajor,true>
+        -:  216:{
+        -:  217:  template<typename Lhs, typename Rhs, typename Dest>
+        -:  218:  static inline void run(const Lhs &lhs, const Rhs &rhs, Dest& dest, const typename Dest::Scalar& alpha)
+        -:  219:  {
+        -:  220:    typedef typename Lhs::Scalar   LhsScalar;
+        -:  221:    typedef typename Rhs::Scalar   RhsScalar;
+        -:  222:    typedef typename Dest::Scalar  ResScalar;
+        -:  223:    
+        -:  224:    typedef internal::blas_traits<Lhs> LhsBlasTraits;
+        -:  225:    typedef typename LhsBlasTraits::DirectLinearAccessType ActualLhsType;
+        -:  226:    typedef internal::blas_traits<Rhs> RhsBlasTraits;
+        -:  227:    typedef typename RhsBlasTraits::DirectLinearAccessType ActualRhsType;
+        -:  228:  
+        -:  229:    typedef Map<Matrix<ResScalar,Dynamic,1>, plain_enum_min(AlignedMax, internal::packet_traits<ResScalar>::size)> MappedDest;
+        -:  230:
+        -:  231:    ActualLhsType actualLhs = LhsBlasTraits::extract(lhs);
+        -:  232:    ActualRhsType actualRhs = RhsBlasTraits::extract(rhs);
+        -:  233:
+        -:  234:    ResScalar actualAlpha = combine_scalar_factors(alpha, lhs, rhs);
+        -:  235:
+        -:  236:    // make sure Dest is a compile-time vector type (bug 1166)
+        -:  237:    typedef std::conditional_t<Dest::IsVectorAtCompileTime, Dest, typename Dest::ColXpr> ActualDest;
+        -:  238:
+        -:  239:    enum {
+        -:  240:      // FIXME find a way to allow an inner stride on the result if packet_traits<Scalar>::size==1
+        -:  241:      // on, the other hand it is good for the cache to pack the vector anyways...
+        -:  242:      EvalToDestAtCompileTime = (ActualDest::InnerStrideAtCompileTime==1),
+        -:  243:      ComplexByReal = (NumTraits<LhsScalar>::IsComplex) && (!NumTraits<RhsScalar>::IsComplex),
+        -:  244:      MightCannotUseDest = ((!EvalToDestAtCompileTime) || ComplexByReal) && (ActualDest::MaxSizeAtCompileTime!=0)
+        -:  245:    };
+        -:  246:
+        -:  247:    typedef const_blas_data_mapper<LhsScalar,Index,ColMajor> LhsMapper;
+        -:  248:    typedef const_blas_data_mapper<RhsScalar,Index,RowMajor> RhsMapper;
+        -:  249:    RhsScalar compatibleAlpha = get_factor<ResScalar,RhsScalar>::run(actualAlpha);
+        -:  250:
+        -:  251:    if(!MightCannotUseDest)
+        -:  252:    {
+        -:  253:      // shortcut if we are sure to be able to use dest directly,
+        -:  254:      // this ease the compiler to generate cleaner and more optimzized code for most common cases
+        -:  255:      general_matrix_vector_product
+        -:  256:          <Index,LhsScalar,LhsMapper,ColMajor,LhsBlasTraits::NeedToConjugate,RhsScalar,RhsMapper,RhsBlasTraits::NeedToConjugate>::run(
+        -:  257:          actualLhs.rows(), actualLhs.cols(),
+        -:  258:          LhsMapper(actualLhs.data(), actualLhs.outerStride()),
+        -:  259:          RhsMapper(actualRhs.data(), actualRhs.innerStride()),
+        -:  260:          dest.data(), 1,
+        -:  261:          compatibleAlpha);
+        -:  262:    }
+        -:  263:    else
+        -:  264:    {
+        -:  265:      gemv_static_vector_if<ResScalar,ActualDest::SizeAtCompileTime,ActualDest::MaxSizeAtCompileTime,MightCannotUseDest> static_dest;
+        -:  266:
+        -:  267:      const bool alphaIsCompatible = (!ComplexByReal) || (numext::is_exactly_zero(numext::imag(actualAlpha)));
+        -:  268:      const bool evalToDest = EvalToDestAtCompileTime && alphaIsCompatible;
+        -:  269:
+        -:  270:      ei_declare_aligned_stack_constructed_variable(ResScalar,actualDestPtr,dest.size(),
+        -:  271:                                                    evalToDest ? dest.data() : static_dest.data());
+        -:  272:
+        -:  273:      if(!evalToDest)
+        -:  274:      {
+        -:  275:        #ifdef EIGEN_DENSE_STORAGE_CTOR_PLUGIN
+        -:  276:        Index size = dest.size();
+        -:  277:        EIGEN_DENSE_STORAGE_CTOR_PLUGIN
+        -:  278:        #endif
+        -:  279:        if(!alphaIsCompatible)
+        -:  280:        {
+        -:  281:          MappedDest(actualDestPtr, dest.size()).setZero();
+        -:  282:          compatibleAlpha = RhsScalar(1);
+        -:  283:        }
+        -:  284:        else
+        -:  285:          MappedDest(actualDestPtr, dest.size()) = dest;
+        -:  286:      }
+        -:  287:
+        -:  288:      general_matrix_vector_product
+        -:  289:          <Index,LhsScalar,LhsMapper,ColMajor,LhsBlasTraits::NeedToConjugate,RhsScalar,RhsMapper,RhsBlasTraits::NeedToConjugate>::run(
+        -:  290:          actualLhs.rows(), actualLhs.cols(),
+        -:  291:          LhsMapper(actualLhs.data(), actualLhs.outerStride()),
+        -:  292:          RhsMapper(actualRhs.data(), actualRhs.innerStride()),
+        -:  293:          actualDestPtr, 1,
+        -:  294:          compatibleAlpha);
+        -:  295:
+        -:  296:      if (!evalToDest)
+        -:  297:      {
+        -:  298:        if(!alphaIsCompatible)
+        -:  299:          dest.matrix() += actualAlpha * MappedDest(actualDestPtr, dest.size());
+        -:  300:        else
+        -:  301:          dest = MappedDest(actualDestPtr, dest.size());
+        -:  302:      }
+        -:  303:    }
+        -:  304:  }
+        -:  305:};
+        -:  306:
+        -:  307:template<> struct gemv_dense_selector<OnTheRight,RowMajor,true>
+        -:  308:{
+        -:  309:  template<typename Lhs, typename Rhs, typename Dest>
+     5296:  310:  static void run(const Lhs &lhs, const Rhs &rhs, Dest& dest, const typename Dest::Scalar& alpha)
+        -:  311:  {
+        -:  312:    typedef typename Lhs::Scalar   LhsScalar;
+        -:  313:    typedef typename Rhs::Scalar   RhsScalar;
+        -:  314:    typedef typename Dest::Scalar  ResScalar;
+        -:  315:    
+        -:  316:    typedef internal::blas_traits<Lhs> LhsBlasTraits;
+        -:  317:    typedef typename LhsBlasTraits::DirectLinearAccessType ActualLhsType;
+        -:  318:    typedef internal::blas_traits<Rhs> RhsBlasTraits;
+        -:  319:    typedef typename RhsBlasTraits::DirectLinearAccessType ActualRhsType;
+        -:  320:    typedef internal::remove_all_t<ActualRhsType> ActualRhsTypeCleaned;
+        -:  321:
+     5296:  322:    std::add_const_t<ActualLhsType> actualLhs = LhsBlasTraits::extract(lhs);
+     5296:  323:    std::add_const_t<ActualRhsType> actualRhs = RhsBlasTraits::extract(rhs);
+        -:  324:
+     5296:  325:    ResScalar actualAlpha = combine_scalar_factors(alpha, lhs, rhs);
+        -:  326:
+        -:  327:    enum {
+        -:  328:      // FIXME find a way to allow an inner stride on the result if packet_traits<Scalar>::size==1
+        -:  329:      // on, the other hand it is good for the cache to pack the vector anyways...
+        -:  330:      DirectlyUseRhs = ActualRhsTypeCleaned::InnerStrideAtCompileTime==1 || ActualRhsTypeCleaned::MaxSizeAtCompileTime==0
+        -:  331:    };
+        -:  332:
+        -:  333:    gemv_static_vector_if<RhsScalar,ActualRhsTypeCleaned::SizeAtCompileTime,ActualRhsTypeCleaned::MaxSizeAtCompileTime,!DirectlyUseRhs> static_rhs;
+        -:  334:
+     5296:  335:    ei_declare_aligned_stack_constructed_variable(RhsScalar,actualRhsPtr,actualRhs.size(),
+        -:  336:        DirectlyUseRhs ? const_cast<RhsScalar*>(actualRhs.data()) : static_rhs.data());
+        -:  337:
+        -:  338:    if(!DirectlyUseRhs)
+        -:  339:    {
+        -:  340:      #ifdef EIGEN_DENSE_STORAGE_CTOR_PLUGIN
+        -:  341:      Index size = actualRhs.size();
+        -:  342:      EIGEN_DENSE_STORAGE_CTOR_PLUGIN
+        -:  343:      #endif
+        -:  344:      Map<typename ActualRhsTypeCleaned::PlainObject>(actualRhsPtr, actualRhs.size()) = actualRhs;
+        -:  345:    }
+        -:  346:
+        -:  347:    typedef const_blas_data_mapper<LhsScalar,Index,RowMajor> LhsMapper;
+        -:  348:    typedef const_blas_data_mapper<RhsScalar,Index,ColMajor> RhsMapper;
+     5296:  349:    general_matrix_vector_product
+        -:  350:        <Index,LhsScalar,LhsMapper,RowMajor,LhsBlasTraits::NeedToConjugate,RhsScalar,RhsMapper,RhsBlasTraits::NeedToConjugate>::run(
+     5296:  351:        actualLhs.rows(), actualLhs.cols(),
+     5296:  352:        LhsMapper(actualLhs.data(), actualLhs.outerStride()),
+     5296:  353:        RhsMapper(actualRhsPtr, 1),
+     5296:  354:        dest.data(), dest.col(0).innerStride(), //NOTE  if dest is not a vector at compile-time, then dest.innerStride() might be wrong. (bug 1166)
+     5296:  355:        actualAlpha);
+     5296:  356:  }
+        -:  357:};
+        -:  358:
+        -:  359:template<> struct gemv_dense_selector<OnTheRight,ColMajor,false>
+        -:  360:{
+        -:  361:  template<typename Lhs, typename Rhs, typename Dest>
+        -:  362:  static void run(const Lhs &lhs, const Rhs &rhs, Dest& dest, const typename Dest::Scalar& alpha)
+        -:  363:  {
+        -:  364:    EIGEN_STATIC_ASSERT((!nested_eval<Lhs,1>::Evaluate),EIGEN_INTERNAL_COMPILATION_ERROR_OR_YOU_MADE_A_PROGRAMMING_MISTAKE);
+        -:  365:    // TODO if rhs is large enough it might be beneficial to make sure that dest is sequentially stored in memory, otherwise use a temp
+        -:  366:    typename nested_eval<Rhs,1>::type actual_rhs(rhs);
+        -:  367:    const Index size = rhs.rows();
+        -:  368:    for(Index k=0; k<size; ++k)
+        -:  369:      dest += (alpha*actual_rhs.coeff(k)) * lhs.col(k);
+        -:  370:  }
+        -:  371:};
+        -:  372:
+        -:  373:template<> struct gemv_dense_selector<OnTheRight,RowMajor,false>
+        -:  374:{
+        -:  375:  template<typename Lhs, typename Rhs, typename Dest>
+        -:  376:  static void run(const Lhs &lhs, const Rhs &rhs, Dest& dest, const typename Dest::Scalar& alpha)
+        -:  377:  {
+        -:  378:    EIGEN_STATIC_ASSERT((!nested_eval<Lhs,1>::Evaluate),EIGEN_INTERNAL_COMPILATION_ERROR_OR_YOU_MADE_A_PROGRAMMING_MISTAKE);
+        -:  379:    typename nested_eval<Rhs,Lhs::RowsAtCompileTime>::type actual_rhs(rhs);
+        -:  380:    const Index rows = dest.rows();
+        -:  381:    for(Index i=0; i<rows; ++i)
+        -:  382:      dest.coeffRef(i) += alpha * (lhs.row(i).cwiseProduct(actual_rhs.transpose())).sum();
+        -:  383:  }
+        -:  384:};
+        -:  385:
+        -:  386:} // end namespace internal
+        -:  387:
+        -:  388:/***************************************************************************
+        -:  389:* Implementation of matrix base methods
+        -:  390:***************************************************************************/
+        -:  391:
+        -:  392:/** \returns the matrix product of \c *this and \a other.
+        -:  393:  *
+        -:  394:  * \note If instead of the matrix product you want the coefficient-wise product, see Cwise::operator*().
+        -:  395:  *
+        -:  396:  * \sa lazyProduct(), operator*=(const MatrixBase&), Cwise::operator*()
+        -:  397:  */
+        -:  398:template<typename Derived>
+        -:  399:template<typename OtherDerived>
+        -:  400:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+        -:  401:const Product<Derived, OtherDerived>
+    25936:  402:MatrixBase<Derived>::operator*(const MatrixBase<OtherDerived> &other) const
+        -:  403:{
+        -:  404:  // A note regarding the function declaration: In MSVC, this function will sometimes
+        -:  405:  // not be inlined since DenseStorage is an unwindable object for dynamic
+        -:  406:  // matrices and product types are holding a member to store the result.
+        -:  407:  // Thus it does not help tagging this function with EIGEN_STRONG_INLINE.
+        -:  408:  enum {
+        -:  409:    ProductIsValid =  Derived::ColsAtCompileTime==Dynamic
+        -:  410:                   || OtherDerived::RowsAtCompileTime==Dynamic
+        -:  411:                   || int(Derived::ColsAtCompileTime)==int(OtherDerived::RowsAtCompileTime),
+        -:  412:    AreVectors = Derived::IsVectorAtCompileTime && OtherDerived::IsVectorAtCompileTime,
+        -:  413:    SameSizes = EIGEN_PREDICATE_SAME_MATRIX_SIZE(Derived,OtherDerived)
+        -:  414:  };
+        -:  415:  // note to the lost user:
+        -:  416:  //    * for a dot product use: v1.dot(v2)
+        -:  417:  //    * for a coeff-wise product use: v1.cwiseProduct(v2)
+        -:  418:  EIGEN_STATIC_ASSERT(ProductIsValid || !(AreVectors && SameSizes),
+        -:  419:    INVALID_VECTOR_VECTOR_PRODUCT__IF_YOU_WANTED_A_DOT_OR_COEFF_WISE_PRODUCT_YOU_MUST_USE_THE_EXPLICIT_FUNCTIONS)
+        -:  420:  EIGEN_STATIC_ASSERT(ProductIsValid || !(SameSizes && !AreVectors),
+        -:  421:    INVALID_MATRIX_PRODUCT__IF_YOU_WANTED_A_COEFF_WISE_PRODUCT_YOU_MUST_USE_THE_EXPLICIT_FUNCTION)
+        -:  422:  EIGEN_STATIC_ASSERT(ProductIsValid || SameSizes, INVALID_MATRIX_PRODUCT)
+        -:  423:#ifdef EIGEN_DEBUG_PRODUCT
+        -:  424:  internal::product_type<Derived,OtherDerived>::debug();
+        -:  425:#endif
+        -:  426:
+    25936:  427:  return Product<Derived, OtherDerived>(derived(), other.derived());
+        -:  428:}
+        -:  429:
+        -:  430:/** \returns an expression of the matrix product of \c *this and \a other without implicit evaluation.
+        -:  431:  *
+        -:  432:  * The returned product will behave like any other expressions: the coefficients of the product will be
+        -:  433:  * computed once at a time as requested. This might be useful in some extremely rare cases when only
+        -:  434:  * a small and no coherent fraction of the result's coefficients have to be computed.
+        -:  435:  *
+        -:  436:  * \warning This version of the matrix product can be much much slower. So use it only if you know
+        -:  437:  * what you are doing and that you measured a true speed improvement.
+        -:  438:  *
+        -:  439:  * \sa operator*(const MatrixBase&)
+        -:  440:  */
+        -:  441:template<typename Derived>
+        -:  442:template<typename OtherDerived>
+        -:  443:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+        -:  444:const Product<Derived,OtherDerived,LazyProduct>
+     6484:  445:MatrixBase<Derived>::lazyProduct(const MatrixBase<OtherDerived> &other) const
+        -:  446:{
+        -:  447:  enum {
+        -:  448:    ProductIsValid =  Derived::ColsAtCompileTime==Dynamic
+        -:  449:                   || OtherDerived::RowsAtCompileTime==Dynamic
+        -:  450:                   || int(Derived::ColsAtCompileTime)==int(OtherDerived::RowsAtCompileTime),
+        -:  451:    AreVectors = Derived::IsVectorAtCompileTime && OtherDerived::IsVectorAtCompileTime,
+        -:  452:    SameSizes = EIGEN_PREDICATE_SAME_MATRIX_SIZE(Derived,OtherDerived)
+        -:  453:  };
+        -:  454:  // note to the lost user:
+        -:  455:  //    * for a dot product use: v1.dot(v2)
+        -:  456:  //    * for a coeff-wise product use: v1.cwiseProduct(v2)
+        -:  457:  EIGEN_STATIC_ASSERT(ProductIsValid || !(AreVectors && SameSizes),
+        -:  458:    INVALID_VECTOR_VECTOR_PRODUCT__IF_YOU_WANTED_A_DOT_OR_COEFF_WISE_PRODUCT_YOU_MUST_USE_THE_EXPLICIT_FUNCTIONS)
+        -:  459:  EIGEN_STATIC_ASSERT(ProductIsValid || !(SameSizes && !AreVectors),
+        -:  460:    INVALID_MATRIX_PRODUCT__IF_YOU_WANTED_A_COEFF_WISE_PRODUCT_YOU_MUST_USE_THE_EXPLICIT_FUNCTION)
+        -:  461:  EIGEN_STATIC_ASSERT(ProductIsValid || SameSizes, INVALID_MATRIX_PRODUCT)
+        -:  462:
+     6484:  463:  return Product<Derived,OtherDerived,LazyProduct>(derived(), other.derived());
+        -:  464:}
+        -:  465:
+        -:  466:} // end namespace Eigen
+        -:  467:
+        -:  468:#endif // EIGEN_PRODUCT_H

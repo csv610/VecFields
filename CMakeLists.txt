@@ -13,6 +13,12 @@ set(VECFIELDS_EXTERNAL_DIR "${VECFIELDS_ROOT}/external")
 include_directories(${VECFIELDS_INCLUDE_DIR})
 include_directories(${VECFIELDS_EXTERNAL_DIR}/eigen)
 
+# Coverage
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    add_compile_options(--coverage)
+    add_link_options(--coverage)
+endif()
+
 # Testing
 enable_testing()
 add_subdirectory(external/googletest)

@@ -185,6 +185,20 @@ vecfields_test_basic/fast:
 	cd /Users/csv610/Projects/Mesh/Directional/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vecfields_test_basic.dir/build.make tests/CMakeFiles/vecfields_test_basic.dir/build
 .PHONY : vecfields_test_basic/fast
 
+# Convenience name for target.
+tests/CMakeFiles/vecfields_test_mesh_io.dir/rule:
+	cd /Users/csv610/Projects/Mesh/Directional/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vecfields_test_mesh_io.dir/rule
+.PHONY : tests/CMakeFiles/vecfields_test_mesh_io.dir/rule
+
+# Convenience name for target.
+vecfields_test_mesh_io: tests/CMakeFiles/vecfields_test_mesh_io.dir/rule
+.PHONY : vecfields_test_mesh_io
+
+# fast build rule for target.
+vecfields_test_mesh_io/fast:
+	cd /Users/csv610/Projects/Mesh/Directional/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vecfields_test_mesh_io.dir/build.make tests/CMakeFiles/vecfields_test_mesh_io.dir/build
+.PHONY : vecfields_test_mesh_io/fast
+
 test_basic.o: test_basic.cpp.o
 .PHONY : test_basic.o
 
@@ -209,6 +223,30 @@ test_basic.cpp.s:
 	cd /Users/csv610/Projects/Mesh/Directional/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vecfields_test_basic.dir/build.make tests/CMakeFiles/vecfields_test_basic.dir/test_basic.cpp.s
 .PHONY : test_basic.cpp.s
 
+test_mesh_io.o: test_mesh_io.cpp.o
+.PHONY : test_mesh_io.o
+
+# target to build an object file
+test_mesh_io.cpp.o:
+	cd /Users/csv610/Projects/Mesh/Directional/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vecfields_test_mesh_io.dir/build.make tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.o
+.PHONY : test_mesh_io.cpp.o
+
+test_mesh_io.i: test_mesh_io.cpp.i
+.PHONY : test_mesh_io.i
+
+# target to preprocess a source file
+test_mesh_io.cpp.i:
+	cd /Users/csv610/Projects/Mesh/Directional/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vecfields_test_mesh_io.dir/build.make tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.i
+.PHONY : test_mesh_io.cpp.i
+
+test_mesh_io.s: test_mesh_io.cpp.s
+.PHONY : test_mesh_io.s
+
+# target to generate assembly for a file
+test_mesh_io.cpp.s:
+	cd /Users/csv610/Projects/Mesh/Directional/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vecfields_test_mesh_io.dir/build.make tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.s
+.PHONY : test_mesh_io.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -223,9 +261,13 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... test"
 	@echo "... vecfields_test_basic"
+	@echo "... vecfields_test_mesh_io"
 	@echo "... test_basic.o"
 	@echo "... test_basic.i"
 	@echo "... test_basic.s"
+	@echo "... test_mesh_io.o"
+	@echo "... test_mesh_io.i"
+	@echo "... test_mesh_io.s"
 .PHONY : help
 
 

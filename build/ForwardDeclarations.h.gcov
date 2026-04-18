@@ -1,0 +1,334 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/util/ForwardDeclarations.h
+        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
+        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
+        -:    0:Runs:4
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2007-2010 Benoit Jacob <jacob.benoit.1@gmail.com>
+        -:    5:// Copyright (C) 2008-2009 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    6://
+        -:    7:// This Source Code Form is subject to the terms of the Mozilla
+        -:    8:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    9:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:   10:
+        -:   11:#ifndef EIGEN_FORWARDDECLARATIONS_H
+        -:   12:#define EIGEN_FORWARDDECLARATIONS_H
+        -:   13:
+        -:   14:// IWYU pragma: private
+        -:   15:#include "../InternalHeaderCheck.h"
+        -:   16:
+        -:   17:namespace Eigen {
+        -:   18:namespace internal {
+        -:   19:
+        -:   20:template<typename T> struct traits;
+        -:   21:
+        -:   22:// here we say once and for all that traits<const T> == traits<T>
+        -:   23:// When constness must affect traits, it has to be constness on template parameters on which T itself depends.
+        -:   24:// For example, traits<Map<const T> > != traits<Map<T> >, but
+        -:   25://              traits<const Map<T> > == traits<Map<T> >
+        -:   26:template<typename T> struct traits<const T> : traits<T> {};
+        -:   27:
+        -:   28:template<typename Derived> struct has_direct_access
+        -:   29:{
+        -:   30:  enum { ret = (traits<Derived>::Flags & DirectAccessBit) ? 1 : 0 };
+        -:   31:};
+        -:   32:
+        -:   33:template<typename Derived> struct accessors_level
+        -:   34:{
+        -:   35:  enum { has_direct_access = (traits<Derived>::Flags & DirectAccessBit) ? 1 : 0,
+        -:   36:         has_write_access = (traits<Derived>::Flags & LvalueBit) ? 1 : 0,
+        -:   37:         value = has_direct_access ? (has_write_access ? DirectWriteAccessors : DirectAccessors)
+        -:   38:                                   : (has_write_access ? WriteAccessors       : ReadOnlyAccessors)
+        -:   39:  };
+        -:   40:};
+        -:   41:
+        -:   42:template<typename T> struct evaluator_traits;
+        -:   43:
+        -:   44:template< typename T> struct evaluator;
+        -:   45:
+        -:   46:} // end namespace internal
+        -:   47:
+        -:   48:template<typename T> struct NumTraits;
+        -:   49:
+        -:   50:template<typename Derived> struct EigenBase;
+        -:   51:template<typename Derived> class DenseBase;
+        -:   52:template<typename Derived> class PlainObjectBase;
+        -:   53:template<typename Derived, int Level> class DenseCoeffsBase;
+        -:   54:
+        -:   55:template<typename Scalar_, int Rows_, int Cols_,
+        -:   56:         int Options_ = AutoAlign |
+        -:   57:                          ( (Rows_==1 && Cols_!=1) ? Eigen::RowMajor
+        -:   58:                          : (Cols_==1 && Rows_!=1) ? Eigen::ColMajor
+        -:   59:                          : EIGEN_DEFAULT_MATRIX_STORAGE_ORDER_OPTION ),
+        -:   60:         int MaxRows_ = Rows_,
+        -:   61:         int MaxCols_ = Cols_
+        -:   62:> class Matrix;
+        -:   63:
+        -:   64:template<typename Derived> class MatrixBase;
+        -:   65:template<typename Derived> class ArrayBase;
+        -:   66:
+        -:   67:template<typename ExpressionType, unsigned int Added, unsigned int Removed> class Flagged;
+        -:   68:template<typename ExpressionType, template <typename> class StorageBase > class NoAlias;
+        -:   69:template<typename ExpressionType> class NestByValue;
+        -:   70:template<typename ExpressionType> class ForceAlignedAccess;
+        -:   71:template<typename ExpressionType> class SwapWrapper;
+        -:   72:
+        -:   73:template<typename XprType, int BlockRows=Dynamic, int BlockCols=Dynamic, bool InnerPanel = false> class Block;
+        -:   74:template<typename XprType, typename RowIndices, typename ColIndices> class IndexedView;
+        -:   75:template<typename XprType, int Rows=Dynamic, int Cols=Dynamic, int Order=0> class Reshaped;
+        -:   76:
+        -:   77:template<typename MatrixType, int Size=Dynamic> class VectorBlock;
+        -:   78:template<typename MatrixType> class Transpose;
+        -:   79:template<typename MatrixType> class Conjugate;
+        -:   80:template<typename NullaryOp, typename MatrixType>         class CwiseNullaryOp;
+        -:   81:template<typename UnaryOp,   typename MatrixType>         class CwiseUnaryOp;
+        -:   82:template<typename BinaryOp,  typename Lhs, typename Rhs>  class CwiseBinaryOp;
+        -:   83:template<typename TernaryOp, typename Arg1, typename Arg2, typename Arg3>  class CwiseTernaryOp;
+        -:   84:template<typename Decomposition, typename Rhstype>        class Solve;
+        -:   85:template<typename XprType>                                class Inverse;
+        -:   86:
+        -:   87:template<typename Lhs, typename Rhs, int Option = DefaultProduct> class Product;
+        -:   88:
+        -:   89:template<typename Derived> class DiagonalBase;
+        -:   90:template<typename DiagonalVectorType_> class DiagonalWrapper;
+        -:   91:template<typename Scalar_, int SizeAtCompileTime, int MaxSizeAtCompileTime=SizeAtCompileTime> class DiagonalMatrix;
+        -:   92:template<typename MatrixType, typename DiagonalType, int ProductOrder> class DiagonalProduct;
+        -:   93:template<typename MatrixType, int Index = 0> class Diagonal;
+        -:   94:template<typename Derived> class SkewSymmetricBase;
+        -:   95:template<typename VectorType_> class SkewSymmetricWrapper;
+        -:   96:template<typename Scalar_> class SkewSymmetricMatrix3;
+        -:   97:template<int SizeAtCompileTime, int MaxSizeAtCompileTime = SizeAtCompileTime, typename IndexType=int> class PermutationMatrix;
+        -:   98:template<int SizeAtCompileTime, int MaxSizeAtCompileTime = SizeAtCompileTime, typename IndexType=int> class Transpositions;
+        -:   99:template<typename Derived> class PermutationBase;
+        -:  100:template<typename Derived> class TranspositionsBase;
+        -:  101:template<typename IndicesType_> class PermutationWrapper;
+        -:  102:template<typename IndicesType_> class TranspositionsWrapper;
+        -:  103:
+        -:  104:template<typename Derived,
+        -:  105:         int Level = internal::accessors_level<Derived>::has_write_access ? WriteAccessors : ReadOnlyAccessors
+        -:  106:> class MapBase;
+        -:  107:template<int OuterStrideAtCompileTime, int InnerStrideAtCompileTime> class Stride;
+        -:  108:template<int Value = Dynamic> class InnerStride;
+        -:  109:template<int Value = Dynamic> class OuterStride;
+        -:  110:template<typename MatrixType, int MapOptions=Unaligned, typename StrideType = Stride<0,0> > class Map;
+        -:  111:template<typename Derived> class RefBase;
+        -:  112:template<typename PlainObjectType, int Options = 0,
+        -:  113:         typename StrideType = typename std::conditional_t<PlainObjectType::IsVectorAtCompileTime,InnerStride<1>,OuterStride<> > > class Ref;
+        -:  114:template<typename ViewOp,    typename MatrixType, typename StrideType = Stride<0,0>>         class CwiseUnaryView;
+        -:  115:
+        -:  116:template<typename Derived> class TriangularBase;
+        -:  117:template<typename MatrixType, unsigned int Mode> class TriangularView;
+        -:  118:template<typename MatrixType, unsigned int Mode> class SelfAdjointView;
+        -:  119:template<typename MatrixType> class SparseView;
+        -:  120:template<typename ExpressionType> class WithFormat;
+        -:  121:template<typename MatrixType> struct CommaInitializer;
+        -:  122:template<typename Derived> class ReturnByValue;
+        -:  123:template<typename ExpressionType> class ArrayWrapper;
+        -:  124:template<typename ExpressionType> class MatrixWrapper;
+        -:  125:template<typename Derived> class SolverBase;
+        -:  126:template<typename XprType> class InnerIterator;
+        -:  127:
+        -:  128:namespace internal {
+        -:  129:template<typename XprType> class generic_randaccess_stl_iterator;
+        -:  130:template<typename XprType> class pointer_based_stl_iterator;
+        -:  131:template<typename XprType, DirectionType Direction> class subvector_stl_iterator;
+        -:  132:template<typename XprType, DirectionType Direction> class subvector_stl_reverse_iterator;
+        -:  133:template<typename DecompositionType> struct kernel_retval_base;
+        -:  134:template<typename DecompositionType> struct kernel_retval;
+        -:  135:template<typename DecompositionType> struct image_retval_base;
+        -:  136:template<typename DecompositionType> struct image_retval;
+        -:  137:} // end namespace internal
+        -:  138:
+        -:  139:namespace internal {
+        -:  140:template<typename Scalar_, int Rows=Dynamic, int Cols=Dynamic, int Supers=Dynamic, int Subs=Dynamic, int Options=0> class BandMatrix;
+        -:  141:}
+        -:  142:
+        -:  143:namespace internal {
+        -:  144:template<typename Lhs, typename Rhs> struct product_type;
+        -:  145:
+        -:  146:template<bool> struct EnableIf;
+        -:  147:
+        -:  148:/** \internal
+        -:  149:  * \class product_evaluator
+        -:  150:  * Products need their own evaluator with more template arguments allowing for
+        -:  151:  * easier partial template specializations.
+        -:  152:  */
+        -:  153:template< typename T,
+        -:  154:          int ProductTag = internal::product_type<typename T::Lhs,typename T::Rhs>::ret,
+        -:  155:          typename LhsShape = typename evaluator_traits<typename T::Lhs>::Shape,
+        -:  156:          typename RhsShape = typename evaluator_traits<typename T::Rhs>::Shape,
+        -:  157:          typename LhsScalar = typename traits<typename T::Lhs>::Scalar,
+        -:  158:          typename RhsScalar = typename traits<typename T::Rhs>::Scalar
+        -:  159:        > struct product_evaluator;
+        -:  160:}
+        -:  161:
+        -:  162:template<typename Lhs, typename Rhs,
+        -:  163:         int ProductType = internal::product_type<Lhs,Rhs>::value>
+        -:  164:struct ProductReturnType;
+        -:  165:
+        -:  166:// this is a workaround for sun CC
+        -:  167:template<typename Lhs, typename Rhs> struct LazyProductReturnType;
+        -:  168:
+        -:  169:namespace internal {
+        -:  170:
+        -:  171:// Provides scalar/packet-wise product and product with accumulation
+        -:  172:// with optional conjugation of the arguments.
+        -:  173:template<typename LhsScalar, typename RhsScalar, bool ConjLhs=false, bool ConjRhs=false> struct conj_helper;
+        -:  174:
+        -:  175:template<typename LhsScalar,typename RhsScalar=LhsScalar> struct scalar_sum_op;
+        -:  176:template<typename LhsScalar,typename RhsScalar=LhsScalar> struct scalar_difference_op;
+        -:  177:template<typename LhsScalar,typename RhsScalar=LhsScalar> struct scalar_conj_product_op;
+        -:  178:template<typename LhsScalar,typename RhsScalar=LhsScalar, int NaNPropagation=PropagateFast> struct scalar_min_op;
+        -:  179:template<typename LhsScalar,typename RhsScalar=LhsScalar, int NaNPropagation=PropagateFast> struct scalar_max_op;
+        -:  180:template<typename Scalar> struct scalar_opposite_op;
+        -:  181:template<typename Scalar> struct scalar_conjugate_op;
+        -:  182:template<typename Scalar> struct scalar_real_op;
+        -:  183:template<typename Scalar> struct scalar_imag_op;
+        -:  184:template<typename Scalar> struct scalar_abs_op;
+        -:  185:template<typename Scalar> struct scalar_abs2_op;
+        -:  186:template<typename LhsScalar,typename RhsScalar=LhsScalar> struct scalar_absolute_difference_op;
+        -:  187:template<typename Scalar> struct scalar_sqrt_op;
+        -:  188:template<typename Scalar> struct scalar_rsqrt_op;
+        -:  189:template<typename Scalar> struct scalar_exp_op;
+        -:  190:template<typename Scalar> struct scalar_log_op;
+        -:  191:template<typename Scalar> struct scalar_cos_op;
+        -:  192:template<typename Scalar> struct scalar_sin_op;
+        -:  193:template<typename Scalar> struct scalar_acos_op;
+        -:  194:template<typename Scalar> struct scalar_asin_op;
+        -:  195:template<typename Scalar> struct scalar_tan_op;
+        -:  196:template<typename Scalar> struct scalar_atan_op;
+        -:  197:template <typename LhsScalar, typename RhsScalar = LhsScalar> struct scalar_atan2_op;
+        -:  198:template<typename Scalar> struct scalar_inverse_op;
+        -:  199:template<typename Scalar> struct scalar_square_op;
+        -:  200:template<typename Scalar> struct scalar_cube_op;
+        -:  201:template<typename Scalar, typename NewType> struct scalar_cast_op;
+        -:  202:template<typename Scalar> struct scalar_random_op;
+        -:  203:template<typename Scalar> struct scalar_constant_op;
+        -:  204:template<typename Scalar> struct scalar_identity_op;
+        -:  205:template<typename Scalar> struct scalar_sign_op;
+        -:  206:template <typename Scalar, typename ScalarExponent>
+        -:  207:struct scalar_pow_op;
+        -:  208:template <typename Scalar, typename ScalarExponent, bool BaseIsInteger, bool ExponentIsInteger, bool BaseIsComplex,
+        -:  209:          bool ExponentIsComplex>
+        -:  210:struct scalar_unary_pow_op;
+        -:  211:template<typename LhsScalar,typename RhsScalar=LhsScalar> struct scalar_hypot_op;
+        -:  212:template<typename LhsScalar,typename RhsScalar=LhsScalar> struct scalar_product_op;
+        -:  213:template<typename LhsScalar,typename RhsScalar=LhsScalar> struct scalar_quotient_op;
+        -:  214:// logical and bitwise operations
+        -:  215:template <typename Scalar> struct scalar_boolean_and_op;
+        -:  216:template <typename Scalar> struct scalar_boolean_or_op;
+        -:  217:template <typename Scalar> struct scalar_boolean_xor_op;
+        -:  218:template <typename Scalar> struct scalar_boolean_not_op;
+        -:  219:template <typename Scalar> struct scalar_bitwise_and_op;
+        -:  220:template <typename Scalar> struct scalar_bitwise_or_op;
+        -:  221:template <typename Scalar> struct scalar_bitwise_xor_op;
+        -:  222:template <typename Scalar> struct scalar_bitwise_not_op;
+        -:  223:
+        -:  224:// SpecialFunctions module
+        -:  225:template<typename Scalar> struct scalar_lgamma_op;
+        -:  226:template<typename Scalar> struct scalar_digamma_op;
+        -:  227:template<typename Scalar> struct scalar_erf_op;
+        -:  228:template<typename Scalar> struct scalar_erfc_op;
+        -:  229:template<typename Scalar> struct scalar_ndtri_op;
+        -:  230:template<typename Scalar> struct scalar_igamma_op;
+        -:  231:template<typename Scalar> struct scalar_igammac_op;
+        -:  232:template<typename Scalar> struct scalar_zeta_op;
+        -:  233:template<typename Scalar> struct scalar_betainc_op;
+        -:  234:
+        -:  235:// Bessel functions in SpecialFunctions module
+        -:  236:template<typename Scalar> struct scalar_bessel_i0_op;
+        -:  237:template<typename Scalar> struct scalar_bessel_i0e_op;
+        -:  238:template<typename Scalar> struct scalar_bessel_i1_op;
+        -:  239:template<typename Scalar> struct scalar_bessel_i1e_op;
+        -:  240:template<typename Scalar> struct scalar_bessel_j0_op;
+        -:  241:template<typename Scalar> struct scalar_bessel_y0_op;
+        -:  242:template<typename Scalar> struct scalar_bessel_j1_op;
+        -:  243:template<typename Scalar> struct scalar_bessel_y1_op;
+        -:  244:template<typename Scalar> struct scalar_bessel_k0_op;
+        -:  245:template<typename Scalar> struct scalar_bessel_k0e_op;
+        -:  246:template<typename Scalar> struct scalar_bessel_k1_op;
+        -:  247:template<typename Scalar> struct scalar_bessel_k1e_op;
+        -:  248:
+        -:  249:
+        -:  250:} // end namespace internal
+        -:  251:
+        -:  252:struct IOFormat;
+        -:  253:
+        -:  254:// Array module
+        -:  255:template<typename Scalar_, int Rows_, int Cols_,
+        -:  256:         int Options_ = AutoAlign |
+        -:  257:                          ( (Rows_==1 && Cols_!=1) ? Eigen::RowMajor
+        -:  258:                          : (Cols_==1 && Rows_!=1) ? Eigen::ColMajor
+        -:  259:                          : EIGEN_DEFAULT_MATRIX_STORAGE_ORDER_OPTION ),
+        -:  260:         int MaxRows_ = Rows_, int MaxCols_ = Cols_> class Array;
+        -:  261:template<typename ConditionMatrixType, typename ThenMatrixType, typename ElseMatrixType> class Select;
+        -:  262:template<typename MatrixType, typename BinaryOp, int Direction> class PartialReduxExpr;
+        -:  263:template<typename ExpressionType, int Direction> class VectorwiseOp;
+        -:  264:template<typename MatrixType,int RowFactor,int ColFactor> class Replicate;
+        -:  265:template<typename MatrixType, int Direction = BothDirections> class Reverse;
+        -:  266:
+        -:  267:#if defined(EIGEN_USE_LAPACKE) && defined(lapack_int)
+        -:  268:// Lapacke interface requires StorageIndex to be lapack_int
+        -:  269:typedef lapack_int DefaultPermutationIndex;
+        -:  270:#else
+        -:  271:typedef int DefaultPermutationIndex;
+        -:  272:#endif
+        -:  273:
+        -:  274:template<typename MatrixType, typename PermutationIndex = DefaultPermutationIndex> class FullPivLU;
+        -:  275:template<typename MatrixType, typename PermutationIndex = DefaultPermutationIndex> class PartialPivLU;
+        -:  276:namespace internal {
+        -:  277:template<typename MatrixType> struct inverse_impl;
+        -:  278:}
+        -:  279:template<typename MatrixType> class HouseholderQR;
+        -:  280:template<typename MatrixType, typename PermutationIndex = DefaultPermutationIndex> class ColPivHouseholderQR;
+        -:  281:template<typename MatrixType, typename PermutationIndex = DefaultPermutationIndex> class FullPivHouseholderQR;
+        -:  282:template<typename MatrixType, typename PermutationIndex = DefaultPermutationIndex> class CompleteOrthogonalDecomposition;
+        -:  283:template<typename MatrixType> class SVDBase;
+        -:  284:template<typename MatrixType, int Options = 0> class JacobiSVD;
+        -:  285:template<typename MatrixType, int Options = 0> class BDCSVD;
+        -:  286:template<typename MatrixType, int UpLo = Lower> class LLT;
+        -:  287:template<typename MatrixType, int UpLo = Lower> class LDLT;
+        -:  288:template<typename VectorsType, typename CoeffsType, int Side=OnTheLeft> class HouseholderSequence;
+        -:  289:template<typename Scalar>     class JacobiRotation;
+        -:  290:
+        -:  291:// Geometry module:
+        -:  292:namespace internal {
+        -:  293:template<typename Derived, typename OtherDerived, int Size = MatrixBase<Derived>::SizeAtCompileTime> struct cross_impl;
+        -:  294:}
+        -:  295:template<typename Derived, int Dim_> class RotationBase;
+        -:  296:template<typename Derived> class QuaternionBase;
+        -:  297:template<typename Scalar> class Rotation2D;
+        -:  298:template<typename Scalar> class AngleAxis;
+        -:  299:template<typename Scalar,int Dim> class Translation;
+        -:  300:template<typename Scalar,int Dim> class AlignedBox;
+        -:  301:template<typename Scalar, int Options = AutoAlign> class Quaternion;
+        -:  302:template<typename Scalar,int Dim,int Mode,int Options_=AutoAlign> class Transform;
+        -:  303:template <typename Scalar_, int AmbientDim_, int Options=AutoAlign> class ParametrizedLine;
+        -:  304:template <typename Scalar_, int AmbientDim_, int Options=AutoAlign> class Hyperplane;
+        -:  305:template<typename Scalar> class UniformScaling;
+        -:  306:template<typename MatrixType,int Direction> class Homogeneous;
+        -:  307:
+        -:  308:// Sparse module:
+        -:  309:template<typename Derived> class SparseMatrixBase;
+        -:  310:
+        -:  311:// MatrixFunctions module
+        -:  312:template<typename Derived> struct MatrixExponentialReturnValue;
+        -:  313:template<typename Derived> class MatrixFunctionReturnValue;
+        -:  314:template<typename Derived> class MatrixSquareRootReturnValue;
+        -:  315:template<typename Derived> class MatrixLogarithmReturnValue;
+        -:  316:template<typename Derived> class MatrixPowerReturnValue;
+        -:  317:template<typename Derived> class MatrixComplexPowerReturnValue;
+        -:  318:
+        -:  319:namespace internal {
+        -:  320:template <typename Scalar>
+        -:  321:struct stem_function
+        -:  322:{
+        -:  323:  typedef std::complex<typename NumTraits<Scalar>::Real> ComplexScalar;
+        -:  324:  typedef ComplexScalar type(ComplexScalar, int);
+        -:  325:};
+        -:  326:}
+        -:  327:
+        -:  328:} // end namespace Eigen
+        -:  329:
+        -:  330:#endif // EIGEN_FORWARDDECLARATIONS_H

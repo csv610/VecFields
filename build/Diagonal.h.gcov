@@ -1,0 +1,266 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/Diagonal.h
+        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
+        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
+        -:    0:Runs:4
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2007-2009 Benoit Jacob <jacob.benoit.1@gmail.com>
+        -:    5:// Copyright (C) 2009-2010 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    6://
+        -:    7:// This Source Code Form is subject to the terms of the Mozilla
+        -:    8:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    9:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:   10:
+        -:   11:#ifndef EIGEN_DIAGONAL_H
+        -:   12:#define EIGEN_DIAGONAL_H
+        -:   13:
+        -:   14:// IWYU pragma: private
+        -:   15:#include "./InternalHeaderCheck.h"
+        -:   16:
+        -:   17:namespace Eigen {
+        -:   18:
+        -:   19:/** \class Diagonal
+        -:   20:  * \ingroup Core_Module
+        -:   21:  *
+        -:   22:  * \brief Expression of a diagonal/subdiagonal/superdiagonal in a matrix
+        -:   23:  *
+        -:   24:  * \tparam MatrixType the type of the object in which we are taking a sub/main/super diagonal
+        -:   25:  * \tparam DiagIndex the index of the sub/super diagonal. The default is 0 and it means the main diagonal.
+        -:   26:  *              A positive value means a superdiagonal, a negative value means a subdiagonal.
+        -:   27:  *              You can also use DynamicIndex so the index can be set at runtime.
+        -:   28:  *
+        -:   29:  * The matrix is not required to be square.
+        -:   30:  *
+        -:   31:  * This class represents an expression of the main diagonal, or any sub/super diagonal
+        -:   32:  * of a square matrix. It is the return type of MatrixBase::diagonal() and MatrixBase::diagonal(Index) and most of the
+        -:   33:  * time this is the only way it is used.
+        -:   34:  *
+        -:   35:  * \sa MatrixBase::diagonal(), MatrixBase::diagonal(Index)
+        -:   36:  */
+        -:   37:
+        -:   38:namespace internal {
+        -:   39:template<typename MatrixType, int DiagIndex>
+        -:   40:struct traits<Diagonal<MatrixType,DiagIndex> >
+        -:   41: : traits<MatrixType>
+        -:   42:{
+        -:   43:  typedef typename ref_selector<MatrixType>::type MatrixTypeNested;
+        -:   44:  typedef std::remove_reference_t<MatrixTypeNested> MatrixTypeNested_;
+        -:   45:  typedef typename MatrixType::StorageKind StorageKind;
+        -:   46:  enum {
+        -:   47:    RowsAtCompileTime = (int(DiagIndex) == DynamicIndex || int(MatrixType::SizeAtCompileTime) == Dynamic) ? Dynamic
+        -:   48:                      : (plain_enum_min(MatrixType::RowsAtCompileTime - plain_enum_max(-DiagIndex, 0),
+        -:   49:                                        MatrixType::ColsAtCompileTime - plain_enum_max( DiagIndex, 0))),
+        -:   50:    ColsAtCompileTime = 1,
+        -:   51:    MaxRowsAtCompileTime = int(MatrixType::MaxSizeAtCompileTime) == Dynamic ? Dynamic
+        -:   52:                         : DiagIndex == DynamicIndex ? min_size_prefer_fixed(MatrixType::MaxRowsAtCompileTime,
+        -:   53:                                                                             MatrixType::MaxColsAtCompileTime)
+        -:   54:                         : (plain_enum_min(MatrixType::MaxRowsAtCompileTime - plain_enum_max(-DiagIndex, 0),
+        -:   55:                                           MatrixType::MaxColsAtCompileTime - plain_enum_max( DiagIndex, 0))),
+        -:   56:    MaxColsAtCompileTime = 1,
+        -:   57:    MaskLvalueBit = is_lvalue<MatrixType>::value ? LvalueBit : 0,
+        -:   58:    Flags = (unsigned int)MatrixTypeNested_::Flags & (RowMajorBit | MaskLvalueBit | DirectAccessBit) & ~RowMajorBit, // FIXME DirectAccessBit should not be handled by expressions
+        -:   59:    MatrixTypeOuterStride = outer_stride_at_compile_time<MatrixType>::ret,
+        -:   60:    InnerStrideAtCompileTime = MatrixTypeOuterStride == Dynamic ? Dynamic : MatrixTypeOuterStride+1,
+        -:   61:    OuterStrideAtCompileTime = 0
+        -:   62:  };
+        -:   63:};
+        -:   64:}
+        -:   65:
+        -:   66:template<typename MatrixType, int DiagIndex_> class Diagonal
+        -:   67:   : public internal::dense_xpr_base< Diagonal<MatrixType,DiagIndex_> >::type
+        -:   68:{
+        -:   69:  public:
+        -:   70:
+        -:   71:    enum { DiagIndex = DiagIndex_ };
+        -:   72:    typedef typename internal::dense_xpr_base<Diagonal>::type Base;
+        -:   73:    EIGEN_DENSE_PUBLIC_INTERFACE(Diagonal)
+        -:   74:
+        -:   75:    EIGEN_DEVICE_FUNC
+     8940:   76:    explicit inline Diagonal(MatrixType& matrix, Index a_index = DiagIndex) : m_matrix(matrix), m_index(a_index)
+     4470:   77:    {
+     4470:   78:      eigen_assert( a_index <= m_matrix.cols() && -a_index <= m_matrix.rows() );
+     8940:   79:    }
+        -:   80:
+     1490:   81:    EIGEN_INHERIT_ASSIGNMENT_OPERATORS(Diagonal)
+        -:   82:
+        -:   83:    EIGEN_DEVICE_FUNC
+     7450:   84:    inline Index rows() const
+        -:   85:    {
+     7450:   86:      return m_index.value()<0 ? numext::mini<Index>(m_matrix.cols(),m_matrix.rows()+m_index.value())
+     5960:   87:                               : numext::mini<Index>(m_matrix.rows(),m_matrix.cols()-m_index.value());
+        -:   88:    }
+        -:   89:
+        -:   90:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+     7450:   91:    inline Index cols() const EIGEN_NOEXCEPT { return 1; }
+        -:   92:
+        -:   93:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+        -:   94:    inline Index innerStride() const EIGEN_NOEXCEPT {
+        -:   95:      return m_matrix.outerStride() + 1;
+        -:   96:    }
+        -:   97:
+        -:   98:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+        -:   99:    inline Index outerStride() const EIGEN_NOEXCEPT { return 0; }
+        -:  100:
+        -:  101:    typedef std::conditional_t<
+        -:  102:              internal::is_lvalue<MatrixType>::value,
+        -:  103:              Scalar,
+        -:  104:              const Scalar
+        -:  105:            > ScalarWithConstIfNotLvalue;
+        -:  106:
+        -:  107:    EIGEN_DEVICE_FUNC
+        -:  108:    inline ScalarWithConstIfNotLvalue* data() { return &(m_matrix.coeffRef(rowOffset(), colOffset())); }
+        -:  109:    EIGEN_DEVICE_FUNC
+        -:  110:    inline const Scalar* data() const { return &(m_matrix.coeffRef(rowOffset(), colOffset())); }
+        -:  111:
+        -:  112:    EIGEN_DEVICE_FUNC
+        -:  113:    inline Scalar& coeffRef(Index row, Index)
+        -:  114:    {
+        -:  115:      EIGEN_STATIC_ASSERT_LVALUE(MatrixType)
+        -:  116:      return m_matrix.coeffRef(row+rowOffset(), row+colOffset());
+        -:  117:    }
+        -:  118:
+        -:  119:    EIGEN_DEVICE_FUNC
+        -:  120:    inline const Scalar& coeffRef(Index row, Index) const
+        -:  121:    {
+        -:  122:      return m_matrix.coeffRef(row+rowOffset(), row+colOffset());
+        -:  123:    }
+        -:  124:
+        -:  125:    EIGEN_DEVICE_FUNC
+        -:  126:    inline CoeffReturnType coeff(Index row, Index) const
+        -:  127:    {
+        -:  128:      return m_matrix.coeff(row+rowOffset(), row+colOffset());
+        -:  129:    }
+        -:  130:
+        -:  131:    EIGEN_DEVICE_FUNC
+        -:  132:    inline Scalar& coeffRef(Index idx)
+        -:  133:    {
+        -:  134:      EIGEN_STATIC_ASSERT_LVALUE(MatrixType)
+        -:  135:      return m_matrix.coeffRef(idx+rowOffset(), idx+colOffset());
+        -:  136:    }
+        -:  137:
+        -:  138:    EIGEN_DEVICE_FUNC
+        -:  139:    inline const Scalar& coeffRef(Index idx) const
+        -:  140:    {
+        -:  141:      return m_matrix.coeffRef(idx+rowOffset(), idx+colOffset());
+        -:  142:    }
+        -:  143:
+        -:  144:    EIGEN_DEVICE_FUNC
+        -:  145:    inline CoeffReturnType coeff(Index idx) const
+        -:  146:    {
+        -:  147:      return m_matrix.coeff(idx+rowOffset(), idx+colOffset());
+        -:  148:    }
+        -:  149:
+        -:  150:    EIGEN_DEVICE_FUNC
+        -:  151:    inline const internal::remove_all_t<typename MatrixType::Nested>&
+     4470:  152:    nestedExpression() const
+        -:  153:    {
+     4470:  154:      return m_matrix;
+        -:  155:    }
+        -:  156:
+        -:  157:    EIGEN_DEVICE_FUNC
+     4470:  158:    inline Index index() const
+        -:  159:    {
+     4470:  160:      return m_index.value();
+        -:  161:    }
+        -:  162:
+        -:  163:  protected:
+        -:  164:    typename internal::ref_selector<MatrixType>::non_const_type m_matrix;
+        -:  165:    const internal::variable_if_dynamicindex<Index, DiagIndex> m_index;
+        -:  166:
+        -:  167:  private:
+        -:  168:    // some compilers may fail to optimize std::max etc in case of compile-time constants...
+        -:  169:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE EIGEN_CONSTEXPR
+        -:  170:    Index absDiagIndex() const EIGEN_NOEXCEPT { return m_index.value()>0 ? m_index.value() : -m_index.value(); }
+        -:  171:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE EIGEN_CONSTEXPR
+        -:  172:    Index rowOffset() const EIGEN_NOEXCEPT { return m_index.value()>0 ? 0 : -m_index.value(); }
+        -:  173:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE EIGEN_CONSTEXPR
+        -:  174:    Index colOffset() const EIGEN_NOEXCEPT { return m_index.value()>0 ? m_index.value() : 0; }
+        -:  175:    // trigger a compile-time error if someone try to call packet
+        -:  176:    template<int LoadMode> typename MatrixType::PacketReturnType packet(Index) const;
+        -:  177:    template<int LoadMode> typename MatrixType::PacketReturnType packet(Index,Index) const;
+        -:  178:};
+        -:  179:
+        -:  180:/** \returns an expression of the main diagonal of the matrix \c *this
+        -:  181:  *
+        -:  182:  * \c *this is not required to be square.
+        -:  183:  *
+        -:  184:  * Example: \include MatrixBase_diagonal.cpp
+        -:  185:  * Output: \verbinclude MatrixBase_diagonal.out
+        -:  186:  *
+        -:  187:  * \sa class Diagonal */
+        -:  188:template<typename Derived>
+        -:  189:EIGEN_DEVICE_FUNC inline typename MatrixBase<Derived>::DiagonalReturnType
+     2980:  190:MatrixBase<Derived>::diagonal()
+        -:  191:{
+     2980:  192:  return DiagonalReturnType(derived());
+        -:  193:}
+        -:  194:
+        -:  195:/** This is the const version of diagonal(). */
+        -:  196:template<typename Derived>
+        -:  197:EIGEN_DEVICE_FUNC inline
+        -:  198:const typename MatrixBase<Derived>::ConstDiagonalReturnType
+        -:  199:MatrixBase<Derived>::diagonal() const
+        -:  200:{
+        -:  201:  return ConstDiagonalReturnType(derived());
+        -:  202:}
+        -:  203:
+        -:  204:/** \returns an expression of the \a DiagIndex-th sub or super diagonal of the matrix \c *this
+        -:  205:  *
+        -:  206:  * \c *this is not required to be square.
+        -:  207:  *
+        -:  208:  * The template parameter \a DiagIndex represent a super diagonal if \a DiagIndex > 0
+        -:  209:  * and a sub diagonal otherwise. \a DiagIndex == 0 is equivalent to the main diagonal.
+        -:  210:  *
+        -:  211:  * Example: \include MatrixBase_diagonal_int.cpp
+        -:  212:  * Output: \verbinclude MatrixBase_diagonal_int.out
+        -:  213:  *
+        -:  214:  * \sa MatrixBase::diagonal(), class Diagonal */
+        -:  215:template<typename Derived>
+        -:  216:EIGEN_DEVICE_FUNC inline Diagonal<Derived, DynamicIndex>
+        -:  217:MatrixBase<Derived>::diagonal(Index index)
+        -:  218:{
+        -:  219:  return Diagonal<Derived, DynamicIndex>(derived(), index);
+        -:  220:}
+        -:  221:
+        -:  222:/** This is the const version of diagonal(Index). */
+        -:  223:template<typename Derived>
+        -:  224:EIGEN_DEVICE_FUNC inline const Diagonal<const Derived, DynamicIndex>
+        -:  225:MatrixBase<Derived>::diagonal(Index index) const
+        -:  226:{
+        -:  227:  return Diagonal<const Derived, DynamicIndex>(derived(), index);
+        -:  228:}
+        -:  229:
+        -:  230:/** \returns an expression of the \a DiagIndex-th sub or super diagonal of the matrix \c *this
+        -:  231:  *
+        -:  232:  * \c *this is not required to be square.
+        -:  233:  *
+        -:  234:  * The template parameter \a DiagIndex represent a super diagonal if \a DiagIndex > 0
+        -:  235:  * and a sub diagonal otherwise. \a DiagIndex == 0 is equivalent to the main diagonal.
+        -:  236:  *
+        -:  237:  * Example: \include MatrixBase_diagonal_template_int.cpp
+        -:  238:  * Output: \verbinclude MatrixBase_diagonal_template_int.out
+        -:  239:  *
+        -:  240:  * \sa MatrixBase::diagonal(), class Diagonal */
+        -:  241:template<typename Derived>
+        -:  242:template<int Index_>
+        -:  243:EIGEN_DEVICE_FUNC
+        -:  244:inline Diagonal<Derived, Index_>
+     1490:  245:MatrixBase<Derived>::diagonal()
+        -:  246:{
+     1490:  247:  return Diagonal<Derived, Index_>(derived());
+        -:  248:}
+        -:  249:
+        -:  250:/** This is the const version of diagonal<int>(). */
+        -:  251:template<typename Derived>
+        -:  252:template<int Index_>
+        -:  253:EIGEN_DEVICE_FUNC
+        -:  254:inline const Diagonal<const Derived, Index_>
+        -:  255:MatrixBase<Derived>::diagonal() const
+        -:  256:{
+        -:  257:  return  Diagonal<const Derived, Index_>(derived());
+        -:  258:}
+        -:  259:
+        -:  260:} // end namespace Eigen
+        -:  261:
+        -:  262:#endif // EIGEN_DIAGONAL_H

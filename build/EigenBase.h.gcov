@@ -1,0 +1,167 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/EigenBase.h
+        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
+        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
+        -:    0:Runs:4
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2009 Benoit Jacob <jacob.benoit.1@gmail.com>
+        -:    5:// Copyright (C) 2009 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    6://
+        -:    7:// This Source Code Form is subject to the terms of the Mozilla
+        -:    8:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    9:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:   10:
+        -:   11:#ifndef EIGEN_EIGENBASE_H
+        -:   12:#define EIGEN_EIGENBASE_H
+        -:   13:
+        -:   14:// IWYU pragma: private
+        -:   15:#include "./InternalHeaderCheck.h"
+        -:   16:
+        -:   17:namespace Eigen {
+        -:   18:
+        -:   19:/** \class EigenBase
+        -:   20:  * \ingroup Core_Module
+        -:   21:  *
+        -:   22:  * Common base class for all classes T such that MatrixBase has an operator=(T) and a constructor MatrixBase(T).
+        -:   23:  *
+        -:   24:  * In other words, an EigenBase object is an object that can be copied into a MatrixBase.
+        -:   25:  *
+        -:   26:  * Besides MatrixBase-derived classes, this also includes special matrix classes such as diagonal matrices, etc.
+        -:   27:  *
+        -:   28:  * Notice that this class is trivial, it is only used to disambiguate overloaded functions.
+        -:   29:  *
+        -:   30:  * \sa \blank \ref TopicClassHierarchy
+        -:   31:  */
+        -:   32:template<typename Derived> struct EigenBase
+        -:   33:{
+        -:   34://   typedef typename internal::plain_matrix_type<Derived>::type PlainObject;
+        -:   35:
+        -:   36:  /** \brief The interface type of indices
+        -:   37:    * \details To change this, \c \#define the preprocessor symbol \c EIGEN_DEFAULT_DENSE_INDEX_TYPE.
+        -:   38:    * \sa StorageIndex, \ref TopicPreprocessorDirectives.
+        -:   39:    * DEPRECATED: Since Eigen 3.3, its usage is deprecated. Use Eigen::Index instead.
+        -:   40:    * Deprecation is not marked with a doxygen comment because there are too many existing usages to add the deprecation attribute.
+        -:   41:    */
+        -:   42:  typedef Eigen::Index Index;
+        -:   43:
+        -:   44:  // FIXME is it needed?
+        -:   45:  typedef typename internal::traits<Derived>::StorageKind StorageKind;
+        -:   46:
+        -:   47:  /** \returns a reference to the derived object */
+        -:   48:  EIGEN_DEVICE_FUNC
+   996076:   49:  Derived& derived() { return *static_cast<Derived*>(this); }
+        -:   50:  /** \returns a const reference to the derived object */
+        -:   51:  EIGEN_DEVICE_FUNC
+  5160634:   52:  const Derived& derived() const { return *static_cast<const Derived*>(this); }
+        -:   53:
+        -:   54:  EIGEN_DEVICE_FUNC
+   222408:   55:  inline Derived& const_cast_derived() const
+   222408:   56:  { return *static_cast<Derived*>(const_cast<EigenBase*>(this)); }
+        -:   57:  EIGEN_DEVICE_FUNC
+        -:   58:  inline const Derived& const_derived() const
+        -:   59:  { return *static_cast<const Derived*>(this); }
+        -:   60:
+        -:   61:  /** \returns the number of rows. \sa cols(), RowsAtCompileTime */
+        -:   62:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+  1920542:   63:  inline Index rows() const EIGEN_NOEXCEPT { return derived().rows(); }
+        -:   64:  /** \returns the number of columns. \sa rows(), ColsAtCompileTime*/
+        -:   65:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+  1114908:   66:  inline Index cols() const EIGEN_NOEXCEPT { return derived().cols(); }
+        -:   67:  /** \returns the number of coefficients, which is rows()*cols().
+        -:   68:    * \sa rows(), cols(), SizeAtCompileTime. */
+        -:   69:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+   719228:   70:  inline Index size() const EIGEN_NOEXCEPT { return rows() * cols(); }
+        -:   71:
+        -:   72:  /** \internal Don't use it, but do the equivalent: \code dst = *this; \endcode */
+        -:   73:  template<typename Dest>
+        -:   74:  EIGEN_DEVICE_FUNC
+        -:   75:  inline void evalTo(Dest& dst) const
+        -:   76:  { derived().evalTo(dst); }
+        -:   77:
+        -:   78:  /** \internal Don't use it, but do the equivalent: \code dst += *this; \endcode */
+        -:   79:  template<typename Dest>
+        -:   80:  EIGEN_DEVICE_FUNC
+        -:   81:  inline void addTo(Dest& dst) const
+        -:   82:  {
+        -:   83:    // This is the default implementation,
+        -:   84:    // derived class can reimplement it in a more optimized way.
+        -:   85:    typename Dest::PlainObject res(rows(),cols());
+        -:   86:    evalTo(res);
+        -:   87:    dst += res;
+        -:   88:  }
+        -:   89:
+        -:   90:  /** \internal Don't use it, but do the equivalent: \code dst -= *this; \endcode */
+        -:   91:  template<typename Dest>
+        -:   92:  EIGEN_DEVICE_FUNC
+        -:   93:  inline void subTo(Dest& dst) const
+        -:   94:  {
+        -:   95:    // This is the default implementation,
+        -:   96:    // derived class can reimplement it in a more optimized way.
+        -:   97:    typename Dest::PlainObject res(rows(),cols());
+        -:   98:    evalTo(res);
+        -:   99:    dst -= res;
+        -:  100:  }
+        -:  101:
+        -:  102:  /** \internal Don't use it, but do the equivalent: \code dst.applyOnTheRight(*this); \endcode */
+        -:  103:  template<typename Dest>
+        -:  104:  EIGEN_DEVICE_FUNC inline void applyThisOnTheRight(Dest& dst) const
+        -:  105:  {
+        -:  106:    // This is the default implementation,
+        -:  107:    // derived class can reimplement it in a more optimized way.
+        -:  108:    dst = dst * this->derived();
+        -:  109:  }
+        -:  110:
+        -:  111:  /** \internal Don't use it, but do the equivalent: \code dst.applyOnTheLeft(*this); \endcode */
+        -:  112:  template<typename Dest>
+        -:  113:  EIGEN_DEVICE_FUNC inline void applyThisOnTheLeft(Dest& dst) const
+        -:  114:  {
+        -:  115:    // This is the default implementation,
+        -:  116:    // derived class can reimplement it in a more optimized way.
+        -:  117:    dst = this->derived() * dst;
+        -:  118:  }
+        -:  119:
+        -:  120:};
+        -:  121:
+        -:  122:/***************************************************************************
+        -:  123:* Implementation of matrix base methods
+        -:  124:***************************************************************************/
+        -:  125:
+        -:  126:/** \brief Copies the generic expression \a other into *this.
+        -:  127:  *
+        -:  128:  * \details The expression must provide a (templated) evalTo(Derived& dst) const
+        -:  129:  * function which does the actual job. In practice, this allows any user to write
+        -:  130:  * its own special matrix without having to modify MatrixBase
+        -:  131:  *
+        -:  132:  * \returns a reference to *this.
+        -:  133:  */
+        -:  134:template<typename Derived>
+        -:  135:template<typename OtherDerived>
+        -:  136:EIGEN_DEVICE_FUNC
+        -:  137:Derived& DenseBase<Derived>::operator=(const EigenBase<OtherDerived> &other)
+        -:  138:{
+        -:  139:  call_assignment(derived(), other.derived());
+        -:  140:  return derived();
+        -:  141:}
+        -:  142:
+        -:  143:template<typename Derived>
+        -:  144:template<typename OtherDerived>
+        -:  145:EIGEN_DEVICE_FUNC
+        -:  146:Derived& DenseBase<Derived>::operator+=(const EigenBase<OtherDerived> &other)
+        -:  147:{
+        -:  148:  call_assignment(derived(), other.derived(), internal::add_assign_op<Scalar,typename OtherDerived::Scalar>());
+        -:  149:  return derived();
+        -:  150:}
+        -:  151:
+        -:  152:template<typename Derived>
+        -:  153:template<typename OtherDerived>
+        -:  154:EIGEN_DEVICE_FUNC
+        -:  155:Derived& DenseBase<Derived>::operator-=(const EigenBase<OtherDerived> &other)
+        -:  156:{
+        -:  157:  call_assignment(derived(), other.derived(), internal::sub_assign_op<Scalar,typename OtherDerived::Scalar>());
+        -:  158:  return derived();
+        -:  159:}
+        -:  160:
+        -:  161:} // end namespace Eigen
+        -:  162:
+        -:  163:#endif // EIGEN_EIGENBASE_H

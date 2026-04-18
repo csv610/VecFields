@@ -1,0 +1,257 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/util/IntegralConstant.h
+        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
+        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
+        -:    0:Runs:4
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2017 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:
+        -:   11:#ifndef EIGEN_INTEGRAL_CONSTANT_H
+        -:   12:#define EIGEN_INTEGRAL_CONSTANT_H
+        -:   13:
+        -:   14:// IWYU pragma: private
+        -:   15:#include "../InternalHeaderCheck.h"
+        -:   16:
+        -:   17:namespace Eigen {
+        -:   18:
+        -:   19:namespace internal {
+        -:   20:
+        -:   21:template<int N> class FixedInt;
+        -:   22:template<int N> class VariableAndFixedInt;
+        -:   23:
+        -:   24:/** \internal
+        -:   25:  * \class FixedInt
+        -:   26:  *
+        -:   27:  * This class embeds a compile-time integer \c N.
+        -:   28:  *
+        -:   29:  * It is similar to c++11 std::integral_constant<int,N> but with some additional features
+        -:   30:  * such as:
+        -:   31:  *  - implicit conversion to int
+        -:   32:  *  - arithmetic and some bitwise operators: -, +, *, /, %, &, |
+        -:   33:  *  - c++98/14 compatibility with fix<N> and fix<N>() syntax to define integral constants.
+        -:   34:  *
+        -:   35:  * It is strongly discouraged to directly deal with this class FixedInt. Instances are expected to
+        -:   36:  * be created by the user using Eigen::fix<N> or Eigen::fix<N>().
+        -:   37:  * \code
+        -:   38:  * internal::cleanup_index_type<T>::type
+        -:   39:  * internal::cleanup_index_type<T,DynamicKey>::type
+        -:   40:  * \endcode
+        -:   41:  * where T can a FixedInt<N>, a pointer to function FixedInt<N> (*)(), or numerous other integer-like representations.
+        -:   42:  * \c DynamicKey is either Dynamic (default) or DynamicIndex and used to identify true compile-time values.
+        -:   43:  *
+        -:   44:  * For convenience, you can extract the compile-time value \c N in a generic way using the following helper:
+        -:   45:  * \code
+        -:   46:  * internal::get_fixed_value<T,DefaultVal>::value
+        -:   47:  * \endcode
+        -:   48:  * that will give you \c N if T equals FixedInt<N> or FixedInt<N> (*)(), and \c DefaultVal if T does not embed any compile-time value (e.g., T==int).
+        -:   49:  *
+        -:   50:  * \sa fix<N>, class VariableAndFixedInt
+        -:   51:  */
+        -:   52:template<int N> class FixedInt
+        -:   53:{
+        -:   54:public:
+        -:   55:  static const int value = N;
+        -:   56:  EIGEN_CONSTEXPR operator int() const { return value; }
+        -:   57:  
+        -:   58:  EIGEN_CONSTEXPR
+        -:   59:  FixedInt() = default;
+        -:   60:  
+        -:   61:  EIGEN_CONSTEXPR
+        -:   62:  FixedInt(std::integral_constant<int,N>) {}
+        -:   63:  
+        -:   64:  EIGEN_CONSTEXPR
+        -:   65:  FixedInt( VariableAndFixedInt<N> other) {
+        -:   66:    #ifndef EIGEN_INTERNAL_DEBUGGING
+        -:   67:    EIGEN_UNUSED_VARIABLE(other);
+        -:   68:    #endif
+        -:   69:    eigen_internal_assert(int(other)==N);
+        -:   70:  }
+        -:   71:
+        -:   72:  EIGEN_CONSTEXPR
+        -:   73:  FixedInt<-N> operator-() const { return FixedInt<-N>(); }
+        -:   74:  
+        -:   75:  template<int M>
+        -:   76:  EIGEN_CONSTEXPR
+        -:   77:  FixedInt<N+M> operator+( FixedInt<M>) const { return FixedInt<N+M>(); }
+        -:   78:  
+        -:   79:  template<int M>
+        -:   80:  EIGEN_CONSTEXPR
+        -:   81:  FixedInt<N-M> operator-( FixedInt<M>) const { return FixedInt<N-M>(); }
+        -:   82:  
+        -:   83:  template<int M>
+        -:   84:  EIGEN_CONSTEXPR
+        -:   85:  FixedInt<N*M> operator*( FixedInt<M>) const { return FixedInt<N*M>(); }
+        -:   86:  
+        -:   87:  template<int M>
+        -:   88:  EIGEN_CONSTEXPR
+        -:   89:  FixedInt<N/M> operator/( FixedInt<M>) const { return FixedInt<N/M>(); }
+        -:   90:  
+        -:   91:  template<int M>
+        -:   92:  EIGEN_CONSTEXPR
+        -:   93:  FixedInt<N%M> operator%( FixedInt<M>) const { return FixedInt<N%M>(); }
+        -:   94:  
+        -:   95:  template<int M>
+        -:   96:  EIGEN_CONSTEXPR
+        -:   97:  FixedInt<N|M> operator|( FixedInt<M>) const { return FixedInt<N|M>(); }
+        -:   98:  
+        -:   99:  template<int M>
+        -:  100:  EIGEN_CONSTEXPR
+        -:  101:  FixedInt<N&M> operator&( FixedInt<M>) const { return FixedInt<N&M>(); }
+        -:  102:
+        -:  103:  // Needed in C++14 to allow fix<N>():
+        4:  104:  EIGEN_CONSTEXPR FixedInt operator() () const { return *this; }
+        -:  105:
+        -:  106:  VariableAndFixedInt<N> operator() (int val) const { return VariableAndFixedInt<N>(val); }
+        -:  107:};
+        -:  108:
+        -:  109:/** \internal
+        -:  110:  * \class VariableAndFixedInt
+        -:  111:  *
+        -:  112:  * This class embeds both a compile-time integer \c N and a runtime integer.
+        -:  113:  * Both values are supposed to be equal unless the compile-time value \c N has a special
+        -:  114:  * value meaning that the runtime-value should be used. Depending on the context, this special
+        -:  115:  * value can be either Eigen::Dynamic (for positive quantities) or Eigen::DynamicIndex (for
+        -:  116:  * quantities that can be negative).
+        -:  117:  *
+        -:  118:  * It is the return-type of the function Eigen::fix<N>(int), and most of the time this is the only
+        -:  119:  * way it is used. It is strongly discouraged to directly deal with instances of VariableAndFixedInt.
+        -:  120:  * Indeed, in order to write generic code, it is the responsibility of the callee to properly convert
+        -:  121:  * it to either a true compile-time quantity (i.e. a FixedInt<N>), or to a runtime quantity (e.g., an Index)
+        -:  122:  * using the following generic helper:
+        -:  123:  * \code
+        -:  124:  * internal::cleanup_index_type<T>::type
+        -:  125:  * internal::cleanup_index_type<T,DynamicKey>::type
+        -:  126:  * \endcode
+        -:  127:  * where T can be a template instantiation of VariableAndFixedInt or numerous other integer-like representations.
+        -:  128:  * \c DynamicKey is either Dynamic (default) or DynamicIndex and used to identify true compile-time values.
+        -:  129:  *
+        -:  130:  * For convenience, you can also extract the compile-time value \c N using the following helper:
+        -:  131:  * \code
+        -:  132:  * internal::get_fixed_value<T,DefaultVal>::value
+        -:  133:  * \endcode
+        -:  134:  * that will give you \c N if T equals VariableAndFixedInt<N>, and \c DefaultVal if T does not embed any compile-time value (e.g., T==int).
+        -:  135:  *
+        -:  136:  * \sa fix<N>(int), class FixedInt
+        -:  137:  */
+        -:  138:template<int N> class VariableAndFixedInt
+        -:  139:{
+        -:  140:public:
+        -:  141:  static const int value = N;
+        -:  142:  operator int() const { return m_value; }
+        -:  143:  VariableAndFixedInt(int val) { m_value = val; }
+        -:  144:protected:
+        -:  145:  int m_value;
+        -:  146:};
+        -:  147:
+        -:  148:template<typename T, int Default=Dynamic> struct get_fixed_value {
+        -:  149:  static const int value = Default;
+        -:  150:};
+        -:  151:
+        -:  152:template<int N,int Default> struct get_fixed_value<FixedInt<N>,Default> {
+        -:  153:  static const int value = N;
+        -:  154:};
+        -:  155:
+        -:  156:template<int N,int Default> struct get_fixed_value<VariableAndFixedInt<N>,Default> {
+        -:  157:  static const int value = N ;
+        -:  158:};
+        -:  159:
+        -:  160:template<typename T, int N, int Default>
+        -:  161:struct get_fixed_value<variable_if_dynamic<T,N>,Default> {
+        -:  162:  static const int value = N;
+        -:  163:};
+        -:  164:
+   153994:  165:template<typename T> EIGEN_DEVICE_FUNC Index get_runtime_value(const T &x) { return x; }
+        -:  166:
+        -:  167:// Cleanup integer/FixedInt/VariableAndFixedInt/etc types:
+        -:  168:
+        -:  169:// By default, no cleanup:
+        -:  170:template<typename T, int DynamicKey=Dynamic, typename EnableIf=void> struct cleanup_index_type { typedef T type; };
+        -:  171:
+        -:  172:// Convert any integral type (e.g., short, int, unsigned int, etc.) to Eigen::Index
+        -:  173:template<typename T, int DynamicKey> struct cleanup_index_type<T,DynamicKey,std::enable_if_t<internal::is_integral<T>::value>> { typedef Index type; };
+        -:  174:
+        -:  175:// If VariableAndFixedInt does not match DynamicKey, then we turn it to a pure compile-time value:
+        -:  176:template<int N, int DynamicKey> struct cleanup_index_type<VariableAndFixedInt<N>, DynamicKey> { typedef FixedInt<N> type; };
+        -:  177:// If VariableAndFixedInt matches DynamicKey, then we turn it to a pure runtime-value (aka Index):
+        -:  178:template<int DynamicKey> struct cleanup_index_type<VariableAndFixedInt<DynamicKey>, DynamicKey> { typedef Index type; };
+        -:  179:
+        -:  180:template<int N, int DynamicKey> struct cleanup_index_type<std::integral_constant<int,N>, DynamicKey> { typedef FixedInt<N> type; };
+        -:  181:
+        -:  182:} // end namespace internal
+        -:  183:
+        -:  184:#ifndef EIGEN_PARSED_BY_DOXYGEN
+        -:  185:
+        -:  186:template<int N>
+        -:  187:constexpr internal::FixedInt<N> fix{};
+        -:  188:
+        -:  189:#else // EIGEN_PARSED_BY_DOXYGEN
+        -:  190:
+        -:  191:/** \var fix<N>()
+        -:  192:  * \ingroup Core_Module
+        -:  193:  *
+        -:  194:  * This \em identifier permits to construct an object embedding a compile-time integer \c N.
+        -:  195:  *
+        -:  196:  * \tparam N the compile-time integer value
+        -:  197:  *
+        -:  198:  * It is typically used in conjunction with the Eigen::seq and Eigen::seqN functions to pass compile-time values to them:
+        -:  199:  * \code
+        -:  200:  * seqN(10,fix<4>,fix<-3>)   // <=> [10 7 4 1]
+        -:  201:  * \endcode
+        -:  202:  *
+        -:  203:  * See also the function fix(int) to pass both a compile-time and runtime value.
+        -:  204:  *
+        -:  205:  * In c++14, it is implemented as:
+        -:  206:  * \code
+        -:  207:  * template<int N> static const internal::FixedInt<N> fix{};
+        -:  208:  * \endcode
+        -:  209:  * where internal::FixedInt<N> is an internal template class similar to
+        -:  210:  * <a href="http://en.cppreference.com/w/cpp/types/integral_constant">\c std::integral_constant </a><tt> <int,N> </tt>
+        -:  211:  * Here, \c fix<N> is thus an object of type \c internal::FixedInt<N>.
+        -:  212:  *
+        -:  213:  * \sa fix<N>(int), seq, seqN
+        -:  214:  */
+        -:  215:template<int N>
+        -:  216:static const auto fix();
+        -:  217:
+        -:  218:/** \fn fix<N>(int)
+        -:  219:  * \ingroup Core_Module
+        -:  220:  *
+        -:  221:  * This function returns an object embedding both a compile-time integer \c N, and a fallback runtime value \a val.
+        -:  222:  *
+        -:  223:  * \tparam N the compile-time integer value
+        -:  224:  * \param  val the fallback runtime integer value
+        -:  225:  *
+        -:  226:  * This function is a more general version of the \ref fix identifier/function that can be used in template code
+        -:  227:  * where the compile-time value could turn out to actually mean "undefined at compile-time". For positive integers
+        -:  228:  * such as a size or a dimension, this case is identified by Eigen::Dynamic, whereas runtime signed integers
+        -:  229:  * (e.g., an increment/stride) are identified as Eigen::DynamicIndex. In such a case, the runtime value \a val
+        -:  230:  * will be used as a fallback.
+        -:  231:  *
+        -:  232:  * A typical use case would be:
+        -:  233:  * \code
+        -:  234:  * template<typename Derived> void foo(const MatrixBase<Derived> &mat) {
+        -:  235:  *   const int N = Derived::RowsAtCompileTime==Dynamic ? Dynamic : Derived::RowsAtCompileTime/2;
+        -:  236:  *   const int n = mat.rows()/2;
+        -:  237:  *   ... mat( seqN(0,fix<N>(n) ) ...;
+        -:  238:  * }
+        -:  239:  * \endcode
+        -:  240:  * In this example, the function Eigen::seqN knows that the second argument is expected to be a size.
+        -:  241:  * If the passed compile-time value N equals Eigen::Dynamic, then the proxy object returned by fix will be dissmissed, and converted to an Eigen::Index of value \c n.
+        -:  242:  * Otherwise, the runtime-value \c n will be dissmissed, and the returned ArithmeticSequence will be of the exact same type as <tt> seqN(0,fix<N>) </tt>.
+        -:  243:  *
+        -:  244:  * \sa fix, seqN, class ArithmeticSequence
+        -:  245:  */
+        -:  246:template<int N>
+        -:  247:static const auto fix(int val);
+        -:  248:
+        -:  249:#endif // EIGEN_PARSED_BY_DOXYGEN
+        -:  250:
+        -:  251:} // end namespace Eigen
+        -:  252:
+        -:  253:#endif // EIGEN_INTEGRAL_CONSTANT_H

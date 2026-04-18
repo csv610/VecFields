@@ -1,0 +1,170 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/include/directional/shape_operator.h
+        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
+        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
+        -:    0:Runs:4
+        -:    1:// This file is part of Directional, a library for directional field processing.
+        -:    2:// Copyright (C) 2025 Amir Vaxman <avaxman@gmail.com>
+        -:    3://
+        -:    4:// This Source Code Form is subject to the terms of the Mozilla Public License
+        -:    5:// v. 2.0. If a copy of the MPL was not distributed with this file, You can
+        -:    6:// obtain one at http://mozilla.org/MPL/2.0/.
+        -:    7:
+        -:    8:#ifndef DIRECTIONAL_SHAPE_OPERATOR_H
+        -:    9:#define DIRECTIONAL_SHAPE_OPERATOR_H
+        -:   10:
+        -:   11:
+        -:   12:#include <Eigen/Core>
+        -:   13:#include <vector>
+        -:   14:
+        -:   15:/***Computing principal curvatures and directions by estimating per-vertex shape operators
+        -:   16: Based on "Smooth Feature Lines on Surface Meshes" by Hildebrandt et al. 2005
+        -:   17: Input:
+        -:   18: V:          matrix |V|x3 of vertices
+        -:   19: F:          matrix of vertex indices indicating faces
+        -:   20: EV:         |E|x2 of edges (vertex indices)
+        -:   21: EF:         |E|x2 left and right faces of each edge (-1 where boundary).
+        -:   22: faceNormals:        |F|x3 normalized face normals
+        -:   23: vertexNormals:      |V|x3 normalized vertex normals
+        -:   24: Output:
+        -:   25: Se:         vector of 3x3 shape operators per edge
+        -:   26: Sf:           the same for vertices
+        -:   27: Sv:         the same for vertices
+        -:   28: ***/
+        -:   29:
+        -:   30:namespace directional
+        -:   31:{
+        -:   32:
+        -:   33:
+        4:   34:static std::unordered_map<int, std::set<int>> build_adjacency(const Eigen::MatrixXi& EV) {
+        4:   35:    std::unordered_map<int, std::set<int>> adj;
+     4234:   36:    for (int i = 0; i < EV.rows(); ++i) {
+     4230:   37:        int v0 = EV(i, 0);
+     4230:   38:        int v1 = EV(i, 1);
+     4230:   39:        adj[v0].insert(v1);
+     4230:   40:        adj[v1].insert(v0);
+     4230:   41:    }
+        4:   42:    return adj;
+        4:   43:}
+        -:   44:
+        -:   45:// Compute shape operator (2x2 Hessian of interpolated height function in tangent frame)
+        4:   46:void shape_operator(const Eigen::MatrixXd& V,
+        -:   47:                    const Eigen::MatrixXi& EV,
+        -:   48:                    const Eigen::MatrixXd& VBx,
+        -:   49:                    const Eigen::MatrixXd& VBy,
+        -:   50:                    const Eigen::MatrixXd& vertexNormals,
+        -:   51:                    std::vector<Eigen::Matrix2d>& Sv) {
+        -:   52:    
+        -:   53:    
+        4:   54:    Sv.resize(V.rows(), Eigen::Matrix2d::Constant(std::nan("")));  // default to NaNs
+        -:   55:
+        4:   56:    auto adjacency = build_adjacency(EV);
+        -:   57:
+     1494:   58:    for (int vi = 0; vi < V.rows(); ++vi) {
+     1490:   59:        const auto& neighbors = adjacency[vi];
+        -:   60:        
+     1490:   61:        const Eigen::RowVector3d origin = V.row(vi);
+     1490:   62:        const Eigen::RowVector3d normal = vertexNormals.row(vi).normalized();
+     1490:   63:        const Eigen::RowVector3d bx = VBx.row(vi).normalized();
+     1490:   64:        const Eigen::RowVector3d by = VBy.row(vi).normalized();
+        -:   65:
+     1490:   66:        Eigen::MatrixXd A(neighbors.size(), 5);
+     1490:   67:        Eigen::VectorXd rhs(neighbors.size());
+        -:   68:
+     1490:   69:        int currRow = 0;
+     9950:   70:        for (int nj : neighbors) {
+     8460:   71:            Eigen::RowVector3d delta = V.row(nj) - origin;
+     8460:   72:            double x = delta.dot(bx);
+     8460:   73:            double y = delta.dot(by);
+     8460:   74:            double z = delta.dot(normal);  // height along normal direction
+        -:   75:
+     8460:   76:            A.row(currRow)<<x * x, x * y, y * y, x, y;
+     8460:   77:            rhs(currRow) = z;
+     8460:   78:            currRow++;
+        -:   79:        }
+        -:   80:
+     1490:   81:        Eigen::VectorXd coeffs = A.colPivHouseholderQr().solve(rhs);
+     1490:   82:        double a = coeffs(0), b = coeffs(1), c = coeffs(2);
+        -:   83:
+     1490:   84:        Eigen::Matrix2d H;
+     2980:   85:        H << 2 * a, b,
+     1490:   86:             b, 2 * c;
+        -:   87:
+     1490:   88:        Sv[vi] = - H;
+     1490:   89:    }
+        4:   90:}
+        -:   91:
+        -:   92:
+        -:   93:/*inline void shape_operator(const Eigen::MatrixXd& V,
+        -:   94:                           const Eigen::MatrixXi& F,
+        -:   95:                           const Eigen::MatrixXi& EV,
+        -:   96:                           const Eigen::MatrixXi& EF,
+        -:   97:                           const Eigen::MatrixXd& faceNormals,
+        -:   98:                           const Eigen::MatrixXd& vertexNormals,
+        -:   99:                           std::vector<Eigen::Matrix3d>& Se,
+        -:  100:                           std::vector<Eigen::Matrix3d>& Sv,
+        -:  101:                           std::vector<Eigen::Matrix3d>& Sf)
+        -:  102:
+        -:  103:{
+        -:  104:    using namespace Eigen;
+        -:  105:    
+        -:  106:    Se.resize(EV.rows());
+        -:  107:    Sv.resize(V.rows());
+        -:  108:    Sf.resize(F.rows());
+        -:  109:    
+        -:  110:    //test: trying libigl principal curvatures and directions
+        -:  111:    MatrixXd PD1, PD2;
+        -:  112:    VectorXd PV1, PV2;
+        -:  113:    igl::principal_curvature(V, F, PD1, PD2, PV1, PV2);
+        -:  114:    for (int i=0;i<V.rows();i++){
+        -:  115:        RowVector3d PD1local = PD1.row(i);
+        -:  116:        RowVector3d PD2local = PD2.row(i);
+        -:  117:        RowVector3d inducedNormal = PD1local.cross(PD2local);
+        -:  118:        Matrix3d eigenVectors; eigenVectors<<PD1.row(i), PD2.row(i),inducedNormal;
+        -:  119:        Matrix3d eigenValues; eigenValues(0,0)=PV1(i); eigenValues(1,1)=PV2(i), eigenValues(2,2)=0.0;
+        -:  120:        Sv[i] = eigenVectors.transpose()*eigenValues*eigenVectors;
+        -:  121:    }
+        -:  122:                        
+        -:  123:    /*MatrixXd e(EV.rows(),3);
+        -:  124:    MatrixXd Ne(EV.rows(),3);
+        -:  125:   
+        -:  126:  
+        -:  127:    for (int i=0;i<V.rows();i++)
+        -:  128:        Sv[i] = Matrix3d::Zero();
+        -:  129:    
+        -:  130:    for (int i=0;i<EV.rows();i++) {
+        -:  131:        e.row(i) = V.row(EV(i, 1)) - V.row(EV(i, 0));
+        -:  132:        if (EF(i,1)!=-1)
+        -:  133:            Ne.row(i) = (faceNormals.row(EF(i,0))+faceNormals.row(EF(i,1))).normalized();
+        -:  134:        else
+        -:  135:            Ne.row(i) = faceNormals.row(EF(i,0));
+        -:  136:        
+        -:  137:        //Assuming it's always positive?
+        -:  138:        RowVector3d n = faceNormals.row(EF(i,0)).eval();
+        -:  139:        RowVector3d ne = Ne.row(i);
+        -:  140:        double He = 2*  (n.cross(ne)).dot(e.row(i)); //e.row(i).norm() * cosHalfTheta(i);
+        -:  141:        RowVector3d evec = e.row(i).normalized();
+        -:  142:        RowVector3d eNe = evec.cross(ne);
+        -:  143:        Se[i] = He * eNe.transpose() * eNe;
+        -:  144:        Sv[EV(i,0)] += 0.5 * Se[i] * (ne.dot(vertexNormals.row(EV(i,0))));
+        -:  145:        Sv[EV(i,1)] += 0.5 * Se[i] * (ne.dot(vertexNormals.row(EV(i,1))));
+        -:  146:    }*/
+        -:  147:    
+        -:  148:    //averaging operator to faces
+        -:  149:    /*for (int i=0;i<F.rows();i++){
+        -:  150:        SelfAdjointEigenSolver<Matrix3d> esA(Sv[F(i,0)]), esB(Sv[F(i,1)]), esC(Sv[F(i,2)]);
+        -:  151:        Matrix3d Qsum = esA.eigenvectors() + esB.eigenvectors() + esC.eigenvectors();
+        -:  152:        JacobiSVD<Matrix3d> svd(Qsum, ComputeFullU | ComputeFullV);
+        -:  153:        Matrix3d Qavg = svd.matrixU() * svd.matrixV().transpose();
+        -:  154:        Vector3d eval_avg = (esA.eigenvalues() + esB.eigenvalues() + esC.eigenvalues()) / 3.0;
+        -:  155:        Sf[i] = Qavg * eval_avg.asDiagonal() * Qavg.transpose();
+        -:  156:    }
+        -:  157:}*/
+        -:  158:
+        -:  159:}
+        -:  160:
+        -:  161:
+        -:  162:
+        -:  163:
+        -:  164:#endif
+        -:  165:
+        -:  166:

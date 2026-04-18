@@ -1,0 +1,198 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/Product.h
+        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
+        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
+        -:    0:Runs:4
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2008-2011 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:#ifndef EIGEN_PRODUCT_H
+        -:   11:#define EIGEN_PRODUCT_H
+        -:   12:
+        -:   13:// IWYU pragma: private
+        -:   14:#include "./InternalHeaderCheck.h"
+        -:   15:
+        -:   16:namespace Eigen {
+        -:   17:
+        -:   18:template<typename Lhs, typename Rhs, int Option, typename StorageKind> class ProductImpl;
+        -:   19:
+        -:   20:namespace internal {
+        -:   21:
+        -:   22:template<typename Lhs, typename Rhs, int Option>
+        -:   23:struct traits<Product<Lhs, Rhs, Option> >
+        -:   24:{
+        -:   25:  typedef remove_all_t<Lhs> LhsCleaned;
+        -:   26:  typedef remove_all_t<Rhs> RhsCleaned;
+        -:   27:  typedef traits<LhsCleaned> LhsTraits;
+        -:   28:  typedef traits<RhsCleaned> RhsTraits;
+        -:   29:
+        -:   30:  typedef MatrixXpr XprKind;
+        -:   31:
+        -:   32:  typedef typename ScalarBinaryOpTraits<typename traits<LhsCleaned>::Scalar, typename traits<RhsCleaned>::Scalar>::ReturnType Scalar;
+        -:   33:  typedef typename product_promote_storage_type<typename LhsTraits::StorageKind,
+        -:   34:                                                typename RhsTraits::StorageKind,
+        -:   35:                                                internal::product_type<Lhs,Rhs>::ret>::ret StorageKind;
+        -:   36:  typedef typename promote_index_type<typename LhsTraits::StorageIndex,
+        -:   37:                                      typename RhsTraits::StorageIndex>::type StorageIndex;
+        -:   38:
+        -:   39:  enum {
+        -:   40:    RowsAtCompileTime    = LhsTraits::RowsAtCompileTime,
+        -:   41:    ColsAtCompileTime    = RhsTraits::ColsAtCompileTime,
+        -:   42:    MaxRowsAtCompileTime = LhsTraits::MaxRowsAtCompileTime,
+        -:   43:    MaxColsAtCompileTime = RhsTraits::MaxColsAtCompileTime,
+        -:   44:
+        -:   45:    // FIXME: only needed by GeneralMatrixMatrixTriangular
+        -:   46:    InnerSize = min_size_prefer_fixed(LhsTraits::ColsAtCompileTime, RhsTraits::RowsAtCompileTime),
+        -:   47:
+        -:   48:    // The storage order is somewhat arbitrary here. The correct one will be determined through the evaluator.
+        -:   49:    Flags = (MaxRowsAtCompileTime==1 && MaxColsAtCompileTime!=1) ? RowMajorBit
+        -:   50:          : (MaxColsAtCompileTime==1 && MaxRowsAtCompileTime!=1) ? 0
+        -:   51:          : (   ((LhsTraits::Flags&NoPreferredStorageOrderBit) && (RhsTraits::Flags&RowMajorBit))
+        -:   52:             || ((RhsTraits::Flags&NoPreferredStorageOrderBit) && (LhsTraits::Flags&RowMajorBit)) ) ? RowMajorBit
+        -:   53:          : NoPreferredStorageOrderBit
+        -:   54:  };
+        -:   55:};
+        -:   56:
+        -:   57:} // end namespace internal
+        -:   58:
+        -:   59:/** \class Product
+        -:   60:  * \ingroup Core_Module
+        -:   61:  *
+        -:   62:  * \brief Expression of the product of two arbitrary matrices or vectors
+        -:   63:  *
+        -:   64:  * \tparam Lhs_ the type of the left-hand side expression
+        -:   65:  * \tparam Rhs_ the type of the right-hand side expression
+        -:   66:  *
+        -:   67:  * This class represents an expression of the product of two arbitrary matrices.
+        -:   68:  *
+        -:   69:  * The other template parameters are:
+        -:   70:  * \tparam Option     can be DefaultProduct, AliasFreeProduct, or LazyProduct
+        -:   71:  *
+        -:   72:  */
+        -:   73:template<typename Lhs_, typename Rhs_, int Option>
+        -:   74:class Product : public ProductImpl<Lhs_,Rhs_,Option,
+        -:   75:                                   typename internal::product_promote_storage_type<typename internal::traits<Lhs_>::StorageKind,
+        -:   76:                                                                                   typename internal::traits<Rhs_>::StorageKind,
+        -:   77:                                                                                   internal::product_type<Lhs_,Rhs_>::ret>::ret>
+        -:   78:{
+        -:   79:  public:
+        -:   80:
+        -:   81:    typedef Lhs_ Lhs;
+        -:   82:    typedef Rhs_ Rhs;
+        -:   83:
+        -:   84:    typedef typename ProductImpl<
+        -:   85:        Lhs, Rhs, Option,
+        -:   86:        typename internal::product_promote_storage_type<typename internal::traits<Lhs>::StorageKind,
+        -:   87:                                                        typename internal::traits<Rhs>::StorageKind,
+        -:   88:                                                        internal::product_type<Lhs,Rhs>::ret>::ret>::Base Base;
+        -:   89:    EIGEN_GENERIC_PUBLIC_INTERFACE(Product)
+        -:   90:
+        -:   91:    typedef typename internal::ref_selector<Lhs>::type LhsNested;
+        -:   92:    typedef typename internal::ref_selector<Rhs>::type RhsNested;
+        -:   93:    typedef internal::remove_all_t<LhsNested> LhsNestedCleaned;
+        -:   94:    typedef internal::remove_all_t<RhsNested> RhsNestedCleaned;
+        -:   95:
+        -:   96:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+    67820:   97:    Product(const Lhs& lhs, const Rhs& rhs) : m_lhs(lhs), m_rhs(rhs)
+    33910:   98:    {
+    67820:   99:      eigen_assert(lhs.cols() == rhs.rows()
+        -:  100:        && "invalid matrix product"
+        -:  101:        && "if you wanted a coeff-wise or a dot product use the respective explicit functions");
+    67820:  102:    }
+        -:  103:
+        -:  104:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE EIGEN_CONSTEXPR
+    33910:  105:    Index rows() const EIGEN_NOEXCEPT { return m_lhs.rows(); }
+        -:  106:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE EIGEN_CONSTEXPR
+    33910:  107:    Index cols() const EIGEN_NOEXCEPT { return m_rhs.cols(); }
+        -:  108:
+        -:  109:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+    40394:  110:    const LhsNestedCleaned& lhs() const { return m_lhs; }
+        -:  111:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+    33910:  112:    const RhsNestedCleaned& rhs() const { return m_rhs; }
+        -:  113:
+        -:  114:  protected:
+        -:  115:
+        -:  116:    LhsNested m_lhs;
+        -:  117:    RhsNested m_rhs;
+        -:  118:};
+        -:  119:
+        -:  120:namespace internal {
+        -:  121:
+        -:  122:template<typename Lhs, typename Rhs, int Option, int ProductTag = internal::product_type<Lhs,Rhs>::ret>
+        -:  123:class dense_product_base
+        -:  124: : public internal::dense_xpr_base<Product<Lhs,Rhs,Option> >::type
+        -:  125:{};
+        -:  126:
+        -:  127:/** Conversion to scalar for inner-products */
+        -:  128:template<typename Lhs, typename Rhs, int Option>
+        -:  129:class dense_product_base<Lhs, Rhs, Option, InnerProduct>
+        -:  130: : public internal::dense_xpr_base<Product<Lhs,Rhs,Option> >::type
+        -:  131:{
+        -:  132:  typedef Product<Lhs,Rhs,Option> ProductXpr;
+        -:  133:  typedef typename internal::dense_xpr_base<ProductXpr>::type Base;
+        -:  134:public:
+        -:  135:  using Base::derived;
+        -:  136:  typedef typename Base::Scalar Scalar;
+        -:  137:
+        -:  138:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE operator const Scalar() const
+        -:  139:  {
+        -:  140:    return internal::evaluator<ProductXpr>(derived()).coeff(0,0);
+        -:  141:  }
+        -:  142:};
+        -:  143:
+        -:  144:} // namespace internal
+        -:  145:
+        -:  146:// Generic API dispatcher
+        -:  147:template<typename Lhs, typename Rhs, int Option, typename StorageKind>
+        -:  148:class ProductImpl : public internal::generic_xpr_base<Product<Lhs,Rhs,Option>, MatrixXpr, StorageKind>::type
+        -:  149:{
+        -:  150:  public:
+        -:  151:    typedef typename internal::generic_xpr_base<Product<Lhs,Rhs,Option>, MatrixXpr, StorageKind>::type Base;
+        -:  152:};
+        -:  153:
+        -:  154:template<typename Lhs, typename Rhs, int Option>
+        -:  155:class ProductImpl<Lhs,Rhs,Option,Dense>
+        -:  156:  : public internal::dense_product_base<Lhs,Rhs,Option>
+        -:  157:{
+        -:  158:    typedef Product<Lhs, Rhs, Option> Derived;
+        -:  159:
+        -:  160:  public:
+        -:  161:
+        -:  162:    typedef typename internal::dense_product_base<Lhs, Rhs, Option> Base;
+        -:  163:    EIGEN_DENSE_PUBLIC_INTERFACE(Derived)
+        -:  164:  protected:
+        -:  165:    enum {
+        -:  166:      IsOneByOne = (RowsAtCompileTime == 1 || RowsAtCompileTime == Dynamic) &&
+        -:  167:                   (ColsAtCompileTime == 1 || ColsAtCompileTime == Dynamic),
+        -:  168:      EnableCoeff = IsOneByOne || Option==LazyProduct
+        -:  169:    };
+        -:  170:
+        -:  171:  public:
+        -:  172:
+        -:  173:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Scalar coeff(Index row, Index col) const
+        -:  174:    {
+        -:  175:      EIGEN_STATIC_ASSERT(EnableCoeff, THIS_METHOD_IS_ONLY_FOR_INNER_OR_LAZY_PRODUCTS);
+        -:  176:      eigen_assert( (Option==LazyProduct) || (this->rows() == 1 && this->cols() == 1) );
+        -:  177:
+        -:  178:      return internal::evaluator<Derived>(derived()).coeff(row,col);
+        -:  179:    }
+        -:  180:
+        -:  181:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Scalar coeff(Index i) const
+        -:  182:    {
+        -:  183:      EIGEN_STATIC_ASSERT(EnableCoeff, THIS_METHOD_IS_ONLY_FOR_INNER_OR_LAZY_PRODUCTS);
+        -:  184:      eigen_assert( (Option==LazyProduct) || (this->rows() == 1 && this->cols() == 1) );
+        -:  185:
+        -:  186:      return internal::evaluator<Derived>(derived()).coeff(i);
+        -:  187:    }
+        -:  188:
+        -:  189:
+        -:  190:};
+        -:  191:
+        -:  192:} // end namespace Eigen
+        -:  193:
+        -:  194:#endif // EIGEN_PRODUCT_H

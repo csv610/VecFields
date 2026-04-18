@@ -1,0 +1,607 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/Redux.h
+        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
+        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
+        -:    0:Runs:4
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2008 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    5:// Copyright (C) 2006-2008 Benoit Jacob <jacob.benoit.1@gmail.com>
+        -:    6://
+        -:    7:// This Source Code Form is subject to the terms of the Mozilla
+        -:    8:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    9:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:   10:
+        -:   11:#ifndef EIGEN_REDUX_H
+        -:   12:#define EIGEN_REDUX_H
+        -:   13:
+        -:   14:// IWYU pragma: private
+        -:   15:#include "./InternalHeaderCheck.h"
+        -:   16:
+        -:   17:namespace Eigen { 
+        -:   18:
+        -:   19:namespace internal {
+        -:   20:
+        -:   21:// TODO
+        -:   22://  * implement other kind of vectorization
+        -:   23://  * factorize code
+        -:   24:
+        -:   25:/***************************************************************************
+        -:   26:* Part 1 : the logic deciding a strategy for vectorization and unrolling
+        -:   27:***************************************************************************/
+        -:   28:
+        -:   29:template<typename Func, typename Evaluator>
+        -:   30:struct redux_traits
+        -:   31:{
+        -:   32:public:
+        -:   33:    typedef typename find_best_packet<typename Evaluator::Scalar,Evaluator::SizeAtCompileTime>::type PacketType;
+        -:   34:  enum {
+        -:   35:    PacketSize = unpacket_traits<PacketType>::size,
+        -:   36:    InnerMaxSize = int(Evaluator::IsRowMajor)
+        -:   37:                 ? Evaluator::MaxColsAtCompileTime
+        -:   38:                 : Evaluator::MaxRowsAtCompileTime,
+        -:   39:    OuterMaxSize = int(Evaluator::IsRowMajor)
+        -:   40:                 ? Evaluator::MaxRowsAtCompileTime
+        -:   41:                 : Evaluator::MaxColsAtCompileTime,
+        -:   42:    SliceVectorizedWork = int(InnerMaxSize)==Dynamic ? Dynamic
+        -:   43:                        : int(OuterMaxSize)==Dynamic ? (int(InnerMaxSize)>=int(PacketSize) ? Dynamic : 0)
+        -:   44:                        : (int(InnerMaxSize)/int(PacketSize)) * int(OuterMaxSize)
+        -:   45:  };
+        -:   46:
+        -:   47:  enum {
+        -:   48:    MayLinearize = (int(Evaluator::Flags) & LinearAccessBit),
+        -:   49:    MightVectorize = (int(Evaluator::Flags)&ActualPacketAccessBit)
+        -:   50:                  && (functor_traits<Func>::PacketAccess),
+        -:   51:    MayLinearVectorize = bool(MightVectorize) && bool(MayLinearize),
+        -:   52:    MaySliceVectorize  = bool(MightVectorize) && (int(SliceVectorizedWork)==Dynamic || int(SliceVectorizedWork)>=3)
+        -:   53:  };
+        -:   54:
+        -:   55:public:
+        -:   56:  enum {
+        -:   57:    Traversal = int(MayLinearVectorize) ? int(LinearVectorizedTraversal)
+        -:   58:              : int(MaySliceVectorize)  ? int(SliceVectorizedTraversal)
+        -:   59:              : int(MayLinearize)       ? int(LinearTraversal)
+        -:   60:                                        : int(DefaultTraversal)
+        -:   61:  };
+        -:   62:
+        -:   63:public:
+        -:   64:  enum {
+        -:   65:    Cost = Evaluator::SizeAtCompileTime == Dynamic ? HugeCost
+        -:   66:         : int(Evaluator::SizeAtCompileTime) * int(Evaluator::CoeffReadCost) + (Evaluator::SizeAtCompileTime-1) * functor_traits<Func>::Cost,
+        -:   67:    UnrollingLimit = EIGEN_UNROLLING_LIMIT * (int(Traversal) == int(DefaultTraversal) ? 1 : int(PacketSize))
+        -:   68:  };
+        -:   69:
+        -:   70:public:
+        -:   71:  enum {
+        -:   72:    Unrolling = Cost <= UnrollingLimit ? CompleteUnrolling : NoUnrolling
+        -:   73:  };
+        -:   74:  
+        -:   75:#ifdef EIGEN_DEBUG_ASSIGN
+        -:   76:  static void debug()
+        -:   77:  {
+        -:   78:    std::cerr << "Xpr: " << typeid(typename Evaluator::XprType).name() << std::endl;
+        -:   79:    std::cerr.setf(std::ios::hex, std::ios::basefield);
+        -:   80:    EIGEN_DEBUG_VAR(Evaluator::Flags)
+        -:   81:    std::cerr.unsetf(std::ios::hex);
+        -:   82:    EIGEN_DEBUG_VAR(InnerMaxSize)
+        -:   83:    EIGEN_DEBUG_VAR(OuterMaxSize)
+        -:   84:    EIGEN_DEBUG_VAR(SliceVectorizedWork)
+        -:   85:    EIGEN_DEBUG_VAR(PacketSize)
+        -:   86:    EIGEN_DEBUG_VAR(MightVectorize)
+        -:   87:    EIGEN_DEBUG_VAR(MayLinearVectorize)
+        -:   88:    EIGEN_DEBUG_VAR(MaySliceVectorize)
+        -:   89:    std::cerr << "Traversal" << " = " << Traversal << " (" << demangle_traversal(Traversal) << ")" << std::endl;
+        -:   90:    EIGEN_DEBUG_VAR(UnrollingLimit)
+        -:   91:    std::cerr << "Unrolling" << " = " << Unrolling << " (" << demangle_unrolling(Unrolling) << ")" << std::endl;
+        -:   92:    std::cerr << std::endl;
+        -:   93:  }
+        -:   94:#endif
+        -:   95:};
+        -:   96:
+        -:   97:/***************************************************************************
+        -:   98:* Part 2 : unrollers
+        -:   99:***************************************************************************/
+        -:  100:
+        -:  101:/*** no vectorization ***/
+        -:  102:
+        -:  103:template<typename Func, typename Evaluator, Index Start, Index Length>
+        -:  104:struct redux_novec_unroller
+        -:  105:{
+        -:  106:  static constexpr Index HalfLength = Length/2;
+        -:  107:
+        -:  108:  typedef typename Evaluator::Scalar Scalar;
+        -:  109:
+        -:  110:  EIGEN_DEVICE_FUNC
+        -:  111:  static EIGEN_STRONG_INLINE Scalar run(const Evaluator &eval, const Func& func)
+        -:  112:  {
+        -:  113:    return func(redux_novec_unroller<Func, Evaluator, Start, HalfLength>::run(eval,func),
+        -:  114:                redux_novec_unroller<Func, Evaluator, Start+HalfLength, Length-HalfLength>::run(eval,func));
+        -:  115:  }
+        -:  116:};
+        -:  117:
+        -:  118:template<typename Func, typename Evaluator, Index Start>
+        -:  119:struct redux_novec_unroller<Func, Evaluator, Start, 1>
+        -:  120:{
+        -:  121:  static constexpr Index outer = Start / Evaluator::InnerSizeAtCompileTime;
+        -:  122:  static constexpr Index inner = Start % Evaluator::InnerSizeAtCompileTime;
+        -:  123:
+        -:  124:  typedef typename Evaluator::Scalar Scalar;
+        -:  125:
+        -:  126:  EIGEN_DEVICE_FUNC
+        -:  127:  static EIGEN_STRONG_INLINE Scalar run(const Evaluator &eval, const Func&)
+        -:  128:  {
+        -:  129:    return eval.coeffByOuterInner(outer, inner);
+        -:  130:  }
+        -:  131:};
+        -:  132:
+        -:  133:// This is actually dead code and will never be called. It is required
+        -:  134:// to prevent false warnings regarding failed inlining though
+        -:  135:// for 0 length run() will never be called at all.
+        -:  136:template<typename Func, typename Evaluator, Index Start>
+        -:  137:struct redux_novec_unroller<Func, Evaluator, Start, 0>
+        -:  138:{
+        -:  139:  typedef typename Evaluator::Scalar Scalar;
+        -:  140:  EIGEN_DEVICE_FUNC 
+        -:  141:  static EIGEN_STRONG_INLINE Scalar run(const Evaluator&, const Func&) { return Scalar(); }
+        -:  142:};
+        -:  143:
+        -:  144:template<typename Func, typename Evaluator, Index Start, Index Length>
+        -:  145:struct redux_novec_linear_unroller
+        -:  146:{
+        -:  147:  static constexpr Index HalfLength = Length/2;
+        -:  148:
+        -:  149:  typedef typename Evaluator::Scalar Scalar;
+        -:  150:
+        -:  151:  EIGEN_DEVICE_FUNC
+     2980:  152:  static EIGEN_STRONG_INLINE Scalar run(const Evaluator &eval, const Func& func)
+        -:  153:  {
+     5960:  154:    return func(redux_novec_linear_unroller<Func, Evaluator, Start, HalfLength>::run(eval,func),
+     2980:  155:                redux_novec_linear_unroller<Func, Evaluator, Start+HalfLength, Length-HalfLength>::run(eval,func));
+        -:  156:  }
+        -:  157:};
+        -:  158:
+        -:  159:template<typename Func, typename Evaluator, Index Start>
+        -:  160:struct redux_novec_linear_unroller<Func, Evaluator, Start, 1>
+        -:  161:{
+        -:  162:  typedef typename Evaluator::Scalar Scalar;
+        -:  163:
+        -:  164:  EIGEN_DEVICE_FUNC
+    72132:  165:  static EIGEN_STRONG_INLINE Scalar run(const Evaluator &eval, const Func&)
+        -:  166:  {
+    72132:  167:    return eval.coeff(Start);
+        -:  168:  }
+        -:  169:};
+        -:  170:
+        -:  171:// This is actually dead code and will never be called. It is required
+        -:  172:// to prevent false warnings regarding failed inlining though
+        -:  173:// for 0 length run() will never be called at all.
+        -:  174:template<typename Func, typename Evaluator, Index Start>
+        -:  175:struct redux_novec_linear_unroller<Func, Evaluator, Start, 0>
+        -:  176:{
+        -:  177:  typedef typename Evaluator::Scalar Scalar;
+        -:  178:  EIGEN_DEVICE_FUNC 
+        -:  179:  static EIGEN_STRONG_INLINE Scalar run(const Evaluator&, const Func&) { return Scalar(); }
+        -:  180:};
+        -:  181:
+        -:  182:/*** vectorization ***/
+        -:  183:
+        -:  184:template<typename Func, typename Evaluator, Index Start, Index Length>
+        -:  185:struct redux_vec_unroller
+        -:  186:{
+        -:  187:  template<typename PacketType>
+        -:  188:  EIGEN_DEVICE_FUNC
+        -:  189:  static EIGEN_STRONG_INLINE PacketType run(const Evaluator &eval, const Func& func)
+        -:  190:  {
+        -:  191:    constexpr Index HalfLength = Length/2;
+        -:  192:
+        -:  193:    return func.packetOp(
+        -:  194:            redux_vec_unroller<Func, Evaluator, Start, HalfLength>::template run<PacketType>(eval,func),
+        -:  195:            redux_vec_unroller<Func, Evaluator, Start+HalfLength, Length-HalfLength>::template run<PacketType>(eval,func) );
+        -:  196:  }
+        -:  197:};
+        -:  198:
+        -:  199:template<typename Func, typename Evaluator, Index Start>
+        -:  200:struct redux_vec_unroller<Func, Evaluator, Start, 1>
+        -:  201:{
+        -:  202:  template<typename PacketType>
+        -:  203:  EIGEN_DEVICE_FUNC
+        -:  204:  static EIGEN_STRONG_INLINE PacketType run(const Evaluator &eval, const Func&)
+        -:  205:  {
+        -:  206:    constexpr Index PacketSize = unpacket_traits<PacketType>::size;
+        -:  207:    constexpr Index index = Start * PacketSize;
+        -:  208:    constexpr Index outer = index / int(Evaluator::InnerSizeAtCompileTime);
+        -:  209:    constexpr Index inner = index % int(Evaluator::InnerSizeAtCompileTime);
+        -:  210:    constexpr int alignment = Evaluator::Alignment;
+        -:  211:
+        -:  212:    return eval.template packetByOuterInner<alignment,PacketType>(outer, inner);
+        -:  213:  }
+        -:  214:};
+        -:  215:
+        -:  216:template<typename Func, typename Evaluator, Index Start, Index Length>
+        -:  217:struct redux_vec_linear_unroller
+        -:  218:{
+        -:  219:  template<typename PacketType>
+        -:  220:  EIGEN_DEVICE_FUNC
+     1490:  221:  static EIGEN_STRONG_INLINE PacketType run(const Evaluator &eval, const Func& func)
+        -:  222:  {
+     1490:  223:    constexpr Index HalfLength = Length/2;
+        -:  224:
+     2980:  225:    return func.packetOp(
+     1490:  226:            redux_vec_linear_unroller<Func, Evaluator, Start, HalfLength>::template run<PacketType>(eval,func),
+     1490:  227:            redux_vec_linear_unroller<Func, Evaluator, Start+HalfLength, Length-HalfLength>::template run<PacketType>(eval,func) );
+        -:  228:  }
+        -:  229:};
+        -:  230:
+        -:  231:template<typename Func, typename Evaluator, Index Start>
+        -:  232:struct redux_vec_linear_unroller<Func, Evaluator, Start, 1>
+        -:  233:{
+        -:  234:  template<typename PacketType>
+        -:  235:  EIGEN_DEVICE_FUNC
+    63980:  236:  static EIGEN_STRONG_INLINE PacketType run(const Evaluator &eval, const Func&)
+        -:  237:  {
+    63980:  238:    constexpr Index PacketSize = unpacket_traits<PacketType>::size;
+    63980:  239:    constexpr Index index = (Start * PacketSize);
+    63980:  240:    constexpr int alignment = Evaluator::Alignment;
+    63980:  241:    return eval.template packet<alignment,PacketType>(index);
+        -:  242:  }
+        -:  243:};
+        -:  244:
+        -:  245:/***************************************************************************
+        -:  246:* Part 3 : implementation of all cases
+        -:  247:***************************************************************************/
+        -:  248:
+        -:  249:template<typename Func, typename Evaluator,
+        -:  250:         int Traversal = redux_traits<Func, Evaluator>::Traversal,
+        -:  251:         int Unrolling = redux_traits<Func, Evaluator>::Unrolling
+        -:  252:>
+        -:  253:struct redux_impl;
+        -:  254:
+        -:  255:template<typename Func, typename Evaluator>
+        -:  256:struct redux_impl<Func, Evaluator, DefaultTraversal, NoUnrolling>
+        -:  257:{
+        -:  258:  typedef typename Evaluator::Scalar Scalar;
+        -:  259:
+        -:  260:  template<typename XprType>
+        -:  261:  EIGEN_DEVICE_FUNC static EIGEN_STRONG_INLINE
+        -:  262:  Scalar run(const Evaluator &eval, const Func& func, const XprType& xpr)
+        -:  263:  {
+        -:  264:    eigen_assert(xpr.rows()>0 && xpr.cols()>0 && "you are using an empty matrix");
+        -:  265:    Scalar res = eval.coeffByOuterInner(0, 0);
+        -:  266:    for(Index i = 1; i < xpr.innerSize(); ++i)
+        -:  267:      res = func(res, eval.coeffByOuterInner(0, i));
+        -:  268:    for(Index i = 1; i < xpr.outerSize(); ++i)
+        -:  269:      for(Index j = 0; j < xpr.innerSize(); ++j)
+        -:  270:        res = func(res, eval.coeffByOuterInner(i, j));
+        -:  271:    return res;
+        -:  272:  }
+        -:  273:};
+        -:  274:
+        -:  275:template<typename Func, typename Evaluator>
+        -:  276:struct redux_impl<Func, Evaluator, LinearTraversal, NoUnrolling>
+        -:  277:{
+        -:  278:  typedef typename Evaluator::Scalar Scalar;
+        -:  279:
+        -:  280:  template<typename XprType>
+        -:  281:  EIGEN_DEVICE_FUNC static EIGEN_STRONG_INLINE
+    11682:  282:  Scalar run(const Evaluator &eval, const Func& func, const XprType& xpr)
+        -:  283:  {
+    23364:  284:    eigen_assert(xpr.size()>0 && "you are using an empty matrix");
+    11682:  285:    Scalar res = eval.coeff(0);
+    35046:  286:    for(Index k = 1; k < xpr.size(); ++k)
+    23364:  287:      res = func(res, eval.coeff(k));
+    11682:  288:    return res;
+        -:  289:  }
+        -:  290:};
+        -:  291:
+        -:  292:template<typename Func, typename Evaluator>
+        -:  293:struct redux_impl<Func,Evaluator, DefaultTraversal, CompleteUnrolling>
+        -:  294:  : redux_novec_unroller<Func,Evaluator, 0, Evaluator::SizeAtCompileTime>
+        -:  295:{
+        -:  296:  typedef redux_novec_unroller<Func,Evaluator, 0, Evaluator::SizeAtCompileTime> Base;
+        -:  297:  typedef typename Evaluator::Scalar Scalar;
+        -:  298:  template<typename XprType>
+        -:  299:  EIGEN_DEVICE_FUNC static EIGEN_STRONG_INLINE
+        -:  300:  Scalar run(const Evaluator &eval, const Func& func, const XprType& /*xpr*/)
+        -:  301:  {
+        -:  302:    return Base::run(eval,func);
+        -:  303:  }
+        -:  304:};
+        -:  305:
+        -:  306:template<typename Func, typename Evaluator>
+        -:  307:struct redux_impl<Func,Evaluator, LinearTraversal, CompleteUnrolling>
+        -:  308:  : redux_novec_linear_unroller<Func,Evaluator, 0, Evaluator::SizeAtCompileTime>
+        -:  309:{
+        -:  310:  typedef redux_novec_linear_unroller<Func,Evaluator, 0, Evaluator::SizeAtCompileTime> Base;
+        -:  311:  typedef typename Evaluator::Scalar Scalar;
+        -:  312:  template<typename XprType>
+        -:  313:  EIGEN_DEVICE_FUNC static EIGEN_STRONG_INLINE
+     1490:  314:  Scalar run(const Evaluator &eval, const Func& func, const XprType& /*xpr*/)
+        -:  315:  {
+     1490:  316:    return Base::run(eval,func);
+        -:  317:  }
+        -:  318:};
+        -:  319:
+        -:  320:template<typename Func, typename Evaluator>
+        -:  321:struct redux_impl<Func, Evaluator, LinearVectorizedTraversal, NoUnrolling>
+        -:  322:{
+        -:  323:  typedef typename Evaluator::Scalar Scalar;
+        -:  324:  typedef typename redux_traits<Func, Evaluator>::PacketType PacketScalar;
+        -:  325:
+        -:  326:  template<typename XprType>
+    24866:  327:  static Scalar run(const Evaluator &eval, const Func& func, const XprType& xpr)
+        -:  328:  {
+    24866:  329:    const Index size = xpr.size();
+        -:  330:    
+    24866:  331:    constexpr Index packetSize = redux_traits<Func, Evaluator>::PacketSize;
+    24866:  332:    constexpr int packetAlignment = unpacket_traits<PacketScalar>::alignment;
+    24866:  333:    constexpr int alignment0 = (bool(Evaluator::Flags & DirectAccessBit) && bool(packet_traits<Scalar>::AlignedOnScalar)) ? int(packetAlignment) : int(Unaligned);
+    24866:  334:    constexpr int alignment = plain_enum_max(alignment0, Evaluator::Alignment);
+    24866:  335:    const Index alignedStart = internal::first_default_aligned(xpr);
+    24866:  336:    const Index alignedSize2 = ((size-alignedStart)/(2*packetSize))*(2*packetSize);
+    24866:  337:    const Index alignedSize = ((size-alignedStart)/(packetSize))*(packetSize);
+    24866:  338:    const Index alignedEnd2 = alignedStart + alignedSize2;
+    24866:  339:    const Index alignedEnd  = alignedStart + alignedSize;
+        -:  340:    Scalar res;
+    24866:  341:    if(alignedSize)
+        -:  342:    {
+    20798:  343:      PacketScalar packet_res0 = eval.template packet<alignment,PacketScalar>(alignedStart);
+    20798:  344:      if(alignedSize>packetSize) // we have at least two packets to partly unroll the loop
+        -:  345:      {
+    14050:  346:        PacketScalar packet_res1 = eval.template packet<alignment,PacketScalar>(alignedStart+packetSize);
+    18412:  347:        for(Index index = alignedStart + 2*packetSize; index < alignedEnd2; index += 2*packetSize)
+        -:  348:        {
+     4362:  349:          packet_res0 = func.packetOp(packet_res0, eval.template packet<alignment,PacketScalar>(index));
+     4362:  350:          packet_res1 = func.packetOp(packet_res1, eval.template packet<alignment,PacketScalar>(index+packetSize));
+     4362:  351:        }
+        -:  352:
+    14050:  353:        packet_res0 = func.packetOp(packet_res0,packet_res1);
+    14050:  354:        if(alignedEnd>alignedEnd2)
+     4686:  355:          packet_res0 = func.packetOp(packet_res0, eval.template packet<alignment,PacketScalar>(alignedEnd2));
+    14050:  356:      }
+    20798:  357:      res = func.predux(packet_res0);
+        -:  358:
+    20802:  359:      for(Index index = 0; index < alignedStart; ++index)
+        4:  360:        res = func(res,eval.coeff(index));
+        -:  361:
+    30628:  362:      for(Index index = alignedEnd; index < size; ++index)
+     9830:  363:        res = func(res,eval.coeff(index));
+    20798:  364:    }
+        -:  365:    else // too small to vectorize anything.
+        -:  366:         // since this is dynamic-size hence inefficient anyway for such small sizes, don't try to optimize.
+        -:  367:    {
+     4068:  368:      res = eval.coeff(0);
+     4068:  369:      for(Index index = 1; index < size; ++index)
+    #####:  370:        res = func(res,eval.coeff(index));
+        -:  371:    }
+        -:  372:
+    24866:  373:    return res;
+        -:  374:  }
+        -:  375:};
+        -:  376:
+        -:  377:// NOTE: for SliceVectorizedTraversal we simply bypass unrolling
+        -:  378:template<typename Func, typename Evaluator, int Unrolling>
+        -:  379:struct redux_impl<Func, Evaluator, SliceVectorizedTraversal, Unrolling>
+        -:  380:{
+        -:  381:  typedef typename Evaluator::Scalar Scalar;
+        -:  382:  typedef typename redux_traits<Func, Evaluator>::PacketType PacketType;
+        -:  383:
+        -:  384:  template<typename XprType>
+        -:  385:  EIGEN_DEVICE_FUNC static Scalar run(const Evaluator &eval, const Func& func, const XprType& xpr)
+        -:  386:  {
+        -:  387:    eigen_assert(xpr.rows()>0 && xpr.cols()>0 && "you are using an empty matrix");
+        -:  388:    constexpr Index packetSize = redux_traits<Func, Evaluator>::PacketSize;
+        -:  389:    const Index innerSize = xpr.innerSize();
+        -:  390:    const Index outerSize = xpr.outerSize();
+        -:  391:    const Index packetedInnerSize = ((innerSize)/packetSize)*packetSize;
+        -:  392:    Scalar res;
+        -:  393:    if(packetedInnerSize)
+        -:  394:    {
+        -:  395:      PacketType packet_res = eval.template packet<Unaligned,PacketType>(0,0);
+        -:  396:      for(Index j=0; j<outerSize; ++j)
+        -:  397:        for(Index i=(j==0?packetSize:0); i<packetedInnerSize; i+=Index(packetSize))
+        -:  398:          packet_res = func.packetOp(packet_res, eval.template packetByOuterInner<Unaligned,PacketType>(j,i));
+        -:  399:
+        -:  400:      res = func.predux(packet_res);
+        -:  401:      for(Index j=0; j<outerSize; ++j)
+        -:  402:        for(Index i=packetedInnerSize; i<innerSize; ++i)
+        -:  403:          res = func(res, eval.coeffByOuterInner(j,i));
+        -:  404:    }
+        -:  405:    else // too small to vectorize anything.
+        -:  406:         // since this is dynamic-size hence inefficient anyway for such small sizes, don't try to optimize.
+        -:  407:    {
+        -:  408:      res = redux_impl<Func, Evaluator, DefaultTraversal, NoUnrolling>::run(eval, func, xpr);
+        -:  409:    }
+        -:  410:
+        -:  411:    return res;
+        -:  412:  }
+        -:  413:};
+        -:  414:
+        -:  415:template<typename Func, typename Evaluator>
+        -:  416:struct redux_impl<Func, Evaluator, LinearVectorizedTraversal, CompleteUnrolling>
+        -:  417:{
+        -:  418:  typedef typename Evaluator::Scalar Scalar;
+        -:  419:
+        -:  420:  typedef typename redux_traits<Func, Evaluator>::PacketType PacketType;
+        -:  421:  static constexpr Index PacketSize = redux_traits<Func, Evaluator>::PacketSize;
+        -:  422:  static constexpr Index  Size = Evaluator::SizeAtCompileTime;
+        -:  423:  static constexpr Index  VectorizedSize = (int(Size) / int(PacketSize)) * int(PacketSize);
+        -:  424:
+        -:  425:  template<typename XprType>
+        -:  426:  EIGEN_DEVICE_FUNC static EIGEN_STRONG_INLINE
+    69152:  427:  Scalar run(const Evaluator &eval, const Func& func, const XprType &xpr)
+        -:  428:  {
+        -:  429:    EIGEN_ONLY_USED_FOR_DEBUG(xpr)
+   138304:  430:    eigen_assert(xpr.rows()>0 && xpr.cols()>0 && "you are using an empty matrix");
+        -:  431:    if (VectorizedSize > 0) {
+    62490:  432:      Scalar res = func.predux(redux_vec_linear_unroller<Func, Evaluator, 0, Size / PacketSize>::template run<PacketType>(eval,func));
+        -:  433:      if (VectorizedSize != Size)
+    61000:  434:        res = func(res,redux_novec_linear_unroller<Func, Evaluator, VectorizedSize, Size-VectorizedSize>::run(eval,func));
+    62490:  435:      return res;
+        -:  436:    }
+        -:  437:    else {
+     6662:  438:      return redux_novec_linear_unroller<Func, Evaluator, 0, Size>::run(eval,func);
+        -:  439:    }
+        -:  440:  }
+        -:  441:};
+        -:  442:
+        -:  443:// evaluator adaptor
+        -:  444:template<typename XprType_>
+        -:  445:class redux_evaluator : public internal::evaluator<XprType_>
+        -:  446:{
+        -:  447:  typedef internal::evaluator<XprType_> Base;
+        -:  448:public:
+        -:  449:  typedef XprType_ XprType;
+        -:  450:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+   215868:  451:  explicit redux_evaluator(const XprType &xpr) : Base(xpr) {}
+        -:  452:  
+        -:  453:  typedef typename XprType::Scalar Scalar;
+        -:  454:  typedef typename XprType::CoeffReturnType CoeffReturnType;
+        -:  455:  typedef typename XprType::PacketScalar PacketScalar;
+        -:  456:  
+        -:  457:  enum {
+        -:  458:    MaxRowsAtCompileTime = XprType::MaxRowsAtCompileTime,
+        -:  459:    MaxColsAtCompileTime = XprType::MaxColsAtCompileTime,
+        -:  460:    // TODO we should not remove DirectAccessBit and rather find an elegant way to query the alignment offset at runtime from the evaluator
+        -:  461:    Flags = Base::Flags & ~DirectAccessBit,
+        -:  462:    IsRowMajor = XprType::IsRowMajor,
+        -:  463:    SizeAtCompileTime = XprType::SizeAtCompileTime,
+        -:  464:    InnerSizeAtCompileTime = XprType::InnerSizeAtCompileTime
+        -:  465:  };
+        -:  466:  
+        -:  467:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+        -:  468:  CoeffReturnType coeffByOuterInner(Index outer, Index inner) const
+        -:  469:  { return Base::coeff(IsRowMajor ? outer : inner, IsRowMajor ? inner : outer); }
+        -:  470:  
+        -:  471:  template<int LoadMode, typename PacketType>
+        -:  472:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+     2232:  473:  PacketType packetByOuterInner(Index outer, Index inner) const
+     2232:  474:  { return Base::template packet<LoadMode,PacketType>(IsRowMajor ? outer : inner, IsRowMajor ? inner : outer); }
+        -:  475:  
+        -:  476:};
+        -:  477:
+        -:  478:} // end namespace internal
+        -:  479:
+        -:  480:/***************************************************************************
+        -:  481:* Part 4 : public API
+        -:  482:***************************************************************************/
+        -:  483:
+        -:  484:
+        -:  485:/** \returns the result of a full redux operation on the whole matrix or vector using \a func
+        -:  486:  *
+        -:  487:  * The template parameter \a BinaryOp is the type of the functor \a func which must be
+        -:  488:  * an associative operator. Both current C++98 and C++11 functor styles are handled.
+        -:  489:  *
+        -:  490:  * \warning the matrix must be not empty, otherwise an assertion is triggered.
+        -:  491:  *
+        -:  492:  * \sa DenseBase::sum(), DenseBase::minCoeff(), DenseBase::maxCoeff(), MatrixBase::colwise(), MatrixBase::rowwise()
+        -:  493:  */
+        -:  494:template<typename Derived>
+        -:  495:template<typename Func>
+        -:  496:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE typename internal::traits<Derived>::Scalar
+   107190:  497:DenseBase<Derived>::redux(const Func& func) const
+        -:  498:{
+   214380:  499:  eigen_assert(this->rows()>0 && this->cols()>0 && "you are using an empty matrix");
+        -:  500:
+        -:  501:  typedef typename internal::redux_evaluator<Derived> ThisEvaluator;
+   107190:  502:  ThisEvaluator thisEval(derived());
+        -:  503:
+        -:  504:  // The initial expression is passed to the reducer as an additional argument instead of
+        -:  505:  // passing it as a member of redux_evaluator to help  
+   107190:  506:  return internal::redux_impl<Func, ThisEvaluator>::run(thisEval, func, derived());
+   107190:  507:}
+        -:  508:
+        -:  509:/** \returns the minimum of all coefficients of \c *this.
+        -:  510:  * In case \c *this contains NaN, NaNPropagation determines the behavior:
+        -:  511:  *   NaNPropagation == PropagateFast : undefined
+        -:  512:  *   NaNPropagation == PropagateNaN : result is NaN
+        -:  513:  *   NaNPropagation == PropagateNumbers : result is minimum of elements that are not NaN
+        -:  514:  * \warning the matrix must be not empty, otherwise an assertion is triggered.
+        -:  515:  */
+        -:  516:template<typename Derived>
+        -:  517:template<int NaNPropagation>
+        -:  518:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE typename internal::traits<Derived>::Scalar
+       14:  519:DenseBase<Derived>::minCoeff() const
+        -:  520:{
+       14:  521:  return derived().redux(Eigen::internal::scalar_min_op<Scalar,Scalar, NaNPropagation>());
+        -:  522:}
+        -:  523:
+        -:  524:/** \returns the maximum of all coefficients of \c *this. 
+        -:  525:  * In case \c *this contains NaN, NaNPropagation determines the behavior:
+        -:  526:  *   NaNPropagation == PropagateFast : undefined
+        -:  527:  *   NaNPropagation == PropagateNaN : result is NaN
+        -:  528:  *   NaNPropagation == PropagateNumbers : result is maximum of elements that are not NaN
+        -:  529:  * \warning the matrix must be not empty, otherwise an assertion is triggered.
+        -:  530:  */
+        -:  531:template<typename Derived>
+        -:  532:template<int NaNPropagation>
+        -:  533:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE typename internal::traits<Derived>::Scalar
+     3000:  534:DenseBase<Derived>::maxCoeff() const
+        -:  535:{
+     3000:  536:  return derived().redux(Eigen::internal::scalar_max_op<Scalar,Scalar, NaNPropagation>());
+        -:  537:}
+        -:  538:
+        -:  539:/** \returns the sum of all coefficients of \c *this
+        -:  540:  *
+        -:  541:  * If \c *this is empty, then the value 0 is returned.
+        -:  542:  *
+        -:  543:  * \sa trace(), prod(), mean()
+        -:  544:  */
+        -:  545:template<typename Derived>
+        -:  546:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE typename internal::traits<Derived>::Scalar
+   104392:  547:DenseBase<Derived>::sum() const
+        -:  548:{
+    35240:  549:  if(SizeAtCompileTime==0 || (SizeAtCompileTime==Dynamic && size()==0))
+      216:  550:    return Scalar(0);
+   104176:  551:  return derived().redux(Eigen::internal::scalar_sum_op<Scalar,Scalar>());
+    35240:  552:}
+        -:  553:
+        -:  554:/** \returns the mean of all coefficients of *this
+        -:  555:*
+        -:  556:* \sa trace(), prod(), sum()
+        -:  557:*/
+        -:  558:template<typename Derived>
+        -:  559:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE typename internal::traits<Derived>::Scalar
+        -:  560:DenseBase<Derived>::mean() const
+        -:  561:{
+        -:  562:#ifdef __INTEL_COMPILER
+        -:  563:  #pragma warning push
+        -:  564:  #pragma warning ( disable : 2259 )
+        -:  565:#endif
+        -:  566:  return Scalar(derived().redux(Eigen::internal::scalar_sum_op<Scalar,Scalar>())) / Scalar(this->size());
+        -:  567:#ifdef __INTEL_COMPILER
+        -:  568:  #pragma warning pop
+        -:  569:#endif
+        -:  570:}
+        -:  571:
+        -:  572:/** \returns the product of all coefficients of *this
+        -:  573:  *
+        -:  574:  * Example: \include MatrixBase_prod.cpp
+        -:  575:  * Output: \verbinclude MatrixBase_prod.out
+        -:  576:  *
+        -:  577:  * \sa sum(), mean(), trace()
+        -:  578:  */
+        -:  579:template<typename Derived>
+        -:  580:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE typename internal::traits<Derived>::Scalar
+        -:  581:DenseBase<Derived>::prod() const
+        -:  582:{
+        -:  583:  if(SizeAtCompileTime==0 || (SizeAtCompileTime==Dynamic && size()==0))
+        -:  584:    return Scalar(1);
+        -:  585:  return derived().redux(Eigen::internal::scalar_product_op<Scalar>());
+        -:  586:}
+        -:  587:
+        -:  588:/** \returns the trace of \c *this, i.e. the sum of the coefficients on the main diagonal.
+        -:  589:  *
+        -:  590:  * \c *this can be any matrix, not necessarily square.
+        -:  591:  *
+        -:  592:  * \sa diagonal(), sum()
+        -:  593:  */
+        -:  594:template<typename Derived>
+        -:  595:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE typename internal::traits<Derived>::Scalar
+        -:  596:MatrixBase<Derived>::trace() const
+        -:  597:{
+        -:  598:  return derived().diagonal().sum();
+        -:  599:}
+        -:  600:
+        -:  601:} // end namespace Eigen
+        -:  602:
+        -:  603:#endif // EIGEN_REDUX_H

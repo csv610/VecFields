@@ -1,0 +1,154 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/products/TriangularSolverVector.h
+        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
+        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
+        -:    0:Runs:4
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2008-2010 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:#ifndef EIGEN_TRIANGULAR_SOLVER_VECTOR_H
+        -:   11:#define EIGEN_TRIANGULAR_SOLVER_VECTOR_H
+        -:   12:
+        -:   13:// IWYU pragma: private
+        -:   14:#include "../InternalHeaderCheck.h"
+        -:   15:
+        -:   16:namespace Eigen {
+        -:   17:
+        -:   18:namespace internal {
+        -:   19:
+        -:   20:template<typename LhsScalar, typename RhsScalar, typename Index, int Mode, bool Conjugate, int StorageOrder>
+        -:   21:struct triangular_solve_vector<LhsScalar, RhsScalar, Index, OnTheRight, Mode, Conjugate, StorageOrder>
+        -:   22:{
+        -:   23:  static void run(Index size, const LhsScalar* _lhs, Index lhsStride, RhsScalar* rhs)
+        -:   24:  {
+        -:   25:    triangular_solve_vector<LhsScalar,RhsScalar,Index,OnTheLeft,
+        -:   26:        ((Mode&Upper)==Upper ? Lower : Upper) | (Mode&UnitDiag),
+        -:   27:        Conjugate,StorageOrder==RowMajor?ColMajor:RowMajor
+        -:   28:      >::run(size, _lhs, lhsStride, rhs);
+        -:   29:  }
+        -:   30:};
+        -:   31:
+        -:   32:// forward and backward substitution, row-major, rhs is a vector
+        -:   33:template<typename LhsScalar, typename RhsScalar, typename Index, int Mode, bool Conjugate>
+        -:   34:struct triangular_solve_vector<LhsScalar, RhsScalar, Index, OnTheLeft, Mode, Conjugate, RowMajor>
+        -:   35:{
+        -:   36:  enum {
+        -:   37:    IsLower = ((Mode&Lower)==Lower)
+        -:   38:  };
+        -:   39:  static void run(Index size, const LhsScalar* _lhs, Index lhsStride, RhsScalar* rhs)
+        -:   40:  {
+        -:   41:    typedef Map<const Matrix<LhsScalar,Dynamic,Dynamic,RowMajor>, 0, OuterStride<> > LhsMap;
+        -:   42:    const LhsMap lhs(_lhs,size,size,OuterStride<>(lhsStride));
+        -:   43:
+        -:   44:    typedef const_blas_data_mapper<LhsScalar,Index,RowMajor> LhsMapper;
+        -:   45:    typedef const_blas_data_mapper<RhsScalar,Index,ColMajor> RhsMapper;
+        -:   46:
+        -:   47:    std::conditional_t<
+        -:   48:                  Conjugate,
+        -:   49:                  const CwiseUnaryOp<typename internal::scalar_conjugate_op<LhsScalar>,LhsMap>,
+        -:   50:                  const LhsMap&> cjLhs(lhs);
+        -:   51:    static const Index PanelWidth = EIGEN_TUNE_TRIANGULAR_PANEL_WIDTH;
+        -:   52:    for(Index pi=IsLower ? 0 : size;
+        -:   53:        IsLower ? pi<size : pi>0;
+        -:   54:        IsLower ? pi+=PanelWidth : pi-=PanelWidth)
+        -:   55:    {
+        -:   56:      Index actualPanelWidth = (std::min)(IsLower ? size - pi : pi, PanelWidth);
+        -:   57:
+        -:   58:      Index r = IsLower ? pi : size - pi; // remaining size
+        -:   59:      if (r > 0)
+        -:   60:      {
+        -:   61:        // let's directly call the low level product function because:
+        -:   62:        // 1 - it is faster to compile
+        -:   63:        // 2 - it is slightly faster at runtime
+        -:   64:        Index startRow = IsLower ? pi : pi-actualPanelWidth;
+        -:   65:        Index startCol = IsLower ? 0 : pi;
+        -:   66:
+        -:   67:        general_matrix_vector_product<Index,LhsScalar,LhsMapper,RowMajor,Conjugate,RhsScalar,RhsMapper,false>::run(
+        -:   68:          actualPanelWidth, r,
+        -:   69:          LhsMapper(&lhs.coeffRef(startRow,startCol), lhsStride),
+        -:   70:          RhsMapper(rhs + startCol, 1),
+        -:   71:          rhs + startRow, 1,
+        -:   72:          RhsScalar(-1));
+        -:   73:      }
+        -:   74:
+        -:   75:      for(Index k=0; k<actualPanelWidth; ++k)
+        -:   76:      {
+        -:   77:        Index i = IsLower ? pi+k : pi-k-1;
+        -:   78:        Index s = IsLower ? pi   : i+1;
+        -:   79:        if (k>0)
+        -:   80:          rhs[i] -= (cjLhs.row(i).segment(s,k).transpose().cwiseProduct(Map<const Matrix<RhsScalar,Dynamic,1> >(rhs+s,k))).sum();
+        -:   81:
+        -:   82:        if((!(Mode & UnitDiag)) && !is_identically_zero(rhs[i]))
+        -:   83:          rhs[i] /= cjLhs(i,i);
+        -:   84:      }
+        -:   85:    }
+        -:   86:  }
+        -:   87:};
+        -:   88:
+        -:   89:// forward and backward substitution, column-major, rhs is a vector
+        -:   90:template<typename LhsScalar, typename RhsScalar, typename Index, int Mode, bool Conjugate>
+        -:   91:struct triangular_solve_vector<LhsScalar, RhsScalar, Index, OnTheLeft, Mode, Conjugate, ColMajor>
+        -:   92:{
+        -:   93:  enum {
+        -:   94:    IsLower = ((Mode&Lower)==Lower)
+        -:   95:  };
+     1490:   96:  static void run(Index size, const LhsScalar* _lhs, Index lhsStride, RhsScalar* rhs)
+        -:   97:  {
+        -:   98:    typedef Map<const Matrix<LhsScalar,Dynamic,Dynamic,ColMajor>, 0, OuterStride<> > LhsMap;
+     1490:   99:    const LhsMap lhs(_lhs,size,size,OuterStride<>(lhsStride));
+        -:  100:    typedef const_blas_data_mapper<LhsScalar,Index,ColMajor> LhsMapper;
+        -:  101:    typedef const_blas_data_mapper<RhsScalar,Index,ColMajor> RhsMapper;
+        -:  102:    std::conditional_t<Conjugate,
+        -:  103:                            const CwiseUnaryOp<typename internal::scalar_conjugate_op<LhsScalar>,LhsMap>,
+        -:  104:                            const LhsMap&
+     1490:  105:                           > cjLhs(lhs);
+        -:  106:    static const Index PanelWidth = EIGEN_TUNE_TRIANGULAR_PANEL_WIDTH;
+        -:  107:
+     2980:  108:    for(Index pi=IsLower ? 0 : size;
+     2980:  109:        IsLower ? pi<size : pi>0;
+     1490:  110:        IsLower ? pi+=PanelWidth : pi-=PanelWidth)
+        -:  111:    {
+     1490:  112:      Index actualPanelWidth = (std::min)(IsLower ? size - pi : pi, PanelWidth);
+     1490:  113:      Index startBlock = IsLower ? pi : pi-actualPanelWidth;
+     1490:  114:      Index endBlock = IsLower ? pi + actualPanelWidth : 0;
+        -:  115:
+     8622:  116:      for(Index k=0; k<actualPanelWidth; ++k)
+        -:  117:      {
+     7132:  118:        Index i = IsLower ? pi+k : pi-k-1;
+     7132:  119:        if(!is_identically_zero(rhs[i]))
+        -:  120:        {
+        -:  121:          if(!(Mode & UnitDiag))
+     6176:  122:            rhs[i] /= cjLhs.coeff(i,i);
+        -:  123:
+     6176:  124:          Index r = actualPanelWidth - k - 1; // remaining size
+     6176:  125:          Index s = IsLower ? i+1 : i-r;
+     6176:  126:          if (r>0)
+     4926:  127:            Map<Matrix<RhsScalar,Dynamic,1> >(rhs+s,r) -= rhs[i] * cjLhs.col(i).segment(s,r);
+     6176:  128:        }
+     7132:  129:      }
+     1490:  130:      Index r = IsLower ? size - endBlock : startBlock; // remaining size
+     1490:  131:      if (r > 0)
+        -:  132:      {
+        -:  133:        // let's directly call the low level product function because:
+        -:  134:        // 1 - it is faster to compile
+        -:  135:        // 2 - it is slightly faster at runtime
+    #####:  136:        general_matrix_vector_product<Index,LhsScalar,LhsMapper,ColMajor,Conjugate,RhsScalar,RhsMapper,false>::run(
+    #####:  137:            r, actualPanelWidth,
+    #####:  138:            LhsMapper(&lhs.coeffRef(endBlock,startBlock), lhsStride),
+    #####:  139:            RhsMapper(rhs+startBlock, 1),
+    #####:  140:            rhs+endBlock, 1, RhsScalar(-1));
+    #####:  141:      }
+     1490:  142:    }
+     1490:  143:  }
+        -:  144:};
+        -:  145:
+        -:  146:} // end namespace internal
+        -:  147:
+        -:  148:} // end namespace Eigen
+        -:  149:
+        -:  150:#endif // EIGEN_TRIANGULAR_SOLVER_VECTOR_H

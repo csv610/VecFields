@@ -1,0 +1,75 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/Swap.h
+        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
+        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
+        -:    0:Runs:4
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2006-2008 Benoit Jacob <jacob.benoit.1@gmail.com>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:#ifndef EIGEN_SWAP_H
+        -:   11:#define EIGEN_SWAP_H
+        -:   12:
+        -:   13:// IWYU pragma: private
+        -:   14:#include "./InternalHeaderCheck.h"
+        -:   15:
+        -:   16:namespace Eigen { 
+        -:   17:
+        -:   18:namespace internal {
+        -:   19:
+        -:   20:// Overload default assignPacket behavior for swapping them
+        -:   21:template<typename DstEvaluatorTypeT, typename SrcEvaluatorTypeT>
+        -:   22:class generic_dense_assignment_kernel<DstEvaluatorTypeT, SrcEvaluatorTypeT, swap_assign_op<typename DstEvaluatorTypeT::Scalar>, Specialized>
+        -:   23: : public generic_dense_assignment_kernel<DstEvaluatorTypeT, SrcEvaluatorTypeT, swap_assign_op<typename DstEvaluatorTypeT::Scalar>, BuiltIn>
+        -:   24:{
+        -:   25:protected:
+        -:   26:  typedef generic_dense_assignment_kernel<DstEvaluatorTypeT, SrcEvaluatorTypeT, swap_assign_op<typename DstEvaluatorTypeT::Scalar>, BuiltIn> Base;
+        -:   27:  using Base::m_dst;
+        -:   28:  using Base::m_src;
+        -:   29:  using Base::m_functor;
+        -:   30:  
+        -:   31:public:
+        -:   32:  typedef typename Base::Scalar Scalar;
+        -:   33:  typedef typename Base::DstXprType DstXprType;
+        -:   34:  typedef swap_assign_op<Scalar> Functor;
+        -:   35:  
+        -:   36:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+    10948:   37:  generic_dense_assignment_kernel(DstEvaluatorTypeT &dst, const SrcEvaluatorTypeT &src, const Functor &func, DstXprType& dstExpr)
+     5474:   38:    : Base(dst, src, func, dstExpr)
+    10948:   39:  {}
+        -:   40:  
+        -:   41:  template<int StoreMode, int LoadMode, typename PacketType>
+      576:   42:  EIGEN_STRONG_INLINE void assignPacket(Index row, Index col)
+        -:   43:  {
+      576:   44:    PacketType tmp = m_src.template packet<LoadMode,PacketType>(row,col);
+      576:   45:    const_cast<SrcEvaluatorTypeT&>(m_src).template writePacket<LoadMode>(row,col, m_dst.template packet<StoreMode,PacketType>(row,col));
+      576:   46:    m_dst.template writePacket<StoreMode>(row,col,tmp);
+      576:   47:  }
+        -:   48:  
+        -:   49:  template<int StoreMode, int LoadMode, typename PacketType>
+    12756:   50:  EIGEN_STRONG_INLINE void assignPacket(Index index)
+        -:   51:  {
+    12756:   52:    PacketType tmp = m_src.template packet<LoadMode,PacketType>(index);
+    12756:   53:    const_cast<SrcEvaluatorTypeT&>(m_src).template writePacket<LoadMode>(index, m_dst.template packet<StoreMode,PacketType>(index));
+    12756:   54:    m_dst.template writePacket<StoreMode>(index,tmp);
+    12756:   55:  }
+        -:   56:  
+        -:   57:  // TODO find a simple way not to have to copy/paste this function from generic_dense_assignment_kernel, by simple I mean no CRTP (Gael)
+        -:   58:  template<int StoreMode, int LoadMode, typename PacketType>
+      576:   59:  EIGEN_STRONG_INLINE void assignPacketByOuterInner(Index outer, Index inner)
+        -:   60:  {
+      576:   61:    Index row = Base::rowIndexByOuterInner(outer, inner); 
+      576:   62:    Index col = Base::colIndexByOuterInner(outer, inner);
+      576:   63:    assignPacket<StoreMode,LoadMode,PacketType>(row, col);
+      576:   64:  }
+        -:   65:};
+        -:   66:
+        -:   67:} // namespace internal
+        -:   68:
+        -:   69:} // end namespace Eigen
+        -:   70:
+        -:   71:#endif // EIGEN_SWAP_H

@@ -1,0 +1,127 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/Stride.h
+        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
+        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
+        -:    0:Runs:4
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2010 Benoit Jacob <jacob.benoit.1@gmail.com>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:#ifndef EIGEN_STRIDE_H
+        -:   11:#define EIGEN_STRIDE_H
+        -:   12:
+        -:   13:// IWYU pragma: private
+        -:   14:#include "./InternalHeaderCheck.h"
+        -:   15:
+        -:   16:namespace Eigen {
+        -:   17:
+        -:   18:/** \class Stride
+        -:   19:  * \ingroup Core_Module
+        -:   20:  *
+        -:   21:  * \brief Holds strides information for Map
+        -:   22:  *
+        -:   23:  * This class holds the strides information for mapping arrays with strides with class Map.
+        -:   24:  *
+        -:   25:  * It holds two values: the inner stride and the outer stride.
+        -:   26:  *
+        -:   27:  * The inner stride is the pointer increment between two consecutive entries within a given row of a
+        -:   28:  * row-major matrix or within a given column of a column-major matrix.
+        -:   29:  *
+        -:   30:  * The outer stride is the pointer increment between two consecutive rows of a row-major matrix or
+        -:   31:  * between two consecutive columns of a column-major matrix.
+        -:   32:  *
+        -:   33:  * These two values can be passed either at compile-time as template parameters, or at runtime as
+        -:   34:  * arguments to the constructor.
+        -:   35:  *
+        -:   36:  * Indeed, this class takes two template parameters:
+        -:   37:  *  \tparam OuterStrideAtCompileTime_ the outer stride, or Dynamic if you want to specify it at runtime.
+        -:   38:  *  \tparam InnerStrideAtCompileTime_ the inner stride, or Dynamic if you want to specify it at runtime.
+        -:   39:  *
+        -:   40:  * Here is an example:
+        -:   41:  * \include Map_general_stride.cpp
+        -:   42:  * Output: \verbinclude Map_general_stride.out
+        -:   43:  *
+        -:   44:  * Both strides can be negative. However, a negative stride of -1 cannot be specified at compile time
+        -:   45:  * because of the ambiguity with Dynamic which is defined to -1 (historically, negative strides were
+        -:   46:  * not allowed).
+        -:   47:  *
+        -:   48:  * Note that for compile-time vectors (ColsAtCompileTime==1 or RowsAtCompile==1),
+        -:   49:  * the inner stride is the pointer increment between two consecutive elements,
+        -:   50:  * regardless of storage layout.
+        -:   51:  *
+        -:   52:  * \sa class InnerStride, class OuterStride, \ref TopicStorageOrders
+        -:   53:  */
+        -:   54:template<int OuterStrideAtCompileTime_, int InnerStrideAtCompileTime_>
+        -:   55:class Stride
+        -:   56:{
+        -:   57:  public:
+        -:   58:    typedef Eigen::Index Index; ///< \deprecated since Eigen 3.3
+        -:   59:    enum {
+        -:   60:      InnerStrideAtCompileTime = InnerStrideAtCompileTime_,
+        -:   61:      OuterStrideAtCompileTime = OuterStrideAtCompileTime_
+        -:   62:    };
+        -:   63:
+        -:   64:    /** Default constructor, for use when strides are fixed at compile time */
+        -:   65:    EIGEN_DEVICE_FUNC
+    54136:   66:    Stride()
+    27068:   67:      : m_outer(OuterStrideAtCompileTime), m_inner(InnerStrideAtCompileTime)
+    27068:   68:    {
+        -:   69:      // FIXME: for Eigen 4 we should use DynamicIndex instead of Dynamic.
+        -:   70:      // FIXME: for Eigen 4 we should also unify this API with fix<>
+        -:   71:      eigen_assert(InnerStrideAtCompileTime != Dynamic && OuterStrideAtCompileTime != Dynamic);
+    54136:   72:    }
+        -:   73:
+        -:   74:    /** Constructor allowing to pass the strides at runtime */
+        -:   75:    EIGEN_DEVICE_FUNC
+     1490:   76:    Stride(Index outerStride, Index innerStride)
+     1490:   77:      : m_outer(outerStride), m_inner(innerStride)
+        -:   78:    {
+     1490:   79:    }
+        -:   80:
+        -:   81:    /** Copy constructor */
+        -:   82:    EIGEN_DEVICE_FUNC
+   242888:   83:    Stride(const Stride& other)
+   129578:   84:      : m_outer(other.outer()), m_inner(other.inner())
+   242888:   85:    {}
+        -:   86:
+        -:   87:    /** \returns the outer stride */
+        -:   88:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+   160384:   89:    inline Index outer() const { return m_outer.value(); }
+        -:   90:    /** \returns the inner stride */
+        -:   91:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+   129578:   92:    inline Index inner() const { return m_inner.value(); }
+        -:   93:
+        -:   94:  protected:
+        -:   95:    internal::variable_if_dynamic<Index, OuterStrideAtCompileTime> m_outer;
+        -:   96:    internal::variable_if_dynamic<Index, InnerStrideAtCompileTime> m_inner;
+        -:   97:};
+        -:   98:
+        -:   99:/** \brief Convenience specialization of Stride to specify only an inner stride
+        -:  100:  * See class Map for some examples */
+        -:  101:template<int Value>
+        -:  102:class InnerStride : public Stride<0, Value>
+        -:  103:{
+        -:  104:    typedef Stride<0, Value> Base;
+        -:  105:  public:
+        -:  106:    EIGEN_DEVICE_FUNC InnerStride() : Base() {}
+    #####:  107:    EIGEN_DEVICE_FUNC InnerStride(Index v) : Base(0, v) {} // FIXME making this explicit could break valid code
+        -:  108:};
+        -:  109:
+        -:  110:/** \brief Convenience specialization of Stride to specify only an outer stride
+        -:  111:  * See class Map for some examples */
+        -:  112:template<int Value>
+        -:  113:class OuterStride : public Stride<Value, 0>
+        -:  114:{
+        -:  115:    typedef Stride<Value, 0> Base;
+        -:  116:  public:
+        -:  117:    EIGEN_DEVICE_FUNC OuterStride() : Base() {}
+     2980:  118:    EIGEN_DEVICE_FUNC OuterStride(Index v) : Base(v,0) {} // FIXME making this explicit could break valid code
+        -:  119:};
+        -:  120:
+        -:  121:} // end namespace Eigen
+        -:  122:
+        -:  123:#endif // EIGEN_STRIDE_H
