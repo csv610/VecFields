@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/CwiseBinaryOp.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -117,32 +117,32 @@
         -:  113:#endif
         -:  114:
         -:  115:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-    32898:  116:    CwiseBinaryOp(const Lhs& aLhs, const Rhs& aRhs, const BinaryOp& func = BinaryOp())
-    16449:  117:      : m_lhs(aLhs), m_rhs(aRhs), m_functor(func)
-    16449:  118:    {
-    16449:  119:      eigen_assert(aLhs.rows() == aRhs.rows() && aLhs.cols() == aRhs.cols());
-    32898:  120:    }
+    98694:  116:    CwiseBinaryOp(const Lhs& aLhs, const Rhs& aRhs, const BinaryOp& func = BinaryOp())
+    49347:  117:      : m_lhs(aLhs), m_rhs(aRhs), m_functor(func)
+    49347:  118:    {
+    49347:  119:      eigen_assert(aLhs.rows() == aRhs.rows() && aLhs.cols() == aRhs.cols());
+    98694:  120:    }
         -:  121:
         -:  122:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE EIGEN_CONSTEXPR
-    41586:  123:    Index rows() const EIGEN_NOEXCEPT {
+   124758:  123:    Index rows() const EIGEN_NOEXCEPT {
         -:  124:      // return the fixed size type if available to enable compile time optimizations
-    41586:  125:      return internal::traits<internal::remove_all_t<LhsNested>>::RowsAtCompileTime==Dynamic ? m_rhs.rows() : m_lhs.rows();
+   124758:  125:      return internal::traits<internal::remove_all_t<LhsNested>>::RowsAtCompileTime==Dynamic ? m_rhs.rows() : m_lhs.rows();
         -:  126:    }
         -:  127:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE EIGEN_CONSTEXPR
-    36527:  128:    Index cols() const EIGEN_NOEXCEPT {
+   109581:  128:    Index cols() const EIGEN_NOEXCEPT {
         -:  129:      // return the fixed size type if available to enable compile time optimizations
-    36527:  130:      return internal::traits<internal::remove_all_t<LhsNested>>::ColsAtCompileTime==Dynamic ? m_rhs.cols() : m_lhs.cols();
+   109581:  130:      return internal::traits<internal::remove_all_t<LhsNested>>::ColsAtCompileTime==Dynamic ? m_rhs.cols() : m_lhs.cols();
         -:  131:    }
         -:  132:
         -:  133:    /** \returns the left hand side nested expression */
         -:  134:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-    16818:  135:    const LhsNested_& lhs() const { return m_lhs; }
+    50454:  135:    const LhsNested_& lhs() const { return m_lhs; }
         -:  136:    /** \returns the right hand side nested expression */
         -:  137:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-    16938:  138:    const RhsNested_& rhs() const { return m_rhs; }
+    50814:  138:    const RhsNested_& rhs() const { return m_rhs; }
         -:  139:    /** \returns the functor representing the binary operation */
         -:  140:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-    16697:  141:    const BinaryOp& functor() const { return m_functor; }
+    50091:  141:    const BinaryOp& functor() const { return m_functor; }
         -:  142:
         -:  143:  protected:
         -:  144:    LhsNested m_lhs;
@@ -166,10 +166,10 @@
         -:  162:template<typename Derived>
         -:  163:template<typename OtherDerived>
         -:  164:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Derived &
-     1784:  165:MatrixBase<Derived>::operator-=(const MatrixBase<OtherDerived> &other)
+     5352:  165:MatrixBase<Derived>::operator-=(const MatrixBase<OtherDerived> &other)
         -:  166:{
-     1784:  167:  call_assignment(derived(), other.derived(), internal::sub_assign_op<Scalar,typename OtherDerived::Scalar>());
-     1784:  168:  return derived();
+     5352:  167:  call_assignment(derived(), other.derived(), internal::sub_assign_op<Scalar,typename OtherDerived::Scalar>());
+     5352:  168:  return derived();
         -:  169:}
         -:  170:
         -:  171:/** replaces \c *this by \c *this + \a other.
@@ -179,10 +179,10 @@
         -:  175:template<typename Derived>
         -:  176:template<typename OtherDerived>
         -:  177:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Derived &
-      958:  178:MatrixBase<Derived>::operator+=(const MatrixBase<OtherDerived>& other)
+     2874:  178:MatrixBase<Derived>::operator+=(const MatrixBase<OtherDerived>& other)
         -:  179:{
-      958:  180:  call_assignment(derived(), other.derived(), internal::add_assign_op<Scalar,typename OtherDerived::Scalar>());
-      958:  181:  return derived();
+     2874:  180:  call_assignment(derived(), other.derived(), internal::add_assign_op<Scalar,typename OtherDerived::Scalar>());
+     2874:  181:  return derived();
         -:  182:}
         -:  183:
         -:  184:} // end namespace Eigen

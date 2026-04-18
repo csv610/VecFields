@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/DenseStorage.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -32,12 +32,12 @@
         -:   28:struct constructor_without_unaligned_array_assert {};
         -:   29:
         -:   30:template <typename T, int Size>
-     7803:   31:EIGEN_DEVICE_FUNC constexpr void check_static_allocation_size() {
+    23409:   31:EIGEN_DEVICE_FUNC constexpr void check_static_allocation_size() {
         -:   32:// if EIGEN_STACK_ALLOCATION_LIMIT is defined to 0, then no limit
         -:   33:#if EIGEN_STACK_ALLOCATION_LIMIT
         -:   34:  EIGEN_STATIC_ASSERT(Size * sizeof(T) <= EIGEN_STACK_ALLOCATION_LIMIT, OBJECT_ALLOCATED_ON_STACK_IS_TOO_BIG);
         -:   35:#endif
-     7803:   36:}
+    23409:   36:}
         -:   37:
         -:   38:/** \internal
         -:   39:  * Static array. If the MatrixOrArrayOptions require auto-alignment, the array will be automatically aligned:
@@ -50,7 +50,7 @@
         -:   46:{
         -:   47:  T array[Size];
         -:   48:
-    10084:   49:  EIGEN_DEVICE_FUNC constexpr plain_array() { check_static_allocation_size<T, Size>(); }
+    30252:   49:  EIGEN_DEVICE_FUNC constexpr plain_array() { check_static_allocation_size<T, Size>(); }
         -:   50:
         -:   51:  EIGEN_DEVICE_FUNC constexpr plain_array(constructor_without_unaligned_array_assert) {
         -:   52:    check_static_allocation_size<T, Size>();
@@ -87,10 +87,10 @@
         -:   83:{
         -:   84:  EIGEN_ALIGN_TO_BOUNDARY(16) T array[Size];
         -:   85:
-     5522:   86:  EIGEN_DEVICE_FUNC constexpr plain_array() {
-     5522:   87:    EIGEN_MAKE_UNALIGNED_ARRAY_ASSERT(15);
-     2761:   88:    check_static_allocation_size<T,Size>();
-     5522:   89:  }
+    16566:   86:  EIGEN_DEVICE_FUNC constexpr plain_array() {
+    16566:   87:    EIGEN_MAKE_UNALIGNED_ARRAY_ASSERT(15);
+     8283:   88:    check_static_allocation_size<T,Size>();
+    16566:   89:  }
         -:   90:
     #####:   91:  EIGEN_DEVICE_FUNC constexpr plain_array(constructor_without_unaligned_array_assert) {
     #####:   92:    check_static_allocation_size<T, Size>();
@@ -180,9 +180,9 @@
         -:  176:{
         -:  177:    internal::plain_array<T,Size,Options_> m_data;
         -:  178:  public:
-    15606:  179:    constexpr EIGEN_DEVICE_FUNC DenseStorage() {
+    46818:  179:    constexpr EIGEN_DEVICE_FUNC DenseStorage() {
         -:  180:      EIGEN_INTERNAL_DENSE_STORAGE_CTOR_PLUGIN(Index size = Size)
-    15606:  181:    }
+    46818:  181:    }
     #####:  182:    EIGEN_DEVICE_FUNC explicit constexpr DenseStorage(internal::constructor_without_unaligned_array_assert)
     #####:  183:      : m_data(internal::constructor_without_unaligned_array_assert()) {}
         -:  184:#if defined(EIGEN_DENSE_STORAGE_CTOR_PLUGIN)
@@ -206,12 +206,12 @@
         -:  202:    EIGEN_DEVICE_FUNC void swap(DenseStorage& other) {
         -:  203:      numext::swap(m_data, other.m_data);
         -:  204:    }
-    65530:  205:    EIGEN_DEVICE_FUNC static constexpr Index rows(void) EIGEN_NOEXCEPT { return Rows_; }
-    56290:  206:    EIGEN_DEVICE_FUNC static constexpr Index cols(void) EIGEN_NOEXCEPT { return Cols_; }
+   196590:  205:    EIGEN_DEVICE_FUNC static constexpr Index rows(void) EIGEN_NOEXCEPT { return Rows_; }
+   168870:  206:    EIGEN_DEVICE_FUNC static constexpr Index cols(void) EIGEN_NOEXCEPT { return Cols_; }
         -:  207:    EIGEN_DEVICE_FUNC constexpr void conservativeResize(Index, Index, Index) {}
-     7441:  208:    EIGEN_DEVICE_FUNC constexpr void resize(Index, Index, Index) {}
-    28202:  209:    EIGEN_DEVICE_FUNC constexpr const T* data() const { return m_data.array; }
-     4559:  210:    EIGEN_DEVICE_FUNC constexpr T* data() { return m_data.array; }
+    22323:  208:    EIGEN_DEVICE_FUNC constexpr void resize(Index, Index, Index) {}
+    84606:  209:    EIGEN_DEVICE_FUNC constexpr const T* data() const { return m_data.array; }
+    13677:  210:    EIGEN_DEVICE_FUNC constexpr T* data() { return m_data.array; }
         -:  211:};
         -:  212:
         -:  213:// null matrix
@@ -461,7 +461,7 @@
         -:  457:    Index m_rows;
         -:  458:    Index m_cols;
         -:  459:  public:
-      826:  460:   EIGEN_DEVICE_FUNC constexpr DenseStorage() : m_data(0), m_rows(0), m_cols(0) {}
+     2478:  460:   EIGEN_DEVICE_FUNC constexpr DenseStorage() : m_data(0), m_rows(0), m_cols(0) {}
         -:  461:   EIGEN_DEVICE_FUNC explicit constexpr DenseStorage(internal::constructor_without_unaligned_array_assert)
         -:  462:       : m_data(0), m_rows(0), m_cols(0) {}
         -:  463:   EIGEN_DEVICE_FUNC DenseStorage(Index size, Index rows, Index cols)
@@ -499,44 +499,44 @@
     #####:  495:      other.m_cols = 0;
     #####:  496:    }
         -:  497:    EIGEN_DEVICE_FUNC
-        2:  498:    DenseStorage& operator=(DenseStorage&& other) EIGEN_NOEXCEPT
+        6:  498:    DenseStorage& operator=(DenseStorage&& other) EIGEN_NOEXCEPT
         -:  499:    {
-        2:  500:      numext::swap(m_data, other.m_data);
-        2:  501:      numext::swap(m_rows, other.m_rows);
-        2:  502:      numext::swap(m_cols, other.m_cols);
-        2:  503:      return *this;
+        6:  500:      numext::swap(m_data, other.m_data);
+        6:  501:      numext::swap(m_rows, other.m_rows);
+        6:  502:      numext::swap(m_cols, other.m_cols);
+        6:  503:      return *this;
         -:  504:    }
-      826:  505:    EIGEN_DEVICE_FUNC ~DenseStorage() { internal::conditional_aligned_delete_auto<T,(Options_&DontAlign)==0>(m_data, m_rows*m_cols); }
+     2478:  505:    EIGEN_DEVICE_FUNC ~DenseStorage() { internal::conditional_aligned_delete_auto<T,(Options_&DontAlign)==0>(m_data, m_rows*m_cols); }
     #####:  506:    EIGEN_DEVICE_FUNC void swap(DenseStorage& other)
         -:  507:    {
     #####:  508:      numext::swap(m_data,other.m_data);
     #####:  509:      numext::swap(m_rows,other.m_rows);
     #####:  510:      numext::swap(m_cols,other.m_cols);
     #####:  511:    }
-   117524:  512:    EIGEN_DEVICE_FUNC Index rows(void) const EIGEN_NOEXCEPT {return m_rows;}
-    44825:  513:    EIGEN_DEVICE_FUNC Index cols(void) const EIGEN_NOEXCEPT {return m_cols;}
-        4:  514:    void conservativeResize(Index size, Index rows, Index cols)
+   352572:  512:    EIGEN_DEVICE_FUNC Index rows(void) const EIGEN_NOEXCEPT {return m_rows;}
+   134475:  513:    EIGEN_DEVICE_FUNC Index cols(void) const EIGEN_NOEXCEPT {return m_cols;}
+       12:  514:    void conservativeResize(Index size, Index rows, Index cols)
         -:  515:    {
-        4:  516:      m_data = internal::conditional_aligned_realloc_new_auto<T,(Options_&DontAlign)==0>(m_data, size, m_rows*m_cols);
-        4:  517:      m_rows = rows;
-        4:  518:      m_cols = cols;
-        4:  519:    }
-      410:  520:    EIGEN_DEVICE_FUNC void resize(Index size, Index rows, Index cols)
+       12:  516:      m_data = internal::conditional_aligned_realloc_new_auto<T,(Options_&DontAlign)==0>(m_data, size, m_rows*m_cols);
+       12:  517:      m_rows = rows;
+       12:  518:      m_cols = cols;
+       12:  519:    }
+     1230:  520:    EIGEN_DEVICE_FUNC void resize(Index size, Index rows, Index cols)
         -:  521:    {
-      410:  522:      if(size != m_rows*m_cols)
+     1230:  522:      if(size != m_rows*m_cols)
         -:  523:      {
-      406:  524:        internal::conditional_aligned_delete_auto<T,(Options_&DontAlign)==0>(m_data, m_rows*m_cols);
-      406:  525:        if (size>0) // >0 and not simply !=0 to let the compiler knows that size cannot be negative
-      405:  526:          m_data = internal::conditional_aligned_new_auto<T,(Options_&DontAlign)==0>(size);
+     1218:  524:        internal::conditional_aligned_delete_auto<T,(Options_&DontAlign)==0>(m_data, m_rows*m_cols);
+     1218:  525:        if (size>0) // >0 and not simply !=0 to let the compiler knows that size cannot be negative
+     1215:  526:          m_data = internal::conditional_aligned_new_auto<T,(Options_&DontAlign)==0>(size);
         -:  527:        else
-        1:  528:          m_data = 0;
+        3:  528:          m_data = 0;
         -:  529:        EIGEN_INTERNAL_DENSE_STORAGE_CTOR_PLUGIN({})
-      406:  530:      }
-      410:  531:      m_rows = rows;
-      410:  532:      m_cols = cols;
-      410:  533:    }
-    27150:  534:    EIGEN_DEVICE_FUNC const T *data() const { return m_data; }
-    14623:  535:    EIGEN_DEVICE_FUNC T *data() { return m_data; }
+     1218:  530:      }
+     1230:  531:      m_rows = rows;
+     1230:  532:      m_cols = cols;
+     1230:  533:    }
+    81450:  534:    EIGEN_DEVICE_FUNC const T *data() const { return m_data; }
+    43869:  535:    EIGEN_DEVICE_FUNC T *data() { return m_data; }
         -:  536:};
         -:  537:
         -:  538:// matrix with dynamic width and fixed height (so that matrix has dynamic size).
@@ -545,7 +545,7 @@
         -:  541:    T *m_data;
         -:  542:    Index m_cols;
         -:  543:  public:
-     1920:  544:   EIGEN_DEVICE_FUNC constexpr DenseStorage() : m_data(0), m_cols(0) {}
+     5760:  544:   EIGEN_DEVICE_FUNC constexpr DenseStorage() : m_data(0), m_cols(0) {}
         -:  545:   explicit constexpr DenseStorage(internal::constructor_without_unaligned_array_assert) : m_data(0), m_cols(0) {}
         -:  546:   EIGEN_DEVICE_FUNC DenseStorage(Index size, Index rows, Index cols)
         -:  547:       : m_data(internal::conditional_aligned_new_auto<T, (Options_ & DontAlign) == 0>(size)), m_cols(cols) {
@@ -584,33 +584,33 @@
         -:  580:      numext::swap(m_cols, other.m_cols);
         -:  581:      return *this;
         -:  582:    }
-     1920:  583:    EIGEN_DEVICE_FUNC ~DenseStorage() { internal::conditional_aligned_delete_auto<T,(Options_&DontAlign)==0>(m_data, Rows_*m_cols); }
+     5760:  583:    EIGEN_DEVICE_FUNC ~DenseStorage() { internal::conditional_aligned_delete_auto<T,(Options_&DontAlign)==0>(m_data, Rows_*m_cols); }
         -:  584:    EIGEN_DEVICE_FUNC void swap(DenseStorage& other) {
         -:  585:      numext::swap(m_data,other.m_data);
         -:  586:      numext::swap(m_cols,other.m_cols);
         -:  587:    }
-     5630:  588:    EIGEN_DEVICE_FUNC static constexpr Index rows(void) EIGEN_NOEXCEPT { return Rows_; }
-     5270:  589:    EIGEN_DEVICE_FUNC Index cols(void) const EIGEN_NOEXCEPT {return m_cols;}
+    16890:  588:    EIGEN_DEVICE_FUNC static constexpr Index rows(void) EIGEN_NOEXCEPT { return Rows_; }
+    15810:  589:    EIGEN_DEVICE_FUNC Index cols(void) const EIGEN_NOEXCEPT {return m_cols;}
         -:  590:    EIGEN_DEVICE_FUNC void conservativeResize(Index size, Index, Index cols)
         -:  591:    {
         -:  592:      m_data = internal::conditional_aligned_realloc_new_auto<T,(Options_&DontAlign)==0>(m_data, size, Rows_*m_cols);
         -:  593:      m_cols = cols;
         -:  594:    }
-     1440:  595:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void resize(Index size, Index, Index cols)
+     4320:  595:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void resize(Index size, Index, Index cols)
         -:  596:    {
-     1440:  597:      if(size != Rows_*m_cols)
+     4320:  597:      if(size != Rows_*m_cols)
         -:  598:      {
-      960:  599:        internal::conditional_aligned_delete_auto<T,(Options_&DontAlign)==0>(m_data, Rows_*m_cols);
-      960:  600:        if (size>0) // >0 and not simply !=0 to let the compiler knows that size cannot be negative
-      960:  601:          m_data = internal::conditional_aligned_new_auto<T,(Options_&DontAlign)==0>(size);
+     2880:  599:        internal::conditional_aligned_delete_auto<T,(Options_&DontAlign)==0>(m_data, Rows_*m_cols);
+     2880:  600:        if (size>0) // >0 and not simply !=0 to let the compiler knows that size cannot be negative
+     2880:  601:          m_data = internal::conditional_aligned_new_auto<T,(Options_&DontAlign)==0>(size);
         -:  602:        else
     #####:  603:          m_data = 0;
         -:  604:        EIGEN_INTERNAL_DENSE_STORAGE_CTOR_PLUGIN({})
-      960:  605:      }
-     1440:  606:      m_cols = cols;
-     1440:  607:    }
-     1558:  608:    EIGEN_DEVICE_FUNC const T *data() const { return m_data; }
-    11048:  609:    EIGEN_DEVICE_FUNC T *data() { return m_data; }
+     2880:  605:      }
+     4320:  606:      m_cols = cols;
+     4320:  607:    }
+     4674:  608:    EIGEN_DEVICE_FUNC const T *data() const { return m_data; }
+    33144:  609:    EIGEN_DEVICE_FUNC T *data() { return m_data; }
         -:  610:};
         -:  611:
         -:  612:// matrix with dynamic height and fixed width (so that matrix has dynamic size).
@@ -620,7 +620,7 @@
         -:  616:    T *m_data;
         -:  617:    Index m_rows;
         -:  618:  public:
-     1416:  619:   EIGEN_DEVICE_FUNC constexpr DenseStorage() : m_data(0), m_rows(0) {}
+     4248:  619:   EIGEN_DEVICE_FUNC constexpr DenseStorage() : m_data(0), m_rows(0) {}
         -:  620:   explicit constexpr DenseStorage(internal::constructor_without_unaligned_array_assert) : m_data(0), m_rows(0) {}
         -:  621:   EIGEN_DEVICE_FUNC constexpr DenseStorage(Index size, Index rows, Index cols)
         -:  622:       : m_data(internal::conditional_aligned_new_auto<T, (Options_ & DontAlign) == 0>(size)), m_rows(rows) {
@@ -628,13 +628,13 @@
         -:  624:      eigen_internal_assert(size==rows*cols && rows>=0 && cols == Cols_);
         -:  625:      EIGEN_UNUSED_VARIABLE(cols);
         -:  626:   }
-      240:  627:    EIGEN_DEVICE_FUNC DenseStorage(const DenseStorage& other)
-      120:  628:      : m_data(internal::conditional_aligned_new_auto<T,(Options_&DontAlign)==0>(other.m_rows*Cols_))
-      120:  629:      , m_rows(other.m_rows)
-      120:  630:    {
+      720:  627:    EIGEN_DEVICE_FUNC DenseStorage(const DenseStorage& other)
+      360:  628:      : m_data(internal::conditional_aligned_new_auto<T,(Options_&DontAlign)==0>(other.m_rows*Cols_))
+      360:  629:      , m_rows(other.m_rows)
+      360:  630:    {
         -:  631:      EIGEN_INTERNAL_DENSE_STORAGE_CTOR_PLUGIN(Index size = m_rows*Cols_)
-      120:  632:      internal::smart_copy(other.m_data, other.m_data+other.m_rows*Cols_, m_data);
-      240:  633:    }
+      360:  632:      internal::smart_copy(other.m_data, other.m_data+other.m_rows*Cols_, m_data);
+      720:  633:    }
         -:  634:    EIGEN_DEVICE_FUNC DenseStorage& operator=(const DenseStorage& other)
         -:  635:    {
         -:  636:      if (this != &other)
@@ -653,39 +653,39 @@
     #####:  649:      other.m_rows = 0;
     #####:  650:    }
         -:  651:    EIGEN_DEVICE_FUNC
-        1:  652:    DenseStorage& operator=(DenseStorage&& other) EIGEN_NOEXCEPT
+        3:  652:    DenseStorage& operator=(DenseStorage&& other) EIGEN_NOEXCEPT
         -:  653:    {
-        1:  654:      numext::swap(m_data, other.m_data);
-        1:  655:      numext::swap(m_rows, other.m_rows);
-        1:  656:      return *this;
+        3:  654:      numext::swap(m_data, other.m_data);
+        3:  655:      numext::swap(m_rows, other.m_rows);
+        3:  656:      return *this;
         -:  657:    }
-     1656:  658:    EIGEN_DEVICE_FUNC ~DenseStorage() { internal::conditional_aligned_delete_auto<T,(Options_&DontAlign)==0>(m_data, Cols_*m_rows); }
+     4968:  658:    EIGEN_DEVICE_FUNC ~DenseStorage() { internal::conditional_aligned_delete_auto<T,(Options_&DontAlign)==0>(m_data, Cols_*m_rows); }
         -:  659:    EIGEN_DEVICE_FUNC void swap(DenseStorage& other) {
         -:  660:      numext::swap(m_data,other.m_data);
         -:  661:      numext::swap(m_rows,other.m_rows);
         -:  662:    }
-    65342:  663:    EIGEN_DEVICE_FUNC Index rows(void) const EIGEN_NOEXCEPT {return m_rows;}
-    54204:  664:    EIGEN_DEVICE_FUNC static constexpr Index cols(void) { return Cols_; }
-        5:  665:    void conservativeResize(Index size, Index rows, Index)
+   196026:  663:    EIGEN_DEVICE_FUNC Index rows(void) const EIGEN_NOEXCEPT {return m_rows;}
+   162612:  664:    EIGEN_DEVICE_FUNC static constexpr Index cols(void) { return Cols_; }
+       15:  665:    void conservativeResize(Index size, Index rows, Index)
         -:  666:    {
-        5:  667:      m_data = internal::conditional_aligned_realloc_new_auto<T,(Options_&DontAlign)==0>(m_data, size, m_rows*Cols_);
-        5:  668:      m_rows = rows;
-        5:  669:    }
-      927:  670:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void resize(Index size, Index rows, Index)
+       15:  667:      m_data = internal::conditional_aligned_realloc_new_auto<T,(Options_&DontAlign)==0>(m_data, size, m_rows*Cols_);
+       15:  668:      m_rows = rows;
+       15:  669:    }
+     2781:  670:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void resize(Index size, Index rows, Index)
         -:  671:    {
-      927:  672:      if(size != m_rows*Cols_)
+     2781:  672:      if(size != m_rows*Cols_)
         -:  673:      {
-      682:  674:        internal::conditional_aligned_delete_auto<T,(Options_&DontAlign)==0>(m_data, Cols_*m_rows);
-      682:  675:        if (size>0) // >0 and not simply !=0 to let the compiler knows that size cannot be negative
-      682:  676:          m_data = internal::conditional_aligned_new_auto<T,(Options_&DontAlign)==0>(size);
+     2046:  674:        internal::conditional_aligned_delete_auto<T,(Options_&DontAlign)==0>(m_data, Cols_*m_rows);
+     2046:  675:        if (size>0) // >0 and not simply !=0 to let the compiler knows that size cannot be negative
+     2046:  676:          m_data = internal::conditional_aligned_new_auto<T,(Options_&DontAlign)==0>(size);
         -:  677:        else
     #####:  678:          m_data = 0;
         -:  679:        EIGEN_INTERNAL_DENSE_STORAGE_CTOR_PLUGIN({})
-      682:  680:      }
-      927:  681:      m_rows = rows;
-      927:  682:    }
-    45028:  683:    EIGEN_DEVICE_FUNC const T *data() const { return m_data; }
-     7181:  684:    EIGEN_DEVICE_FUNC T *data() { return m_data; }
+     2046:  680:      }
+     2781:  681:      m_rows = rows;
+     2781:  682:    }
+   135084:  683:    EIGEN_DEVICE_FUNC const T *data() const { return m_data; }
+    21543:  684:    EIGEN_DEVICE_FUNC T *data() { return m_data; }
         -:  685:};
         -:  686:
         -:  687:} // end namespace Eigen

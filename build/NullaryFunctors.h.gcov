@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/functors/NullaryFunctors.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -23,11 +23,11 @@
         -:   19:
         -:   20:template<typename Scalar>
         -:   21:struct scalar_constant_op {
-    68598:   22:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE scalar_constant_op(const scalar_constant_op& other) : m_other(other.m_other) { }
-    20984:   23:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE scalar_constant_op(const Scalar& other) : m_other(other) { }
-    20450:   24:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() () const { return m_other; }
+   205794:   22:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE scalar_constant_op(const scalar_constant_op& other) : m_other(other.m_other) { }
+    62952:   23:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE scalar_constant_op(const Scalar& other) : m_other(other) { }
+    61350:   24:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() () const { return m_other; }
         -:   25:  template<typename PacketType>
-     5702:   26:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const PacketType packetOp() const { return internal::pset1<PacketType>(m_other); }
+    17106:   26:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const PacketType packetOp() const { return internal::pset1<PacketType>(m_other); }
         -:   27:  const Scalar m_other;
         -:   28:};
         -:   29:template<typename Scalar>
@@ -37,7 +37,7 @@
         -:   33:
         -:   34:template<typename Scalar> struct scalar_identity_op {
         -:   35:  template<typename IndexType>
-      120:   36:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() (IndexType row, IndexType col) const { return row==col ? Scalar(1) : Scalar(0); }
+      360:   36:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() (IndexType row, IndexType col) const { return row==col ? Scalar(1) : Scalar(0); }
         -:   37:};
         -:   38:template<typename Scalar>
         -:   39:struct functor_traits<scalar_identity_op<Scalar> >
@@ -96,20 +96,20 @@
         -:   92:template <typename Scalar>
         -:   93:struct linspaced_op_impl<Scalar,/*IsInteger*/true>
         -:   94:{
-        4:   95:  EIGEN_DEVICE_FUNC linspaced_op_impl(const Scalar& low, const Scalar& high, Index num_steps) :
-        2:   96:    m_low(low),
-        2:   97:    m_multiplier((high-low)/convert_index<Scalar>(num_steps<=1 ? 1 : num_steps-1)),
-        2:   98:    m_divisor(convert_index<Scalar>((high>=low?num_steps:-num_steps)+(high-low))/((numext::abs(high-low)+1)==0?1:(numext::abs(high-low)+1))),
-        2:   99:    m_use_divisor(num_steps>1 && (numext::abs(high-low)+1)<num_steps)
-        4:  100:  {}
+       12:   95:  EIGEN_DEVICE_FUNC linspaced_op_impl(const Scalar& low, const Scalar& high, Index num_steps) :
+        6:   96:    m_low(low),
+        6:   97:    m_multiplier((high-low)/convert_index<Scalar>(num_steps<=1 ? 1 : num_steps-1)),
+        6:   98:    m_divisor(convert_index<Scalar>((high>=low?num_steps:-num_steps)+(high-low))/((numext::abs(high-low)+1)==0?1:(numext::abs(high-low)+1))),
+        6:   99:    m_use_divisor(num_steps>1 && (numext::abs(high-low)+1)<num_steps)
+       12:  100:  {}
         -:  101:
         -:  102:  template<typename IndexType>
         -:  103:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-      240:  104:  const Scalar operator() (IndexType i) const
+      720:  104:  const Scalar operator() (IndexType i) const
         -:  105:  {
-      240:  106:    if(m_use_divisor) return m_low + convert_index<Scalar>(i)/m_divisor;
-      240:  107:    else              return m_low + convert_index<Scalar>(i)*m_multiplier;
-      240:  108:  }
+      720:  106:    if(m_use_divisor) return m_low + convert_index<Scalar>(i)/m_divisor;
+      720:  107:    else              return m_low + convert_index<Scalar>(i)*m_multiplier;
+      720:  108:  }
         -:  109:
         -:  110:  const Scalar m_low;
         -:  111:  const Scalar m_multiplier;
@@ -135,12 +135,12 @@
         -:  131:};
         -:  132:template <typename Scalar> struct linspaced_op
         -:  133:{
-        4:  134:  EIGEN_DEVICE_FUNC linspaced_op(const Scalar& low, const Scalar& high, Index num_steps)
-        2:  135:    : impl((num_steps==1 ? high : low),high,num_steps)
-        4:  136:  {}
+       12:  134:  EIGEN_DEVICE_FUNC linspaced_op(const Scalar& low, const Scalar& high, Index num_steps)
+        6:  135:    : impl((num_steps==1 ? high : low),high,num_steps)
+       12:  136:  {}
         -:  137:
         -:  138:  template<typename IndexType>
-      240:  139:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() (IndexType i) const { return impl(i); }
+      720:  139:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() (IndexType i) const { return impl(i); }
         -:  140:
         -:  141:  template<typename Packet,typename IndexType>
         -:  142:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp(IndexType i) const { return impl.template packetOp<Packet>(i); }

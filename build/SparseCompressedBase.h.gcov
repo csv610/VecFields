@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/SparseCore/SparseCompressedBase.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -63,22 +63,22 @@
         -:   59:  public:
         -:   60:    
         -:   61:    /** \returns the number of non zero coefficients */
-       19:   62:    inline Index nonZeros() const
+       57:   62:    inline Index nonZeros() const
         -:   63:    {
         -:   64:     if (Derived::IsVectorAtCompileTime && outerIndexPtr() == 0)
         -:   65:       return derived().nonZeros();
-       19:   66:     else if (derived().outerSize() == 0)
-        1:   67:       return 0;
-       18:   68:     else if (isCompressed())
-       18:   69:       return outerIndexPtr()[derived().outerSize()] - outerIndexPtr()[0];
+       57:   66:     else if (derived().outerSize() == 0)
+        3:   67:       return 0;
+       54:   68:     else if (isCompressed())
+       54:   69:       return outerIndexPtr()[derived().outerSize()] - outerIndexPtr()[0];
         -:   70:     else
     #####:   71:       return innerNonZeros().sum();
-       19:   72:    }
+       57:   72:    }
         -:   73:    
         -:   74:    /** \returns a const pointer to the array of values.
         -:   75:      * This function is aimed at interoperability with other libraries.
         -:   76:      * \sa innerIndexPtr(), outerIndexPtr() */
-    28309:   77:    inline const Scalar* valuePtr() const { return derived().valuePtr(); }
+    84927:   77:    inline const Scalar* valuePtr() const { return derived().valuePtr(); }
         -:   78:    /** \returns a non-const pointer to the array of values.
         -:   79:      * This function is aimed at interoperability with other libraries.
         -:   80:      * \sa innerIndexPtr(), outerIndexPtr() */
@@ -87,7 +87,7 @@
         -:   83:    /** \returns a const pointer to the array of inner indices.
         -:   84:      * This function is aimed at interoperability with other libraries.
         -:   85:      * \sa valuePtr(), outerIndexPtr() */
-    28309:   86:    inline const StorageIndex* innerIndexPtr() const { return derived().innerIndexPtr(); }
+    84927:   86:    inline const StorageIndex* innerIndexPtr() const { return derived().innerIndexPtr(); }
         -:   87:    /** \returns a non-const pointer to the array of inner indices.
         -:   88:      * This function is aimed at interoperability with other libraries.
         -:   89:      * \sa valuePtr(), outerIndexPtr() */
@@ -97,7 +97,7 @@
         -:   93:      * This function is aimed at interoperability with other libraries.
         -:   94:      * \warning it returns the null pointer 0 for SparseVector
         -:   95:      * \sa valuePtr(), innerIndexPtr() */
-    56654:   96:    inline const StorageIndex* outerIndexPtr() const { return derived().outerIndexPtr(); }
+   169962:   96:    inline const StorageIndex* outerIndexPtr() const { return derived().outerIndexPtr(); }
         -:   97:    /** \returns a non-const pointer to the array of the starting positions of the inner vectors.
         -:   98:      * This function is aimed at interoperability with other libraries.
         -:   99:      * \warning it returns the null pointer 0 for SparseVector
@@ -107,14 +107,14 @@
         -:  103:    /** \returns a const pointer to the array of the number of non zeros of the inner vectors.
         -:  104:      * This function is aimed at interoperability with other libraries.
         -:  105:      * \warning it returns the null pointer 0 in compressed mode */
-    28386:  106:    inline const StorageIndex* innerNonZeroPtr() const { return derived().innerNonZeroPtr(); }
+    85158:  106:    inline const StorageIndex* innerNonZeroPtr() const { return derived().innerNonZeroPtr(); }
         -:  107:    /** \returns a non-const pointer to the array of the number of non zeros of the inner vectors.
         -:  108:      * This function is aimed at interoperability with other libraries.
         -:  109:      * \warning it returns the null pointer 0 in compressed mode */
         -:  110:    inline StorageIndex* innerNonZeroPtr() { return derived().innerNonZeroPtr(); }
         -:  111:    
         -:  112:    /** \returns whether \c *this is in compressed form. */
-    28386:  113:    inline bool isCompressed() const { return innerNonZeroPtr()==0; }
+    85158:  113:    inline bool isCompressed() const { return innerNonZeroPtr()==0; }
         -:  114:
         -:  115:    /** \returns a read-only view of the stored coefficients as a 1D array expression.
         -:  116:      *
@@ -171,7 +171,7 @@
         -:  167:
         -:  168:  protected:
         -:  169:    /** Default constructor. Do nothing. */
-      126:  170:    SparseCompressedBase() {}
+      378:  170:    SparseCompressedBase() {}
         -:  171:
         -:  172:    /** \internal return the index of the coeff at (row,col) or just before if it does not exist.
         -:  173:      * This is an analogue of std::lower_bound.
@@ -220,9 +220,9 @@
         -:  216:      return *this;
         -:  217:    }
         -:  218:
-    53143:  219:    InnerIterator(const SparseCompressedBase& mat, Index outer)
-    28309:  220:      : m_values(mat.valuePtr()), m_indices(mat.innerIndexPtr()), m_outer(outer)
-    24834:  221:    {
+   159429:  219:    InnerIterator(const SparseCompressedBase& mat, Index outer)
+    84927:  220:      : m_values(mat.valuePtr()), m_indices(mat.innerIndexPtr()), m_outer(outer)
+    74502:  221:    {
         -:  222:      if(Derived::IsVectorAtCompileTime && mat.outerIndexPtr()==0)
         -:  223:      {
         -:  224:        m_id = 0;
@@ -230,13 +230,13 @@
         -:  226:      }
         -:  227:      else
         -:  228:      {
-    28309:  229:        m_id = mat.outerIndexPtr()[outer];
-    28309:  230:        if(mat.isCompressed())
-    28309:  231:          m_end = mat.outerIndexPtr()[outer+1];
+    84927:  229:        m_id = mat.outerIndexPtr()[outer];
+    84927:  230:        if(mat.isCompressed())
+    84927:  231:          m_end = mat.outerIndexPtr()[outer+1];
         -:  232:        else
     #####:  233:          m_end = m_id + mat.innerNonZeroPtr()[outer];
         -:  234:      }
-    53143:  235:    }
+   159429:  235:    }
         -:  236:
         -:  237:    explicit InnerIterator(const SparseCompressedBase& mat) : InnerIterator(mat, Index(0))
         -:  238:    {
@@ -249,7 +249,7 @@
         -:  245:      EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived);
         -:  246:    }
         -:  247:
-    50612:  248:    inline InnerIterator& operator++() { m_id++; return *this; }
+   151836:  248:    inline InnerIterator& operator++() { m_id++; return *this; }
         -:  249:    inline InnerIterator& operator+=(Index i) { m_id += i ; return *this; }
         -:  250:
         -:  251:    inline InnerIterator operator+(Index i) 
@@ -259,15 +259,15 @@
         -:  255:        return result;
         -:  256:    }
         -:  257:
-    32183:  258:    inline const Scalar& value() const { return m_values[m_id]; }
-      355:  259:    inline Scalar& valueRef() { return const_cast<Scalar&>(m_values[m_id]); }
+    96549:  258:    inline const Scalar& value() const { return m_values[m_id]; }
+     1065:  259:    inline Scalar& valueRef() { return const_cast<Scalar&>(m_values[m_id]); }
         -:  260:
-    49867:  261:    inline StorageIndex index() const { return m_indices[m_id]; }
+   149601:  261:    inline StorageIndex index() const { return m_indices[m_id]; }
         -:  262:    inline Index outer() const { return m_outer.value(); }
-     2384:  263:    inline Index row() const { return IsRowMajor ? m_outer.value() : index(); }
-     2384:  264:    inline Index col() const { return IsRowMajor ? index() : m_outer.value(); }
+     7152:  263:    inline Index row() const { return IsRowMajor ? m_outer.value() : index(); }
+     7152:  264:    inline Index col() const { return IsRowMajor ? index() : m_outer.value(); }
         -:  265:
-    79631:  266:    inline operator bool() const { return (m_id < m_end); }
+   238893:  266:    inline operator bool() const { return (m_id < m_end); }
         -:  267:
         -:  268:  protected:
         -:  269:    const Scalar* m_values;
@@ -534,21 +534,21 @@
         -:  530:    Flags = Derived::Flags
         -:  531:  };
         -:  532:  
-        5:  533:  evaluator() : m_matrix(0), m_zero(0)
+       15:  533:  evaluator() : m_matrix(0), m_zero(0)
         -:  534:  {
         -:  535:    EIGEN_INTERNAL_CHECK_COST_VALUE(CoeffReadCost);
-        5:  536:  }
-       62:  537:  explicit evaluator(const Derived &mat) : m_matrix(&mat), m_zero(0)
+       15:  536:  }
+      186:  537:  explicit evaluator(const Derived &mat) : m_matrix(&mat), m_zero(0)
         -:  538:  {
         -:  539:    EIGEN_INTERNAL_CHECK_COST_VALUE(CoeffReadCost);
-       62:  540:  }
+      186:  540:  }
         -:  541:  
-       16:  542:  inline Index nonZerosEstimate() const {
-       16:  543:    return m_matrix->nonZeros();
+       48:  542:  inline Index nonZerosEstimate() const {
+       48:  543:    return m_matrix->nonZeros();
         -:  544:  }
         -:  545:  
-    21961:  546:  operator Derived&() { return m_matrix->const_cast_derived(); }
-     4911:  547:  operator const Derived&() const { return *m_matrix; }
+    65883:  546:  operator Derived&() { return m_matrix->const_cast_derived(); }
+    14733:  547:  operator const Derived&() const { return *m_matrix; }
         -:  548:  
         -:  549:  typedef typename DenseCoeffsBase<Derived,ReadOnlyAccessors>::CoeffReturnType CoeffReturnType;
         -:  550:  const Scalar& coeff(Index row, Index col) const

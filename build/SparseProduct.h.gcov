@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/SparseCore/SparseProduct.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -33,9 +33,9 @@
         -:   29:template<typename Derived>
         -:   30:template<typename OtherDerived>
         -:   31:inline const Product<Derived,OtherDerived,AliasFreeProduct>
-        8:   32:SparseMatrixBase<Derived>::operator*(const SparseMatrixBase<OtherDerived> &other) const
+       24:   32:SparseMatrixBase<Derived>::operator*(const SparseMatrixBase<OtherDerived> &other) const
         -:   33:{
-        8:   34:  return Product<Derived,OtherDerived,AliasFreeProduct>(derived(), other.derived());
+       24:   34:  return Product<Derived,OtherDerived,AliasFreeProduct>(derived(), other.derived());
         -:   35:}
         -:   36:
         -:   37:namespace internal {
@@ -45,10 +45,10 @@
         -:   41:struct generic_product_impl<Lhs, Rhs, SparseShape, SparseShape, ProductType>
         -:   42:{
         -:   43:  template<typename Dest>
-        8:   44:  static void evalTo(Dest& dst, const Lhs& lhs, const Rhs& rhs)
+       24:   44:  static void evalTo(Dest& dst, const Lhs& lhs, const Rhs& rhs)
         -:   45:  {
-        8:   46:    evalTo(dst, lhs, rhs, typename evaluator_traits<Dest>::Shape());
-        8:   47:  }
+       24:   46:    evalTo(dst, lhs, rhs, typename evaluator_traits<Dest>::Shape());
+       24:   47:  }
         -:   48:
         -:   49:  // dense += sparse * sparse
         -:   50:  template<typename Dest,typename ActualLhs>
@@ -73,15 +73,15 @@
         -:   69:
         -:   70:  // sparse = sparse * sparse
         -:   71:  template<typename Dest>
-        8:   72:  static void evalTo(Dest& dst, const Lhs& lhs, const Rhs& rhs, SparseShape)
+       24:   72:  static void evalTo(Dest& dst, const Lhs& lhs, const Rhs& rhs, SparseShape)
         -:   73:  {
         -:   74:    typedef typename nested_eval<Lhs,Dynamic>::type LhsNested;
         -:   75:    typedef typename nested_eval<Rhs,Dynamic>::type RhsNested;
-        8:   76:    LhsNested lhsNested(lhs);
-        8:   77:    RhsNested rhsNested(rhs);
-        8:   78:    internal::conservative_sparse_sparse_product_selector<remove_all_t<LhsNested>,
-        8:   79:                                                          remove_all_t<RhsNested>, Dest>::run(lhsNested,rhsNested,dst);
-        8:   80:  }
+       24:   76:    LhsNested lhsNested(lhs);
+       24:   77:    RhsNested rhsNested(rhs);
+       24:   78:    internal::conservative_sparse_sparse_product_selector<remove_all_t<LhsNested>,
+       24:   79:                                                          remove_all_t<RhsNested>, Dest>::run(lhsNested,rhsNested,dst);
+       24:   80:  }
         -:   81:
         -:   82:  // dense = sparse * sparse
         -:   83:  template<typename Dest>
@@ -174,14 +174,14 @@
         -:  170:// sparse matrix = sparse-product (can be sparse*sparse, sparse*perm, etc.)
         -:  171:template<typename Scalar, int Options_, typename StorageIndex_>
         -:  172:template<typename Lhs, typename Rhs>
-        3:  173:SparseMatrix<Scalar,Options_,StorageIndex_>& SparseMatrix<Scalar,Options_,StorageIndex_>::operator=(const Product<Lhs,Rhs,AliasFreeProduct>& src)
+        9:  173:SparseMatrix<Scalar,Options_,StorageIndex_>& SparseMatrix<Scalar,Options_,StorageIndex_>::operator=(const Product<Lhs,Rhs,AliasFreeProduct>& src)
         -:  174:{
         -:  175:  // std::cout << "in Assignment : " << DstOptions << "\n";
-        3:  176:  SparseMatrix dst(src.rows(),src.cols());
-        3:  177:  internal::generic_product_impl<Lhs, Rhs>::evalTo(dst,src.lhs(),src.rhs());
-        3:  178:  this->swap(dst);
+        9:  176:  SparseMatrix dst(src.rows(),src.cols());
+        9:  177:  internal::generic_product_impl<Lhs, Rhs>::evalTo(dst,src.lhs(),src.rhs());
+        9:  178:  this->swap(dst);
         -:  179:  return *this;
-        3:  180:}
+        9:  180:}
         -:  181:
         -:  182:} // end namespace Eigen
         -:  183:

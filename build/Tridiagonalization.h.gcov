@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Eigenvalues/Tridiagonalization.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -353,38 +353,38 @@
         -:  349:  */
         -:  350:template<typename MatrixType, typename CoeffVectorType>
         -:  351:EIGEN_DEVICE_FUNC
-      120:  352:void tridiagonalization_inplace(MatrixType& matA, CoeffVectorType& hCoeffs)
+      360:  352:void tridiagonalization_inplace(MatrixType& matA, CoeffVectorType& hCoeffs)
         -:  353:{
         -:  354:  using numext::conj;
         -:  355:  typedef typename MatrixType::Scalar Scalar;
         -:  356:  typedef typename MatrixType::RealScalar RealScalar;
-      120:  357:  Index n = matA.rows();
-      120:  358:  eigen_assert(n==matA.cols());
-      120:  359:  eigen_assert(n==hCoeffs.size()+1 || n==1);
+      360:  357:  Index n = matA.rows();
+      360:  358:  eigen_assert(n==matA.cols());
+      360:  359:  eigen_assert(n==hCoeffs.size()+1 || n==1);
         -:  360:
-      240:  361:  for (Index i = 0; i<n-1; ++i)
+      720:  361:  for (Index i = 0; i<n-1; ++i)
         -:  362:  {
-      120:  363:    Index remainingSize = n-i-1;
+      360:  363:    Index remainingSize = n-i-1;
         -:  364:    RealScalar beta;
         -:  365:    Scalar h;
-      120:  366:    matA.col(i).tail(remainingSize).makeHouseholderInPlace(h, beta);
+      360:  366:    matA.col(i).tail(remainingSize).makeHouseholderInPlace(h, beta);
         -:  367:
         -:  368:    // Apply similarity transformation to remaining columns,
         -:  369:    // i.e., A = H A H' where H = I - h v v' and v = matA.col(i).tail(n-i-1)
-      120:  370:    matA.col(i).coeffRef(i+1) = 1;
+      360:  370:    matA.col(i).coeffRef(i+1) = 1;
         -:  371:
-      240:  372:    hCoeffs.tail(n-i-1).noalias() = (matA.bottomRightCorner(remainingSize,remainingSize).template selfadjointView<Lower>()
-      120:  373:                                  * (conj(h) * matA.col(i).tail(remainingSize)));
+      720:  372:    hCoeffs.tail(n-i-1).noalias() = (matA.bottomRightCorner(remainingSize,remainingSize).template selfadjointView<Lower>()
+      360:  373:                                  * (conj(h) * matA.col(i).tail(remainingSize)));
         -:  374:
-      120:  375:    hCoeffs.tail(n-i-1) += (conj(h)*RealScalar(-0.5)*(hCoeffs.tail(remainingSize).dot(matA.col(i).tail(remainingSize)))) * matA.col(i).tail(n-i-1);
+      360:  375:    hCoeffs.tail(n-i-1) += (conj(h)*RealScalar(-0.5)*(hCoeffs.tail(remainingSize).dot(matA.col(i).tail(remainingSize)))) * matA.col(i).tail(n-i-1);
         -:  376:
-      120:  377:    matA.bottomRightCorner(remainingSize, remainingSize).template selfadjointView<Lower>()
-      120:  378:      .rankUpdate(matA.col(i).tail(remainingSize), hCoeffs.tail(remainingSize), Scalar(-1));
+      360:  377:    matA.bottomRightCorner(remainingSize, remainingSize).template selfadjointView<Lower>()
+      360:  378:      .rankUpdate(matA.col(i).tail(remainingSize), hCoeffs.tail(remainingSize), Scalar(-1));
         -:  379:
-      120:  380:    matA.col(i).coeffRef(i+1) = beta;
-      120:  381:    hCoeffs.coeffRef(i) = h;
-      120:  382:  }
-      120:  383:}
+      360:  380:    matA.col(i).coeffRef(i+1) = beta;
+      360:  381:    hCoeffs.coeffRef(i) = h;
+      360:  382:  }
+      360:  383:}
         -:  384:
         -:  385:// forward declaration, implementation at the end of this file
         -:  386:template<typename MatrixType,
@@ -434,12 +434,12 @@
         -:  430:  */
         -:  431:template<typename MatrixType, typename DiagonalType, typename SubDiagonalType, typename CoeffVectorType, typename WorkSpaceType>
         -:  432:EIGEN_DEVICE_FUNC
-      120:  433:void tridiagonalization_inplace(MatrixType& mat, DiagonalType& diag, SubDiagonalType& subdiag,
+      360:  433:void tridiagonalization_inplace(MatrixType& mat, DiagonalType& diag, SubDiagonalType& subdiag,
         -:  434:                                CoeffVectorType& hcoeffs, WorkSpaceType& workspace, bool extractQ)
         -:  435:{
-      120:  436:  eigen_assert(mat.cols()==mat.rows() && diag.size()==mat.rows() && subdiag.size()==mat.rows()-1);
-      120:  437:  tridiagonalization_inplace_selector<MatrixType>::run(mat, diag, subdiag, hcoeffs, workspace, extractQ);
-      120:  438:}
+      360:  436:  eigen_assert(mat.cols()==mat.rows() && diag.size()==mat.rows() && subdiag.size()==mat.rows()-1);
+      360:  437:  tridiagonalization_inplace_selector<MatrixType>::run(mat, diag, subdiag, hcoeffs, workspace, extractQ);
+      360:  438:}
         -:  439:
         -:  440:/** \internal
         -:  441:  * General full tridiagonalization
@@ -450,18 +450,18 @@
         -:  446:  typedef typename Tridiagonalization<MatrixType>::HouseholderSequenceType HouseholderSequenceType;
         -:  447:  template<typename DiagonalType, typename SubDiagonalType, typename CoeffVectorType, typename WorkSpaceType>
         -:  448:  static EIGEN_DEVICE_FUNC
-      120:  449:      void run(MatrixType& mat, DiagonalType& diag, SubDiagonalType& subdiag, CoeffVectorType& hCoeffs, WorkSpaceType& workspace, bool extractQ)
+      360:  449:      void run(MatrixType& mat, DiagonalType& diag, SubDiagonalType& subdiag, CoeffVectorType& hCoeffs, WorkSpaceType& workspace, bool extractQ)
         -:  450:  {
-      120:  451:    tridiagonalization_inplace(mat, hCoeffs);
-      120:  452:    diag = mat.diagonal().real();
-      120:  453:    subdiag = mat.template diagonal<-1>().real();
-      120:  454:    if (extractQ) {
-      120:  455:      HouseholderSequenceType(mat, hCoeffs.conjugate())
-      120:  456:          .setLength(mat.rows() - 1)
-      120:  457:          .setShift(1)
-      120:  458:          .evalTo(mat, workspace);
-      120:  459:    }
-      120:  460:  }
+      360:  451:    tridiagonalization_inplace(mat, hCoeffs);
+      360:  452:    diag = mat.diagonal().real();
+      360:  453:    subdiag = mat.template diagonal<-1>().real();
+      360:  454:    if (extractQ) {
+      360:  455:      HouseholderSequenceType(mat, hCoeffs.conjugate())
+      360:  456:          .setLength(mat.rows() - 1)
+      360:  457:          .setShift(1)
+      360:  458:          .evalTo(mat, workspace);
+      360:  459:    }
+      360:  460:  }
         -:  461:};
         -:  462:
         -:  463:/** \internal

@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/plugins/CommonCwiseUnaryOps.inc
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -46,7 +46,7 @@
         -:   42:///
         -:   43:EIGEN_DEVICE_FUNC
         -:   44:inline const NegativeReturnType
-      122:   45:operator-() const { return NegativeReturnType(derived()); }
+      366:   45:operator-() const { return NegativeReturnType(derived()); }
         -:   46:
         -:   47:
         -:   48:template<class NewType> struct CastXpr { typedef typename internal::cast_return_type<Derived,const CwiseUnaryOp<internal::core_cast_op<Scalar, NewType>, const Derived> >::type Type; };
@@ -63,9 +63,9 @@
         -:   59:template<typename NewType>
         -:   60:EIGEN_DEVICE_FUNC
         -:   61:typename CastXpr<NewType>::Type
-        2:   62:cast() const
+        6:   62:cast() const
         -:   63:{
-        2:   64:  return typename CastXpr<NewType>::Type(derived());
+        6:   64:  return typename CastXpr<NewType>::Type(derived());
         -:   65:}
         -:   66:
         -:   67:/// \returns an expression of the complex conjugate of \c *this.
@@ -75,9 +75,9 @@
         -:   71:/// \sa <a href="group__CoeffwiseMathFunctions.html#cwisetable_conj">Math functions</a>, MatrixBase::adjoint()
         -:   72:EIGEN_DEVICE_FUNC
         -:   73:inline ConjugateReturnType
-      365:   74:conjugate() const
+     1095:   74:conjugate() const
         -:   75:{
-      365:   76:  return ConjugateReturnType(derived());
+     1095:   76:  return ConjugateReturnType(derived());
         -:   77:}
         -:   78:
         -:   79:/// \returns an expression of the complex conjugate of \c *this if Cond==true, returns derived() otherwise.
@@ -88,10 +88,10 @@
         -:   84:template<bool Cond>
         -:   85:EIGEN_DEVICE_FUNC
         -:   86:inline std::conditional_t<Cond,ConjugateReturnType,const Derived&>
-        2:   87:conjugateIf() const
+        6:   87:conjugateIf() const
         -:   88:{
         -:   89:  typedef std::conditional_t<Cond,ConjugateReturnType,const Derived&> ReturnType;
-        2:   90:  return ReturnType(derived());
+        6:   90:  return ReturnType(derived());
         -:   91:}
         -:   92:
         -:   93:/// \returns a read-only expression of the real part of \c *this.
@@ -101,7 +101,7 @@
         -:   97:/// \sa imag()
         -:   98:EIGEN_DEVICE_FUNC
         -:   99:inline RealReturnType
-        4:  100:real() const { return RealReturnType(derived()); }
+       12:  100:real() const { return RealReturnType(derived()); }
         -:  101:
         -:  102:/// \returns an read-only expression of the imaginary part of \c *this.
         -:  103:///
@@ -110,7 +110,7 @@
         -:  106:/// \sa real()
         -:  107:EIGEN_DEVICE_FUNC
         -:  108:inline const ImagReturnType
-        4:  109:imag() const { return ImagReturnType(derived()); }
+       12:  109:imag() const { return ImagReturnType(derived()); }
         -:  110:
         -:  111:/// \brief Apply a unary operator coefficient-wise
         -:  112:/// \param[in]  func  Functor implementing the unary operator
@@ -169,7 +169,7 @@
         -:  165:/// \sa imag()
         -:  166:EIGEN_DEVICE_FUNC
         -:  167:inline NonConstRealReturnType
-      245:  168:real() { return NonConstRealReturnType(derived()); }
+      735:  168:real() { return NonConstRealReturnType(derived()); }
         -:  169:
         -:  170:/// \returns a non const expression of the imaginary part of \c *this.
         -:  171:///
@@ -178,4 +178,4 @@
         -:  174:/// \sa real()
         -:  175:EIGEN_DEVICE_FUNC
         -:  176:inline NonConstImagReturnType
-        5:  177:imag() { return NonConstImagReturnType(derived()); }
+       15:  177:imag() { return NonConstImagReturnType(derived()); }

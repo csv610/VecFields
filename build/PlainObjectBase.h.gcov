@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/PlainObjectBase.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -37,37 +37,37 @@
         -:   33:struct check_rows_cols_for_overflow {
         -:   34:  EIGEN_STATIC_ASSERT(MaxRowsAtCompileTime * MaxColsAtCompileTime == MaxSizeAtCompileTime,YOU MADE A PROGRAMMING MISTAKE)
         -:   35:  template <typename Index>
-    13202:   36:  EIGEN_DEVICE_FUNC static EIGEN_ALWAYS_INLINE constexpr void run(Index, Index) {}
+    39606:   36:  EIGEN_DEVICE_FUNC static EIGEN_ALWAYS_INLINE constexpr void run(Index, Index) {}
         -:   37:};
         -:   38:
         -:   39:template <int MaxRowsAtCompileTime>
         -:   40:struct check_rows_cols_for_overflow<Dynamic, MaxRowsAtCompileTime, Dynamic> {
         -:   41:  template <typename Index>
-      960:   42:  EIGEN_DEVICE_FUNC static EIGEN_ALWAYS_INLINE constexpr void run(Index, Index cols) {
-      960:   43:    constexpr Index MaxIndex = NumTraits<Index>::highest();
-      960:   44:    bool error = cols > MaxIndex / MaxRowsAtCompileTime;
-      960:   45:    if (error) throw_std_bad_alloc();
-      960:   46:  }
+     2880:   42:  EIGEN_DEVICE_FUNC static EIGEN_ALWAYS_INLINE constexpr void run(Index, Index cols) {
+     2880:   43:    constexpr Index MaxIndex = NumTraits<Index>::highest();
+     2880:   44:    bool error = cols > MaxIndex / MaxRowsAtCompileTime;
+     2880:   45:    if (error) throw_std_bad_alloc();
+     2880:   46:  }
         -:   47:};
         -:   48:
         -:   49:template <int MaxColsAtCompileTime>
         -:   50:struct check_rows_cols_for_overflow<Dynamic, Dynamic, MaxColsAtCompileTime> {
         -:   51:  template <typename Index>
-      407:   52:  EIGEN_DEVICE_FUNC static EIGEN_ALWAYS_INLINE constexpr void run(Index rows, Index) {
-      407:   53:    constexpr Index MaxIndex = NumTraits<Index>::highest();
-      407:   54:    bool error = rows > MaxIndex / MaxColsAtCompileTime;
-      407:   55:    if (error) throw_std_bad_alloc();
-      407:   56:  }
+     1221:   52:  EIGEN_DEVICE_FUNC static EIGEN_ALWAYS_INLINE constexpr void run(Index rows, Index) {
+     1221:   53:    constexpr Index MaxIndex = NumTraits<Index>::highest();
+     1221:   54:    bool error = rows > MaxIndex / MaxColsAtCompileTime;
+     1221:   55:    if (error) throw_std_bad_alloc();
+     1221:   56:  }
         -:   57:};
         -:   58:
         -:   59:template <>
         -:   60:struct check_rows_cols_for_overflow<Dynamic, Dynamic, Dynamic> {
         -:   61:  template <typename Index>
-      415:   62:  EIGEN_DEVICE_FUNC static EIGEN_ALWAYS_INLINE constexpr void run(Index rows, Index cols) {
-      415:   63:    constexpr Index MaxIndex = NumTraits<Index>::highest();
-      415:   64:    bool error = cols == 0 ? false : (rows > MaxIndex / cols);
-      415:   65:    if (error) throw_std_bad_alloc();
-      415:   66:  }
+     1245:   62:  EIGEN_DEVICE_FUNC static EIGEN_ALWAYS_INLINE constexpr void run(Index rows, Index cols) {
+     1245:   63:    constexpr Index MaxIndex = NumTraits<Index>::highest();
+     1245:   64:    bool error = cols == 0 ? false : (rows > MaxIndex / cols);
+     1245:   65:    if (error) throw_std_bad_alloc();
+     1245:   66:  }
         -:   67:};
         -:   68:
         -:   69:template <typename Derived,
@@ -171,19 +171,19 @@
         -:  167:    const Base& base() const { return *static_cast<const Base*>(this); }
         -:  168:
         -:  169:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE EIGEN_CONSTEXPR
-   248626:  170:    Index rows() const EIGEN_NOEXCEPT { return m_storage.rows(); }
+   745878:  170:    Index rows() const EIGEN_NOEXCEPT { return m_storage.rows(); }
         -:  171:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE EIGEN_CONSTEXPR
-   160589:  172:    Index cols() const EIGEN_NOEXCEPT { return m_storage.cols(); }
+   481767:  172:    Index cols() const EIGEN_NOEXCEPT { return m_storage.cols(); }
         -:  173:
         -:  174:    /** This is an overloaded version of DenseCoeffsBase<Derived,ReadOnlyAccessors>::coeff(Index,Index) const
         -:  175:      * provided to by-pass the creation of an evaluator of the expression, thus saving compilation efforts.
         -:  176:      *
         -:  177:      * See DenseCoeffsBase<Derived,ReadOnlyAccessors>::coeff(Index) const for details. */
-     1075:  178:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr const Scalar& coeff(Index rowId, Index colId) const {
+     3225:  178:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr const Scalar& coeff(Index rowId, Index colId) const {
         -:  179:      if (Flags & RowMajorBit)
         -:  180:        return m_storage.data()[colId + rowId * m_storage.cols()];
         -:  181:      else  // column-major
-     1075:  182:        return m_storage.data()[rowId + colId * m_storage.rows()];
+     3225:  182:        return m_storage.data()[rowId + colId * m_storage.rows()];
         -:  183:    }
         -:  184:
         -:  185:    /** This is an overloaded version of DenseCoeffsBase<Derived,ReadOnlyAccessors>::coeff(Index) const
@@ -191,27 +191,27 @@
         -:  187:      *
         -:  188:      * See DenseCoeffsBase<Derived,ReadOnlyAccessors>::coeff(Index) const for details. */
         -:  189:    EIGEN_DEVICE_FUNC
-     6353:  190:    EIGEN_STRONG_INLINE const Scalar& coeff(Index index) const
+    19059:  190:    EIGEN_STRONG_INLINE const Scalar& coeff(Index index) const
         -:  191:    {
-     6353:  192:      return m_storage.data()[index];
+    19059:  192:      return m_storage.data()[index];
         -:  193:    }
         -:  194:
         -:  195:    /** This is an overloaded version of DenseCoeffsBase<Derived,WriteAccessors>::coeffRef(Index,Index) const
         -:  196:      * provided to by-pass the creation of an evaluator of the expression, thus saving compilation efforts.
         -:  197:      *
         -:  198:      * See DenseCoeffsBase<Derived,WriteAccessors>::coeffRef(Index,Index) const for details. */
-     4325:  199:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr Scalar& coeffRef(Index rowId, Index colId) {
+    12975:  199:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr Scalar& coeffRef(Index rowId, Index colId) {
         -:  200:      if (Flags & RowMajorBit)
     #####:  201:        return m_storage.data()[colId + rowId * m_storage.cols()];
         -:  202:      else  // column-major
-     4325:  203:        return m_storage.data()[rowId + colId * m_storage.rows()];
+    12975:  203:        return m_storage.data()[rowId + colId * m_storage.rows()];
         -:  204:    }
         -:  205:
         -:  206:    /** This is an overloaded version of DenseCoeffsBase<Derived,WriteAccessors>::coeffRef(Index) const
         -:  207:      * provided to by-pass the creation of an evaluator of the expression, thus saving compilation efforts.
         -:  208:      *
         -:  209:      * See DenseCoeffsBase<Derived,WriteAccessors>::coeffRef(Index) const for details. */
-    13440:  210:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr Scalar& coeffRef(Index index) { return m_storage.data()[index]; }
+    40320:  210:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr Scalar& coeffRef(Index index) { return m_storage.data()[index]; }
         -:  211:
         -:  212:    /** This is the const version of coeffRef(Index,Index) which is thus synonym of coeff(Index,Index).
         -:  213:      * It is provided for convenience. */
@@ -263,12 +263,12 @@
         -:  259:    }
         -:  260:
         -:  261:    /** \returns a const pointer to the data array of this matrix */
-    94510:  262:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar *data() const
-    94510:  263:    { return m_storage.data(); }
+   283530:  262:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar *data() const
+   283530:  263:    { return m_storage.data(); }
         -:  264:
         -:  265:    /** \returns a pointer to the data array of this matrix */
-    18326:  266:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Scalar *data()
-    18326:  267:    { return m_storage.data(); }
+    54978:  266:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Scalar *data()
+    54978:  267:    { return m_storage.data(); }
         -:  268:
         -:  269:    /** Resizes \c *this to a \a rows x \a cols matrix.
         -:  270:      *
@@ -286,22 +286,22 @@
         -:  282:      *
         -:  283:      * \sa resize(Index) for vectors, resize(NoChange_t, Index), resize(Index, NoChange_t)
         -:  284:      */
-     7887:  285:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr void resize(Index rows, Index cols) {
-    15774:  286:      eigen_assert(internal::check_implication(RowsAtCompileTime!=Dynamic, rows==RowsAtCompileTime)
+    23661:  285:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr void resize(Index rows, Index cols) {
+    47322:  286:      eigen_assert(internal::check_implication(RowsAtCompileTime!=Dynamic, rows==RowsAtCompileTime)
         -:  287:                   && internal::check_implication(ColsAtCompileTime!=Dynamic, cols==ColsAtCompileTime)
         -:  288:                   && internal::check_implication(RowsAtCompileTime==Dynamic && MaxRowsAtCompileTime!=Dynamic, rows<=MaxRowsAtCompileTime)
         -:  289:                   && internal::check_implication(ColsAtCompileTime==Dynamic && MaxColsAtCompileTime!=Dynamic, cols<=MaxColsAtCompileTime)
         -:  290:                   && rows>=0 && cols>=0 && "Invalid sizes when resizing a matrix or array.");
-     7887:  291:      internal::check_rows_cols_for_overflow<MaxSizeAtCompileTime, MaxRowsAtCompileTime, MaxColsAtCompileTime>::run(rows, cols);
+    23661:  291:      internal::check_rows_cols_for_overflow<MaxSizeAtCompileTime, MaxRowsAtCompileTime, MaxColsAtCompileTime>::run(rows, cols);
         -:  292:      #ifdef EIGEN_INITIALIZE_COEFFS
         -:  293:        Index size = rows*cols;
         -:  294:        bool size_changed = size != this->size();
         -:  295:        m_storage.resize(size, rows, cols);
         -:  296:        if(size_changed) EIGEN_INITIALIZE_COEFFS_IF_THAT_OPTION_IS_ENABLED
         -:  297:      #else
-     7887:  298:        m_storage.resize(rows*cols, rows, cols);
+    23661:  298:        m_storage.resize(rows*cols, rows, cols);
         -:  299:      #endif
-     7887:  300:    }
+    23661:  300:    }
         -:  301:
         -:  302:    /** Resizes \c *this to a vector of length \a size
         -:  303:      *
@@ -314,9 +314,9 @@
         -:  310:      *
         -:  311:      * \sa resize(Index,Index), resize(NoChange_t, Index), resize(Index, NoChange_t)
         -:  312:      */
-     2331:  313:    EIGEN_DEVICE_FUNC inline constexpr void resize(Index size) {
+     6993:  313:    EIGEN_DEVICE_FUNC inline constexpr void resize(Index size) {
         -:  314:        EIGEN_STATIC_ASSERT_VECTOR_ONLY(PlainObjectBase)
-     2331:  315:        eigen_assert(
+     6993:  315:        eigen_assert(
         -:  316:            ((SizeAtCompileTime == Dynamic && (MaxSizeAtCompileTime == Dynamic || size <= MaxSizeAtCompileTime)) ||
         -:  317:             SizeAtCompileTime == size) &&
         -:  318:            size >= 0);
@@ -324,13 +324,13 @@
         -:  320:        bool size_changed = size != this->size();
         -:  321:      #endif
         -:  322:      if(RowsAtCompileTime == 1)
-     1320:  323:        m_storage.resize(size, 1, size);
+     3960:  323:        m_storage.resize(size, 1, size);
         -:  324:      else
-     1011:  325:        m_storage.resize(size, size, 1);
+     3033:  325:        m_storage.resize(size, size, 1);
         -:  326:      #ifdef EIGEN_INITIALIZE_COEFFS
         -:  327:        if(size_changed) EIGEN_INITIALIZE_COEFFS_IF_THAT_OPTION_IS_ENABLED
         -:  328:      #endif
-     2331:  329:    }
+     6993:  329:    }
         -:  330:
         -:  331:    /** Resizes the matrix, changing only the number of columns. For the parameter of type NoChange_t, just pass the special value \c NoChange
         -:  332:      * as in the example below.
@@ -361,23 +361,23 @@
         -:  357:      */
         -:  358:    template<typename OtherDerived>
         -:  359:    EIGEN_DEVICE_FUNC
-     7093:  360:    EIGEN_STRONG_INLINE void resizeLike(const EigenBase<OtherDerived>& _other)
+    21279:  360:    EIGEN_STRONG_INLINE void resizeLike(const EigenBase<OtherDerived>& _other)
         -:  361:    {
-     7093:  362:      const OtherDerived& other = _other.derived();
-     7093:  363:      internal::check_rows_cols_for_overflow<MaxSizeAtCompileTime, MaxRowsAtCompileTime, MaxColsAtCompileTime>::run(other.rows(), other.cols());
-     7093:  364:      const Index othersize = other.rows()*other.cols();
+    21279:  362:      const OtherDerived& other = _other.derived();
+    21279:  363:      internal::check_rows_cols_for_overflow<MaxSizeAtCompileTime, MaxRowsAtCompileTime, MaxColsAtCompileTime>::run(other.rows(), other.cols());
+    21279:  364:      const Index othersize = other.rows()*other.cols();
         -:  365:      if(RowsAtCompileTime == 1)
         -:  366:      {
-     6840:  367:        eigen_assert(other.rows() == 1 || other.cols() == 1);
-     6840:  368:        resize(1, othersize);
+    20520:  367:        eigen_assert(other.rows() == 1 || other.cols() == 1);
+    20520:  368:        resize(1, othersize);
         -:  369:      }
         -:  370:      else if(ColsAtCompileTime == 1)
         -:  371:      {
-      131:  372:        eigen_assert(other.rows() == 1 || other.cols() == 1);
-      131:  373:        resize(othersize, 1);
+      393:  372:        eigen_assert(other.rows() == 1 || other.cols() == 1);
+      393:  373:        resize(othersize, 1);
         -:  374:      }
-      122:  375:      else resize(other.rows(), other.cols());
-     7093:  376:    }
+      366:  375:      else resize(other.rows(), other.cols());
+    21279:  376:    }
         -:  377:
         -:  378:    /** Resizes the matrix to \a rows x \a cols while leaving old values untouched.
         -:  379:      *
@@ -389,10 +389,10 @@
         -:  385:      * appended to the matrix they will be uninitialized.
         -:  386:      */
         -:  387:    EIGEN_DEVICE_FUNC
-        4:  388:    EIGEN_STRONG_INLINE void conservativeResize(Index rows, Index cols)
+       12:  388:    EIGEN_STRONG_INLINE void conservativeResize(Index rows, Index cols)
         -:  389:    {
-        4:  390:      internal::conservative_resize_like_impl<Derived>::run(*this, rows, cols);
-        4:  391:    }
+       12:  390:      internal::conservative_resize_like_impl<Derived>::run(*this, rows, cols);
+       12:  391:    }
         -:  392:
         -:  393:    /** Resizes the matrix to \a rows x \a cols while leaving old values untouched.
         -:  394:      *
@@ -431,10 +431,10 @@
         -:  427:      * When values are appended, they will be uninitialized.
         -:  428:      */
         -:  429:    EIGEN_DEVICE_FUNC
-        5:  430:    EIGEN_STRONG_INLINE void conservativeResize(Index size)
+       15:  430:    EIGEN_STRONG_INLINE void conservativeResize(Index size)
         -:  431:    {
-        5:  432:      internal::conservative_resize_like_impl<Derived>::run(*this, size);
-        5:  433:    }
+       15:  432:      internal::conservative_resize_like_impl<Derived>::run(*this, size);
+       15:  433:    }
         -:  434:
         -:  435:    /** Resizes the matrix to \a rows x \a cols of \c other, while leaving old values untouched.
         -:  436:      *
@@ -483,10 +483,10 @@
         -:  479:  protected:
         -:  480:
         -:  481:    EIGEN_DEVICE_FUNC
-     2911:  482:    EIGEN_STRONG_INLINE PlainObjectBase() : m_storage()
+     8733:  482:    EIGEN_STRONG_INLINE PlainObjectBase() : m_storage()
         -:  483:    {
         -:  484://       EIGEN_INITIALIZE_COEFFS_IF_THAT_OPTION_IS_ENABLED
-     2911:  485:    }
+     8733:  485:    }
         -:  486:
         -:  487:#ifndef EIGEN_PARSED_BY_DOXYGEN
         -:  488:    // FIXME is it still needed ?
@@ -500,22 +500,22 @@
         -:  496:#endif
         -:  497:
         -:  498:    EIGEN_DEVICE_FUNC
-      254:  499:    PlainObjectBase(PlainObjectBase&& other) EIGEN_NOEXCEPT
-      254:  500:      : m_storage( std::move(other.m_storage) )
+      762:  499:    PlainObjectBase(PlainObjectBase&& other) EIGEN_NOEXCEPT
+      762:  500:      : m_storage( std::move(other.m_storage) )
         -:  501:    {
-      254:  502:    }
+      762:  502:    }
         -:  503:
         -:  504:    EIGEN_DEVICE_FUNC
-      123:  505:    PlainObjectBase& operator=(PlainObjectBase&& other) EIGEN_NOEXCEPT
+      369:  505:    PlainObjectBase& operator=(PlainObjectBase&& other) EIGEN_NOEXCEPT
         -:  506:    {
-      123:  507:      m_storage = std::move(other.m_storage);
-      123:  508:      return *this;
+      369:  507:      m_storage = std::move(other.m_storage);
+      369:  508:      return *this;
         -:  509:    }
         -:  510:
         -:  511:    /** Copy constructor */
         -:  512:    EIGEN_DEVICE_FUNC
-      480:  513:    EIGEN_STRONG_INLINE PlainObjectBase(const PlainObjectBase& other)
-      480:  514:      : Base(), m_storage(other.m_storage) { }
+     1440:  513:    EIGEN_STRONG_INLINE PlainObjectBase(const PlainObjectBase& other)
+     1440:  514:      : Base(), m_storage(other.m_storage) { }
         -:  515:    EIGEN_DEVICE_FUNC
         -:  516:    EIGEN_STRONG_INLINE PlainObjectBase(Index size, Index rows, Index cols)
         -:  517:      : m_storage(size, rows, cols)
@@ -586,12 +586,12 @@
         -:  582:    /** \sa PlainObjectBase::operator=(const EigenBase<OtherDerived>&) */
         -:  583:    template<typename OtherDerived>
         -:  584:    EIGEN_DEVICE_FUNC
-     6973:  585:    EIGEN_STRONG_INLINE PlainObjectBase(const DenseBase<OtherDerived> &other)
-     6973:  586:      : m_storage()
+    20919:  585:    EIGEN_STRONG_INLINE PlainObjectBase(const DenseBase<OtherDerived> &other)
+    20919:  586:      : m_storage()
         -:  587:    {
-     6973:  588:      resizeLike(other);
-     6973:  589:      _set_noalias(other);
-     6973:  590:    }
+    20919:  588:      resizeLike(other);
+    20919:  589:      _set_noalias(other);
+    20919:  590:    }
         -:  591:
         -:  592:    /** \sa PlainObjectBase::operator=(const EigenBase<OtherDerived>&) */
         -:  593:    template<typename OtherDerived>
@@ -619,11 +619,11 @@
         -:  615:      */
         -:  616:    template<typename OtherDerived>
         -:  617:    EIGEN_DEVICE_FUNC
-      120:  618:    EIGEN_STRONG_INLINE Derived& operator=(const EigenBase<OtherDerived> &other)
+      360:  618:    EIGEN_STRONG_INLINE Derived& operator=(const EigenBase<OtherDerived> &other)
         -:  619:    {
-      120:  620:      _resize_to_match(other);
-      120:  621:      Base::operator=(other.derived());
-      120:  622:      return this->derived();
+      360:  620:      _resize_to_match(other);
+      360:  621:      Base::operator=(other.derived());
+      360:  622:      return this->derived();
         -:  623:    }
         -:  624:
         -:  625:    /** \name Map
@@ -642,8 +642,8 @@
         -:  638:    { return ConstMapType(data); }
         -:  639:    static inline MapType Map(Scalar* data)
         -:  640:    { return MapType(data); }
-        2:  641:    static inline ConstMapType Map(const Scalar* data, Index size)
-        2:  642:    { return ConstMapType(data, size); }
+        6:  641:    static inline ConstMapType Map(const Scalar* data, Index size)
+        6:  642:    { return ConstMapType(data, size); }
     #####:  643:    static inline MapType Map(Scalar* data, Index size)
     #####:  644:    { return MapType(data, size); }
         -:  645:    static inline ConstMapType Map(const Scalar* data, Index rows, Index cols)
@@ -741,7 +741,7 @@
         -:  737:      */
         -:  738:    template<typename OtherDerived>
         -:  739:    EIGEN_DEVICE_FUNC
-      120:  740:    EIGEN_STRONG_INLINE void _resize_to_match(const EigenBase<OtherDerived>& other)
+      360:  740:    EIGEN_STRONG_INLINE void _resize_to_match(const EigenBase<OtherDerived>& other)
         -:  741:    {
         -:  742:      #ifdef EIGEN_NO_AUTOMATIC_RESIZING
         -:  743:      eigen_assert((this->size()==0 || (IsVectorAtCompileTime ? (this->size() == other.size())
@@ -749,9 +749,9 @@
         -:  745:        && "Size mismatch. Automatic resizing is disabled because EIGEN_NO_AUTOMATIC_RESIZING is defined");
         -:  746:      EIGEN_ONLY_USED_FOR_DEBUG(other);
         -:  747:      #else
-      120:  748:      resizeLike(other);
+      360:  748:      resizeLike(other);
         -:  749:      #endif
-      120:  750:    }
+      360:  750:    }
         -:  751:
         -:  752:    /**
         -:  753:      * \brief Copies the value of the expression \a other into \c *this with automatic resizing.
@@ -771,10 +771,10 @@
         -:  767:    // so at this stage we have to assume aliasing... and resising has to be done later.
         -:  768:    template<typename OtherDerived>
         -:  769:    EIGEN_DEVICE_FUNC
-      765:  770:    EIGEN_STRONG_INLINE Derived& _set(const DenseBase<OtherDerived>& other)
+     2295:  770:    EIGEN_STRONG_INLINE Derived& _set(const DenseBase<OtherDerived>& other)
         -:  771:    {
-      765:  772:      internal::call_assignment(this->derived(), other.derived());
-      765:  773:      return this->derived();
+     2295:  772:      internal::call_assignment(this->derived(), other.derived());
+     2295:  773:      return this->derived();
         -:  774:    }
         -:  775:
         -:  776:    /** \internal Like _set() but additionally makes the assumption that no aliasing effect can happen (which
@@ -784,26 +784,26 @@
         -:  780:      */
         -:  781:    template<typename OtherDerived>
         -:  782:    EIGEN_DEVICE_FUNC
-     6977:  783:    EIGEN_STRONG_INLINE Derived& _set_noalias(const DenseBase<OtherDerived>& other)
+    20931:  783:    EIGEN_STRONG_INLINE Derived& _set_noalias(const DenseBase<OtherDerived>& other)
         -:  784:    {
         -:  785:      // I don't think we need this resize call since the lazyAssign will anyways resize
         -:  786:      // and lazyAssign will be called by the assign selector.
         -:  787:      //_resize_to_match(other);
         -:  788:      // the 'false' below means to enforce lazy evaluation. We don't use lazyAssign() because
         -:  789:      // it wouldn't allow to copy a row-vector into a column-vector.
-     6977:  790:      internal::call_assignment_no_alias(this->derived(), other.derived(), internal::assign_op<Scalar,typename OtherDerived::Scalar>());
-     6977:  791:      return this->derived();
+    20931:  790:      internal::call_assignment_no_alias(this->derived(), other.derived(), internal::assign_op<Scalar,typename OtherDerived::Scalar>());
+    20931:  791:      return this->derived();
         -:  792:    }
         -:  793:
         -:  794:    template<typename T0, typename T1>
         -:  795:    EIGEN_DEVICE_FUNC
-      376:  796:    EIGEN_STRONG_INLINE void _init2(Index rows, Index cols, std::enable_if_t<Base::SizeAtCompileTime!=2,T0>* = 0)
+     1128:  796:    EIGEN_STRONG_INLINE void _init2(Index rows, Index cols, std::enable_if_t<Base::SizeAtCompileTime!=2,T0>* = 0)
         -:  797:    {
         -:  798:      EIGEN_STATIC_ASSERT(internal::is_valid_index_type<T0>::value &&
         -:  799:                          internal::is_valid_index_type<T1>::value,
         -:  800:                          T0 AND T1 MUST BE INTEGER TYPES)
-      376:  801:      resize(rows,cols);
-      376:  802:    }
+     1128:  801:      resize(rows,cols);
+     1128:  802:    }
         -:  803:
         -:  804:    template<typename T0, typename T1>
         -:  805:    EIGEN_DEVICE_FUNC
@@ -831,16 +831,16 @@
         -:  827:    // then the argument is meant to be the size of the object.
         -:  828:    template<typename T>
         -:  829:    EIGEN_DEVICE_FUNC
-      399:  830:    EIGEN_STRONG_INLINE void _init1(Index size, std::enable_if_t<    (Base::SizeAtCompileTime!=1 || !internal::is_convertible<T, Scalar>::value)
+     1197:  830:    EIGEN_STRONG_INLINE void _init1(Index size, std::enable_if_t<    (Base::SizeAtCompileTime!=1 || !internal::is_convertible<T, Scalar>::value)
         -:  831:                                                                  && ((!internal::is_same<typename internal::traits<Derived>::XprKind,ArrayXpr>::value || Base::SizeAtCompileTime==Dynamic)),T>* = 0)
         -:  832:    {
         -:  833:      // NOTE MSVC 2008 complains if we directly put bool(NumTraits<T>::IsInteger) as the EIGEN_STATIC_ASSERT argument.
-      399:  834:      const bool is_integer_alike = internal::is_valid_index_type<T>::value;
-      399:  835:      EIGEN_UNUSED_VARIABLE(is_integer_alike);
+     1197:  834:      const bool is_integer_alike = internal::is_valid_index_type<T>::value;
+     1197:  835:      EIGEN_UNUSED_VARIABLE(is_integer_alike);
         -:  836:      EIGEN_STATIC_ASSERT(is_integer_alike,
         -:  837:                          FLOATING_POINT_ARGUMENT_PASSED__INTEGER_WAS_EXPECTED)
-      399:  838:      resize(size);
-      399:  839:    }
+     1197:  838:      resize(size);
+     1197:  839:    }
         -:  840:
         -:  841:    // We have a 1x1 matrix/array => the argument is interpreted as the value of the unique coefficient (case where scalar type can be implicitly converted)
         -:  842:    template<typename T>
@@ -854,15 +854,15 @@
         -:  850:    // We have a 1x1 matrix/array => the argument is interpreted as the value of the unique coefficient (case where scalar type match the index type)
         -:  851:    template<typename T>
         -:  852:    EIGEN_DEVICE_FUNC
-      240:  853:    EIGEN_STRONG_INLINE void _init1(const Index& val0,
+      720:  853:    EIGEN_STRONG_INLINE void _init1(const Index& val0,
         -:  854:                                    std::enable_if_t<    (!internal::is_same<Index,Scalar>::value)
         -:  855:                                                      && (internal::is_same<Index,T>::value)
         -:  856:                                                      && Base::SizeAtCompileTime==1
         -:  857:                                                      && internal::is_convertible<T, Scalar>::value,T*>* = 0)
         -:  858:    {
         -:  859:      EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(PlainObjectBase, 1)
-      240:  860:      m_storage.data()[0] = Scalar(val0);
-      240:  861:    }
+      720:  860:      m_storage.data()[0] = Scalar(val0);
+      720:  861:    }
         -:  862:
         -:  863:    // Initialize a fixed size matrix from a pointer to raw data
         -:  864:    template<typename T>
@@ -874,9 +874,9 @@
         -:  870:    // Initialize an arbitrary matrix from a dense expression
         -:  871:    template<typename T, typename OtherDerived>
         -:  872:    EIGEN_DEVICE_FUNC
-        4:  873:    EIGEN_STRONG_INLINE void _init1(const DenseBase<OtherDerived>& other){
-        4:  874:      this->_set_noalias(other);
-        4:  875:    }
+       12:  873:    EIGEN_STRONG_INLINE void _init1(const DenseBase<OtherDerived>& other){
+       12:  874:      this->_set_noalias(other);
+       12:  875:    }
         -:  876:
         -:  877:    // Initialize an arbitrary matrix from an object convertible to the Derived type.
         -:  878:    template<typename T>
@@ -980,18 +980,18 @@
         -:  976:struct conservative_resize_like_impl
         -:  977:{
         -:  978:  static constexpr bool IsRelocatable = std::is_trivially_copyable<typename Derived::Scalar>::value;
-        4:  979:  static void run(DenseBase<Derived>& _this, Index rows, Index cols)
+       12:  979:  static void run(DenseBase<Derived>& _this, Index rows, Index cols)
         -:  980:  {
-        4:  981:    if (_this.rows() == rows && _this.cols() == cols) return;
+       12:  981:    if (_this.rows() == rows && _this.cols() == cols) return;
         -:  982:    EIGEN_STATIC_ASSERT_DYNAMIC_SIZE(Derived)
         -:  983:
         -:  984:    if ( IsRelocatable
-        4:  985:          && (( Derived::IsRowMajor && _this.cols() == cols) ||  // row-major and we change only the number of rows
-        4:  986:              (!Derived::IsRowMajor && _this.rows() == rows) ))  // column-major and we change only the number of columns
+       12:  985:          && (( Derived::IsRowMajor && _this.cols() == cols) ||  // row-major and we change only the number of rows
+       12:  986:              (!Derived::IsRowMajor && _this.rows() == rows) ))  // column-major and we change only the number of columns
         -:  987:    {
-        4:  988:      internal::check_rows_cols_for_overflow<Derived::MaxSizeAtCompileTime, Derived::MaxRowsAtCompileTime, Derived::MaxColsAtCompileTime>::run(rows, cols);
-        4:  989:      _this.derived().m_storage.conservativeResize(rows*cols,rows,cols);
-        4:  990:    }
+       12:  988:      internal::check_rows_cols_for_overflow<Derived::MaxSizeAtCompileTime, Derived::MaxRowsAtCompileTime, Derived::MaxColsAtCompileTime>::run(rows, cols);
+       12:  989:      _this.derived().m_storage.conservativeResize(rows*cols,rows,cols);
+       12:  990:    }
         -:  991:    else
         -:  992:    {
         -:  993:      // The storage order does not allow us to use reallocation.
@@ -1001,7 +1001,7 @@
     #####:  997:      tmp.block(0,0,common_rows,common_cols) = _this.block(0,0,common_rows,common_cols);
     #####:  998:      _this.derived().swap(tmp);
     #####:  999:    }
-        4: 1000:  }
+       12: 1000:  }
         -: 1001:
         -: 1002:  static void run(DenseBase<Derived>& _this, const DenseBase<OtherDerived>& other)
         -: 1003:  {
@@ -1049,15 +1049,15 @@
         -: 1045:  using Base::run;
         -: 1046:  using Base::IsRelocatable;
         -: 1047:
-        5: 1048:  static void run(DenseBase<Derived>& _this, Index size)
+       15: 1048:  static void run(DenseBase<Derived>& _this, Index size)
         -: 1049:  {
-        5: 1050:    const Index new_rows = Derived::RowsAtCompileTime==1 ? 1 : size;
-        5: 1051:    const Index new_cols = Derived::RowsAtCompileTime==1 ? size : 1;
+       15: 1050:    const Index new_rows = Derived::RowsAtCompileTime==1 ? 1 : size;
+       15: 1051:    const Index new_cols = Derived::RowsAtCompileTime==1 ? size : 1;
         -: 1052:    if(IsRelocatable)
-        5: 1053:      _this.derived().m_storage.conservativeResize(size,new_rows,new_cols);
+       15: 1053:      _this.derived().m_storage.conservativeResize(size,new_rows,new_cols);
         -: 1054:    else
         -: 1055:      Base::run(_this.derived(), new_rows, new_cols);
-        5: 1056:  }
+       15: 1056:  }
         -: 1057:
         -: 1058:  static void run(DenseBase<Derived>& _this, const DenseBase<OtherDerived>& other)
         -: 1059:  {

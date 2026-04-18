@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/util/BlasUtil.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -190,12 +190,12 @@
         -:  186:  typedef blas_data_mapper<Scalar, Index, StorageOrder, AlignmentType> SubMapper;
         -:  187:  typedef BlasVectorMapper<Scalar, Index> VectorMapper;
         -:  188:
-      710:  189:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE blas_data_mapper(Scalar* data, Index stride, Index incr=1)
-      710:  190:   : m_data(data), m_stride(stride)
+     2130:  189:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE blas_data_mapper(Scalar* data, Index stride, Index incr=1)
+     2130:  190:   : m_data(data), m_stride(stride)
     #####:  191:  {
         -:  192:    EIGEN_ONLY_USED_FOR_DEBUG(incr);
-      710:  193:    eigen_assert(incr==1);
-      710:  194:  }
+     2130:  193:    eigen_assert(incr==1);
+     2130:  194:  }
         -:  195:
         -:  196:  EIGEN_DEVICE_FUNC  EIGEN_ALWAYS_INLINE SubMapper
     #####:  197:  getSubMapper(Index i, Index j) const {
@@ -215,8 +215,8 @@
         -:  211:  }
         -:  212:
         -:  213:  EIGEN_DEVICE_FUNC
-     2149:  214:  EIGEN_ALWAYS_INLINE Scalar& operator()(Index i, Index j) const {
-     2149:  215:    return m_data[StorageOrder==RowMajor ? j + i*m_stride : i + j*m_stride];
+     6447:  214:  EIGEN_ALWAYS_INLINE Scalar& operator()(Index i, Index j) const {
+     6447:  215:    return m_data[StorageOrder==RowMajor ? j + i*m_stride : i + j*m_stride];
         -:  216:  }
         -:  217:
         -:  218:  template<typename PacketType>
@@ -230,8 +230,8 @@
         -:  226:  }
         -:  227:
         -:  228:  template <typename PacketT, int AlignmentT>
-     1212:  229:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE PacketT load(Index i, Index j) const {
-     1212:  230:    return ploadt<PacketT, AlignmentT>(&operator()(i, j));
+     3636:  229:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE PacketT load(Index i, Index j) const {
+     3636:  230:    return ploadt<PacketT, AlignmentT>(&operator()(i, j));
         -:  231:  }
         -:  232:
         -:  233:  template<typename PacketType>
@@ -254,7 +254,7 @@
         -:  250:    return pgather<Scalar, SubPacket>(&operator()(i, j), m_stride);
         -:  251:  }
         -:  252:
-      355:  253:  EIGEN_DEVICE_FUNC const Index stride() const { return m_stride; }
+     1065:  253:  EIGEN_DEVICE_FUNC const Index stride() const { return m_stride; }
         -:  254:  EIGEN_DEVICE_FUNC const Index incr() const { return 1; }
         -:  255:  EIGEN_DEVICE_FUNC const Scalar* data() const { return m_data; }
         -:  256:
@@ -457,7 +457,7 @@
         -:  453:  public:
         -:  454:  typedef const_blas_data_mapper<Scalar, Index, StorageOrder> SubMapper;
         -:  455:
-     1420:  456:  EIGEN_ALWAYS_INLINE const_blas_data_mapper(const Scalar *data, Index stride) : blas_data_mapper<const Scalar, Index, StorageOrder>(data, stride) {}
+     4260:  456:  EIGEN_ALWAYS_INLINE const_blas_data_mapper(const Scalar *data, Index stride) : blas_data_mapper<const Scalar, Index, StorageOrder>(data, stride) {}
         -:  457:
     #####:  458:  EIGEN_ALWAYS_INLINE SubMapper getSubMapper(Index i, Index j) const {
     #####:  459:    return SubMapper(&(this->operator()(i, j)), this->m_stride);
@@ -487,8 +487,8 @@
         -:  483:    ExtractType,
         -:  484:    typename ExtractType_::PlainObject
         -:  485:    > DirectLinearAccessType;
-     1312:  486:  EIGEN_DEVICE_FUNC static inline EIGEN_DEVICE_FUNC ExtractType extract(const XprType& x) { return x; }
-     1192:  487:  EIGEN_DEVICE_FUNC static inline EIGEN_DEVICE_FUNC const Scalar extractScalarFactor(const XprType&) { return Scalar(1); }
+     3936:  486:  EIGEN_DEVICE_FUNC static inline EIGEN_DEVICE_FUNC ExtractType extract(const XprType& x) { return x; }
+     3576:  487:  EIGEN_DEVICE_FUNC static inline EIGEN_DEVICE_FUNC const Scalar extractScalarFactor(const XprType&) { return Scalar(1); }
         -:  488:};
         -:  489:
         -:  490:// pop conjugate
@@ -519,9 +519,9 @@
         -:  515:  typedef blas_traits<NestedXpr> Base;
         -:  516:  typedef CwiseBinaryOp<scalar_product_op<Scalar>, const CwiseNullaryOp<scalar_constant_op<Scalar>,Plain>, NestedXpr> XprType;
         -:  517:  typedef typename Base::ExtractType ExtractType;
-      120:  518:  EIGEN_DEVICE_FUNC static inline EIGEN_DEVICE_FUNC ExtractType extract(const XprType& x) { return Base::extract(x.rhs()); }
-      120:  519:  EIGEN_DEVICE_FUNC static inline EIGEN_DEVICE_FUNC Scalar extractScalarFactor(const XprType& x)
-      120:  520:  { return x.lhs().functor().m_other * Base::extractScalarFactor(x.rhs()); }
+      360:  518:  EIGEN_DEVICE_FUNC static inline EIGEN_DEVICE_FUNC ExtractType extract(const XprType& x) { return Base::extract(x.rhs()); }
+      360:  519:  EIGEN_DEVICE_FUNC static inline EIGEN_DEVICE_FUNC Scalar extractScalarFactor(const XprType& x)
+      360:  520:  { return x.lhs().functor().m_other * Base::extractScalarFactor(x.rhs()); }
         -:  521:};
         -:  522:template<typename Scalar, typename NestedXpr, typename Plain>
         -:  523:struct blas_traits<CwiseBinaryOp<scalar_product_op<Scalar>, NestedXpr, const CwiseNullaryOp<scalar_constant_op<Scalar>,Plain> > >
@@ -576,8 +576,8 @@
         -:  572:  enum {
         -:  573:    IsTransposed = Base::IsTransposed ? 0 : 1
         -:  574:  };
-     1065:  575:  EIGEN_DEVICE_FUNC static inline ExtractType extract(const XprType& x) { return ExtractType(Base::extract(x.nestedExpression())); }
-     1065:  576:  EIGEN_DEVICE_FUNC static inline Scalar extractScalarFactor(const XprType& x) { return Base::extractScalarFactor(x.nestedExpression()); }
+     3195:  575:  EIGEN_DEVICE_FUNC static inline ExtractType extract(const XprType& x) { return ExtractType(Base::extract(x.nestedExpression())); }
+     3195:  576:  EIGEN_DEVICE_FUNC static inline Scalar extractScalarFactor(const XprType& x) { return Base::extractScalarFactor(x.nestedExpression()); }
         -:  577:};
         -:  578:
         -:  579:template<typename T>
@@ -611,13 +611,13 @@
         -:  607:template<typename ResScalar, typename Lhs, typename Rhs>
         -:  608:struct combine_scalar_factors_impl
         -:  609:{
-        1:  610:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE static ResScalar run(const Lhs& lhs, const Rhs& rhs)
+        3:  610:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE static ResScalar run(const Lhs& lhs, const Rhs& rhs)
         -:  611:  {
-        1:  612:    return blas_traits<Lhs>::extractScalarFactor(lhs) * blas_traits<Rhs>::extractScalarFactor(rhs);
+        3:  612:    return blas_traits<Lhs>::extractScalarFactor(lhs) * blas_traits<Rhs>::extractScalarFactor(rhs);
         -:  613:  }
-      355:  614:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE static ResScalar run(const ResScalar& alpha, const Lhs& lhs, const Rhs& rhs)
+     1065:  614:  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE static ResScalar run(const ResScalar& alpha, const Lhs& lhs, const Rhs& rhs)
         -:  615:  {
-      355:  616:    return alpha * blas_traits<Lhs>::extractScalarFactor(lhs) * blas_traits<Rhs>::extractScalarFactor(rhs);
+     1065:  616:    return alpha * blas_traits<Lhs>::extractScalarFactor(lhs) * blas_traits<Rhs>::extractScalarFactor(rhs);
         -:  617:  }
         -:  618:};
         -:  619:template<typename Lhs, typename Rhs>
@@ -634,14 +634,14 @@
         -:  630:};
         -:  631:
         -:  632:template<typename ResScalar, typename Lhs, typename Rhs>
-      355:  633:EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE ResScalar combine_scalar_factors(const ResScalar& alpha, const Lhs& lhs, const Rhs& rhs)
+     1065:  633:EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE ResScalar combine_scalar_factors(const ResScalar& alpha, const Lhs& lhs, const Rhs& rhs)
         -:  634:{
-      355:  635:  return combine_scalar_factors_impl<ResScalar,Lhs,Rhs>::run(alpha, lhs, rhs);
+     1065:  635:  return combine_scalar_factors_impl<ResScalar,Lhs,Rhs>::run(alpha, lhs, rhs);
         -:  636:}
         -:  637:template<typename ResScalar, typename Lhs, typename Rhs>
-        1:  638:EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE ResScalar combine_scalar_factors(const Lhs& lhs, const Rhs& rhs)
+        3:  638:EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE ResScalar combine_scalar_factors(const Lhs& lhs, const Rhs& rhs)
         -:  639:{
-        1:  640:  return combine_scalar_factors_impl<ResScalar,Lhs,Rhs>::run(lhs, rhs);
+        3:  640:  return combine_scalar_factors_impl<ResScalar,Lhs,Rhs>::run(lhs, rhs);
         -:  641:}
         -:  642:
         -:  643:

@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/util/Meta.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -190,8 +190,8 @@
         -:  186:  EIGEN_DEVICE_FUNC noncopyable(const noncopyable&);
         -:  187:  EIGEN_DEVICE_FUNC const noncopyable& operator=(const noncopyable&);
         -:  188:protected:
-      758:  189:  EIGEN_DEVICE_FUNC noncopyable() {}
-      758:  190:  EIGEN_DEVICE_FUNC ~noncopyable() {}
+     2274:  189:  EIGEN_DEVICE_FUNC noncopyable() {}
+     2274:  190:  EIGEN_DEVICE_FUNC ~noncopyable() {}
         -:  191:};
         -:  192:
         -:  193:/** \internal
@@ -421,7 +421,7 @@
         -:  417:#if defined(EIGEN_GPU_COMPILE_PHASE)
         -:  418:template<typename T> EIGEN_DEVICE_FUNC   void swap(T &a, T &b) { T tmp = b; b = a; a = tmp; }
         -:  419:#else
-        8:  420:template<typename T> EIGEN_STRONG_INLINE void swap(T &a, T &b) { std::swap(a,b); }
+       24:  420:template<typename T> EIGEN_STRONG_INLINE void swap(T &a, T &b) { std::swap(a,b); }
         -:  421:#endif
         -:  422:
         -:  423:using std::numeric_limits;
@@ -430,7 +430,7 @@
         -:  426:template <typename X, typename Y, bool XIsInteger = NumTraits<X>::IsInteger, bool XIsSigned = NumTraits<X>::IsSigned,
         -:  427:          bool YIsInteger = NumTraits<Y>::IsInteger, bool YIsSigned = NumTraits<Y>::IsSigned>
         -:  428:struct equal_strict_impl {
-      119:  429:  static EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bool run(const X& x, const Y& y) { return x == y; }
+      357:  429:  static EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bool run(const X& x, const Y& y) { return x == y; }
         -:  430:};
         -:  431:template <typename X, typename Y>
         -:  432:struct equal_strict_impl<X, Y, true, false, true, true> {
@@ -453,14 +453,14 @@
         -:  449:
         -:  450:// The aim of the following functions is to bypass -Wfloat-equal warnings
         -:  451:// when we really want a strict equality comparison on floating points.
-      119:  452:template<typename X, typename Y> EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bool equal_strict(const X& x, const Y& y) { return equal_strict_impl<X, Y>::run(x, y); }
+      357:  452:template<typename X, typename Y> EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bool equal_strict(const X& x, const Y& y) { return equal_strict_impl<X, Y>::run(x, y); }
         -:  453:
         -:  454:#if !defined(EIGEN_GPU_COMPILE_PHASE) || (!defined(EIGEN_CUDA_ARCH) && defined(EIGEN_CONSTEXPR_ARE_DEVICE_FUNC))
         -:  455:template<> EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC
         -:  456:bool equal_strict(const float& x,const float& y) { return std::equal_to<float>()(x,y); }
         -:  457:
         -:  458:template<> EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC
-     4538:  459:bool equal_strict(const double& x,const double& y) { return std::equal_to<double>()(x,y); }
+    13614:  459:bool equal_strict(const double& x,const double& y) { return std::equal_to<double>()(x,y); }
         -:  460:#endif
         -:  461:
         -:  462:/**
@@ -468,7 +468,7 @@
         -:  464: * Use this to to bypass -Wfloat-equal warnings when exact zero is what needs to be tested.
         -:  465:*/
         -:  466:template<typename X> EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC
-     2749:  467:bool is_exactly_zero(const X& x) { return equal_strict(x, typename NumTraits<X>::Literal{0}); }
+     8247:  467:bool is_exactly_zero(const X& x) { return equal_strict(x, typename NumTraits<X>::Literal{0}); }
         -:  468:
         -:  469:/**
         -:  470: * \internal Performs an exact comparison of x to one, e.g. to decide whether a factor needs to be multiplied.
@@ -494,13 +494,13 @@
         -:  490:
         -:  491:template<typename Scalar>
         -:  492:struct is_identically_zero_impl {
-      478:  493:  static inline bool run(const Scalar& s) {
-      478:  494:    return numext::is_exactly_zero(s);
+     1434:  493:  static inline bool run(const Scalar& s) {
+     1434:  494:    return numext::is_exactly_zero(s);
         -:  495:  }
         -:  496:};
         -:  497:
         -:  498:template<typename Scalar> EIGEN_STRONG_INLINE
-      478:  499:bool is_identically_zero(const Scalar& s) { return is_identically_zero_impl<Scalar>::run(s); }
+     1434:  499:bool is_identically_zero(const Scalar& s) { return is_identically_zero_impl<Scalar>::run(s); }
         -:  500:
         -:  501:/// \internal Returns true if its argument is of integer or enum type.
         -:  502:/// FIXME this has the same purpose as `is_valid_index_type` in XprHelper.h
@@ -572,8 +572,8 @@
         -:  568:}
         -:  569:
         -:  570:/// \internal Calculate logical IMPLIES at compile time
-    31548:  571:inline constexpr bool check_implication(bool a, bool b) {
-    31548:  572:  return !a || b;
+    94644:  571:inline constexpr bool check_implication(bool a, bool b) {
+    94644:  572:  return !a || b;
         -:  573:}
         -:  574:
         -:  575:/// \internal Provide fallback for std::is_constant_evaluated for pre-C++20.

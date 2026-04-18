@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/CommaInitializer.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -37,13 +37,13 @@
         -:   33:  typedef typename XprType::Scalar Scalar;
         -:   34:
         -:   35:  EIGEN_DEVICE_FUNC
-     1950:   36:  inline CommaInitializer(XprType& xpr, const Scalar& s)
-      975:   37:    : m_xpr(xpr), m_row(0), m_col(1), m_currentBlockRows(1)
-      975:   38:  {
-     1950:   39:    eigen_assert(m_xpr.rows() > 0 && m_xpr.cols() > 0
+     5850:   36:  inline CommaInitializer(XprType& xpr, const Scalar& s)
+     2925:   37:    : m_xpr(xpr), m_row(0), m_col(1), m_currentBlockRows(1)
+     2925:   38:  {
+     5850:   39:    eigen_assert(m_xpr.rows() > 0 && m_xpr.cols() > 0
         -:   40:      && "Cannot comma-initialize a 0x0 matrix (operator<<)");
-      975:   41:    m_xpr.coeffRef(0,0) = s;
-     1950:   42:  }
+     2925:   41:    m_xpr.coeffRef(0,0) = s;
+     5850:   42:  }
         -:   43:
         -:   44:  template<typename OtherDerived>
         -:   45:  EIGEN_DEVICE_FUNC
@@ -69,21 +69,21 @@
         -:   65:
         -:   66:  /* inserts a scalar value in the target matrix */
         -:   67:  EIGEN_DEVICE_FUNC
-     2655:   68:  CommaInitializer& operator,(const Scalar& s)
+     7965:   68:  CommaInitializer& operator,(const Scalar& s)
         -:   69:  {
-     2655:   70:    if (m_col==m_xpr.cols())
+     7965:   70:    if (m_col==m_xpr.cols())
         -:   71:    {
-      120:   72:      m_row+=m_currentBlockRows;
-      120:   73:      m_col = 0;
-      120:   74:      m_currentBlockRows = 1;
-      240:   75:      eigen_assert(m_row<m_xpr.rows()
+      360:   72:      m_row+=m_currentBlockRows;
+      360:   73:      m_col = 0;
+      360:   74:      m_currentBlockRows = 1;
+      720:   75:      eigen_assert(m_row<m_xpr.rows()
         -:   76:        && "Too many rows passed to comma initializer (operator<<)");
-      120:   77:    }
-     5310:   78:    eigen_assert(m_col<m_xpr.cols()
+      360:   77:    }
+    15930:   78:    eigen_assert(m_col<m_xpr.cols()
         -:   79:      && "Too many coefficients passed to comma initializer (operator<<)");
-     2655:   80:    eigen_assert(m_currentBlockRows==1);
-     2655:   81:    m_xpr.coeffRef(m_row, m_col++) = s;
-     2655:   82:    return *this;
+     7965:   80:    eigen_assert(m_currentBlockRows==1);
+     7965:   81:    m_xpr.coeffRef(m_row, m_col++) = s;
+     7965:   82:    return *this;
         -:   83:  }
         -:   84:
         -:   85:  /* inserts a matrix expression in the target matrix */
@@ -109,13 +109,13 @@
         -:  105:  }
         -:  106:
         -:  107:  EIGEN_DEVICE_FUNC
-     1950:  108:  inline ~CommaInitializer()
+     5850:  108:  inline ~CommaInitializer()
         -:  109:#if defined VERIFY_RAISES_ASSERT && (!defined EIGEN_NO_ASSERTION_CHECKING) && defined EIGEN_EXCEPTIONS
         -:  110:  EIGEN_EXCEPTION_SPEC(Eigen::eigen_assert_exception)
         -:  111:#endif
-      975:  112:  {
-      975:  113:    finished();
-     1950:  114:  }
+     2925:  112:  {
+     2925:  113:    finished();
+     5850:  114:  }
         -:  115:
         -:  116:  /** \returns the built matrix once all its coefficients have been set.
         -:  117:    * Calling finished is 100% optional. Its purpose is to write expressions
@@ -125,11 +125,11 @@
         -:  121:    * \endcode
         -:  122:    */
         -:  123:  EIGEN_DEVICE_FUNC
-      975:  124:  inline XprType& finished() {
-     1950:  125:      eigen_assert(((m_row+m_currentBlockRows) == m_xpr.rows() || m_xpr.cols() == 0)
+     2925:  124:  inline XprType& finished() {
+     5850:  125:      eigen_assert(((m_row+m_currentBlockRows) == m_xpr.rows() || m_xpr.cols() == 0)
         -:  126:           && m_col == m_xpr.cols()
         -:  127:           && "Too few coefficients passed to comma initializer (operator<<)");
-      975:  128:      return m_xpr;
+     2925:  128:      return m_xpr;
         -:  129:  }
         -:  130:
         -:  131:  XprType& m_xpr;           // target expression
@@ -152,9 +152,9 @@
         -:  148:  * \sa CommaInitializer::finished(), class CommaInitializer
         -:  149:  */
         -:  150:template<typename Derived>
-      975:  151:EIGEN_DEVICE_FUNC inline CommaInitializer<Derived> DenseBase<Derived>::operator<< (const Scalar& s)
+     2925:  151:EIGEN_DEVICE_FUNC inline CommaInitializer<Derived> DenseBase<Derived>::operator<< (const Scalar& s)
         -:  152:{
-      975:  153:  return CommaInitializer<Derived>(*static_cast<Derived*>(this), s);
+     2925:  153:  return CommaInitializer<Derived>(*static_cast<Derived*>(this), s);
         -:  154:}
         -:  155:
         -:  156:/** \sa operator<<(const Scalar&) */

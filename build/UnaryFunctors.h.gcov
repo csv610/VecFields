@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/functors/UnaryFunctors.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -27,10 +27,10 @@
         -:   23:  * \sa class CwiseUnaryOp, MatrixBase::operator-
         -:   24:  */
         -:   25:template<typename Scalar> struct scalar_opposite_op {
-      240:   26:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() (const Scalar& a) const { return -a; }
+      720:   26:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() (const Scalar& a) const { return -a; }
         -:   27:  template<typename Packet>
-      240:   28:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp(const Packet& a) const
-      240:   29:  { return internal::pnegate(a); }
+      720:   28:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp(const Packet& a) const
+      720:   29:  { return internal::pnegate(a); }
         -:   30:};
         -:   31:template<typename Scalar>
         -:   32:struct functor_traits<scalar_opposite_op<Scalar> >
@@ -48,8 +48,8 @@
         -:   44:  typedef typename NumTraits<Scalar>::Real result_type;
     #####:   45:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const result_type operator() (const Scalar& a) const { return numext::abs(a); }
         -:   46:  template<typename Packet>
-      360:   47:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp(const Packet& a) const
-      360:   48:  { return internal::pabs(a); }
+     1080:   47:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp(const Packet& a) const
+     1080:   48:  { return internal::pabs(a); }
         -:   49:};
         -:   50:template<typename Scalar>
         -:   51:struct functor_traits<scalar_abs_op<Scalar> >
@@ -94,10 +94,10 @@
         -:   90:template<typename Scalar> struct scalar_abs2_op {
         -:   91:  typedef typename NumTraits<Scalar>::Real result_type;
         -:   92:  EIGEN_DEVICE_FUNC
-     5422:   93:  EIGEN_STRONG_INLINE const result_type operator() (const Scalar& a) const { return numext::abs2(a); }
+    16266:   93:  EIGEN_STRONG_INLINE const result_type operator() (const Scalar& a) const { return numext::abs2(a); }
         -:   94:  template<typename Packet>
-     3770:   95:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp(const Packet& a) const
-     3770:   96:  { return internal::pmul(a,a); }
+    11310:   95:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp(const Packet& a) const
+    11310:   96:  { return internal::pmul(a,a); }
         -:   97:};
         -:   98:template<typename Scalar>
         -:   99:struct functor_traits<scalar_abs2_op<Scalar> >
@@ -110,7 +110,7 @@
         -:  106:  */
         -:  107:template<typename Scalar> struct scalar_conjugate_op {
         -:  108:  EIGEN_DEVICE_FUNC
-     1317:  109:  EIGEN_STRONG_INLINE const Scalar operator() (const Scalar& a) const { return numext::conj(a); }
+     3951:  109:  EIGEN_STRONG_INLINE const Scalar operator() (const Scalar& a) const { return numext::conj(a); }
         -:  110:  template<typename Packet>
     #####:  111:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp(const Packet& a) const { return internal::pconj(a); }
         -:  112:};
@@ -181,7 +181,7 @@
         -:  177:template<typename Scalar, typename NewType>
         -:  178:struct scalar_cast_op {
         -:  179:  typedef NewType result_type;
-      960:  180:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const NewType operator() (const Scalar& a) const { return cast<Scalar, NewType>(a); }
+     2880:  180:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const NewType operator() (const Scalar& a) const { return cast<Scalar, NewType>(a); }
         -:  181:};
         -:  182:
         -:  183:template<typename Scalar, typename NewType>
@@ -250,7 +250,7 @@
         -:  246:struct scalar_real_op {
         -:  247:  typedef typename NumTraits<Scalar>::Real result_type;
         -:  248:  EIGEN_DEVICE_FUNC
-      480:  249:  EIGEN_STRONG_INLINE result_type operator() (const Scalar& a) const { return numext::real(a); }
+     1440:  249:  EIGEN_STRONG_INLINE result_type operator() (const Scalar& a) const { return numext::real(a); }
         -:  250:};
         -:  251:template<typename Scalar>
         -:  252:struct functor_traits<scalar_real_op<Scalar> >
@@ -265,7 +265,7 @@
         -:  261:struct scalar_imag_op {
         -:  262:  typedef typename NumTraits<Scalar>::Real result_type;
         -:  263:  EIGEN_DEVICE_FUNC
-      480:  264:  EIGEN_STRONG_INLINE result_type operator() (const Scalar& a) const { return numext::imag(a); }
+     1440:  264:  EIGEN_STRONG_INLINE result_type operator() (const Scalar& a) const { return numext::imag(a); }
         -:  265:};
         -:  266:template<typename Scalar>
         -:  267:struct functor_traits<scalar_imag_op<Scalar> >
@@ -280,7 +280,7 @@
         -:  276:struct scalar_real_ref_op {
         -:  277:  typedef typename NumTraits<Scalar>::Real result_type;
         -:  278:  EIGEN_DEVICE_FUNC
-      600:  279:  EIGEN_STRONG_INLINE result_type& operator() (const Scalar& a) const { return numext::real_ref(*const_cast<Scalar*>(&a)); }
+     1800:  279:  EIGEN_STRONG_INLINE result_type& operator() (const Scalar& a) const { return numext::real_ref(*const_cast<Scalar*>(&a)); }
         -:  280:};
         -:  281:template<typename Scalar>
         -:  282:struct functor_traits<scalar_real_ref_op<Scalar> >
@@ -295,7 +295,7 @@
         -:  291:struct scalar_imag_ref_op {
         -:  292:  typedef typename NumTraits<Scalar>::Real result_type;
         -:  293:  EIGEN_DEVICE_FUNC
-      600:  294:  EIGEN_STRONG_INLINE result_type& operator() (const Scalar& a) const { return numext::imag_ref(*const_cast<Scalar*>(&a)); }
+     1800:  294:  EIGEN_STRONG_INLINE result_type& operator() (const Scalar& a) const { return numext::imag_ref(*const_cast<Scalar*>(&a)); }
         -:  295:};
         -:  296:template<typename Scalar>
         -:  297:struct functor_traits<scalar_imag_ref_op<Scalar> >
@@ -445,7 +445,7 @@
         -:  441:template<typename Scalar> struct scalar_sqrt_op {
     #####:  442:  EIGEN_DEVICE_FUNC inline const Scalar operator() (const Scalar& a) const { return numext::sqrt(a); }
         -:  443:  template <typename Packet>
-       60:  444:  EIGEN_DEVICE_FUNC inline Packet packetOp(const Packet& a) const { return internal::psqrt(a); }
+      180:  444:  EIGEN_DEVICE_FUNC inline Packet packetOp(const Packet& a) const { return internal::psqrt(a); }
         -:  445:};
         -:  446:template <typename Scalar>
         -:  447:struct functor_traits<scalar_sqrt_op<Scalar> > {
@@ -730,8 +730,8 @@
         -:  726:struct scalar_inverse_op {
     #####:  727:  EIGEN_DEVICE_FUNC inline Scalar operator() (const Scalar& a) const { return Scalar(1)/a; }
         -:  728:  template<typename Packet>
-      179:  729:  EIGEN_DEVICE_FUNC inline const Packet packetOp(const Packet& a) const
-      179:  730:  { return internal::preciprocal(a); }
+      537:  729:  EIGEN_DEVICE_FUNC inline const Packet packetOp(const Packet& a) const
+      537:  730:  { return internal::preciprocal(a); }
         -:  731:};
         -:  732:template <typename Scalar>
         -:  733:struct functor_traits<scalar_inverse_op<Scalar> > {
@@ -1195,10 +1195,10 @@
         -: 1191:      Scalar, ExponentScalar,
         -: 1192:      internal::has_ReturnType<ScalarBinaryOpTraits<Scalar,ExponentScalar,scalar_unary_pow_op> >::value>::type PromotedExponent;
         -: 1193:  typedef typename ScalarBinaryOpTraits<Scalar, PromotedExponent, scalar_unary_pow_op>::ReturnType result_type;
-        2: 1194:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE scalar_unary_pow_op(const ExponentScalar& exponent) : m_exponent(exponent) {}
-      120: 1195:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type operator()(const Scalar& a) const {
+        6: 1194:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE scalar_unary_pow_op(const ExponentScalar& exponent) : m_exponent(exponent) {}
+      360: 1195:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type operator()(const Scalar& a) const {
         -: 1196:    EIGEN_USING_STD(pow);
-      120: 1197:    return static_cast<result_type>(pow(a, m_exponent));
+      360: 1197:    return static_cast<result_type>(pow(a, m_exponent));
         -: 1198:  }
         -: 1199:
         -: 1200: private:

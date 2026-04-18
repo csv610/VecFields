@@ -262,6 +262,19 @@ vecfields_test_field_processing/fast:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vecfields_test_field_processing.dir/build.make tests/CMakeFiles/vecfields_test_field_processing.dir/build
 .PHONY : vecfields_test_field_processing/fast
 
+#=============================================================================
+# Target rules for targets named vecfields_test_polyvector_field
+
+# Build rule for target.
+vecfields_test_polyvector_field: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vecfields_test_polyvector_field
+.PHONY : vecfields_test_polyvector_field
+
+# fast build rule for target.
+vecfields_test_polyvector_field/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vecfields_test_polyvector_field.dir/build.make tests/CMakeFiles/vecfields_test_polyvector_field.dir/build
+.PHONY : vecfields_test_polyvector_field/fast
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -282,6 +295,7 @@ help:
 	@echo "... vecfields_test_basic"
 	@echo "... vecfields_test_field_processing"
 	@echo "... vecfields_test_mesh_io"
+	@echo "... vecfields_test_polyvector_field"
 .PHONY : help
 
 

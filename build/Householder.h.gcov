@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Householder/Householder.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -47,11 +47,11 @@
         -:   43:  */
         -:   44:template<typename Derived>
         -:   45:EIGEN_DEVICE_FUNC
-      598:   46:void MatrixBase<Derived>::makeHouseholderInPlace(Scalar& tau, RealScalar& beta)
+     1794:   46:void MatrixBase<Derived>::makeHouseholderInPlace(Scalar& tau, RealScalar& beta)
         -:   47:{
-      598:   48:  VectorBlock<Derived, internal::decrement_size<Base::SizeAtCompileTime>::ret> essentialPart(derived(), 1, size()-1);
-      598:   49:  makeHouseholder(essentialPart, tau, beta);
-      598:   50:}
+     1794:   48:  VectorBlock<Derived, internal::decrement_size<Base::SizeAtCompileTime>::ret> essentialPart(derived(), 1, size()-1);
+     1794:   49:  makeHouseholder(essentialPart, tau, beta);
+     1794:   50:}
         -:   51:
         -:   52:/** Computes the elementary reflector H such that:
         -:   53:  * \f$ H *this = [ beta 0 ... 0]^T \f$
@@ -71,7 +71,7 @@
         -:   67:template<typename Derived>
         -:   68:template<typename EssentialPart>
         -:   69:EIGEN_DEVICE_FUNC
-      598:   70:void MatrixBase<Derived>::makeHouseholder(
+     1794:   70:void MatrixBase<Derived>::makeHouseholder(
         -:   71:  EssentialPart& essential,
         -:   72:  Scalar& tau,
         -:   73:  RealScalar& beta) const
@@ -80,27 +80,27 @@
         -:   76:  using numext::conj;
         -:   77:  
         -:   78:  EIGEN_STATIC_ASSERT_VECTOR_ONLY(EssentialPart)
-      598:   79:  VectorBlock<const Derived, EssentialPart::SizeAtCompileTime> tail(derived(), 1, size()-1);
+     1794:   79:  VectorBlock<const Derived, EssentialPart::SizeAtCompileTime> tail(derived(), 1, size()-1);
         -:   80:  
-      598:   81:  RealScalar tailSqNorm = size()==1 ? RealScalar(0) : tail.squaredNorm();
-      598:   82:  Scalar c0 = coeff(0);
-      598:   83:  const RealScalar tol = (std::numeric_limits<RealScalar>::min)();
+     1794:   81:  RealScalar tailSqNorm = size()==1 ? RealScalar(0) : tail.squaredNorm();
+     1794:   82:  Scalar c0 = coeff(0);
+     1794:   83:  const RealScalar tol = (std::numeric_limits<RealScalar>::min)();
         -:   84:
-      598:   85:  if(tailSqNorm <= tol && numext::abs2(numext::imag(c0))<=tol)
+     1794:   85:  if(tailSqNorm <= tol && numext::abs2(numext::imag(c0))<=tol)
         -:   86:  {
-      239:   87:    tau = RealScalar(0);
-      239:   88:    beta = numext::real(c0);
-      239:   89:    essential.setZero();
-      239:   90:  }
+      717:   87:    tau = RealScalar(0);
+      717:   88:    beta = numext::real(c0);
+      717:   89:    essential.setZero();
+      717:   90:  }
         -:   91:  else
         -:   92:  {
-      359:   93:    beta = sqrt(numext::abs2(c0) + tailSqNorm);
-      359:   94:    if (numext::real(c0)>=RealScalar(0))
-      244:   95:      beta = -beta;
-      359:   96:    essential = tail / (c0 - beta);
-      359:   97:    tau = conj((beta - c0) / beta);
+     1077:   93:    beta = sqrt(numext::abs2(c0) + tailSqNorm);
+     1077:   94:    if (numext::real(c0)>=RealScalar(0))
+      732:   95:      beta = -beta;
+     1077:   96:    essential = tail / (c0 - beta);
+     1077:   97:    tau = conj((beta - c0) / beta);
         -:   98:  }
-      598:   99:}
+     1794:   99:}
         -:  100:
         -:  101:/** Apply the elementary reflector H given by
         -:  102:  * \f$ H = I - tau v v^*\f$
@@ -120,25 +120,25 @@
         -:  116:template<typename Derived>
         -:  117:template<typename EssentialPart>
         -:  118:EIGEN_DEVICE_FUNC
-     1076:  119:void MatrixBase<Derived>::applyHouseholderOnTheLeft(
+     3228:  119:void MatrixBase<Derived>::applyHouseholderOnTheLeft(
         -:  120:  const EssentialPart& essential,
         -:  121:  const Scalar& tau,
         -:  122:  Scalar* workspace)
         -:  123:{
-     1076:  124:  if(rows() == 1)
+     3228:  124:  if(rows() == 1)
         -:  125:  {
-      356:  126:    *this *= Scalar(1)-tau;
-      356:  127:  }
-      720:  128:  else if(!numext::is_exactly_zero(tau))
+     1068:  126:    *this *= Scalar(1)-tau;
+     1068:  127:  }
+     2160:  128:  else if(!numext::is_exactly_zero(tau))
         -:  129:  {
-      718:  130:    Map<typename internal::plain_row_type<PlainObject>::type> tmp(workspace,cols());
-      718:  131:    Block<Derived, EssentialPart::SizeAtCompileTime, Derived::ColsAtCompileTime> bottom(derived(), 1, 0, rows()-1, cols());
-      718:  132:    tmp.noalias() = essential.adjoint() * bottom;
-      718:  133:    tmp += this->row(0);
-      718:  134:    this->row(0) -= tau * tmp;
-      718:  135:    bottom.noalias() -= tau * essential * tmp;
-      718:  136:  }
-     1076:  137:}
+     2154:  130:    Map<typename internal::plain_row_type<PlainObject>::type> tmp(workspace,cols());
+     2154:  131:    Block<Derived, EssentialPart::SizeAtCompileTime, Derived::ColsAtCompileTime> bottom(derived(), 1, 0, rows()-1, cols());
+     2154:  132:    tmp.noalias() = essential.adjoint() * bottom;
+     2154:  133:    tmp += this->row(0);
+     2154:  134:    this->row(0) -= tau * tmp;
+     2154:  135:    bottom.noalias() -= tau * essential * tmp;
+     2154:  136:  }
+     3228:  137:}
         -:  138:
         -:  139:/** Apply the elementary reflector H given by
         -:  140:  * \f$ H = I - tau v v^*\f$

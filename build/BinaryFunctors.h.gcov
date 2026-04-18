@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/functors/BinaryFunctors.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -44,13 +44,13 @@
         -:   40:    EIGEN_SCALAR_BINARY_OP_PLUGIN
         -:   41:  }
         -:   42:#endif
-    13573:   43:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type operator() (const LhsScalar& a, const RhsScalar& b) const { return a + b; }
+    40719:   43:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type operator() (const LhsScalar& a, const RhsScalar& b) const { return a + b; }
         -:   44:  template<typename Packet>
-     1736:   45:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packetOp(const Packet& a, const Packet& b) const
-     1736:   46:  { return internal::padd(a,b); }
+     5208:   45:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packetOp(const Packet& a, const Packet& b) const
+     5208:   46:  { return internal::padd(a,b); }
         -:   47:  template<typename Packet>
-     5283:   48:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type predux(const Packet& a) const
-     5283:   49:  { return internal::predux(a); }
+    15849:   48:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type predux(const Packet& a) const
+    15849:   49:  { return internal::predux(a); }
         -:   50:};
         -:   51:template<typename LhsScalar,typename RhsScalar>
         -:   52:struct functor_traits<scalar_sum_op<LhsScalar,RhsScalar> > {
@@ -80,10 +80,10 @@
         -:   76:    EIGEN_SCALAR_BINARY_OP_PLUGIN
         -:   77:  }
         -:   78:#endif
-    13565:   79:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type operator() (const LhsScalar& a, const RhsScalar& b) const { return a * b; }
+    40695:   79:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type operator() (const LhsScalar& a, const RhsScalar& b) const { return a * b; }
         -:   80:  template<typename Packet>
-     1935:   81:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packetOp(const Packet& a, const Packet& b) const
-     1935:   82:  { return internal::pmul(a,b); }
+     5805:   81:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packetOp(const Packet& a, const Packet& b) const
+     5805:   82:  { return internal::pmul(a,b); }
         -:   83:  template<typename Packet>
         -:   84:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type predux(const Packet& a) const
         -:   85:  { return internal::predux_mul(a); }
@@ -116,12 +116,12 @@
         -:  112:
         -:  113:  typedef typename ScalarBinaryOpTraits<LhsScalar,RhsScalar,scalar_conj_product_op>::ReturnType result_type;
         -:  114:
-     4083:  115:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type operator() (const LhsScalar& a, const RhsScalar& b) const
-     4083:  116:  { return conj_helper<LhsScalar,RhsScalar,Conj,false>().pmul(a,b); }
+    12249:  115:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type operator() (const LhsScalar& a, const RhsScalar& b) const
+    12249:  116:  { return conj_helper<LhsScalar,RhsScalar,Conj,false>().pmul(a,b); }
         -:  117:
         -:  118:  template<typename Packet>
-     2162:  119:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packetOp(const Packet& a, const Packet& b) const
-     2162:  120:  { return conj_helper<Packet,Packet,Conj,false>().pmul(a,b); }
+     6486:  119:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packetOp(const Packet& a, const Packet& b) const
+     6486:  120:  { return conj_helper<Packet,Packet,Conj,false>().pmul(a,b); }
         -:  121:};
         -:  122:template<typename LhsScalar,typename RhsScalar>
         -:  123:struct functor_traits<scalar_conj_product_op<LhsScalar,RhsScalar> > {
@@ -144,14 +144,14 @@
     #####:  140:    return internal::pmin<NaNPropagation>(a, b);
         -:  141:  }
         -:  142:  template<typename Packet>
-      266:  143:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packetOp(const Packet& a, const Packet& b) const
+      798:  143:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packetOp(const Packet& a, const Packet& b) const
         -:  144:  {
-      266:  145:    return internal::pmin<NaNPropagation>(a,b);
+      798:  145:    return internal::pmin<NaNPropagation>(a,b);
         -:  146:  }
         -:  147:  template<typename Packet>
-        4:  148:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type predux(const Packet& a) const
+       12:  148:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type predux(const Packet& a) const
         -:  149:  {
-        4:  150:    return internal::predux_min<NaNPropagation>(a);
+       12:  150:    return internal::predux_min<NaNPropagation>(a);
         -:  151:  }
         -:  152:};
         -:  153:
@@ -172,18 +172,18 @@
         -:  168:struct scalar_max_op : binary_op_base<LhsScalar,RhsScalar>
         -:  169:{
         -:  170:  typedef typename ScalarBinaryOpTraits<LhsScalar,RhsScalar,scalar_max_op>::ReturnType result_type;
-      120:  171:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type operator() (const LhsScalar& a, const RhsScalar& b) const {
-      120:  172:    return internal::pmax<NaNPropagation>(a,b);
+      360:  171:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type operator() (const LhsScalar& a, const RhsScalar& b) const {
+      360:  172:    return internal::pmax<NaNPropagation>(a,b);
         -:  173:  }
         -:  174:  template<typename Packet>
-      564:  175:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packetOp(const Packet& a, const Packet& b) const
+     1692:  175:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packetOp(const Packet& a, const Packet& b) const
         -:  176:  {
-      564:  177:    return internal::pmax<NaNPropagation>(a,b);
+     1692:  177:    return internal::pmax<NaNPropagation>(a,b);
         -:  178:  }
         -:  179:  template<typename Packet>
-      246:  180:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type predux(const Packet& a) const
+      738:  180:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type predux(const Packet& a) const
         -:  181:  {
-      246:  182:    return internal::predux_max<NaNPropagation>(a);
+      738:  182:    return internal::predux_max<NaNPropagation>(a);
         -:  183:  }
         -:  184:};
         -:  185:
@@ -399,7 +399,7 @@
         -:  395:    EIGEN_SCALAR_BINARY_OP_PLUGIN
         -:  396:  }
         -:  397:#endif
-     9000:  398:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const result_type operator() (const LhsScalar& a, const RhsScalar& b) const { return a - b; }
+    27000:  398:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const result_type operator() (const LhsScalar& a, const RhsScalar& b) const { return a - b; }
         -:  399:  template<typename Packet>
     #####:  400:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp(const Packet& a, const Packet& b) const
     #####:  401:  { return internal::psub(a,b); }
@@ -414,9 +414,9 @@
         -:  410:
         -:  411:template <typename Packet, bool IsInteger = NumTraits<typename unpacket_traits<Packet>::type>::IsInteger>
         -:  412:struct maybe_raise_div_by_zero {
-     1321:  413:  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void run(Packet x) {
-     1321:  414:    EIGEN_UNUSED_VARIABLE(x);
-     1321:  415:  }
+     3963:  413:  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void run(Packet x) {
+     3963:  414:    EIGEN_UNUSED_VARIABLE(x);
+     3963:  415:  }
         -:  416:};
         -:  417:
         -:  418:#ifndef EIGEN_GPU_COMPILE_PHASE
@@ -448,11 +448,11 @@
         -:  444:    EIGEN_SCALAR_BINARY_OP_PLUGIN
         -:  445:  }
         -:  446:#endif
-     5049:  447:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const result_type operator() (const LhsScalar& a, const RhsScalar& b) const { return a / b; }
+    15147:  447:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const result_type operator() (const LhsScalar& a, const RhsScalar& b) const { return a / b; }
         -:  448:  template<typename Packet>
-     1321:  449:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp(const Packet& a, const Packet& b) const {
-     1321:  450:    maybe_raise_div_by_zero<Packet>::run(b);
-     1321:  451:    return internal::pdiv(a,b);
+     3963:  449:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp(const Packet& a, const Packet& b) const {
+     3963:  450:    maybe_raise_div_by_zero<Packet>::run(b);
+     3963:  451:    return internal::pdiv(a,b);
         -:  452:  }
         -:  453:};
         -:  454:template<typename LhsScalar,typename RhsScalar>

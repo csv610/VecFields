@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/SparseCore/SparseCwiseUnaryOp.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -35,14 +35,14 @@
         -:   31:      Flags = XprType::Flags
         -:   32:    };
         -:   33:    
-        7:   34:    explicit unary_evaluator(const XprType& op) : m_functor(op.functor()), m_argImpl(op.nestedExpression())
+       21:   34:    explicit unary_evaluator(const XprType& op) : m_functor(op.functor()), m_argImpl(op.nestedExpression())
         -:   35:    {
         -:   36:      EIGEN_INTERNAL_CHECK_COST_VALUE(functor_traits<UnaryOp>::Cost);
         -:   37:      EIGEN_INTERNAL_CHECK_COST_VALUE(CoeffReadCost);
-        7:   38:    }
+       21:   38:    }
         -:   39:    
-        3:   40:    inline Index nonZerosEstimate() const {
-        3:   41:      return m_argImpl.nonZerosEstimate();
+        9:   40:    inline Index nonZerosEstimate() const {
+        9:   41:      return m_argImpl.nonZerosEstimate();
         -:   42:    }
         -:   43:
         -:   44:  protected:
@@ -61,14 +61,14 @@
         -:   57:    typedef typename unary_evaluator<CwiseUnaryOp<UnaryOp,ArgType>, IteratorBased>::EvalIterator Base;
         -:   58:  public:
         -:   59:
-     6474:   60:    EIGEN_STRONG_INLINE InnerIterator(const unary_evaluator& unaryOp, Index outer)
-     3237:   61:      : Base(unaryOp.m_argImpl,outer), m_functor(unaryOp.m_functor)
-     6474:   62:    {}
+    19422:   60:    EIGEN_STRONG_INLINE InnerIterator(const unary_evaluator& unaryOp, Index outer)
+     9711:   61:      : Base(unaryOp.m_argImpl,outer), m_functor(unaryOp.m_functor)
+    19422:   62:    {}
         -:   63:
-     3355:   64:    EIGEN_STRONG_INLINE InnerIterator& operator++()
-     3355:   65:    { Base::operator++(); return *this; }
+    10065:   64:    EIGEN_STRONG_INLINE InnerIterator& operator++()
+    10065:   65:    { Base::operator++(); return *this; }
         -:   66:
-     2276:   67:    EIGEN_STRONG_INLINE Scalar value() const { return m_functor(Base::value()); }
+     6828:   67:    EIGEN_STRONG_INLINE Scalar value() const { return m_functor(Base::value()); }
         -:   68:
         -:   69:  protected:
         -:   70:    const UnaryOp m_functor;

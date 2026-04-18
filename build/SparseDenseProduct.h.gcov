@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/SparseCore/SparseDenseProduct.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -38,17 +38,17 @@
         -:   34:  typedef internal::remove_all_t<DenseResType> Res;
         -:   35:  typedef typename evaluator<Lhs>::InnerIterator LhsInnerIterator;
         -:   36:  typedef evaluator<Lhs> LhsEval;
-        1:   37:  static void run(const SparseLhsType& lhs, const DenseRhsType& rhs, DenseResType& res, const typename Res::Scalar& alpha)
+        3:   37:  static void run(const SparseLhsType& lhs, const DenseRhsType& rhs, DenseResType& res, const typename Res::Scalar& alpha)
         -:   38:  {
-        1:   39:    LhsEval lhsEval(lhs);
+        3:   39:    LhsEval lhsEval(lhs);
         -:   40:    
-        1:   41:    Index n = lhs.outerSize();
+        3:   41:    Index n = lhs.outerSize();
         -:   42:#ifdef EIGEN_HAS_OPENMP
         -:   43:    Eigen::initParallel();
         -:   44:    Index threads = Eigen::nbThreads();
         -:   45:#endif
         -:   46:    
-        2:   47:    for(Index c=0; c<rhs.cols(); ++c)
+        6:   47:    for(Index c=0; c<rhs.cols(); ++c)
         -:   48:    {
         -:   49:#ifdef EIGEN_HAS_OPENMP
         -:   50:      // This 20000 threshold has been found experimentally on 2D and 3D Poisson problems.
@@ -62,27 +62,27 @@
         -:   58:      else
         -:   59:#endif
         -:   60:      {
-      120:   61:        for(Index i=0; i<n; ++i)
-      119:   62:          processRow(lhsEval,rhs,res,alpha,i,c);
+      360:   61:        for(Index i=0; i<n; ++i)
+      357:   62:          processRow(lhsEval,rhs,res,alpha,i,c);
         -:   63:      }
-        1:   64:    }
-        1:   65:  }
+        3:   64:    }
+        3:   65:  }
         -:   66:  
-      119:   67:  static void processRow(const LhsEval& lhsEval, const DenseRhsType& rhs, DenseResType& res, const typename Res::Scalar& alpha, Index i, Index col)
+      357:   67:  static void processRow(const LhsEval& lhsEval, const DenseRhsType& rhs, DenseResType& res, const typename Res::Scalar& alpha, Index i, Index col)
         -:   68:  {
         -:   69:    // Two accumulators, which breaks the dependency chain on the accumulator
         -:   70:    // and allows more instruction-level parallelism in the following loop
-      119:   71:    typename Res::Scalar tmp_a(0);
-      119:   72:    typename Res::Scalar tmp_b(0);
-      238:   73:    for(LhsInnerIterator it(lhsEval,i); it ;++it) {
-      119:   74:      tmp_a += it.value() * rhs.coeff(it.index(), col);
-      119:   75:      ++it;
-      119:   76:      if(it) {
+      357:   71:    typename Res::Scalar tmp_a(0);
+      357:   72:    typename Res::Scalar tmp_b(0);
+      714:   73:    for(LhsInnerIterator it(lhsEval,i); it ;++it) {
+      357:   74:      tmp_a += it.value() * rhs.coeff(it.index(), col);
+      357:   75:      ++it;
+      357:   76:      if(it) {
     #####:   77:        tmp_b += it.value() * rhs.coeff(it.index(), col);
     #####:   78:      }
-      119:   79:    }
-      119:   80:    res.coeffRef(i, col) += alpha * (tmp_a + tmp_b);
-      119:   81:  }
+      357:   79:    }
+      357:   80:    res.coeffRef(i, col) += alpha * (tmp_a + tmp_b);
+      357:   81:  }
         -:   82:  
         -:   83:};
         -:   84:
@@ -105,20 +105,20 @@
         -:  101:  typedef internal::remove_all_t<DenseResType> Res;
         -:  102:  typedef evaluator<Lhs> LhsEval;
         -:  103:  typedef typename LhsEval::InnerIterator LhsInnerIterator;
-        4:  104:  static void run(const SparseLhsType& lhs, const DenseRhsType& rhs, DenseResType& res, const AlphaType& alpha)
+       12:  104:  static void run(const SparseLhsType& lhs, const DenseRhsType& rhs, DenseResType& res, const AlphaType& alpha)
         -:  105:  {
-        4:  106:    LhsEval lhsEval(lhs);
-        8:  107:    for(Index c=0; c<rhs.cols(); ++c)
+       12:  106:    LhsEval lhsEval(lhs);
+       24:  107:    for(Index c=0; c<rhs.cols(); ++c)
         -:  108:    {
-      723:  109:      for(Index j=0; j<lhs.outerSize(); ++j)
+     2169:  109:      for(Index j=0; j<lhs.outerSize(); ++j)
         -:  110:      {
         -:  111://        typename Res::Scalar rhs_j = alpha * rhs.coeff(j,c);
-      719:  112:        typename ScalarBinaryOpTraits<AlphaType, typename Rhs::Scalar>::ReturnType rhs_j(alpha * rhs.coeff(j,c));
-     2516:  113:        for(LhsInnerIterator it(lhsEval,j); it ;++it)
-     1797:  114:          res.coeffRef(it.index(),c) += it.value() * rhs_j;
-      719:  115:      }
-        4:  116:    }
-        4:  117:  }
+     2157:  112:        typename ScalarBinaryOpTraits<AlphaType, typename Rhs::Scalar>::ReturnType rhs_j(alpha * rhs.coeff(j,c));
+     7548:  113:        for(LhsInnerIterator it(lhsEval,j); it ;++it)
+     5391:  114:          res.coeffRef(it.index(),c) += it.value() * rhs_j;
+     2157:  115:      }
+       12:  116:    }
+       12:  117:  }
         -:  118:};
         -:  119:
         -:  120:template<typename SparseLhsType, typename DenseRhsType, typename DenseResType>
@@ -181,10 +181,10 @@
         -:  177:};
         -:  178:
         -:  179:template<typename SparseLhsType, typename DenseRhsType, typename DenseResType,typename AlphaType>
-        5:  180:inline void sparse_time_dense_product(const SparseLhsType& lhs, const DenseRhsType& rhs, DenseResType& res, const AlphaType& alpha)
+       15:  180:inline void sparse_time_dense_product(const SparseLhsType& lhs, const DenseRhsType& rhs, DenseResType& res, const AlphaType& alpha)
         -:  181:{
-        5:  182:  sparse_time_dense_product_impl<SparseLhsType,DenseRhsType,DenseResType, AlphaType>::run(lhs, rhs, res, alpha);
-        5:  183:}
+       15:  182:  sparse_time_dense_product_impl<SparseLhsType,DenseRhsType,DenseResType, AlphaType>::run(lhs, rhs, res, alpha);
+       15:  183:}
         -:  184:
         -:  185:} // end namespace internal
         -:  186:
@@ -197,14 +197,14 @@
         -:  193:  typedef typename Product<Lhs,Rhs>::Scalar Scalar;
         -:  194:  
         -:  195:  template<typename Dest>
-        5:  196:  static void scaleAndAddTo(Dest& dst, const Lhs& lhs, const Rhs& rhs, const Scalar& alpha)
+       15:  196:  static void scaleAndAddTo(Dest& dst, const Lhs& lhs, const Rhs& rhs, const Scalar& alpha)
         -:  197:  {
         -:  198:    typedef typename nested_eval<Lhs,((Rhs::Flags&RowMajorBit)==0) ? 1 : Rhs::ColsAtCompileTime>::type LhsNested;
         -:  199:    typedef typename nested_eval<Rhs,((Lhs::Flags&RowMajorBit)==0) ? 1 : Dynamic>::type RhsNested;
-        5:  200:    LhsNested lhsNested(lhs);
-        5:  201:    RhsNested rhsNested(rhs);
-        5:  202:    internal::sparse_time_dense_product(lhsNested, rhsNested, dst, alpha);
-        5:  203:  }
+       15:  200:    LhsNested lhsNested(lhs);
+       15:  201:    RhsNested rhsNested(rhs);
+       15:  202:    internal::sparse_time_dense_product(lhsNested, rhsNested, dst, alpha);
+       15:  203:  }
         -:  204:};
         -:  205:
         -:  206:template<typename Lhs, typename Rhs, int ProductType>

@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/SparseCore/SparseMatrixBase.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -145,10 +145,10 @@
         -:  141:    typedef Matrix<Scalar, internal::max_size_prefer_dynamic(RowsAtCompileTime, ColsAtCompileTime),
         -:  142:                           internal::max_size_prefer_dynamic(RowsAtCompileTime, ColsAtCompileTime)> SquareMatrixType;
         -:  143:
-   142111:  144:    inline const Derived& derived() const { return *static_cast<const Derived*>(this); }
-       38:  145:    inline Derived& derived() { return *static_cast<Derived*>(this); }
-    21972:  146:    inline Derived& const_cast_derived() const
-    21972:  147:    { return *static_cast<Derived*>(const_cast<SparseMatrixBase*>(this)); }
+   426333:  144:    inline const Derived& derived() const { return *static_cast<const Derived*>(this); }
+      114:  145:    inline Derived& derived() { return *static_cast<Derived*>(this); }
+    65916:  146:    inline Derived& const_cast_derived() const
+    65916:  147:    { return *static_cast<Derived*>(const_cast<SparseMatrixBase*>(this)); }
         -:  148:
         -:  149:    typedef EigenBase<Derived> Base;
         -:  150:
@@ -178,9 +178,9 @@
         -:  174:#undef EIGEN_DOC_BLOCK_ADDONS_INNER_PANEL_IF
         -:  175:
         -:  176:    /** \returns the number of rows. \sa cols() */
-      272:  177:    inline Index rows() const { return derived().rows(); }
+      816:  177:    inline Index rows() const { return derived().rows(); }
         -:  178:    /** \returns the number of columns. \sa rows() */
-       31:  179:    inline Index cols() const { return derived().cols(); }
+       93:  179:    inline Index cols() const { return derived().cols(); }
         -:  180:    /** \returns the number of coefficients, which is \a rows()*cols().
         -:  181:      * \sa rows(), cols(). */
         -:  182:    inline Index size() const { return rows() * cols(); }
@@ -191,15 +191,15 @@
         -:  187:    inline bool isVector() const { return rows()==1 || cols()==1; }
         -:  188:    /** \returns the size of the storage major dimension,
         -:  189:      * i.e., the number of columns for a columns major matrix, and the number of rows otherwise */
-      244:  190:    Index outerSize() const { return (int(Flags)&RowMajorBit) ? this->rows() : this->cols(); }
+      732:  190:    Index outerSize() const { return (int(Flags)&RowMajorBit) ? this->rows() : this->cols(); }
         -:  191:    /** \returns the size of the inner dimension according to the storage order,
         -:  192:      * i.e., the number of rows for a columns major matrix, and the number of cols otherwise */
-        3:  193:    Index innerSize() const { return (int(Flags)&RowMajorBit) ? this->cols() : this->rows(); }
+        9:  193:    Index innerSize() const { return (int(Flags)&RowMajorBit) ? this->cols() : this->rows(); }
         -:  194:
-       36:  195:    bool isRValue() const { return m_isRValue; }
-       16:  196:    Derived& markAsRValue() { m_isRValue = true; return derived(); }
+      108:  195:    bool isRValue() const { return m_isRValue; }
+       48:  196:    Derived& markAsRValue() { m_isRValue = true; return derived(); }
         -:  197:
-      145:  198:    SparseMatrixBase() : m_isRValue(false) { /* TODO check flags */ }
+      435:  198:    SparseMatrixBase() : m_isRValue(false) { /* TODO check flags */ }
         -:  199:
         -:  200:    
         -:  201:    template<typename OtherDerived>
@@ -322,8 +322,8 @@
         -:  318:    // sparse * dense
         -:  319:    template<typename OtherDerived>
         -:  320:    const Product<Derived,OtherDerived>
-        5:  321:    operator*(const MatrixBase<OtherDerived> &other) const
-        5:  322:    { return Product<Derived,OtherDerived>(derived(), other.derived()); }
+       15:  321:    operator*(const MatrixBase<OtherDerived> &other) const
+       15:  322:    { return Product<Derived,OtherDerived>(derived(), other.derived()); }
         -:  323:    
         -:  324:    // dense * sparse
         -:  325:    template<typename OtherDerived> friend
@@ -358,8 +358,8 @@
         -:  354:    RealScalar blueNorm() const;
         -:  355:
     #####:  356:    TransposeReturnType transpose() { return TransposeReturnType(derived()); }
-        6:  357:    const ConstTransposeReturnType transpose() const { return ConstTransposeReturnType(derived()); }
-        5:  358:    const AdjointReturnType adjoint() const { return AdjointReturnType(transpose()); }
+       18:  357:    const ConstTransposeReturnType transpose() const { return ConstTransposeReturnType(derived()); }
+       15:  358:    const AdjointReturnType adjoint() const { return AdjointReturnType(transpose()); }
         -:  359:
         -:  360:    DenseMatrixType toDense() const
         -:  361:    {

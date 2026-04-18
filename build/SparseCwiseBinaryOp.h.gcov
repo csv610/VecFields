@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/SparseCore/SparseCwiseBinaryOp.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -82,28 +82,28 @@
         -:   78:  {
         -:   79:  public:
         -:   80:    
-      476:   81:    EIGEN_STRONG_INLINE InnerIterator(const binary_evaluator& aEval, Index outer)
-      238:   82:      : m_lhsIter(aEval.m_lhsImpl,outer), m_rhsIter(aEval.m_rhsImpl,outer), m_functor(aEval.m_functor), m_value(Scalar(0))
-      238:   83:    {
-      238:   84:      this->operator++();
-      476:   85:    }
+     1428:   81:    EIGEN_STRONG_INLINE InnerIterator(const binary_evaluator& aEval, Index outer)
+      714:   82:      : m_lhsIter(aEval.m_lhsImpl,outer), m_rhsIter(aEval.m_rhsImpl,outer), m_functor(aEval.m_functor), m_value(Scalar(0))
+      714:   83:    {
+      714:   84:      this->operator++();
+     1428:   85:    }
         -:   86:
-      948:   87:    EIGEN_STRONG_INLINE InnerIterator& operator++()
+     2844:   87:    EIGEN_STRONG_INLINE InnerIterator& operator++()
         -:   88:    {
-      948:   89:      if (m_lhsIter && m_rhsIter && (m_lhsIter.index() == m_rhsIter.index()))
+     2844:   89:      if (m_lhsIter && m_rhsIter && (m_lhsIter.index() == m_rhsIter.index()))
         -:   90:      {
-      710:   91:        m_id = m_lhsIter.index();
-      710:   92:        m_value = m_functor(m_lhsIter.value(), m_rhsIter.value());
-      710:   93:        ++m_lhsIter;
-      710:   94:        ++m_rhsIter;
-      710:   95:      }
-      238:   96:      else if (m_lhsIter && (!m_rhsIter || (m_lhsIter.index() < m_rhsIter.index())))
+     2130:   91:        m_id = m_lhsIter.index();
+     2130:   92:        m_value = m_functor(m_lhsIter.value(), m_rhsIter.value());
+     2130:   93:        ++m_lhsIter;
+     2130:   94:        ++m_rhsIter;
+     2130:   95:      }
+      714:   96:      else if (m_lhsIter && (!m_rhsIter || (m_lhsIter.index() < m_rhsIter.index())))
         -:   97:      {
     #####:   98:        m_id = m_lhsIter.index();
     #####:   99:        m_value = m_functor(m_lhsIter.value(), Scalar(0));
     #####:  100:        ++m_lhsIter;
     #####:  101:      }
-      238:  102:      else if (m_rhsIter && (!m_lhsIter || (m_lhsIter.index() > m_rhsIter.index())))
+      714:  102:      else if (m_rhsIter && (!m_lhsIter || (m_lhsIter.index() > m_rhsIter.index())))
         -:  103:      {
     #####:  104:        m_id = m_rhsIter.index();
     #####:  105:        m_value = m_functor(Scalar(0), m_rhsIter.value());
@@ -111,19 +111,19 @@
     #####:  107:      }
         -:  108:      else
         -:  109:      {
-      238:  110:        m_id = -1;
+      714:  110:        m_id = -1;
         -:  111:      }
-      948:  112:      return *this;
+     2844:  112:      return *this;
         -:  113:    }
         -:  114:
-      355:  115:    EIGEN_STRONG_INLINE Scalar value() const { return m_value; }
+     1065:  115:    EIGEN_STRONG_INLINE Scalar value() const { return m_value; }
         -:  116:
-      355:  117:    EIGEN_STRONG_INLINE StorageIndex index() const { return m_id; }
+     1065:  117:    EIGEN_STRONG_INLINE StorageIndex index() const { return m_id; }
         -:  118:    EIGEN_STRONG_INLINE Index outer() const { return m_lhsIter.outer(); }
         -:  119:    EIGEN_STRONG_INLINE Index row() const { return Lhs::IsRowMajor ? m_lhsIter.row() : index(); }
         -:  120:    EIGEN_STRONG_INLINE Index col() const { return Lhs::IsRowMajor ? index() : m_lhsIter.col(); }
         -:  121:
-      948:  122:    EIGEN_STRONG_INLINE operator bool() const { return m_id>=0; }
+     2844:  122:    EIGEN_STRONG_INLINE operator bool() const { return m_id>=0; }
         -:  123:
         -:  124:  protected:
         -:  125:    LhsIterator m_lhsIter;
@@ -139,14 +139,14 @@
         -:  135:    Flags = XprType::Flags
         -:  136:  };
         -:  137:  
-        1:  138:  explicit binary_evaluator(const XprType& xpr)
-        1:  139:    : m_functor(xpr.functor()),
-        1:  140:      m_lhsImpl(xpr.lhs()), 
-        1:  141:      m_rhsImpl(xpr.rhs())  
+        3:  138:  explicit binary_evaluator(const XprType& xpr)
+        3:  139:    : m_functor(xpr.functor()),
+        3:  140:      m_lhsImpl(xpr.lhs()), 
+        3:  141:      m_rhsImpl(xpr.rhs())  
         -:  142:  {
         -:  143:    EIGEN_INTERNAL_CHECK_COST_VALUE(functor_traits<BinaryOp>::Cost);
         -:  144:    EIGEN_INTERNAL_CHECK_COST_VALUE(CoeffReadCost);
-        1:  145:  }
+        3:  145:  }
         -:  146:  
         -:  147:  inline Index nonZerosEstimate() const {
         -:  148:    return m_lhsImpl.nonZerosEstimate() + m_rhsImpl.nonZerosEstimate();
@@ -363,7 +363,7 @@
         -:  359:{
         -:  360:  typedef CwiseBinaryOp<scalar_product_op<T1,T2>, Lhs, Rhs> XprType;
         -:  361:  typedef sparse_conjunction_evaluator<XprType> Base;
-        1:  362:  explicit binary_evaluator(const XprType& xpr) : Base(xpr) {}
+        3:  362:  explicit binary_evaluator(const XprType& xpr) : Base(xpr) {}
         -:  363:};
         -:  364:
         -:  365:// "sparse ./ dense"
@@ -590,26 +590,26 @@
         -:  586:
         -:  587:  public:
         -:  588:    
-     1920:  589:    EIGEN_STRONG_INLINE InnerIterator(const sparse_conjunction_evaluator& aEval, Index outer)
-      960:  590:      : m_lhsIter(aEval.m_lhsImpl,outer), m_rhsEval(aEval.m_rhsImpl), m_functor(aEval.m_functor), m_outer(outer)
-     1920:  591:    {}
+     5760:  589:    EIGEN_STRONG_INLINE InnerIterator(const sparse_conjunction_evaluator& aEval, Index outer)
+     2880:  590:      : m_lhsIter(aEval.m_lhsImpl,outer), m_rhsEval(aEval.m_rhsImpl), m_functor(aEval.m_functor), m_outer(outer)
+     5760:  591:    {}
         -:  592:
-     2880:  593:    EIGEN_STRONG_INLINE InnerIterator& operator++()
+     8640:  593:    EIGEN_STRONG_INLINE InnerIterator& operator++()
         -:  594:    {
-     2880:  595:      ++m_lhsIter;
-     2880:  596:      return *this;
+     8640:  595:      ++m_lhsIter;
+     8640:  596:      return *this;
         -:  597:    }
         -:  598:
-     1440:  599:    EIGEN_STRONG_INLINE Scalar value() const
-     2880:  600:    { return m_functor(m_lhsIter.value(),
-     1440:  601:                       m_rhsEval.coeff(IsRowMajor?m_outer:m_lhsIter.index(),IsRowMajor?m_lhsIter.index():m_outer)); }
+     4320:  599:    EIGEN_STRONG_INLINE Scalar value() const
+     8640:  600:    { return m_functor(m_lhsIter.value(),
+     4320:  601:                       m_rhsEval.coeff(IsRowMajor?m_outer:m_lhsIter.index(),IsRowMajor?m_lhsIter.index():m_outer)); }
         -:  602:
-     1440:  603:    EIGEN_STRONG_INLINE StorageIndex index() const { return m_lhsIter.index(); }
+     4320:  603:    EIGEN_STRONG_INLINE StorageIndex index() const { return m_lhsIter.index(); }
         -:  604:    EIGEN_STRONG_INLINE Index outer() const { return m_lhsIter.outer(); }
         -:  605:    EIGEN_STRONG_INLINE Index row() const { return m_lhsIter.row(); }
         -:  606:    EIGEN_STRONG_INLINE Index col() const { return m_lhsIter.col(); }
         -:  607:
-     3840:  608:    EIGEN_STRONG_INLINE operator bool() const { return m_lhsIter; }
+    11520:  608:    EIGEN_STRONG_INLINE operator bool() const { return m_lhsIter; }
         -:  609:    
         -:  610:  protected:
         -:  611:    LhsIterator m_lhsIter;
@@ -624,14 +624,14 @@
         -:  620:    Flags = XprType::Flags
         -:  621:  };
         -:  622:  
-        1:  623:  explicit sparse_conjunction_evaluator(const XprType& xpr)
-        1:  624:    : m_functor(xpr.functor()),
-        1:  625:      m_lhsImpl(xpr.lhs()), 
-        1:  626:      m_rhsImpl(xpr.rhs())  
+        3:  623:  explicit sparse_conjunction_evaluator(const XprType& xpr)
+        3:  624:    : m_functor(xpr.functor()),
+        3:  625:      m_lhsImpl(xpr.lhs()), 
+        3:  626:      m_rhsImpl(xpr.rhs())  
         -:  627:  {
         -:  628:    EIGEN_INTERNAL_CHECK_COST_VALUE(functor_traits<BinaryOp>::Cost);
         -:  629:    EIGEN_INTERNAL_CHECK_COST_VALUE(CoeffReadCost);
-        1:  630:  }
+        3:  630:  }
         -:  631:  
         -:  632:  inline Index nonZerosEstimate() const {
         -:  633:    return m_lhsImpl.nonZerosEstimate();

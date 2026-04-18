@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/SparseCore/ConservativeSparseSparseProduct.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -22,25 +22,25 @@
         -:   18:namespace internal {
         -:   19:
         -:   20:template<typename Lhs, typename Rhs, typename ResultType>
-        8:   21:static void conservative_sparse_sparse_product_impl(const Lhs& lhs, const Rhs& rhs, ResultType& res, bool sortedInsertion = false)
+       24:   21:static void conservative_sparse_sparse_product_impl(const Lhs& lhs, const Rhs& rhs, ResultType& res, bool sortedInsertion = false)
         -:   22:{
         -:   23:  typedef typename remove_all_t<Lhs>::Scalar LhsScalar;
         -:   24:  typedef typename remove_all_t<Rhs>::Scalar RhsScalar;
         -:   25:  typedef typename remove_all_t<ResultType>::Scalar ResScalar;
         -:   26:
         -:   27:  // make sure to call innerSize/outerSize since we fake the storage order.
-        8:   28:  Index rows = lhs.innerSize();
-        8:   29:  Index cols = rhs.outerSize();
-        8:   30:  eigen_assert(lhs.outerSize() == rhs.innerSize());
+       24:   28:  Index rows = lhs.innerSize();
+       24:   29:  Index cols = rhs.outerSize();
+       24:   30:  eigen_assert(lhs.outerSize() == rhs.innerSize());
         -:   31:
-        8:   32:  ei_declare_aligned_stack_constructed_variable(bool,   mask,     rows, 0);
-        8:   33:  ei_declare_aligned_stack_constructed_variable(ResScalar, values,   rows, 0);
-        8:   34:  ei_declare_aligned_stack_constructed_variable(Index,  indices,  rows, 0);
+       24:   32:  ei_declare_aligned_stack_constructed_variable(bool,   mask,     rows, 0);
+       24:   33:  ei_declare_aligned_stack_constructed_variable(ResScalar, values,   rows, 0);
+       24:   34:  ei_declare_aligned_stack_constructed_variable(Index,  indices,  rows, 0);
         -:   35:
-        8:   36:  std::memset(mask,0,sizeof(bool)*rows);
+       24:   36:  std::memset(mask,0,sizeof(bool)*rows);
         -:   37:
-        8:   38:  evaluator<Lhs> lhsEval(lhs);
-        8:   39:  evaluator<Rhs> rhsEval(rhs);
+       24:   38:  evaluator<Lhs> lhsEval(lhs);
+       24:   39:  evaluator<Rhs> rhsEval(rhs);
         -:   40:
         -:   41:  // estimate the number of non zero entries
         -:   42:  // given a rhs column containing Y non zeros, we assume that the respective Y columns
@@ -48,45 +48,45 @@
         -:   44:  // the product of a rhs column with the lhs is X+Y where X is the average number of non zero
         -:   45:  // per column of the lhs.
         -:   46:  // Therefore, we have nnz(lhs*rhs) = nnz(lhs) + nnz(rhs)
-        8:   47:  Index estimated_nnz_prod = lhsEval.nonZerosEstimate() + rhsEval.nonZerosEstimate();
+       24:   47:  Index estimated_nnz_prod = lhsEval.nonZerosEstimate() + rhsEval.nonZerosEstimate();
         -:   48:
-        8:   49:  res.setZero();
-        8:   50:  res.reserve(Index(estimated_nnz_prod));
+       24:   49:  res.setZero();
+       24:   50:  res.reserve(Index(estimated_nnz_prod));
         -:   51:  // we compute each column of the result, one after the other
-     2286:   52:  for (Index j=0; j<cols; ++j)
+     6858:   52:  for (Index j=0; j<cols; ++j)
         -:   53:  {
         -:   54:
-     2278:   55:    res.startVec(j);
-     2278:   56:    Index nnz = 0;
-     5874:   57:    for (typename evaluator<Rhs>::InnerIterator rhsIt(rhsEval, j); rhsIt; ++rhsIt)
+     6834:   55:    res.startVec(j);
+     6834:   56:    Index nnz = 0;
+    17622:   57:    for (typename evaluator<Rhs>::InnerIterator rhsIt(rhsEval, j); rhsIt; ++rhsIt)
         -:   58:    {
-     3596:   59:      RhsScalar y = rhsIt.value();
-     3596:   60:      Index k = rhsIt.index();
-     8744:   61:      for (typename evaluator<Lhs>::InnerIterator lhsIt(lhsEval, k); lhsIt; ++lhsIt)
+    10788:   59:      RhsScalar y = rhsIt.value();
+    10788:   60:      Index k = rhsIt.index();
+    26232:   61:      for (typename evaluator<Lhs>::InnerIterator lhsIt(lhsEval, k); lhsIt; ++lhsIt)
         -:   62:      {
-     5148:   63:        Index i = lhsIt.index();
-     5148:   64:        LhsScalar x = lhsIt.value();
-     5148:   65:        if(!mask[i])
+    15444:   63:        Index i = lhsIt.index();
+    15444:   64:        LhsScalar x = lhsIt.value();
+    15444:   65:        if(!mask[i])
         -:   66:        {
-     4546:   67:          mask[i] = true;
-     4546:   68:          values[i] = x * y;
-     4546:   69:          indices[nnz] = i;
-     4546:   70:          ++nnz;
-     4546:   71:        }
+    13638:   67:          mask[i] = true;
+    13638:   68:          values[i] = x * y;
+    13638:   69:          indices[nnz] = i;
+    13638:   70:          ++nnz;
+    13638:   71:        }
         -:   72:        else
-      602:   73:          values[i] += x * y;
-     5148:   74:      }
-     3596:   75:    }
-     2278:   76:    if(!sortedInsertion)
+     1806:   73:          values[i] += x * y;
+    15444:   74:      }
+    10788:   75:    }
+     6834:   76:    if(!sortedInsertion)
         -:   77:    {
         -:   78:      // unordered insertion
-     6824:   79:      for(Index k=0; k<nnz; ++k)
+    20472:   79:      for(Index k=0; k<nnz; ++k)
         -:   80:      {
-     4546:   81:        Index i = indices[k];
-     4546:   82:        res.insertBackByOuterInnerUnordered(j,i) = values[i];
-     4546:   83:        mask[i] = false;
-     4546:   84:      }
-     2278:   85:    }
+    13638:   81:        Index i = indices[k];
+    13638:   82:        res.insertBackByOuterInnerUnordered(j,i) = values[i];
+    13638:   83:        mask[i] = false;
+    13638:   84:      }
+     6834:   85:    }
         -:   86:    else
         -:   87:    {
         -:   88:      // alternative ordered insertion code:
@@ -122,9 +122,9 @@
     #####:  118:        }
         -:  119:      }
         -:  120:    }
-     2278:  121:  }
-        8:  122:  res.finalize();
-        8:  123:}
+     6834:  121:  }
+       24:  122:  res.finalize();
+       24:  123:}
         -:  124:
         -:  125:
         -:  126:} // end namespace internal
@@ -148,7 +148,7 @@
         -:  144:  typedef remove_all_t<Lhs> LhsCleaned;
         -:  145:  typedef typename LhsCleaned::Scalar Scalar;
         -:  146:
-        5:  147:  static void run(const Lhs& lhs, const Rhs& rhs, ResultType& res)
+       15:  147:  static void run(const Lhs& lhs, const Rhs& rhs, ResultType& res)
         -:  148:  {
         -:  149:    using RowMajorMatrix = WithStorageOrder<ResultType, RowMajor>;
         -:  150:    using ColMajorMatrixAux = WithStorageOrder<ResultType, ColMajor>;
@@ -156,7 +156,7 @@
         -:  152:    // If the result is tall and thin (in the extreme case a column vector)
         -:  153:    // then it is faster to sort the coefficients inplace instead of transposing twice.
         -:  154:    // FIXME, the following heuristic is probably not very good.
-        5:  155:    if(lhs.rows()>rhs.cols())
+       15:  155:    if(lhs.rows()>rhs.cols())
         -:  156:    {
         -:  157:      using ColMajorMatrix = typename sparse_eval<ColMajorMatrixAux,ResultType::RowsAtCompileTime,ResultType::ColsAtCompileTime,ColMajorMatrixAux::Flags>::type;
     #####:  158:      ColMajorMatrix resCol(lhs.rows(),rhs.cols());
@@ -166,27 +166,27 @@
     #####:  162:    }
         -:  163:    else
         -:  164:    {
-        5:  165:      ColMajorMatrixAux resCol(lhs.rows(),rhs.cols());
+       15:  165:      ColMajorMatrixAux resCol(lhs.rows(),rhs.cols());
         -:  166:      // resort to transpose to sort the entries
-        5:  167:      internal::conservative_sparse_sparse_product_impl<Lhs,Rhs,ColMajorMatrixAux>(lhs, rhs, resCol, false);
-        5:  168:      RowMajorMatrix resRow(resCol);
-        5:  169:      res = resRow.markAsRValue();
-        5:  170:    }
-        5:  171:  }
+       15:  167:      internal::conservative_sparse_sparse_product_impl<Lhs,Rhs,ColMajorMatrixAux>(lhs, rhs, resCol, false);
+       15:  168:      RowMajorMatrix resRow(resCol);
+       15:  169:      res = resRow.markAsRValue();
+       15:  170:    }
+       15:  171:  }
         -:  172:};
         -:  173:
         -:  174:template<typename Lhs, typename Rhs, typename ResultType>
         -:  175:struct conservative_sparse_sparse_product_selector<Lhs,Rhs,ResultType,RowMajor,ColMajor,ColMajor>
         -:  176:{
-        3:  177:  static void run(const Lhs& lhs, const Rhs& rhs, ResultType& res)
+        9:  177:  static void run(const Lhs& lhs, const Rhs& rhs, ResultType& res)
         -:  178:  {
         -:  179:    using RowMajorRhs = WithStorageOrder<Rhs, RowMajor>;
         -:  180:    using RowMajorRes = WithStorageOrder<ResultType, RowMajor>;
-        3:  181:    RowMajorRhs rhsRow = rhs;
-        3:  182:    RowMajorRes resRow(lhs.rows(), rhs.cols());
-        3:  183:    internal::conservative_sparse_sparse_product_impl<RowMajorRhs,Lhs,RowMajorRes>(rhsRow, lhs, resRow);
-        3:  184:    res = resRow;
-        3:  185:  }
+        9:  181:    RowMajorRhs rhsRow = rhs;
+        9:  182:    RowMajorRes resRow(lhs.rows(), rhs.cols());
+        9:  183:    internal::conservative_sparse_sparse_product_impl<RowMajorRhs,Lhs,RowMajorRes>(rhsRow, lhs, resRow);
+        9:  184:    res = resRow;
+        9:  185:  }
         -:  186:};
         -:  187:
         -:  188:template<typename Lhs, typename Rhs, typename ResultType>

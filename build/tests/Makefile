@@ -213,6 +213,20 @@ vecfields_test_field_processing/fast:
 	cd /Users/csv610/Projects/Mesh/Directional/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vecfields_test_field_processing.dir/build.make tests/CMakeFiles/vecfields_test_field_processing.dir/build
 .PHONY : vecfields_test_field_processing/fast
 
+# Convenience name for target.
+tests/CMakeFiles/vecfields_test_polyvector_field.dir/rule:
+	cd /Users/csv610/Projects/Mesh/Directional/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vecfields_test_polyvector_field.dir/rule
+.PHONY : tests/CMakeFiles/vecfields_test_polyvector_field.dir/rule
+
+# Convenience name for target.
+vecfields_test_polyvector_field: tests/CMakeFiles/vecfields_test_polyvector_field.dir/rule
+.PHONY : vecfields_test_polyvector_field
+
+# fast build rule for target.
+vecfields_test_polyvector_field/fast:
+	cd /Users/csv610/Projects/Mesh/Directional/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vecfields_test_polyvector_field.dir/build.make tests/CMakeFiles/vecfields_test_polyvector_field.dir/build
+.PHONY : vecfields_test_polyvector_field/fast
+
 test_basic.o: test_basic.cpp.o
 .PHONY : test_basic.o
 
@@ -285,6 +299,30 @@ test_mesh_io.cpp.s:
 	cd /Users/csv610/Projects/Mesh/Directional/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vecfields_test_mesh_io.dir/build.make tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.s
 .PHONY : test_mesh_io.cpp.s
 
+test_polyvector_field.o: test_polyvector_field.cpp.o
+.PHONY : test_polyvector_field.o
+
+# target to build an object file
+test_polyvector_field.cpp.o:
+	cd /Users/csv610/Projects/Mesh/Directional/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vecfields_test_polyvector_field.dir/build.make tests/CMakeFiles/vecfields_test_polyvector_field.dir/test_polyvector_field.cpp.o
+.PHONY : test_polyvector_field.cpp.o
+
+test_polyvector_field.i: test_polyvector_field.cpp.i
+.PHONY : test_polyvector_field.i
+
+# target to preprocess a source file
+test_polyvector_field.cpp.i:
+	cd /Users/csv610/Projects/Mesh/Directional/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vecfields_test_polyvector_field.dir/build.make tests/CMakeFiles/vecfields_test_polyvector_field.dir/test_polyvector_field.cpp.i
+.PHONY : test_polyvector_field.cpp.i
+
+test_polyvector_field.s: test_polyvector_field.cpp.s
+.PHONY : test_polyvector_field.s
+
+# target to generate assembly for a file
+test_polyvector_field.cpp.s:
+	cd /Users/csv610/Projects/Mesh/Directional/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vecfields_test_polyvector_field.dir/build.make tests/CMakeFiles/vecfields_test_polyvector_field.dir/test_polyvector_field.cpp.s
+.PHONY : test_polyvector_field.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -301,6 +339,7 @@ help:
 	@echo "... vecfields_test_basic"
 	@echo "... vecfields_test_field_processing"
 	@echo "... vecfields_test_mesh_io"
+	@echo "... vecfields_test_polyvector_field"
 	@echo "... test_basic.o"
 	@echo "... test_basic.i"
 	@echo "... test_basic.s"
@@ -310,6 +349,9 @@ help:
 	@echo "... test_mesh_io.o"
 	@echo "... test_mesh_io.i"
 	@echo "... test_mesh_io.s"
+	@echo "... test_polyvector_field.o"
+	@echo "... test_polyvector_field.i"
+	@echo "... test_polyvector_field.s"
 .PHONY : help
 
 

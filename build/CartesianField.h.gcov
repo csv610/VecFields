@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/include/directional/CartesianField.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Directional, a library for directional field processing.
         -:    2:// Copyright (C) 2022 Amir Vaxman <avaxman@gmail.com>
         -:    3://
@@ -46,36 +46,36 @@
         -:   42:    Eigen::VectorXi singLocalCycles;    //Singular (dual elements). Only the local cycles! not the generators or boundary cycles
         -:   43:    Eigen::VectorXi singIndices;        //Corresponding indices (this is the numerator where the true fractional index is singIndices/N);
         -:   44:    
-        4:   45:    CartesianField(){}
+       12:   45:    CartesianField(){}
         -:   46:    CartesianField(const TangentBundle& _tb):tb(&_tb){}
-        4:   47:    ~CartesianField(){}
+       12:   47:    ~CartesianField(){}
         -:   48:    
         -:   49:    //Initializing the field with the proper tangent spaces
-        2:   50:    void inline init(const TangentBundle& _tb, const fieldTypeEnum _fieldType, const int _N){
-        2:   51:        tb = &_tb;
-        2:   52:        fieldType = _fieldType;
-        2:   53:        N=_N;
-        2:   54:        intField.resize(tb->sources.rows(),2*N);
-        2:   55:        extField.resize(tb->sources.rows(),3*N);
-        2:   56:    };
+        6:   50:    void inline init(const TangentBundle& _tb, const fieldTypeEnum _fieldType, const int _N){
+        6:   51:        tb = &_tb;
+        6:   52:        fieldType = _fieldType;
+        6:   53:        N=_N;
+        6:   54:        intField.resize(tb->sources.rows(),2*N);
+        6:   55:        extField.resize(tb->sources.rows(),3*N);
+        6:   56:    };
         -:   57:    
-        2:   58:    void inline set_intrinsic_field(const Eigen::MatrixXd& _intField){
-        2:   59:        assert (!(fieldType==fieldTypeEnum::POWER_FIELD) || (_intField.cols()==2));
-        2:   60:        assert ((_intField.cols()==2*N) || !(fieldType==fieldTypeEnum::POLYVECTOR_FIELD || fieldType==fieldTypeEnum::RAW_FIELD));
-        2:   61:        intField = _intField;
+        6:   58:    void inline set_intrinsic_field(const Eigen::MatrixXd& _intField){
+        6:   59:        assert (!(fieldType==fieldTypeEnum::POWER_FIELD) || (_intField.cols()==2));
+        6:   60:        assert ((_intField.cols()==2*N) || !(fieldType==fieldTypeEnum::POLYVECTOR_FIELD || fieldType==fieldTypeEnum::RAW_FIELD));
+        6:   61:        intField = _intField;
         -:   62:        
-        2:   63:        extField = tb->project_to_extrinsic(Eigen::VectorXi(), intField);
-        2:   64:    }
+        6:   63:        extField = tb->project_to_extrinsic(Eigen::VectorXi(), intField);
+        6:   64:    }
         -:   65:    
         -:   66:    //The same, just with complex coordinates
-        1:   67:    void virtual inline set_intrinsic_field(const Eigen::MatrixXcd& _intField){
-        1:   68:        intField.resize(_intField.rows(),_intField.cols()*2);
-        5:   69:        for (int i=0;i<N;i++){
-        4:   70:            intField.col(2*i)=_intField.col(i).real();
-        4:   71:            intField.col(2*i+1)=_intField.col(i).imag();
-        4:   72:        }
-        1:   73:        set_intrinsic_field(intField);
-        1:   74:    }
+        3:   67:    void virtual inline set_intrinsic_field(const Eigen::MatrixXcd& _intField){
+        3:   68:        intField.resize(_intField.rows(),_intField.cols()*2);
+       15:   69:        for (int i=0;i<N;i++){
+       12:   70:            intField.col(2*i)=_intField.col(i).real();
+       12:   71:            intField.col(2*i+1)=_intField.col(i).imag();
+       12:   72:        }
+        3:   73:        set_intrinsic_field(intField);
+        3:   74:    }
         -:   75:    
         -:   76:    //Setting the field by the extrinsic ambient field, which will get projected to the intrinsic tangent spaces.
     #####:   77:    void inline set_extrinsic_field(const Eigen::MatrixXd& _extField){
@@ -124,13 +124,13 @@
         -:  120:    
         -:  121:    
         -:  122:    //Directly setting the singularities of the the field (only at the local dual elements; not at generator or boundary cycles).
-        1:  123:    void inline set_singularities(const Eigen::VectorXi& _singLocalCycles,
+        3:  123:    void inline set_singularities(const Eigen::VectorXi& _singLocalCycles,
         -:  124:                                  const Eigen::VectorXi& _singIndices){
         -:  125:        
         -:  126:        //TODO: remove boundary elements
-        1:  127:        singLocalCycles = _singLocalCycles;
-        1:  128:        singIndices = _singIndices;
-        1:  129:    }
+        3:  127:        singLocalCycles = _singLocalCycles;
+        3:  128:        singIndices = _singIndices;
+        3:  129:    }
         -:  130:    
         -:  131:    
         -:  132:};

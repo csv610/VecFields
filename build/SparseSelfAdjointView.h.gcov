@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/SparseCore/SparseSelfAdjointView.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -66,17 +66,17 @@
         -:   62:    typedef typename internal::ref_selector<MatrixType>::non_const_type MatrixTypeNested;
         -:   63:    typedef internal::remove_all_t<MatrixTypeNested> MatrixTypeNested_;
         -:   64:    
-        6:   65:    explicit inline SparseSelfAdjointView(MatrixType& matrix) : m_matrix(matrix)
-        3:   66:    {
-        6:   67:      eigen_assert(rows()==cols() && "SelfAdjointView is only for squared matrices");
-        6:   68:    }
+       18:   65:    explicit inline SparseSelfAdjointView(MatrixType& matrix) : m_matrix(matrix)
+        9:   66:    {
+       18:   67:      eigen_assert(rows()==cols() && "SelfAdjointView is only for squared matrices");
+       18:   68:    }
         -:   69:
-        3:   70:    inline Index rows() const { return m_matrix.rows(); }
-        3:   71:    inline Index cols() const { return m_matrix.cols(); }
+        9:   70:    inline Index rows() const { return m_matrix.rows(); }
+        9:   71:    inline Index cols() const { return m_matrix.cols(); }
         -:   72:
         -:   73:    /** \internal \returns a reference to the nested matrix */
-        1:   74:    const MatrixTypeNested_& matrix() const { return m_matrix; }
-        1:   75:    std::remove_reference_t<MatrixTypeNested>& matrix() { return m_matrix; }
+        3:   74:    const MatrixTypeNested_& matrix() const { return m_matrix; }
+        3:   75:    std::remove_reference_t<MatrixTypeNested>& matrix() { return m_matrix; }
         -:   76:
         -:   77:    /** \returns an expression of the matrix product between a sparse self-adjoint matrix \c *this and a sparse matrix \a rhs.
         -:   78:      *
@@ -131,16 +131,16 @@
         -:  127:    
         -:  128:    /** \returns an expression of P H P^-1 */
         -:  129:    // TODO implement twists in a more evaluator friendly fashion
-        1:  130:    SparseSymmetricPermutationProduct<MatrixTypeNested_,Mode> twistedBy(const PermutationMatrix<Dynamic,Dynamic,StorageIndex>& perm) const
+        3:  130:    SparseSymmetricPermutationProduct<MatrixTypeNested_,Mode> twistedBy(const PermutationMatrix<Dynamic,Dynamic,StorageIndex>& perm) const
         -:  131:    {
-        1:  132:      return SparseSymmetricPermutationProduct<MatrixTypeNested_,Mode>(m_matrix, perm);
+        3:  132:      return SparseSymmetricPermutationProduct<MatrixTypeNested_,Mode>(m_matrix, perm);
         -:  133:    }
         -:  134:
         -:  135:    template<typename SrcMatrixType,int SrcMode>
-        1:  136:    SparseSelfAdjointView& operator=(const SparseSymmetricPermutationProduct<SrcMatrixType,SrcMode>& permutedMatrix)
+        3:  136:    SparseSelfAdjointView& operator=(const SparseSymmetricPermutationProduct<SrcMatrixType,SrcMode>& permutedMatrix)
         -:  137:    {
-        1:  138:      internal::call_assignment_no_alias_no_transpose(*this, permutedMatrix);
-        1:  139:      return *this;
+        3:  138:      internal::call_assignment_no_alias_no_transpose(*this, permutedMatrix);
+        3:  139:      return *this;
         -:  140:    }
         -:  141:
         -:  142:    SparseSelfAdjointView& operator=(const SparseSelfAdjointView& src)
@@ -182,16 +182,16 @@
         -:  178:
         -:  179:template<typename Derived>
         -:  180:template<unsigned int UpLo>
-        2:  181:typename SparseMatrixBase<Derived>::template ConstSelfAdjointViewReturnType<UpLo>::Type SparseMatrixBase<Derived>::selfadjointView() const
+        6:  181:typename SparseMatrixBase<Derived>::template ConstSelfAdjointViewReturnType<UpLo>::Type SparseMatrixBase<Derived>::selfadjointView() const
         -:  182:{
-        2:  183:  return SparseSelfAdjointView<const Derived, UpLo>(derived());
+        6:  183:  return SparseSelfAdjointView<const Derived, UpLo>(derived());
         -:  184:}
         -:  185:
         -:  186:template<typename Derived>
         -:  187:template<unsigned int UpLo>
-        1:  188:typename SparseMatrixBase<Derived>::template SelfAdjointViewReturnType<UpLo>::Type SparseMatrixBase<Derived>::selfadjointView()
+        3:  188:typename SparseMatrixBase<Derived>::template SelfAdjointViewReturnType<UpLo>::Type SparseMatrixBase<Derived>::selfadjointView()
         -:  189:{
-        1:  190:  return SparseSelfAdjointView<Derived, UpLo>(derived());
+        3:  190:  return SparseSelfAdjointView<Derived, UpLo>(derived());
         -:  191:}
         -:  192:
         -:  193:/***************************************************************************
@@ -236,10 +236,10 @@
         -:  232:  typedef internal::assign_op<typename DstXprType::Scalar,typename SrcXprType::Scalar> AssignOpType;
         -:  233:
         -:  234:  template<typename DestScalar,int StorageOrder>
-        1:  235:  static void run(SparseMatrix<DestScalar,StorageOrder,StorageIndex> &dst, const SrcXprType &src, const AssignOpType&/*func*/)
+        3:  235:  static void run(SparseMatrix<DestScalar,StorageOrder,StorageIndex> &dst, const SrcXprType &src, const AssignOpType&/*func*/)
         -:  236:  {
-        1:  237:    internal::permute_symm_to_fullsymm<SrcXprType::Mode>(src.matrix(), dst);
-        1:  238:  }
+        3:  237:    internal::permute_symm_to_fullsymm<SrcXprType::Mode>(src.matrix(), dst);
+        3:  238:  }
         -:  239:
         -:  240:  // FIXME: the handling of += and -= in sparse matrices should be cleanup so that next two overloads could be reduced to:
         -:  241:  template<typename DestScalar,int StorageOrder,typename AssignFunc>
@@ -425,7 +425,7 @@
         -:  421:namespace internal {
         -:  422:
         -:  423:template<int Mode,typename MatrixType,int DestOrder>
-        1:  424:void permute_symm_to_fullsymm(const MatrixType& mat, SparseMatrix<typename MatrixType::Scalar,DestOrder,typename MatrixType::StorageIndex>& _dest, const typename MatrixType::StorageIndex* perm)
+        3:  424:void permute_symm_to_fullsymm(const MatrixType& mat, SparseMatrix<typename MatrixType::Scalar,DestOrder,typename MatrixType::StorageIndex>& _dest, const typename MatrixType::StorageIndex* perm)
         -:  425:{
         -:  426:  typedef typename MatrixType::StorageIndex StorageIndex;
         -:  427:  typedef typename MatrixType::Scalar Scalar;
@@ -434,58 +434,58 @@
         -:  430:  typedef evaluator<MatrixType> MatEval;
         -:  431:  typedef typename evaluator<MatrixType>::InnerIterator MatIterator;
         -:  432:  
-        1:  433:  MatEval matEval(mat);
-        1:  434:  Dest& dest(_dest.derived());
+        3:  433:  MatEval matEval(mat);
+        3:  434:  Dest& dest(_dest.derived());
         -:  435:  enum {
         -:  436:    StorageOrderMatch = int(Dest::IsRowMajor) == int(MatrixType::IsRowMajor)
         -:  437:  };
         -:  438:  
-        1:  439:  Index size = mat.rows();
-        1:  440:  VectorI count;
-        1:  441:  count.resize(size);
-        1:  442:  count.setZero();
-        1:  443:  dest.resize(size,size);
-      120:  444:  for(Index j = 0; j<size; ++j)
+        3:  439:  Index size = mat.rows();
+        3:  440:  VectorI count;
+        3:  441:  count.resize(size);
+        3:  442:  count.setZero();
+        3:  443:  dest.resize(size,size);
+      360:  444:  for(Index j = 0; j<size; ++j)
         -:  445:  {
-      119:  446:    Index jp = perm ? perm[j] : j;
-      474:  447:    for(MatIterator it(matEval,j); it; ++it)
+      357:  446:    Index jp = perm ? perm[j] : j;
+     1422:  447:    for(MatIterator it(matEval,j); it; ++it)
         -:  448:    {
-      355:  449:      Index i = it.index();
-      355:  450:      Index r = it.row();
-      355:  451:      Index c = it.col();
-      355:  452:      Index ip = perm ? perm[i] : i;
+     1065:  449:      Index i = it.index();
+     1065:  450:      Index r = it.row();
+     1065:  451:      Index c = it.col();
+     1065:  452:      Index ip = perm ? perm[i] : i;
         -:  453:      if(Mode==int(Upper|Lower))
         -:  454:        count[StorageOrderMatch ? jp : ip]++;
-      355:  455:      else if(r==c)
-      119:  456:        count[ip]++;
-      236:  457:      else if(( Mode==Lower && r>c) || ( Mode==Upper && r<c))
+     1065:  455:      else if(r==c)
+      357:  456:        count[ip]++;
+      708:  457:      else if(( Mode==Lower && r>c) || ( Mode==Upper && r<c))
         -:  458:      {
-      118:  459:        count[ip]++;
-      118:  460:        count[jp]++;
-      118:  461:      }
-      355:  462:    }
-      119:  463:  }
-        1:  464:  Index nnz = count.sum();
+      354:  459:        count[ip]++;
+      354:  460:        count[jp]++;
+      354:  461:      }
+     1065:  462:    }
+      357:  463:  }
+        3:  464:  Index nnz = count.sum();
         -:  465:  
         -:  466:  // reserve space
-        1:  467:  dest.resizeNonZeros(nnz);
-        1:  468:  dest.outerIndexPtr()[0] = 0;
-      120:  469:  for(Index j=0; j<size; ++j)
-      119:  470:    dest.outerIndexPtr()[j+1] = dest.outerIndexPtr()[j] + count[j];
-      120:  471:  for(Index j=0; j<size; ++j)
-      119:  472:    count[j] = dest.outerIndexPtr()[j];
+        3:  467:  dest.resizeNonZeros(nnz);
+        3:  468:  dest.outerIndexPtr()[0] = 0;
+      360:  469:  for(Index j=0; j<size; ++j)
+      357:  470:    dest.outerIndexPtr()[j+1] = dest.outerIndexPtr()[j] + count[j];
+      360:  471:  for(Index j=0; j<size; ++j)
+      357:  472:    count[j] = dest.outerIndexPtr()[j];
         -:  473:  
         -:  474:  // copy data
-      120:  475:  for(StorageIndex j = 0; j<size; ++j)
+      360:  475:  for(StorageIndex j = 0; j<size; ++j)
         -:  476:  {
-      474:  477:    for(MatIterator it(matEval,j); it; ++it)
+     1422:  477:    for(MatIterator it(matEval,j); it; ++it)
         -:  478:    {
-      355:  479:      StorageIndex i = internal::convert_index<StorageIndex>(it.index());
-      355:  480:      Index r = it.row();
-      355:  481:      Index c = it.col();
+     1065:  479:      StorageIndex i = internal::convert_index<StorageIndex>(it.index());
+     1065:  480:      Index r = it.row();
+     1065:  481:      Index c = it.col();
         -:  482:      
-      355:  483:      StorageIndex jp = perm ? perm[j] : j;
-      355:  484:      StorageIndex ip = perm ? perm[i] : i;
+     1065:  483:      StorageIndex jp = perm ? perm[j] : j;
+     1065:  484:      StorageIndex ip = perm ? perm[i] : i;
         -:  485:      
         -:  486:      if(Mode==int(Upper|Lower))
         -:  487:      {
@@ -493,33 +493,33 @@
         -:  489:        dest.innerIndexPtr()[k] = StorageOrderMatch ? ip : jp;
         -:  490:        dest.valuePtr()[k] = it.value();
         -:  491:      }
-      355:  492:      else if(r==c)
+     1065:  492:      else if(r==c)
         -:  493:      {
-      119:  494:        Index k = count[ip]++;
-      119:  495:        dest.innerIndexPtr()[k] = ip;
-      119:  496:        dest.valuePtr()[k] = it.value();
-      119:  497:      }
-      236:  498:      else if(( (Mode&Lower)==Lower && r>c) || ( (Mode&Upper)==Upper && r<c))
+      357:  494:        Index k = count[ip]++;
+      357:  495:        dest.innerIndexPtr()[k] = ip;
+      357:  496:        dest.valuePtr()[k] = it.value();
+      357:  497:      }
+      708:  498:      else if(( (Mode&Lower)==Lower && r>c) || ( (Mode&Upper)==Upper && r<c))
         -:  499:      {
         -:  500:        if(!StorageOrderMatch)
         -:  501:          std::swap(ip,jp);
-      118:  502:        Index k = count[jp]++;
-      118:  503:        dest.innerIndexPtr()[k] = ip;
-      118:  504:        dest.valuePtr()[k] = it.value();
-      118:  505:        k = count[ip]++;
-      118:  506:        dest.innerIndexPtr()[k] = jp;
-      118:  507:        dest.valuePtr()[k] = numext::conj(it.value());
-      118:  508:      }
-      355:  509:    }
-      119:  510:  }
-        1:  511:}
+      354:  502:        Index k = count[jp]++;
+      354:  503:        dest.innerIndexPtr()[k] = ip;
+      354:  504:        dest.valuePtr()[k] = it.value();
+      354:  505:        k = count[ip]++;
+      354:  506:        dest.innerIndexPtr()[k] = jp;
+      354:  507:        dest.valuePtr()[k] = numext::conj(it.value());
+      354:  508:      }
+     1065:  509:    }
+      357:  510:  }
+        3:  511:}
         -:  512:
         -:  513:template<int SrcMode_,int DstMode_,typename MatrixType,int DstOrder>
-        1:  514:void permute_symm_to_symm(const MatrixType& mat, SparseMatrix<typename MatrixType::Scalar,DstOrder,typename MatrixType::StorageIndex>& _dest, const typename MatrixType::StorageIndex* perm)
+        3:  514:void permute_symm_to_symm(const MatrixType& mat, SparseMatrix<typename MatrixType::Scalar,DstOrder,typename MatrixType::StorageIndex>& _dest, const typename MatrixType::StorageIndex* perm)
         -:  515:{
         -:  516:  typedef typename MatrixType::StorageIndex StorageIndex;
         -:  517:  typedef typename MatrixType::Scalar Scalar;
-        1:  518:  SparseMatrix<Scalar,DstOrder,StorageIndex>& dest(_dest.derived());
+        3:  518:  SparseMatrix<Scalar,DstOrder,StorageIndex>& dest(_dest.derived());
         -:  519:  typedef Matrix<StorageIndex,Dynamic,1> VectorI;
         -:  520:  typedef evaluator<MatrixType> MatEval;
         -:  521:  typedef typename evaluator<MatrixType>::InnerIterator MatIterator;
@@ -531,55 +531,55 @@
         -:  527:    SrcMode = SrcOrder==RowMajor ? (SrcMode_==Upper ? Lower : Upper) : SrcMode_
         -:  528:  };
         -:  529:
-        1:  530:  MatEval matEval(mat);
+        3:  530:  MatEval matEval(mat);
         -:  531:  
-        1:  532:  Index size = mat.rows();
-        1:  533:  VectorI count(size);
-        1:  534:  count.setZero();
-        1:  535:  dest.resize(size,size);
-      120:  536:  for(StorageIndex j = 0; j<size; ++j)
+        3:  532:  Index size = mat.rows();
+        3:  533:  VectorI count(size);
+        3:  534:  count.setZero();
+        3:  535:  dest.resize(size,size);
+      360:  536:  for(StorageIndex j = 0; j<size; ++j)
         -:  537:  {
-      119:  538:    StorageIndex jp = perm ? perm[j] : j;
-      474:  539:    for(MatIterator it(matEval,j); it; ++it)
+      357:  538:    StorageIndex jp = perm ? perm[j] : j;
+     1422:  539:    for(MatIterator it(matEval,j); it; ++it)
         -:  540:    {
-      355:  541:      StorageIndex i = it.index();
-      355:  542:      if((int(SrcMode)==int(Lower) && i<j) || (int(SrcMode)==int(Upper) && i>j))
-      118:  543:        continue;
+     1065:  541:      StorageIndex i = it.index();
+     1065:  542:      if((int(SrcMode)==int(Lower) && i<j) || (int(SrcMode)==int(Upper) && i>j))
+      354:  543:        continue;
         -:  544:                  
-      237:  545:      StorageIndex ip = perm ? perm[i] : i;
-      237:  546:      count[int(DstMode)==int(Lower) ? (std::min)(ip,jp) : (std::max)(ip,jp)]++;
-      237:  547:    }
-      119:  548:  }
-        1:  549:  dest.outerIndexPtr()[0] = 0;
-      120:  550:  for(Index j=0; j<size; ++j)
-      119:  551:    dest.outerIndexPtr()[j+1] = dest.outerIndexPtr()[j] + count[j];
-        1:  552:  dest.resizeNonZeros(dest.outerIndexPtr()[size]);
-      120:  553:  for(Index j=0; j<size; ++j)
-      119:  554:    count[j] = dest.outerIndexPtr()[j];
+      711:  545:      StorageIndex ip = perm ? perm[i] : i;
+      711:  546:      count[int(DstMode)==int(Lower) ? (std::min)(ip,jp) : (std::max)(ip,jp)]++;
+      711:  547:    }
+      357:  548:  }
+        3:  549:  dest.outerIndexPtr()[0] = 0;
+      360:  550:  for(Index j=0; j<size; ++j)
+      357:  551:    dest.outerIndexPtr()[j+1] = dest.outerIndexPtr()[j] + count[j];
+        3:  552:  dest.resizeNonZeros(dest.outerIndexPtr()[size]);
+      360:  553:  for(Index j=0; j<size; ++j)
+      357:  554:    count[j] = dest.outerIndexPtr()[j];
         -:  555:  
-      120:  556:  for(StorageIndex j = 0; j<size; ++j)
+      360:  556:  for(StorageIndex j = 0; j<size; ++j)
         -:  557:  {
         -:  558:    
-      474:  559:    for(MatIterator it(matEval,j); it; ++it)
+     1422:  559:    for(MatIterator it(matEval,j); it; ++it)
         -:  560:    {
-      355:  561:      StorageIndex i = it.index();
-      355:  562:      if((int(SrcMode)==int(Lower) && i<j) || (int(SrcMode)==int(Upper) && i>j))
-      118:  563:        continue;
+     1065:  561:      StorageIndex i = it.index();
+     1065:  562:      if((int(SrcMode)==int(Lower) && i<j) || (int(SrcMode)==int(Upper) && i>j))
+      354:  563:        continue;
         -:  564:                  
-      237:  565:      StorageIndex jp = perm ? perm[j] : j;
-      237:  566:      StorageIndex ip = perm? perm[i] : i;
+      711:  565:      StorageIndex jp = perm ? perm[j] : j;
+      711:  566:      StorageIndex ip = perm? perm[i] : i;
         -:  567:      
-      237:  568:      Index k = count[int(DstMode)==int(Lower) ? (std::min)(ip,jp) : (std::max)(ip,jp)]++;
-      237:  569:      dest.innerIndexPtr()[k] = int(DstMode)==int(Lower) ? (std::max)(ip,jp) : (std::min)(ip,jp);
+      711:  568:      Index k = count[int(DstMode)==int(Lower) ? (std::min)(ip,jp) : (std::max)(ip,jp)]++;
+      711:  569:      dest.innerIndexPtr()[k] = int(DstMode)==int(Lower) ? (std::max)(ip,jp) : (std::min)(ip,jp);
         -:  570:      
         -:  571:      if(!StorageOrderMatch) std::swap(ip,jp);
-      237:  572:      if( ((int(DstMode)==int(Lower) && ip<jp) || (int(DstMode)==int(Upper) && ip>jp)))
-       60:  573:        dest.valuePtr()[k] = numext::conj(it.value());
+      711:  572:      if( ((int(DstMode)==int(Lower) && ip<jp) || (int(DstMode)==int(Upper) && ip>jp)))
+      180:  573:        dest.valuePtr()[k] = numext::conj(it.value());
         -:  574:      else
-      177:  575:        dest.valuePtr()[k] = it.value();
-      237:  576:    }
-      119:  577:  }
-        1:  578:}
+      531:  575:        dest.valuePtr()[k] = it.value();
+      711:  576:    }
+      357:  577:  }
+        3:  578:}
         -:  579:
         -:  580:}
         -:  581:
@@ -611,15 +611,15 @@
         -:  607:    typedef typename MatrixType::Nested MatrixTypeNested;
         -:  608:    typedef internal::remove_all_t<MatrixTypeNested> NestedExpression;
         -:  609:    
-        2:  610:    SparseSymmetricPermutationProduct(const MatrixType& mat, const Perm& perm)
-        1:  611:      : m_matrix(mat), m_perm(perm)
-        2:  612:    {}
+        6:  610:    SparseSymmetricPermutationProduct(const MatrixType& mat, const Perm& perm)
+        3:  611:      : m_matrix(mat), m_perm(perm)
+        6:  612:    {}
         -:  613:    
         -:  614:    inline Index rows() const { return m_matrix.rows(); }
         -:  615:    inline Index cols() const { return m_matrix.cols(); }
         -:  616:        
-        1:  617:    const NestedExpression& matrix() const { return m_matrix; }
-        1:  618:    const Perm& perm() const { return m_perm; }
+        3:  617:    const NestedExpression& matrix() const { return m_matrix; }
+        3:  618:    const Perm& perm() const { return m_perm; }
         -:  619:    
         -:  620:  protected:
         -:  621:    MatrixTypeNested m_matrix;
@@ -644,10 +644,10 @@
         -:  640:  }
         -:  641:  
         -:  642:  template<typename DestType,unsigned int DestMode>
-        1:  643:  static void run(SparseSelfAdjointView<DestType,DestMode>& dst, const SrcXprType &src, const internal::assign_op<Scalar,typename MatrixType::Scalar> &)
+        3:  643:  static void run(SparseSelfAdjointView<DestType,DestMode>& dst, const SrcXprType &src, const internal::assign_op<Scalar,typename MatrixType::Scalar> &)
         -:  644:  {
-        1:  645:    internal::permute_symm_to_symm<Mode,DestMode>(src.matrix(),dst.matrix(),src.perm().indices().data());
-        1:  646:  }
+        3:  645:    internal::permute_symm_to_symm<Mode,DestMode>(src.matrix(),dst.matrix(),src.perm().indices().data());
+        3:  646:  }
         -:  647:};
         -:  648:
         -:  649:} // end namespace internal

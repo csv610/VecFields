@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/products/TriangularSolverVector.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -97,30 +97,30 @@
         -:   93:  enum {
         -:   94:    IsLower = ((Mode&Lower)==Lower)
         -:   95:  };
-      120:   96:  static void run(Index size, const LhsScalar* _lhs, Index lhsStride, RhsScalar* rhs)
+      360:   96:  static void run(Index size, const LhsScalar* _lhs, Index lhsStride, RhsScalar* rhs)
         -:   97:  {
         -:   98:    typedef Map<const Matrix<LhsScalar,Dynamic,Dynamic,ColMajor>, 0, OuterStride<> > LhsMap;
-      120:   99:    const LhsMap lhs(_lhs,size,size,OuterStride<>(lhsStride));
+      360:   99:    const LhsMap lhs(_lhs,size,size,OuterStride<>(lhsStride));
         -:  100:    typedef const_blas_data_mapper<LhsScalar,Index,ColMajor> LhsMapper;
         -:  101:    typedef const_blas_data_mapper<RhsScalar,Index,ColMajor> RhsMapper;
         -:  102:    std::conditional_t<Conjugate,
         -:  103:                            const CwiseUnaryOp<typename internal::scalar_conjugate_op<LhsScalar>,LhsMap>,
         -:  104:                            const LhsMap&
-      120:  105:                           > cjLhs(lhs);
+      360:  105:                           > cjLhs(lhs);
         -:  106:    static const Index PanelWidth = EIGEN_TUNE_TRIANGULAR_PANEL_WIDTH;
         -:  107:
-      240:  108:    for(Index pi=IsLower ? 0 : size;
-      240:  109:        IsLower ? pi<size : pi>0;
-      120:  110:        IsLower ? pi+=PanelWidth : pi-=PanelWidth)
+      720:  108:    for(Index pi=IsLower ? 0 : size;
+      720:  109:        IsLower ? pi<size : pi>0;
+      360:  110:        IsLower ? pi+=PanelWidth : pi-=PanelWidth)
         -:  111:    {
-      120:  112:      Index actualPanelWidth = (std::min)(IsLower ? size - pi : pi, PanelWidth);
-      120:  113:      Index startBlock = IsLower ? pi : pi-actualPanelWidth;
-      120:  114:      Index endBlock = IsLower ? pi + actualPanelWidth : 0;
+      360:  112:      Index actualPanelWidth = (std::min)(IsLower ? size - pi : pi, PanelWidth);
+      360:  113:      Index startBlock = IsLower ? pi : pi-actualPanelWidth;
+      360:  114:      Index endBlock = IsLower ? pi + actualPanelWidth : 0;
         -:  115:
-      598:  116:      for(Index k=0; k<actualPanelWidth; ++k)
+     1794:  116:      for(Index k=0; k<actualPanelWidth; ++k)
         -:  117:      {
-      478:  118:        Index i = IsLower ? pi+k : pi-k-1;
-      478:  119:        if(!is_identically_zero(rhs[i]))
+     1434:  118:        Index i = IsLower ? pi+k : pi-k-1;
+     1434:  119:        if(!is_identically_zero(rhs[i]))
         -:  120:        {
         -:  121:          if(!(Mode & UnitDiag))
     #####:  122:            rhs[i] /= cjLhs.coeff(i,i);
@@ -130,9 +130,9 @@
     #####:  126:          if (r>0)
     #####:  127:            Map<Matrix<RhsScalar,Dynamic,1> >(rhs+s,r) -= rhs[i] * cjLhs.col(i).segment(s,r);
     #####:  128:        }
-      478:  129:      }
-      120:  130:      Index r = IsLower ? size - endBlock : startBlock; // remaining size
-      120:  131:      if (r > 0)
+     1434:  129:      }
+      360:  130:      Index r = IsLower ? size - endBlock : startBlock; // remaining size
+      360:  131:      if (r > 0)
         -:  132:      {
         -:  133:        // let's directly call the low level product function because:
         -:  134:        // 1 - it is faster to compile
@@ -143,8 +143,8 @@
     #####:  139:            RhsMapper(rhs+startBlock, 1),
     #####:  140:            rhs+endBlock, 1, RhsScalar(-1));
     #####:  141:      }
-      120:  142:    }
-      120:  143:  }
+      360:  142:    }
+      360:  143:  }
         -:  144:};
         -:  145:
         -:  146:} // end namespace internal

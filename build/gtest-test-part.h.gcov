@@ -50,7 +50,7 @@
         -:   46:// assertion or an explicit FAIL(), ADD_FAILURE(), or SUCCESS()).
         -:   47://
         -:   48:// Don't inherit from TestPartResult as its destructor is not virtual.
-       12:   49:class GTEST_API_ TestPartResult {
+       14:   49:class GTEST_API_ TestPartResult {
         -:   50: public:
         -:   51:  // The possible outcomes of a test part (i.e. an assertion or an
         -:   52:  // explicit SUCCEED(), FAIL(), or ADD_FAILURE()).
@@ -64,32 +64,32 @@
         -:   60:  // C'tor.  TestPartResult does NOT have a default constructor.
         -:   61:  // Always use this constructor (with parameters) to create a
         -:   62:  // TestPartResult object.
-       24:   63:  TestPartResult(Type a_type, const char* a_file_name, int a_line_number,
+       28:   63:  TestPartResult(Type a_type, const char* a_file_name, int a_line_number,
         -:   64:                 const char* a_message)
-       12:   65:      : type_(a_type),
-       12:   66:        file_name_(a_file_name == nullptr ? "" : a_file_name),
-       12:   67:        line_number_(a_line_number),
-       12:   68:        summary_(ExtractSummary(a_message)),
-       24:   69:        message_(a_message) {}
+       14:   65:      : type_(a_type),
+       14:   66:        file_name_(a_file_name == nullptr ? "" : a_file_name),
+       14:   67:        line_number_(a_line_number),
+       14:   68:        summary_(ExtractSummary(a_message)),
+       28:   69:        message_(a_message) {}
         -:   70:
         -:   71:  // Gets the outcome of the test part.
-       24:   72:  Type type() const { return type_; }
+       28:   72:  Type type() const { return type_; }
         -:   73:
         -:   74:  // Gets the name of the source file where the test part took place, or
         -:   75:  // NULL if it's unknown.
-       12:   76:  const char* file_name() const {
-       12:   77:    return file_name_.empty() ? nullptr : file_name_.c_str();
+       14:   76:  const char* file_name() const {
+       14:   77:    return file_name_.empty() ? nullptr : file_name_.c_str();
         -:   78:  }
         -:   79:
         -:   80:  // Gets the line in the source file where the test part took place,
         -:   81:  // or -1 if it's unknown.
-       12:   82:  int line_number() const { return line_number_; }
+       14:   82:  int line_number() const { return line_number_; }
         -:   83:
         -:   84:  // Gets the summary of the failure message.
     #####:   85:  const char* summary() const { return summary_.c_str(); }
         -:   86:
         -:   87:  // Gets the message associated with the test part.
-       12:   88:  const char* message() const { return message_.c_str(); }
+       14:   88:  const char* message() const { return message_.c_str(); }
         -:   89:
         -:   90:  // Returns true if and only if the test part was skipped.
     #####:   91:  bool skipped() const { return type_ == kSkip; }
@@ -98,13 +98,13 @@
         -:   94:  bool passed() const { return type_ == kSuccess; }
         -:   95:
         -:   96:  // Returns true if and only if the test part non-fatally failed.
-       56:   97:  bool nonfatally_failed() const { return type_ == kNonFatalFailure; }
+       84:   97:  bool nonfatally_failed() const { return type_ == kNonFatalFailure; }
         -:   98:
         -:   99:  // Returns true if and only if the test part fatally failed.
-       56:  100:  bool fatally_failed() const { return type_ == kFatalFailure; }
+       84:  100:  bool fatally_failed() const { return type_ == kFatalFailure; }
         -:  101:
         -:  102:  // Returns true if and only if the test part failed.
-       56:  103:  bool failed() const { return fatally_failed() || nonfatally_failed(); }
+       84:  103:  bool failed() const { return fatally_failed() || nonfatally_failed(); }
         -:  104:
         -:  105: private:
         -:  106:  Type type_;

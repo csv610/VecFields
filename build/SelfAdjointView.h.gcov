@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/SelfAdjointView.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -79,12 +79,12 @@
         -:   75:    typedef typename MatrixType::PlainObject PlainObject;
         -:   76:
         -:   77:    EIGEN_DEVICE_FUNC
-      480:   78:    explicit inline SelfAdjointView(MatrixType& matrix) : m_matrix(matrix) { }
+     1440:   78:    explicit inline SelfAdjointView(MatrixType& matrix) : m_matrix(matrix) { }
         -:   79:
         -:   80:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
-      120:   81:    inline Index rows() const EIGEN_NOEXCEPT { return m_matrix.rows(); }
+      360:   81:    inline Index rows() const EIGEN_NOEXCEPT { return m_matrix.rows(); }
         -:   82:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
-      120:   83:    inline Index cols() const EIGEN_NOEXCEPT { return m_matrix.cols(); }
+      360:   83:    inline Index cols() const EIGEN_NOEXCEPT { return m_matrix.cols(); }
         -:   84:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
         -:   85:    inline Index outerStride() const EIGEN_NOEXCEPT { return m_matrix.outerStride(); }
         -:   86:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
@@ -113,10 +113,10 @@
         -:  109:
         -:  110:    /** \internal */
         -:  111:    EIGEN_DEVICE_FUNC
-      240:  112:    const MatrixTypeNestedCleaned& _expression() const { return m_matrix; }
+      720:  112:    const MatrixTypeNestedCleaned& _expression() const { return m_matrix; }
         -:  113:
         -:  114:    EIGEN_DEVICE_FUNC
-      120:  115:    const MatrixTypeNestedCleaned& nestedExpression() const { return m_matrix; }
+      360:  115:    const MatrixTypeNestedCleaned& nestedExpression() const { return m_matrix; }
         -:  116:    EIGEN_DEVICE_FUNC
         -:  117:    MatrixTypeNestedCleaned& nestedExpression() { return m_matrix; }
         -:  118:
@@ -124,9 +124,9 @@
         -:  120:    template<typename OtherDerived>
         -:  121:    EIGEN_DEVICE_FUNC
         -:  122:    const Product<SelfAdjointView,OtherDerived>
-      120:  123:    operator*(const MatrixBase<OtherDerived>& rhs) const
+      360:  123:    operator*(const MatrixBase<OtherDerived>& rhs) const
         -:  124:    {
-      120:  125:      return Product<SelfAdjointView,OtherDerived>(*this, rhs.derived());
+      360:  125:      return Product<SelfAdjointView,OtherDerived>(*this, rhs.derived());
         -:  126:    }
         -:  127:
         -:  128:    /** Efficient vector/matrix times triangular matrix product */
@@ -360,9 +360,9 @@
         -:  356:template<typename Derived>
         -:  357:template<unsigned int UpLo>
         -:  358:EIGEN_DEVICE_FUNC typename MatrixBase<Derived>::template SelfAdjointViewReturnType<UpLo>::Type
-      240:  359:MatrixBase<Derived>::selfadjointView()
+      720:  359:MatrixBase<Derived>::selfadjointView()
         -:  360:{
-      240:  361:  return typename SelfAdjointViewReturnType<UpLo>::Type(derived());
+      720:  361:  return typename SelfAdjointViewReturnType<UpLo>::Type(derived());
         -:  362:}
         -:  363:
         -:  364:} // end namespace Eigen

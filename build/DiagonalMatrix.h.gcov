@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/DiagonalMatrix.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -58,7 +58,7 @@
         -:   54:
         -:   55:    /** \returns a reference to the derived object. */
         -:   56:    EIGEN_DEVICE_FUNC
-        4:   57:    inline const Derived& derived() const { return *static_cast<const Derived*>(this); }
+       12:   57:    inline const Derived& derived() const { return *static_cast<const Derived*>(this); }
         -:   58:    /** \returns a const reference to the derived object. */
         -:   59:    EIGEN_DEVICE_FUNC
         -:   60:    inline Derived& derived() { return *static_cast<Derived*>(this); }
@@ -72,7 +72,7 @@
         -:   68:
         -:   69:    /** \returns a reference to the derived object's vector of diagonal coefficients. */
         -:   70:    EIGEN_DEVICE_FUNC
-        3:   71:    inline const DiagonalVectorType& diagonal() const { return derived().diagonal(); }
+        9:   71:    inline const DiagonalVectorType& diagonal() const { return derived().diagonal(); }
         -:   72:    /** \returns a const reference to the derived object's vector of diagonal coefficients. */
         -:   73:    EIGEN_DEVICE_FUNC
         -:   74:    inline DiagonalVectorType& diagonal() { return derived().diagonal(); }
@@ -86,18 +86,18 @@
         -:   82:
         -:   83:    /** \returns the number of rows. */
         -:   84:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR 
-        1:   85:    inline Index rows() const { return diagonal().size(); }
+        3:   85:    inline Index rows() const { return diagonal().size(); }
         -:   86:    /** \returns the number of columns. */
         -:   87:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR 
-        1:   88:    inline Index cols() const { return diagonal().size(); }
+        3:   88:    inline Index cols() const { return diagonal().size(); }
         -:   89:
         -:   90:    /** \returns the diagonal matrix product of \c *this by the dense matrix, \a matrix */
         -:   91:    template<typename MatrixDerived>
         -:   92:    EIGEN_DEVICE_FUNC
         -:   93:    const Product<Derived,MatrixDerived,LazyProduct>
-        1:   94:    operator*(const MatrixBase<MatrixDerived> &matrix) const
+        3:   94:    operator*(const MatrixBase<MatrixDerived> &matrix) const
         -:   95:    {
-        1:   96:      return Product<Derived, MatrixDerived, LazyProduct>(derived(),matrix.derived());
+        3:   96:      return Product<Derived, MatrixDerived, LazyProduct>(derived(),matrix.derived());
         -:   97:    }
         -:   98:
         -:   99:    template <typename OtherDerived>
@@ -116,7 +116,7 @@
         -:  112:
         -:  113:    /** \returns the inverse \c *this. Computed as the coefficient-wise inverse of the diagonal. */
         -:  114:    EIGEN_DEVICE_FUNC
-        1:  115:    inline const DiagonalInverseReturnType inverse() const { return diagonal().cwiseInverse().asDiagonal(); }
+        3:  115:    inline const DiagonalInverseReturnType inverse() const { return diagonal().cwiseInverse().asDiagonal(); }
         -:  116:
         -:  117:    using DiagonalScaleReturnType =
         -:  118:        DiagonalWrapper<const EIGEN_EXPR_BINARYOP_SCALAR_RETURN_TYPE(DiagonalVectorType, Scalar, product)>;
@@ -365,11 +365,11 @@
         -:  361:
         -:  362:    /** Constructor from expression of diagonal coefficients to wrap. */
         -:  363:    EIGEN_DEVICE_FUNC
-        4:  364:    explicit inline DiagonalWrapper(DiagonalVectorType& a_diagonal) : m_diagonal(a_diagonal) {}
+       12:  364:    explicit inline DiagonalWrapper(DiagonalVectorType& a_diagonal) : m_diagonal(a_diagonal) {}
         -:  365:
         -:  366:    /** \returns a const reference to the wrapped expression of diagonal coefficients. */
         -:  367:    EIGEN_DEVICE_FUNC
-        4:  368:    const DiagonalVectorType& diagonal() const { return m_diagonal; }
+       12:  368:    const DiagonalVectorType& diagonal() const { return m_diagonal; }
         -:  369:
         -:  370:  protected:
         -:  371:    typename DiagonalVectorType::Nested m_diagonal;
@@ -386,9 +386,9 @@
         -:  382:  **/
         -:  383:template<typename Derived>
         -:  384:EIGEN_DEVICE_FUNC inline const DiagonalWrapper<const Derived>
-        2:  385:MatrixBase<Derived>::asDiagonal() const
+        6:  385:MatrixBase<Derived>::asDiagonal() const
         -:  386:{
-        2:  387:  return DiagonalWrapper<const Derived>(derived());
+        6:  387:  return DiagonalWrapper<const Derived>(derived());
         -:  388:}
         -:  389:
         -:  390:/** \returns true if *this is approximately equal to a diagonal matrix,

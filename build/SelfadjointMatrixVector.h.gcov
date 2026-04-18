@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/products/SelfadjointMatrixVector.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -45,7 +45,7 @@
         -:   41:
         -:   42:template<typename Scalar, typename Index, int StorageOrder, int UpLo, bool ConjugateLhs, bool ConjugateRhs, int Version>
         -:   43:EIGEN_DONT_INLINE EIGEN_DEVICE_FUNC
-      120:   44:void selfadjoint_matrix_vector_product<Scalar,Index,StorageOrder,UpLo,ConjugateLhs,ConjugateRhs,Version>::run(
+      360:   44:void selfadjoint_matrix_vector_product<Scalar,Index,StorageOrder,UpLo,ConjugateLhs,ConjugateRhs,Version>::run(
         -:   45:  Index size,
         -:   46:  const Scalar*  lhs, Index lhsStride,
         -:   47:  const Scalar*  rhs,
@@ -54,7 +54,7 @@
         -:   50:{
         -:   51:  typedef typename packet_traits<Scalar>::type Packet;
         -:   52:  typedef typename NumTraits<Scalar>::Real RealScalar;
-      120:   53:  const Index PacketSize = sizeof(Packet)/sizeof(Scalar);
+      360:   53:  const Index PacketSize = sizeof(Packet)/sizeof(Scalar);
         -:   54:
         -:   55:  enum {
         -:   56:    IsRowMajor = StorageOrder==RowMajor ? 1 : 0,
@@ -69,14 +69,14 @@
         -:   65:  conj_helper<Packet,Packet,NumTraits<Scalar>::IsComplex && logical_xor(ConjugateLhs,  IsRowMajor), ConjugateRhs> pcj0;
         -:   66:  conj_helper<Packet,Packet,NumTraits<Scalar>::IsComplex && logical_xor(ConjugateLhs, !IsRowMajor), ConjugateRhs> pcj1;
         -:   67:
-      120:   68:  Scalar cjAlpha = ConjugateRhs ? numext::conj(alpha) : alpha;
+      360:   68:  Scalar cjAlpha = ConjugateRhs ? numext::conj(alpha) : alpha;
         -:   69:
-      120:   70:  Index bound = numext::maxi(Index(0), size-8) & 0xfffffffe;
+      360:   70:  Index bound = numext::maxi(Index(0), size-8) & 0xfffffffe;
         -:   71:  if (FirstTriangular)
         -:   72:    bound = size - bound;
         -:   73:
-      120:   74:  for (Index j=FirstTriangular ? bound : 0;
-      120:   75:       j<(FirstTriangular ? size : bound);j+=2)
+      360:   74:  for (Index j=FirstTriangular ? bound : 0;
+      360:   75:       j<(FirstTriangular ? size : bound);j+=2)
         -:   76:  {
     #####:   77:    const Scalar* EIGEN_RESTRICT A0 = lhs + j*lhsStride;
     #####:   78:    const Scalar* EIGEN_RESTRICT A1 = lhs + (j+1)*lhsStride;
@@ -143,21 +143,21 @@
     #####:  139:    res[j]   += alpha * (t2 + predux(ptmp2));
     #####:  140:    res[j+1] += alpha * (t3 + predux(ptmp3));
     #####:  141:  }
-      240:  142:  for (Index j=FirstTriangular ? 0 : bound;j<(FirstTriangular ? bound : size);j++)
+      720:  142:  for (Index j=FirstTriangular ? 0 : bound;j<(FirstTriangular ? bound : size);j++)
         -:  143:  {
-      120:  144:    const Scalar* EIGEN_RESTRICT A0 = lhs + j*lhsStride;
+      360:  144:    const Scalar* EIGEN_RESTRICT A0 = lhs + j*lhsStride;
         -:  145:
-      120:  146:    Scalar t1 = cjAlpha * rhs[j];
-      120:  147:    Scalar t2(0);
-      120:  148:    res[j] += cjd.pmul(numext::real(A0[j]), t1);
-      120:  149:    for (Index i=FirstTriangular ? 0 : j+1; i<(FirstTriangular ? j : size); i++)
+      360:  146:    Scalar t1 = cjAlpha * rhs[j];
+      360:  147:    Scalar t2(0);
+      360:  148:    res[j] += cjd.pmul(numext::real(A0[j]), t1);
+      360:  149:    for (Index i=FirstTriangular ? 0 : j+1; i<(FirstTriangular ? j : size); i++)
         -:  150:    {
     #####:  151:      res[i] += cj0.pmul(A0[i], t1);
     #####:  152:      t2 += cj1.pmul(A0[i], rhs[i]);
     #####:  153:    }
-      120:  154:    res[j] += alpha * t2;
-      120:  155:  }
-      120:  156:}
+      360:  154:    res[j] += alpha * t2;
+      360:  155:  }
+      360:  156:}
         -:  157:
         -:  158:} // end namespace internal 
         -:  159:
@@ -184,19 +184,19 @@
         -:  180:
         -:  181:  template<typename Dest>
         -:  182:  static EIGEN_DEVICE_FUNC
-      120:  183:  void run(Dest& dest, const Lhs &a_lhs, const Rhs &a_rhs, const Scalar& alpha)
+      360:  183:  void run(Dest& dest, const Lhs &a_lhs, const Rhs &a_rhs, const Scalar& alpha)
         -:  184:  {
         -:  185:    typedef typename Dest::Scalar ResScalar;
         -:  186:    typedef typename Rhs::Scalar RhsScalar;
         -:  187:    typedef Map<Matrix<ResScalar,Dynamic,1>, plain_enum_min(AlignedMax,internal::packet_traits<ResScalar>::size)> MappedDest;
         -:  188:    
-      120:  189:    eigen_assert(dest.rows()==a_lhs.rows() && dest.cols()==a_rhs.cols());
+      360:  189:    eigen_assert(dest.rows()==a_lhs.rows() && dest.cols()==a_rhs.cols());
         -:  190:
-      120:  191:    add_const_on_value_type_t<ActualLhsType> lhs = LhsBlasTraits::extract(a_lhs);
-      120:  192:    add_const_on_value_type_t<ActualRhsType> rhs = RhsBlasTraits::extract(a_rhs);
+      360:  191:    add_const_on_value_type_t<ActualLhsType> lhs = LhsBlasTraits::extract(a_lhs);
+      360:  192:    add_const_on_value_type_t<ActualRhsType> rhs = RhsBlasTraits::extract(a_rhs);
         -:  193:
-      240:  194:    Scalar actualAlpha = alpha * LhsBlasTraits::extractScalarFactor(a_lhs)
-      120:  195:                               * RhsBlasTraits::extractScalarFactor(a_rhs);
+      720:  194:    Scalar actualAlpha = alpha * LhsBlasTraits::extractScalarFactor(a_lhs)
+      360:  195:                               * RhsBlasTraits::extractScalarFactor(a_rhs);
         -:  196:
         -:  197:    enum {
         -:  198:      EvalToDest = (Dest::InnerStrideAtCompileTime==1),
@@ -206,10 +206,10 @@
         -:  202:    internal::gemv_static_vector_if<ResScalar,Dest::SizeAtCompileTime,Dest::MaxSizeAtCompileTime,!EvalToDest> static_dest;
         -:  203:    internal::gemv_static_vector_if<RhsScalar,ActualRhsTypeCleaned::SizeAtCompileTime,ActualRhsTypeCleaned::MaxSizeAtCompileTime,!UseRhs> static_rhs;
         -:  204:
-      120:  205:    ei_declare_aligned_stack_constructed_variable(ResScalar,actualDestPtr,dest.size(),
+      360:  205:    ei_declare_aligned_stack_constructed_variable(ResScalar,actualDestPtr,dest.size(),
         -:  206:                                                  EvalToDest ? dest.data() : static_dest.data());
         -:  207:                                                  
-      120:  208:    ei_declare_aligned_stack_constructed_variable(RhsScalar,actualRhsPtr,rhs.size(),
+      360:  208:    ei_declare_aligned_stack_constructed_variable(RhsScalar,actualRhsPtr,rhs.size(),
         -:  209:        UseRhs ? const_cast<RhsScalar*>(rhs.data()) : static_rhs.data());
         -:  210:    
         -:  211:    if(!EvalToDest)
@@ -231,19 +231,19 @@
         -:  227:    }
         -:  228:      
         -:  229:      
-      120:  230:    internal::selfadjoint_matrix_vector_product<Scalar, Index, (internal::traits<ActualLhsTypeCleaned>::Flags&RowMajorBit) ? RowMajor : ColMajor,
+      360:  230:    internal::selfadjoint_matrix_vector_product<Scalar, Index, (internal::traits<ActualLhsTypeCleaned>::Flags&RowMajorBit) ? RowMajor : ColMajor,
         -:  231:                                                int(LhsUpLo), bool(LhsBlasTraits::NeedToConjugate), bool(RhsBlasTraits::NeedToConjugate)>::run
         -:  232:      (
-      120:  233:        lhs.rows(),                             // size
-      120:  234:        &lhs.coeffRef(0,0),  lhs.outerStride(), // lhs info
-      120:  235:        actualRhsPtr,                           // rhs info
-      120:  236:        actualDestPtr,                          // result info
-      120:  237:        actualAlpha                             // scale factor
+      360:  233:        lhs.rows(),                             // size
+      360:  234:        &lhs.coeffRef(0,0),  lhs.outerStride(), // lhs info
+      360:  235:        actualRhsPtr,                           // rhs info
+      360:  236:        actualDestPtr,                          // result info
+      360:  237:        actualAlpha                             // scale factor
         -:  238:      );
         -:  239:    
         -:  240:    if(!EvalToDest)
         -:  241:      dest = MappedDest(actualDestPtr, dest.size());
-      120:  242:  }
+      360:  242:  }
         -:  243:};
         -:  244:
         -:  245:template<typename Lhs, typename Rhs, int RhsMode>

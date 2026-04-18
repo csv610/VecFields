@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/products/GeneralMatrixVector.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -331,7 +331,7 @@
         -:  327:};
         -:  328:
         -:  329:template<typename Index, typename LhsScalar, typename LhsMapper, bool ConjugateLhs, typename RhsScalar, typename RhsMapper, bool ConjugateRhs, int Version>
-      355:  330:EIGEN_DEVICE_FUNC EIGEN_DONT_INLINE void general_matrix_vector_product<Index,LhsScalar,LhsMapper,RowMajor,ConjugateLhs,RhsScalar,RhsMapper,ConjugateRhs,Version>::run(
+     1065:  330:EIGEN_DEVICE_FUNC EIGEN_DONT_INLINE void general_matrix_vector_product<Index,LhsScalar,LhsMapper,RowMajor,ConjugateLhs,RhsScalar,RhsMapper,ConjugateRhs,Version>::run(
         -:  331:  Index rows, Index cols,
         -:  332:  const LhsMapper& alhs,
         -:  333:  const RhsMapper& rhs,
@@ -340,7 +340,7 @@
         -:  336:{
         -:  337:  // The following copy tells the compiler that lhs's attributes are not modified outside this function
         -:  338:  // This helps GCC to generate propoer code.
-      355:  339:  LhsMapper lhs(alhs);
+     1065:  339:  LhsMapper lhs(alhs);
         -:  340:
         -:  341:  eigen_internal_assert(rhs.stride()==1);
         -:  342:  conj_helper<LhsScalar,RhsScalar,ConjugateLhs,ConjugateRhs> cj;
@@ -350,9 +350,9 @@
         -:  346:
         -:  347:  // TODO: fine tune the following heuristic. The rationale is that if the matrix is very large,
         -:  348:  //       processing 8 rows at once might be counter productive wrt cache.
-      355:  349:  const Index n8 = lhs.stride()*sizeof(LhsScalar)>32000 ? 0 : rows-7;
-      355:  350:  const Index n4 = rows-3;
-      355:  351:  const Index n2 = rows-1;
+     1065:  349:  const Index n8 = lhs.stride()*sizeof(LhsScalar)>32000 ? 0 : rows-7;
+     1065:  350:  const Index n4 = rows-3;
+     1065:  351:  const Index n2 = rows-1;
         -:  352:
         -:  353:  // TODO: for padded aligned inputs, we could enable aligned reads
         -:  354:  enum { LhsAlignment = Unaligned,
@@ -366,12 +366,12 @@
         -:  362:         HasQuarter = (int)ResPacketSizeQuarter < (int)ResPacketSizeHalf
         -:  363:  };
         -:  364:
-      355:  365:  const Index fullColBlockEnd = LhsPacketSize * (cols / LhsPacketSize);
-      355:  366:  const Index halfColBlockEnd = LhsPacketSizeHalf * (cols / LhsPacketSizeHalf);
-      355:  367:  const Index quarterColBlockEnd = LhsPacketSizeQuarter * (cols / LhsPacketSizeQuarter);
+     1065:  365:  const Index fullColBlockEnd = LhsPacketSize * (cols / LhsPacketSize);
+     1065:  366:  const Index halfColBlockEnd = LhsPacketSizeHalf * (cols / LhsPacketSizeHalf);
+     1065:  367:  const Index quarterColBlockEnd = LhsPacketSizeQuarter * (cols / LhsPacketSizeQuarter);
         -:  368:
-      355:  369:  Index i=0;
-      355:  370:  for(; i<n8; i+=8)
+     1065:  369:  Index i=0;
+     1065:  370:  for(; i<n8; i+=8)
         -:  371:  {
     #####:  372:    ResPacket c0 = pset1<ResPacket>(ResScalar(0)),
     #####:  373:              c1 = pset1<ResPacket>(ResScalar(0)),
@@ -426,78 +426,78 @@
     #####:  422:    res[(i+6)*resIncr] += alpha*cc6;
     #####:  423:    res[(i+7)*resIncr] += alpha*cc7;
     #####:  424:  }
-      474:  425:  for(; i<n4; i+=4)
+     1422:  425:  for(; i<n4; i+=4)
         -:  426:  {
-      119:  427:    ResPacket c0 = pset1<ResPacket>(ResScalar(0)),
-      119:  428:              c1 = pset1<ResPacket>(ResScalar(0)),
-      119:  429:              c2 = pset1<ResPacket>(ResScalar(0)),
-      119:  430:              c3 = pset1<ResPacket>(ResScalar(0));
+      357:  427:    ResPacket c0 = pset1<ResPacket>(ResScalar(0)),
+      357:  428:              c1 = pset1<ResPacket>(ResScalar(0)),
+      357:  429:              c2 = pset1<ResPacket>(ResScalar(0)),
+      357:  430:              c3 = pset1<ResPacket>(ResScalar(0));
         -:  431:
-      241:  432:    for (Index j = 0; j < fullColBlockEnd; j += LhsPacketSize)
+      723:  432:    for (Index j = 0; j < fullColBlockEnd; j += LhsPacketSize)
         -:  433:    {
-      122:  434:      RhsPacket b0 = rhs.template load<RhsPacket, Unaligned>(j,0);
+      366:  434:      RhsPacket b0 = rhs.template load<RhsPacket, Unaligned>(j,0);
         -:  435:
-      122:  436:      c0 = pcj.pmadd(lhs.template load<LhsPacket,LhsAlignment>(i+0,j),b0,c0);
-      122:  437:      c1 = pcj.pmadd(lhs.template load<LhsPacket,LhsAlignment>(i+1,j),b0,c1);
-      122:  438:      c2 = pcj.pmadd(lhs.template load<LhsPacket,LhsAlignment>(i+2,j),b0,c2);
-      122:  439:      c3 = pcj.pmadd(lhs.template load<LhsPacket,LhsAlignment>(i+3,j),b0,c3);
-      122:  440:    }
-      119:  441:    ResScalar cc0 = predux(c0);
-      119:  442:    ResScalar cc1 = predux(c1);
-      119:  443:    ResScalar cc2 = predux(c2);
-      119:  444:    ResScalar cc3 = predux(c3);
+      366:  436:      c0 = pcj.pmadd(lhs.template load<LhsPacket,LhsAlignment>(i+0,j),b0,c0);
+      366:  437:      c1 = pcj.pmadd(lhs.template load<LhsPacket,LhsAlignment>(i+1,j),b0,c1);
+      366:  438:      c2 = pcj.pmadd(lhs.template load<LhsPacket,LhsAlignment>(i+2,j),b0,c2);
+      366:  439:      c3 = pcj.pmadd(lhs.template load<LhsPacket,LhsAlignment>(i+3,j),b0,c3);
+      366:  440:    }
+      357:  441:    ResScalar cc0 = predux(c0);
+      357:  442:    ResScalar cc1 = predux(c1);
+      357:  443:    ResScalar cc2 = predux(c2);
+      357:  444:    ResScalar cc3 = predux(c3);
         -:  445:
-      234:  446:    for(Index j = fullColBlockEnd; j < cols; ++j)
+      702:  446:    for(Index j = fullColBlockEnd; j < cols; ++j)
         -:  447:    {
-      115:  448:      RhsScalar b0 = rhs(j,0);
+      345:  448:      RhsScalar b0 = rhs(j,0);
         -:  449:
-      115:  450:      cc0 += cj.pmul(lhs(i+0,j), b0);
-      115:  451:      cc1 += cj.pmul(lhs(i+1,j), b0);
-      115:  452:      cc2 += cj.pmul(lhs(i+2,j), b0);
-      115:  453:      cc3 += cj.pmul(lhs(i+3,j), b0);
-      115:  454:    }
-      119:  455:    res[(i+0)*resIncr] += alpha*cc0;
-      119:  456:    res[(i+1)*resIncr] += alpha*cc1;
-      119:  457:    res[(i+2)*resIncr] += alpha*cc2;
-      119:  458:    res[(i+3)*resIncr] += alpha*cc3;
-      119:  459:  }
-      589:  460:  for(; i<n2; i+=2)
+      345:  450:      cc0 += cj.pmul(lhs(i+0,j), b0);
+      345:  451:      cc1 += cj.pmul(lhs(i+1,j), b0);
+      345:  452:      cc2 += cj.pmul(lhs(i+2,j), b0);
+      345:  453:      cc3 += cj.pmul(lhs(i+3,j), b0);
+      345:  454:    }
+      357:  455:    res[(i+0)*resIncr] += alpha*cc0;
+      357:  456:    res[(i+1)*resIncr] += alpha*cc1;
+      357:  457:    res[(i+2)*resIncr] += alpha*cc2;
+      357:  458:    res[(i+3)*resIncr] += alpha*cc3;
+      357:  459:  }
+     1767:  460:  for(; i<n2; i+=2)
         -:  461:  {
-      234:  462:    ResPacket c0 = pset1<ResPacket>(ResScalar(0)),
-      234:  463:              c1 = pset1<ResPacket>(ResScalar(0));
+      702:  462:    ResPacket c0 = pset1<ResPacket>(ResScalar(0)),
+      702:  463:              c1 = pset1<ResPacket>(ResScalar(0));
         -:  464:
-      356:  465:    for (Index j = 0; j < fullColBlockEnd; j += LhsPacketSize)
+     1068:  465:    for (Index j = 0; j < fullColBlockEnd; j += LhsPacketSize)
         -:  466:    {
-      122:  467:      RhsPacket b0 = rhs.template load<RhsPacket, Unaligned>(j,0);
+      366:  467:      RhsPacket b0 = rhs.template load<RhsPacket, Unaligned>(j,0);
         -:  468:
-      122:  469:      c0 = pcj.pmadd(lhs.template load<LhsPacket,LhsAlignment>(i+0,j),b0,c0);
-      122:  470:      c1 = pcj.pmadd(lhs.template load<LhsPacket,LhsAlignment>(i+1,j),b0,c1);
-      122:  471:    }
-      234:  472:    ResScalar cc0 = predux(c0);
-      234:  473:    ResScalar cc1 = predux(c1);
+      366:  469:      c0 = pcj.pmadd(lhs.template load<LhsPacket,LhsAlignment>(i+0,j),b0,c0);
+      366:  470:      c1 = pcj.pmadd(lhs.template load<LhsPacket,LhsAlignment>(i+1,j),b0,c1);
+      366:  471:    }
+      702:  472:    ResScalar cc0 = predux(c0);
+      702:  473:    ResScalar cc1 = predux(c1);
         -:  474:
-      352:  475:    for(Index j = fullColBlockEnd; j < cols; ++j)
+     1056:  475:    for(Index j = fullColBlockEnd; j < cols; ++j)
         -:  476:    {
-      118:  477:      RhsScalar b0 = rhs(j,0);
+      354:  477:      RhsScalar b0 = rhs(j,0);
         -:  478:
-      118:  479:      cc0 += cj.pmul(lhs(i+0,j), b0);
-      118:  480:      cc1 += cj.pmul(lhs(i+1,j), b0);
-      118:  481:    }
-      234:  482:    res[(i+0)*resIncr] += alpha*cc0;
-      234:  483:    res[(i+1)*resIncr] += alpha*cc1;
-      234:  484:  }
-      473:  485:  for(; i<rows; ++i)
+      354:  479:      cc0 += cj.pmul(lhs(i+0,j), b0);
+      354:  480:      cc1 += cj.pmul(lhs(i+1,j), b0);
+      354:  481:    }
+      702:  482:    res[(i+0)*resIncr] += alpha*cc0;
+      702:  483:    res[(i+1)*resIncr] += alpha*cc1;
+      702:  484:  }
+     1419:  485:  for(; i<rows; ++i)
         -:  486:  {
-      118:  487:    ResPacket c0 = pset1<ResPacket>(ResScalar(0));
-      118:  488:    ResPacketHalf c0_h = pset1<ResPacketHalf>(ResScalar(0));
-      118:  489:    ResPacketQuarter c0_q = pset1<ResPacketQuarter>(ResScalar(0));
+      354:  487:    ResPacket c0 = pset1<ResPacket>(ResScalar(0));
+      354:  488:    ResPacketHalf c0_h = pset1<ResPacketHalf>(ResScalar(0));
+      354:  489:    ResPacketQuarter c0_q = pset1<ResPacketQuarter>(ResScalar(0));
         -:  490:
-      236:  491:    for (Index j = 0; j < fullColBlockEnd; j += LhsPacketSize)
+      708:  491:    for (Index j = 0; j < fullColBlockEnd; j += LhsPacketSize)
         -:  492:    {
-      118:  493:      RhsPacket b0 = rhs.template load<RhsPacket,Unaligned>(j,0);
-      118:  494:      c0 = pcj.pmadd(lhs.template load<LhsPacket,LhsAlignment>(i,j),b0,c0);
-      118:  495:    }
-      118:  496:    ResScalar cc0 = predux(c0);
+      354:  493:      RhsPacket b0 = rhs.template load<RhsPacket,Unaligned>(j,0);
+      354:  494:      c0 = pcj.pmadd(lhs.template load<LhsPacket,LhsAlignment>(i,j),b0,c0);
+      354:  495:    }
+      354:  496:    ResScalar cc0 = predux(c0);
         -:  497:    if (HasHalf) {
         -:  498:      for (Index j = fullColBlockEnd; j < halfColBlockEnd; j += LhsPacketSizeHalf)
         -:  499:        {
@@ -514,13 +514,13 @@
         -:  510:        }
         -:  511:      cc0 += predux(c0_q);
         -:  512:    }
-      122:  513:    for (Index j = quarterColBlockEnd; j < cols; ++j)
+      366:  513:    for (Index j = quarterColBlockEnd; j < cols; ++j)
         -:  514:    {
-        4:  515:      cc0 += cj.pmul(lhs(i,j), rhs(j,0));
-        4:  516:    }
-      118:  517:    res[i*resIncr] += alpha*cc0;
-      118:  518:  }
-      355:  519:}
+       12:  515:      cc0 += cj.pmul(lhs(i,j), rhs(j,0));
+       12:  516:    }
+      354:  517:    res[i*resIncr] += alpha*cc0;
+      354:  518:  }
+     1065:  519:}
         -:  520:
         -:  521:} // end namespace internal
         -:  522:

@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/include/directional/power_field.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Directional, a library for directional field processing.
         -:    2:// Copyright (C) 2018 Amir Vaxman <avaxman@gmail.com>
         -:    3://
@@ -32,7 +32,7 @@
         -:   28://  N: The degree of the field.
         -:   29:// Output:
         -:   30://  powerField: a cartesian power-field object.
-        1:   31:inline void power_field(const TangentBundle& tb,
+        3:   31:inline void power_field(const TangentBundle& tb,
         -:   32:                        const Eigen::VectorXi& constSpaces,
         -:   33:                        const Eigen::MatrixXd& constVectors,
         -:   34:                        const Eigen::VectorXd& alignWeights,
@@ -41,33 +41,33 @@
         -:   37:                        const bool normalizeField = false)
         -:   38:{
         -:   39:    
-        1:   40:    PolyVectorData pvData;
-        1:   41:    pvData.N = N;
-        1:   42:    pvData.tb = &tb;
+        3:   40:    PolyVectorData pvData;
+        3:   41:    pvData.N = N;
+        3:   42:    pvData.tb = &tb;
         -:   43:    //pvData.verbose = true;
-        1:   44:    if (constSpaces.size()!=0) {
-        1:   45:        pvData.constSpaces = constSpaces;
-        1:   46:        pvData.constVectors = constVectors;
-        1:   47:        pvData.wAlignment = alignWeights;
-        1:   48:    }else{
+        3:   44:    if (constSpaces.size()!=0) {
+        3:   45:        pvData.constSpaces = constSpaces;
+        3:   46:        pvData.constVectors = constVectors;
+        3:   47:        pvData.wAlignment = alignWeights;
+        3:   48:    }else{
     #####:   49:        pvData.constSpaces.resize(1); pvData.constSpaces(0)=0;
     #####:   50:        Eigen::RowVector2d intConstVector; intConstVector<<1.0,0.0;
     #####:   51:        pvData.constVectors = tb.project_to_extrinsic(pvData.constSpaces, intConstVector);
     #####:   52:        pvData.wAlignment = Eigen::VectorXd::Constant(pvData.constSpaces.size(),-1.0);
         -:   53:    }
-        1:   54:    pvData.wSmooth = 1.0;
-        1:   55:    pvData.wRoSy = -1.0;  //Perfect RoSy
-        1:   56:    polyvector_field(pvData, field);
-        1:   57:    field.fieldType = fieldTypeEnum::POWER_FIELD;
+        3:   54:    pvData.wSmooth = 1.0;
+        3:   55:    pvData.wRoSy = -1.0;  //Perfect RoSy
+        3:   56:    polyvector_field(pvData, field);
+        3:   57:    field.fieldType = fieldTypeEnum::POWER_FIELD;
         -:   58:    //getting rid of the redundant zeros, in case they were allocated.
-        1:   59:    field.intField.conservativeResize(field.intField.rows(),2);
-        1:   60:    field.extField.conservativeResize(field.extField.rows(),3);
-        1:   61:    if (normalizeField){
+        3:   59:    field.intField.conservativeResize(field.intField.rows(),2);
+        3:   60:    field.extField.conservativeResize(field.extField.rows(),3);
+        3:   61:    if (normalizeField){
     #####:   62:        Eigen::MatrixXd intField = field.intField;
     #####:   63:        intField = intField.array().colwise() / intField.rowwise().norm().array();
     #####:   64:        field.set_intrinsic_field(intField);
     #####:   65:    }
-        1:   66:}
+        3:   66:}
         -:   67:}
         -:   68:
         -:   69:

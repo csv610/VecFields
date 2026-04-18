@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/VectorwiseOp.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -69,19 +69,19 @@
         -:   65:    EIGEN_DENSE_PUBLIC_INTERFACE(PartialReduxExpr)
         -:   66:
         -:   67:    EIGEN_DEVICE_FUNC
-        6:   68:    explicit PartialReduxExpr(const MatrixType& mat, const MemberOp& func = MemberOp())
-        6:   69:      : m_matrix(mat), m_functor(func) {}
+       18:   68:    explicit PartialReduxExpr(const MatrixType& mat, const MemberOp& func = MemberOp())
+       18:   69:      : m_matrix(mat), m_functor(func) {}
         -:   70:
         -:   71:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
-        6:   72:    Index rows() const EIGEN_NOEXCEPT { return (Direction==Vertical   ? 1 : m_matrix.rows()); }
+       18:   72:    Index rows() const EIGEN_NOEXCEPT { return (Direction==Vertical   ? 1 : m_matrix.rows()); }
         -:   73:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
-        6:   74:    Index cols() const EIGEN_NOEXCEPT { return (Direction==Horizontal ? 1 : m_matrix.cols()); }
+       18:   74:    Index cols() const EIGEN_NOEXCEPT { return (Direction==Horizontal ? 1 : m_matrix.cols()); }
         -:   75:
         -:   76:    EIGEN_DEVICE_FUNC
-        3:   77:    typename MatrixType::Nested nestedExpression() const { return m_matrix; }
+        9:   77:    typename MatrixType::Nested nestedExpression() const { return m_matrix; }
         -:   78:
         -:   79:    EIGEN_DEVICE_FUNC
-        3:   80:    const MemberOp& functor() const { return m_functor; }
+        9:   80:    const MemberOp& functor() const { return m_functor; }
         -:   81:
         -:   82:  protected:
         -:   83:    typename MatrixType::Nested m_matrix;
@@ -117,9 +117,9 @@
         -:  113:EIGEN_MEMBER_FUNCTOR(any, (Size-1)*NumTraits<Scalar>::AddCost);
         -:  114:EIGEN_MEMBER_FUNCTOR(count, (Size-1)*NumTraits<Scalar>::AddCost);
         -:  115:
-       60:  116:EIGEN_MAKE_PARTIAL_REDUX_FUNCTOR(sum, (Size-1)*NumTraits<Scalar>::AddCost, 1, internal::scalar_sum_op);
-        3:  117:EIGEN_MAKE_PARTIAL_REDUX_FUNCTOR(minCoeff, (Size-1)*NumTraits<Scalar>::AddCost, 1, internal::scalar_min_op);
-        3:  118:EIGEN_MAKE_PARTIAL_REDUX_FUNCTOR(maxCoeff, (Size-1)*NumTraits<Scalar>::AddCost, 1, internal::scalar_max_op);
+      180:  116:EIGEN_MAKE_PARTIAL_REDUX_FUNCTOR(sum, (Size-1)*NumTraits<Scalar>::AddCost, 1, internal::scalar_sum_op);
+        9:  117:EIGEN_MAKE_PARTIAL_REDUX_FUNCTOR(minCoeff, (Size-1)*NumTraits<Scalar>::AddCost, 1, internal::scalar_min_op);
+        9:  118:EIGEN_MAKE_PARTIAL_REDUX_FUNCTOR(maxCoeff, (Size-1)*NumTraits<Scalar>::AddCost, 1, internal::scalar_max_op);
         -:  119:EIGEN_MAKE_PARTIAL_REDUX_FUNCTOR(prod, (Size-1)*NumTraits<Scalar>::MulCost, 1, internal::scalar_product_op);
         -:  120:
         -:  121:template <int p, typename ResultType,typename Scalar>
@@ -257,25 +257,25 @@
         -:  253:    template<typename OtherDerived>
         -:  254:    EIGEN_DEVICE_FUNC
         -:  255:    typename OppositeExtendedType<OtherDerived>::Type
-        1:  256:    extendedToOpposite(const DenseBase<OtherDerived>& other) const
+        3:  256:    extendedToOpposite(const DenseBase<OtherDerived>& other) const
         -:  257:    {
         -:  258:      EIGEN_STATIC_ASSERT(internal::check_implication(isHorizontal, OtherDerived::MaxColsAtCompileTime==1),
         -:  259:                          YOU_PASSED_A_ROW_VECTOR_BUT_A_COLUMN_VECTOR_WAS_EXPECTED)
         -:  260:      EIGEN_STATIC_ASSERT(internal::check_implication(isVertical, OtherDerived::MaxRowsAtCompileTime==1),
         -:  261:                          YOU_PASSED_A_COLUMN_VECTOR_BUT_A_ROW_VECTOR_WAS_EXPECTED)
-        1:  262:      return typename OppositeExtendedType<OtherDerived>::Type
-        1:  263:                      (other.derived(),
+        3:  262:      return typename OppositeExtendedType<OtherDerived>::Type
+        3:  263:                      (other.derived(),
         -:  264:                       isHorizontal  ? 1 : m_matrix.rows(),
-        1:  265:                       isVertical    ? 1 : m_matrix.cols());
+        3:  265:                       isVertical    ? 1 : m_matrix.cols());
         -:  266:    }
         -:  267:
         -:  268:  public:
         -:  269:    EIGEN_DEVICE_FUNC
-        6:  270:    explicit inline VectorwiseOp(ExpressionType& matrix) : m_matrix(matrix) {}
+       18:  270:    explicit inline VectorwiseOp(ExpressionType& matrix) : m_matrix(matrix) {}
         -:  271:
         -:  272:    /** \internal */
         -:  273:    EIGEN_DEVICE_FUNC
-        2:  274:    inline const ExpressionType& _expression() const { return m_matrix; }
+        6:  274:    inline const ExpressionType& _expression() const { return m_matrix; }
         -:  275:
         -:  276:    #ifdef EIGEN_PARSED_BY_DOXYGEN
         -:  277:    /** STL-like <a href="https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator">RandomAccessIterator</a>
@@ -379,10 +379,10 @@
         -:  375:      *
         -:  376:      * \sa DenseBase::minCoeff() */
         -:  377:    EIGEN_DEVICE_FUNC
-        1:  378:    const MinCoeffReturnType minCoeff() const
+        3:  378:    const MinCoeffReturnType minCoeff() const
         -:  379:    {
-        2:  380:      eigen_assert(redux_length()>0 && "you are using an empty matrix");
-        1:  381:      return MinCoeffReturnType(_expression());
+        6:  380:      eigen_assert(redux_length()>0 && "you are using an empty matrix");
+        3:  381:      return MinCoeffReturnType(_expression());
         -:  382:    }
         -:  383:
         -:  384:    /** \returns a row (or column) vector expression of the largest coefficient
@@ -398,10 +398,10 @@
         -:  394:      *
         -:  395:      * \sa DenseBase::maxCoeff() */
         -:  396:    EIGEN_DEVICE_FUNC
-        1:  397:    const MaxCoeffReturnType maxCoeff() const
+        3:  397:    const MaxCoeffReturnType maxCoeff() const
         -:  398:    {
-        2:  399:      eigen_assert(redux_length()>0 && "you are using an empty matrix");
-        1:  400:      return MaxCoeffReturnType(_expression());
+        6:  399:      eigen_assert(redux_length()>0 && "you are using an empty matrix");
+        3:  400:      return MaxCoeffReturnType(_expression());
         -:  401:    }
         -:  402:
         -:  403:    /** \returns a row (or column) vector expression of the squared norm
@@ -413,8 +413,8 @@
         -:  409:      *
         -:  410:      * \sa DenseBase::squaredNorm() */
         -:  411:    EIGEN_DEVICE_FUNC
-        1:  412:    const SquaredNormReturnType squaredNorm() const
-        1:  413:    { return SquaredNormReturnType(m_matrix.cwiseAbs2()); }
+        3:  412:    const SquaredNormReturnType squaredNorm() const
+        3:  413:    { return SquaredNormReturnType(m_matrix.cwiseAbs2()); }
         -:  414:
         -:  415:    /** \returns a row (or column) vector expression of the norm
         -:  416:      * of each column (or row) of the referenced expression.
@@ -425,8 +425,8 @@
         -:  421:      *
         -:  422:      * \sa DenseBase::norm() */
         -:  423:    EIGEN_DEVICE_FUNC
-        1:  424:    const NormReturnType norm() const
-        1:  425:    { return NormReturnType(squaredNorm()); }
+        3:  424:    const NormReturnType norm() const
+        3:  425:    { return NormReturnType(squaredNorm()); }
         -:  426:
         -:  427:    /** \returns a row (or column) vector expression of the norm
         -:  428:      * of each column (or row) of the referenced expression.
@@ -697,15 +697,15 @@
         -:  693:    CwiseBinaryOp<internal::scalar_quotient_op<Scalar>,
         -:  694:                  const ExpressionTypeNestedCleaned,
         -:  695:                  const typename OppositeExtendedType<NormReturnType>::Type>
-        1:  696:    normalized() const { return m_matrix.cwiseQuotient(extendedToOpposite(this->norm())); }
+        3:  696:    normalized() const { return m_matrix.cwiseQuotient(extendedToOpposite(this->norm())); }
         -:  697:
         -:  698:
         -:  699:    /** Normalize in-place each row or columns of the referenced matrix.
         -:  700:      * \sa MatrixBase::normalize(), normalized()
         -:  701:      */
-        1:  702:    EIGEN_DEVICE_FUNC void normalize() {
-        1:  703:      m_matrix = this->normalized();
-        1:  704:    }
+        3:  702:    EIGEN_DEVICE_FUNC void normalize() {
+        3:  703:      m_matrix = this->normalized();
+        3:  704:    }
         -:  705:
         -:  706:    EIGEN_DEVICE_FUNC inline void reverseInPlace();
         -:  707:
@@ -750,9 +750,9 @@
         -:  746:#   endif
         -:  747:
         -:  748:  protected:
-        2:  749:    EIGEN_DEVICE_FUNC Index redux_length() const
+        6:  749:    EIGEN_DEVICE_FUNC Index redux_length() const
         -:  750:    {
-        2:  751:      return Direction==Vertical ? m_matrix.rows() : m_matrix.cols();
+        6:  751:      return Direction==Vertical ? m_matrix.rows() : m_matrix.cols();
         -:  752:    }
         -:  753:    ExpressionTypeNested m_matrix;
         -:  754:};
@@ -766,9 +766,9 @@
         -:  762:  */
         -:  763:template<typename Derived>
         -:  764:EIGEN_DEVICE_FUNC inline typename DenseBase<Derived>::ColwiseReturnType
-        2:  765:DenseBase<Derived>::colwise()
+        6:  765:DenseBase<Derived>::colwise()
         -:  766:{
-        2:  767:  return ColwiseReturnType(derived());
+        6:  767:  return ColwiseReturnType(derived());
         -:  768:}
         -:  769:
         -:  770://const rowwise moved to DenseBase.h due to CUDA compiler bug
@@ -780,9 +780,9 @@
         -:  776:  */
         -:  777:template<typename Derived>
         -:  778:EIGEN_DEVICE_FUNC inline typename DenseBase<Derived>::RowwiseReturnType
-        1:  779:DenseBase<Derived>::rowwise()
+        3:  779:DenseBase<Derived>::rowwise()
         -:  780:{
-        1:  781:  return RowwiseReturnType(derived());
+        3:  781:  return RowwiseReturnType(derived());
         -:  782:}
         -:  783:
         -:  784:} // end namespace Eigen

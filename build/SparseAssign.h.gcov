@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/SparseCore/SparseAssign.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -21,10 +21,10 @@
         -:   17:
         -:   18:template<typename Derived>    
         -:   19:template<typename OtherDerived>
-        1:   20:Derived& SparseMatrixBase<Derived>::operator=(const EigenBase<OtherDerived> &other)
+        3:   20:Derived& SparseMatrixBase<Derived>::operator=(const EigenBase<OtherDerived> &other)
         -:   21:{
-        1:   22:  internal::call_assignment_no_alias(derived(), other.derived());
-        1:   23:  return derived();
+        3:   22:  internal::call_assignment_no_alias(derived(), other.derived());
+        3:   23:  return derived();
         -:   24:}
         -:   25:
         -:   26:template<typename Derived>
@@ -38,12 +38,12 @@
         -:   34:
         -:   35:template<typename Derived>
         -:   36:template<typename OtherDerived>
-        3:   37:inline Derived& SparseMatrixBase<Derived>::operator=(const SparseMatrixBase<OtherDerived>& other)
+        9:   37:inline Derived& SparseMatrixBase<Derived>::operator=(const SparseMatrixBase<OtherDerived>& other)
         -:   38:{
         -:   39:  // by default sparse evaluation do not alias, so we can safely bypass the generic call_assignment routine
-        3:   40:  internal::Assignment<Derived,OtherDerived,internal::assign_op<Scalar,typename OtherDerived::Scalar> >
-        3:   41:          ::run(derived(), other.derived(), internal::assign_op<Scalar,typename OtherDerived::Scalar>());
-        3:   42:  return derived();
+        9:   40:  internal::Assignment<Derived,OtherDerived,internal::assign_op<Scalar,typename OtherDerived::Scalar> >
+        9:   41:          ::run(derived(), other.derived(), internal::assign_op<Scalar,typename OtherDerived::Scalar>());
+        9:   42:  return derived();
         -:   43:}
         -:   44:
         -:   45:template<typename Derived>
@@ -75,23 +75,23 @@
         -:   71:
         -:   72:
         -:   73:template<typename DstXprType, typename SrcXprType>
-        8:   74:void assign_sparse_to_sparse(DstXprType &dst, const SrcXprType &src)
+       24:   74:void assign_sparse_to_sparse(DstXprType &dst, const SrcXprType &src)
         -:   75:{
         -:   76:  typedef typename DstXprType::Scalar Scalar;
         -:   77:  typedef internal::evaluator<DstXprType> DstEvaluatorType;
         -:   78:  typedef internal::evaluator<SrcXprType> SrcEvaluatorType;
         -:   79:
-        8:   80:  SrcEvaluatorType srcEvaluator(src);
+       24:   80:  SrcEvaluatorType srcEvaluator(src);
         -:   81:
-        8:   82:  constexpr bool transpose = (DstEvaluatorType::Flags & RowMajorBit) != (SrcEvaluatorType::Flags & RowMajorBit);
-        8:   83:  const Index outerEvaluationSize = (SrcEvaluatorType::Flags&RowMajorBit) ? src.rows() : src.cols();
+       24:   82:  constexpr bool transpose = (DstEvaluatorType::Flags & RowMajorBit) != (SrcEvaluatorType::Flags & RowMajorBit);
+       24:   83:  const Index outerEvaluationSize = (SrcEvaluatorType::Flags&RowMajorBit) ? src.rows() : src.cols();
         -:   84:
-        8:   85:  Index reserveSize = 0;
-     2767:   86:  for (Index j = 0; j < outerEvaluationSize; ++j)
-     7189:   87:    for (typename SrcEvaluatorType::InnerIterator it(srcEvaluator, j); it; ++it)
-     7189:   88:      reserveSize++;
+       24:   85:  Index reserveSize = 0;
+     8301:   86:  for (Index j = 0; j < outerEvaluationSize; ++j)
+    21567:   87:    for (typename SrcEvaluatorType::InnerIterator it(srcEvaluator, j); it; ++it)
+    21567:   88:      reserveSize++;
         -:   89:
-        8:   90:  if ((!transpose) && src.isRValue())
+       24:   90:  if ((!transpose) && src.isRValue())
         -:   91:  {
         -:   92:    // eval without temporary
     #####:   93:    dst.resize(src.rows(), src.cols());
@@ -118,32 +118,32 @@
         -:  114:    enum { Flip = (DstEvaluatorType::Flags & RowMajorBit) != (SrcEvaluatorType::Flags & RowMajorBit) };
         -:  115:
         -:  116:    
-        8:  117:    DstXprType temp(src.rows(), src.cols());
+       24:  117:    DstXprType temp(src.rows(), src.cols());
         -:  118:
-        8:  119:    temp.reserve(reserveSize);
-     2767:  120:    for (Index j=0; j<outerEvaluationSize; ++j)
+       24:  119:    temp.reserve(reserveSize);
+     8301:  120:    for (Index j=0; j<outerEvaluationSize; ++j)
         -:  121:    {
-     2759:  122:      temp.startVec(j);
-     7189:  123:      for (typename SrcEvaluatorType::InnerIterator it(srcEvaluator, j); it; ++it)
+     8277:  122:      temp.startVec(j);
+    21567:  123:      for (typename SrcEvaluatorType::InnerIterator it(srcEvaluator, j); it; ++it)
         -:  124:      {
-     4430:  125:        Scalar v = it.value();
-     4430:  126:        temp.insertBackByOuterInner(Flip?it.index():j,Flip?j:it.index()) = v;
-     4430:  127:      }
-     2759:  128:    }
-        8:  129:    temp.finalize();
+    13290:  125:        Scalar v = it.value();
+    13290:  126:        temp.insertBackByOuterInner(Flip?it.index():j,Flip?j:it.index()) = v;
+    13290:  127:      }
+     8277:  128:    }
+       24:  129:    temp.finalize();
         -:  130:
-        8:  131:    dst = temp.markAsRValue();
-        8:  132:  }
-        8:  133:}
+       24:  131:    dst = temp.markAsRValue();
+       24:  132:  }
+       24:  133:}
         -:  134:
         -:  135:// Generic Sparse to Sparse assignment
         -:  136:template< typename DstXprType, typename SrcXprType, typename Functor>
         -:  137:struct Assignment<DstXprType, SrcXprType, Functor, Sparse2Sparse>
         -:  138:{
-        8:  139:  static void run(DstXprType &dst, const SrcXprType &src, const internal::assign_op<typename DstXprType::Scalar,typename SrcXprType::Scalar> &/*func*/)
+       24:  139:  static void run(DstXprType &dst, const SrcXprType &src, const internal::assign_op<typename DstXprType::Scalar,typename SrcXprType::Scalar> &/*func*/)
         -:  140:  {
-        8:  141:    assign_sparse_to_sparse(dst.derived(), src.derived());
-        8:  142:  }
+       24:  141:    assign_sparse_to_sparse(dst.derived(), src.derived());
+       24:  142:  }
         -:  143:};
         -:  144:
         -:  145:// Generic Sparse to Dense assignment

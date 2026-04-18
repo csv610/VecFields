@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/util/SymbolicIndex.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -69,7 +69,7 @@
         -:   65:template<int N>
         -:   66:class ValueExpr<internal::FixedInt<N> > {
         -:   67:public:
-        2:   68:  ValueExpr() {}
+        6:   68:  ValueExpr() {}
         -:   69:  template<typename T>
         -:   70:  EIGEN_CONSTEXPR Index eval_impl(const T&) const { return N; }
         -:   71:};
@@ -83,7 +83,7 @@
         -:   79:class BaseExpr
         -:   80:{
         -:   81:public:
-        1:   82:  const Derived& derived() const { return *static_cast<const Derived*>(this); }
+        3:   82:  const Derived& derived() const { return *static_cast<const Derived*>(this); }
         -:   83:
         -:   84:  /** Evaluate the expression given the \a values of the symbols.
         -:   85:    *
@@ -118,8 +118,8 @@
         -:  114:  { return QuotientExpr<ValueExpr<>,Derived>(a,b.derived()); }
         -:  115:
         -:  116:  template<int N>
-        1:  117:  AddExpr<Derived,ValueExpr<internal::FixedInt<N> > > operator+(internal::FixedInt<N>) const
-        1:  118:  { return AddExpr<Derived,ValueExpr<internal::FixedInt<N> > >(derived(), ValueExpr<internal::FixedInt<N> >()); }
+        3:  117:  AddExpr<Derived,ValueExpr<internal::FixedInt<N> > > operator+(internal::FixedInt<N>) const
+        3:  118:  { return AddExpr<Derived,ValueExpr<internal::FixedInt<N> > >(derived(), ValueExpr<internal::FixedInt<N> >()); }
         -:  119:  template<int N>
         -:  120:  AddExpr<Derived,ValueExpr<internal::FixedInt<-N> > > operator-(internal::FixedInt<N>) const
         -:  121:  { return AddExpr<Derived,ValueExpr<internal::FixedInt<-N> > >(derived(), ValueExpr<internal::FixedInt<-N> >()); }
@@ -192,7 +192,7 @@
         -:  188:  /** Alias to the template parameter \c tag */
         -:  189:  typedef tag Tag;
         -:  190:
-        2:  191:  SymbolExpr() {}
+        6:  191:  SymbolExpr() {}
         -:  192:
         -:  193:  /** Associate the value \a val to the given symbol \c *this, uniquely identified by its \c Tag.
         -:  194:    *
@@ -225,7 +225,7 @@
         -:  221:class AddExpr : public BaseExpr<AddExpr<Arg0,Arg1> >
         -:  222:{
         -:  223:public:
-        2:  224:  AddExpr(const Arg0& arg0, const Arg1& arg1) : m_arg0(arg0), m_arg1(arg1) {}
+        6:  224:  AddExpr(const Arg0& arg0, const Arg1& arg1) : m_arg0(arg0), m_arg1(arg1) {}
         -:  225:
         -:  226:  template<typename T>
         -:  227:  Index eval_impl(const T& values) const { return m_arg0.eval_impl(values) + m_arg1.eval_impl(values); }

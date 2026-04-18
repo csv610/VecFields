@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/arch/NEON/Complex.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -391,7 +391,7 @@
         -:  387:struct Packet1cd
         -:  388:{
     #####:  389:  EIGEN_STRONG_INLINE Packet1cd() {}
-    10964:  390:  EIGEN_STRONG_INLINE explicit Packet1cd(const Packet2d& a) : v(a) {}
+    32892:  390:  EIGEN_STRONG_INLINE explicit Packet1cd(const Packet2d& a) : v(a) {}
         -:  391:  Packet2d v;
         -:  392:};
         -:  393:
@@ -434,20 +434,20 @@
         -:  430:  };
         -:  431:};
         -:  432:
-     1799:  433:template<> EIGEN_STRONG_INLINE Packet1cd pload<Packet1cd>(const std::complex<double>* from)
-     1799:  434:{ EIGEN_DEBUG_ALIGNED_LOAD return Packet1cd(pload<Packet2d>(reinterpret_cast<const double*>(from))); }
+     5397:  433:template<> EIGEN_STRONG_INLINE Packet1cd pload<Packet1cd>(const std::complex<double>* from)
+     5397:  434:{ EIGEN_DEBUG_ALIGNED_LOAD return Packet1cd(pload<Packet2d>(reinterpret_cast<const double*>(from))); }
         -:  435:
-     1652:  436:template<> EIGEN_STRONG_INLINE Packet1cd ploadu<Packet1cd>(const std::complex<double>* from)
-     1652:  437:{ EIGEN_DEBUG_UNALIGNED_LOAD return Packet1cd(ploadu<Packet2d>(reinterpret_cast<const double*>(from))); }
+     4956:  436:template<> EIGEN_STRONG_INLINE Packet1cd ploadu<Packet1cd>(const std::complex<double>* from)
+     4956:  437:{ EIGEN_DEBUG_UNALIGNED_LOAD return Packet1cd(ploadu<Packet2d>(reinterpret_cast<const double*>(from))); }
         -:  438:
-      479:  439:template<> EIGEN_STRONG_INLINE Packet1cd pset1<Packet1cd>(const std::complex<double>& from)
+     1437:  439:template<> EIGEN_STRONG_INLINE Packet1cd pset1<Packet1cd>(const std::complex<double>& from)
         -:  440:{
         -:  441:  /* here we really have to use unaligned loads :( */
-      479:  442:  return ploadu<Packet1cd>(&from);
+     1437:  442:  return ploadu<Packet1cd>(&from);
         -:  443:}
         -:  444:
-      481:  445:template<> EIGEN_STRONG_INLINE Packet1cd padd<Packet1cd>(const Packet1cd& a, const Packet1cd& b)
-      481:  446:{ return Packet1cd(padd<Packet2d>(a.v, b.v)); }
+     1443:  445:template<> EIGEN_STRONG_INLINE Packet1cd padd<Packet1cd>(const Packet1cd& a, const Packet1cd& b)
+     1443:  446:{ return Packet1cd(padd<Packet2d>(a.v, b.v)); }
         -:  447:
     #####:  448:template<> EIGEN_STRONG_INLINE Packet1cd psub<Packet1cd>(const Packet1cd& a, const Packet1cd& b)
     #####:  449:{ return Packet1cd(psub<Packet2d>(a.v, b.v)); }
@@ -455,27 +455,27 @@
     #####:  451:template<> EIGEN_STRONG_INLINE Packet1cd pnegate(const Packet1cd& a)
     #####:  452:{ return Packet1cd(pnegate<Packet2d>(a.v)); }
         -:  453:
-      119:  454:template<> EIGEN_STRONG_INLINE Packet1cd pconj(const Packet1cd& a)
-      119:  455:{ return Packet1cd(vreinterpretq_f64_u64(veorq_u64(vreinterpretq_u64_f64(a.v), p2ul_CONJ_XOR))); }
+      357:  454:template<> EIGEN_STRONG_INLINE Packet1cd pconj(const Packet1cd& a)
+      357:  455:{ return Packet1cd(vreinterpretq_f64_u64(veorq_u64(vreinterpretq_u64_f64(a.v), p2ul_CONJ_XOR))); }
         -:  456:
-      598:  457:template<> EIGEN_STRONG_INLINE Packet1cd pmul<Packet1cd>(const Packet1cd& a, const Packet1cd& b)
+     1794:  457:template<> EIGEN_STRONG_INLINE Packet1cd pmul<Packet1cd>(const Packet1cd& a, const Packet1cd& b)
         -:  458:{
         -:  459:  Packet2d v1, v2;
         -:  460:
         -:  461:  // Get the real values of a
-      598:  462:  v1 = vdupq_lane_f64(vget_low_f64(a.v), 0);
+     1794:  462:  v1 = vdupq_lane_f64(vget_low_f64(a.v), 0);
         -:  463:  // Get the imag values of a
-      598:  464:  v2 = vdupq_lane_f64(vget_high_f64(a.v), 0);
+     1794:  464:  v2 = vdupq_lane_f64(vget_high_f64(a.v), 0);
         -:  465:  // Multiply the real a with b
-      598:  466:  v1 = vmulq_f64(v1, b.v);
+     1794:  466:  v1 = vmulq_f64(v1, b.v);
         -:  467:  // Multiply the imag a with b
-      598:  468:  v2 = vmulq_f64(v2, b.v);
+     1794:  468:  v2 = vmulq_f64(v2, b.v);
         -:  469:  // Conjugate v2
-      598:  470:  v2 = vreinterpretq_f64_u64(veorq_u64(vreinterpretq_u64_f64(v2), p2ul_CONJ_XOR));
+     1794:  470:  v2 = vreinterpretq_f64_u64(veorq_u64(vreinterpretq_u64_f64(v2), p2ul_CONJ_XOR));
         -:  471:  // Swap real/imag elements in v2.
-      598:  472:  v2 = preverse<Packet2d>(v2);
+     1794:  472:  v2 = preverse<Packet2d>(v2);
         -:  473:  // Add and return the result
-      598:  474:  return Packet1cd(vaddq_f64(v1, v2));
+     1794:  474:  return Packet1cd(vaddq_f64(v1, v2));
         -:  475:}
         -:  476:
     #####:  477:template<> EIGEN_STRONG_INLINE Packet1cd pcmp_eq(const Packet1cd& a, const Packet1cd& b)
@@ -505,11 +505,11 @@
         -:  501:template<> EIGEN_STRONG_INLINE Packet1cd ploaddup<Packet1cd>(const std::complex<double>* from)
         -:  502:{ return pset1<Packet1cd>(*from); }
         -:  503:
-     1199:  504:template<> EIGEN_STRONG_INLINE void pstore <std::complex<double> >(std::complex<double> *to, const Packet1cd& from)
-     1199:  505:{ EIGEN_DEBUG_ALIGNED_STORE pstore(reinterpret_cast<double*>(to), from.v); }
+     3597:  504:template<> EIGEN_STRONG_INLINE void pstore <std::complex<double> >(std::complex<double> *to, const Packet1cd& from)
+     3597:  505:{ EIGEN_DEBUG_ALIGNED_STORE pstore(reinterpret_cast<double*>(to), from.v); }
         -:  506:
-     1173:  507:template<> EIGEN_STRONG_INLINE void pstoreu<std::complex<double> >(std::complex<double> *to, const Packet1cd& from)
-     1173:  508:{ EIGEN_DEBUG_UNALIGNED_STORE pstoreu(reinterpret_cast<double*>(to), from.v); }
+     3519:  507:template<> EIGEN_STRONG_INLINE void pstoreu<std::complex<double> >(std::complex<double> *to, const Packet1cd& from)
+     3519:  508:{ EIGEN_DEBUG_UNALIGNED_STORE pstoreu(reinterpret_cast<double*>(to), from.v); }
         -:  509:
     #####:  510:template<> EIGEN_STRONG_INLINE void prefetch<std::complex<double> >(const std::complex<double> *addr)
     #####:  511:{ EIGEN_ARM_PREFETCH(reinterpret_cast<const double*>(addr)); }
@@ -542,13 +542,13 @@
         -:  538:
         -:  539:EIGEN_MAKE_CONJ_HELPER_CPLX_REAL(Packet1cd,Packet2d)
         -:  540:
-      119:  541:template<> EIGEN_STRONG_INLINE Packet1cd pdiv<Packet1cd>(const Packet1cd& a, const Packet1cd& b)
+      357:  541:template<> EIGEN_STRONG_INLINE Packet1cd pdiv<Packet1cd>(const Packet1cd& a, const Packet1cd& b)
         -:  542:{
-      119:  543:  return pdiv_complex(a, b);
+      357:  543:  return pdiv_complex(a, b);
         -:  544:}
         -:  545:
-      238:  546:EIGEN_STRONG_INLINE Packet1cd pcplxflip/*<Packet1cd>*/(const Packet1cd& x)
-      238:  547:{ return Packet1cd(preverse(Packet2d(x.v))); }
+      714:  546:EIGEN_STRONG_INLINE Packet1cd pcplxflip/*<Packet1cd>*/(const Packet1cd& x)
+      714:  547:{ return Packet1cd(preverse(Packet2d(x.v))); }
         -:  548:
         -:  549:EIGEN_STRONG_INLINE void ptranspose(PacketBlock<Packet1cd,2>& kernel)
         -:  550:{

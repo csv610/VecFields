@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/functors/AssignmentFunctors.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -27,11 +27,11 @@
         -:   23:  */
         -:   24:template<typename DstScalar,typename SrcScalar> struct assign_op {
         -:   25:
-    29557:   26:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void assignCoeff(DstScalar& a, const SrcScalar& b) const { a = b; }
+    88671:   26:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void assignCoeff(DstScalar& a, const SrcScalar& b) const { a = b; }
         -:   27:
         -:   28:  template<int Alignment, typename Packet>
-    10646:   29:  EIGEN_STRONG_INLINE void assignPacket(DstScalar* a, const Packet& b) const
-    10646:   30:  { internal::pstoret<DstScalar,Packet,Alignment>(a,b); }
+    31938:   29:  EIGEN_STRONG_INLINE void assignPacket(DstScalar* a, const Packet& b) const
+    31938:   30:  { internal::pstoret<DstScalar,Packet,Alignment>(a,b); }
         -:   31:};
         -:   32:
         -:   33:// Empty overload for void type (used by PermutationMatrix)
@@ -51,7 +51,7 @@
         -:   47:  */
         -:   48:template<typename DstScalar,typename SrcScalar> struct add_assign_op {
         -:   49:
-     2745:   50:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void assignCoeff(DstScalar& a, const SrcScalar& b) const { a += b; }
+     8235:   50:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void assignCoeff(DstScalar& a, const SrcScalar& b) const { a += b; }
         -:   51:
         -:   52:  template<int Alignment, typename Packet>
     #####:   53:  EIGEN_STRONG_INLINE void assignPacket(DstScalar* a, const Packet& b) const
@@ -71,11 +71,11 @@
         -:   67:  */
         -:   68:template<typename DstScalar,typename SrcScalar> struct sub_assign_op {
         -:   69:
-     2396:   70:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void assignCoeff(DstScalar& a, const SrcScalar& b) const { a -= b; }
+     7188:   70:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void assignCoeff(DstScalar& a, const SrcScalar& b) const { a -= b; }
         -:   71:
         -:   72:  template<int Alignment, typename Packet>
-     1172:   73:  EIGEN_STRONG_INLINE void assignPacket(DstScalar* a, const Packet& b) const
-     1172:   74:  { internal::pstoret<DstScalar,Packet,Alignment>(a,internal::psub(internal::ploadt<Packet,Alignment>(a),b)); }
+     3516:   73:  EIGEN_STRONG_INLINE void assignPacket(DstScalar* a, const Packet& b) const
+     3516:   74:  { internal::pstoret<DstScalar,Packet,Alignment>(a,internal::psub(internal::ploadt<Packet,Alignment>(a),b)); }
         -:   75:};
         -:   76:template<typename DstScalar,typename SrcScalar>
         -:   77:struct functor_traits<sub_assign_op<DstScalar,SrcScalar> > {
@@ -92,11 +92,11 @@
         -:   88:template<typename DstScalar, typename SrcScalar=DstScalar>
         -:   89:struct mul_assign_op {
         -:   90:
-      360:   91:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void assignCoeff(DstScalar& a, const SrcScalar& b) const { a *= b; }
+     1080:   91:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void assignCoeff(DstScalar& a, const SrcScalar& b) const { a *= b; }
         -:   92:
         -:   93:  template<int Alignment, typename Packet>
-      120:   94:  EIGEN_STRONG_INLINE void assignPacket(DstScalar* a, const Packet& b) const
-      120:   95:  { internal::pstoret<DstScalar,Packet,Alignment>(a,internal::pmul(internal::ploadt<Packet,Alignment>(a),b)); }
+      360:   94:  EIGEN_STRONG_INLINE void assignPacket(DstScalar* a, const Packet& b) const
+      360:   95:  { internal::pstoret<DstScalar,Packet,Alignment>(a,internal::pmul(internal::ploadt<Packet,Alignment>(a),b)); }
         -:   96:};
         -:   97:template<typename DstScalar, typename SrcScalar>
         -:   98:struct functor_traits<mul_assign_op<DstScalar,SrcScalar> > {
@@ -112,7 +112,7 @@
         -:  108:  */
         -:  109:template<typename DstScalar, typename SrcScalar=DstScalar> struct div_assign_op {
         -:  110:
-      720:  111:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void assignCoeff(DstScalar& a, const SrcScalar& b) const { a /= b; }
+     2160:  111:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void assignCoeff(DstScalar& a, const SrcScalar& b) const { a /= b; }
         -:  112:
         -:  113:  template<int Alignment, typename Packet>
         -:  114:  EIGEN_STRONG_INLINE void assignPacket(DstScalar* a, const Packet& b) const
@@ -143,16 +143,16 @@
         -:  139:  */
         -:  140:template<typename Scalar> struct swap_assign_op {
         -:  141:
-       12:  142:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void assignCoeff(Scalar& a, const Scalar& b) const
+       36:  142:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void assignCoeff(Scalar& a, const Scalar& b) const
         -:  143:  {
         -:  144:#ifdef EIGEN_GPUCC
         -:  145:    // FIXME is there some kind of cuda::swap?
         -:  146:    Scalar t=b; const_cast<Scalar&>(b)=a; a=t;
         -:  147:#else
         -:  148:    using std::swap;
-       12:  149:    swap(a,const_cast<Scalar&>(b));
+       36:  149:    swap(a,const_cast<Scalar&>(b));
         -:  150:#endif
-       12:  151:  }
+       36:  151:  }
         -:  152:};
         -:  153:template<typename Scalar>
         -:  154:struct functor_traits<swap_assign_op<Scalar> > {

@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/SolveTriangular.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -61,27 +61,27 @@
         -:   57:  typedef blas_traits<Lhs> LhsProductTraits;
         -:   58:  typedef typename LhsProductTraits::ExtractType ActualLhsType;
         -:   59:  typedef Map<Matrix<RhsScalar,Dynamic,1>, Aligned> MappedRhs;
-      120:   60:  static EIGEN_DEVICE_FUNC void run(const Lhs& lhs, Rhs& rhs)
+      360:   60:  static EIGEN_DEVICE_FUNC void run(const Lhs& lhs, Rhs& rhs)
         -:   61:  {
-      120:   62:    ActualLhsType actualLhs = LhsProductTraits::extract(lhs);
+      360:   62:    ActualLhsType actualLhs = LhsProductTraits::extract(lhs);
         -:   63:
         -:   64:    // FIXME find a way to allow an inner stride if packet_traits<Scalar>::size==1
         -:   65:
-      120:   66:    bool useRhsDirectly = Rhs::InnerStrideAtCompileTime==1 || rhs.innerStride()==1;
+      360:   66:    bool useRhsDirectly = Rhs::InnerStrideAtCompileTime==1 || rhs.innerStride()==1;
         -:   67:
-      120:   68:    ei_declare_aligned_stack_constructed_variable(RhsScalar,actualRhs,rhs.size(),
+      360:   68:    ei_declare_aligned_stack_constructed_variable(RhsScalar,actualRhs,rhs.size(),
         -:   69:                                                  (useRhsDirectly ? rhs.data() : 0));
         -:   70:
-      120:   71:    if(!useRhsDirectly)
+      360:   71:    if(!useRhsDirectly)
     #####:   72:      MappedRhs(actualRhs,rhs.size()) = rhs;
         -:   73:
-      120:   74:    triangular_solve_vector<LhsScalar, RhsScalar, Index, Side, Mode, LhsProductTraits::NeedToConjugate,
+      360:   74:    triangular_solve_vector<LhsScalar, RhsScalar, Index, Side, Mode, LhsProductTraits::NeedToConjugate,
         -:   75:                            (int(Lhs::Flags) & RowMajorBit) ? RowMajor : ColMajor>
-      120:   76:      ::run(actualLhs.cols(), actualLhs.data(), actualLhs.outerStride(), actualRhs);
+      360:   76:      ::run(actualLhs.cols(), actualLhs.data(), actualLhs.outerStride(), actualRhs);
         -:   77:
-      120:   78:    if(!useRhsDirectly)
+      360:   78:    if(!useRhsDirectly)
     #####:   79:      rhs = MappedRhs(actualRhs, rhs.size());
-      120:   80:  }
+      360:   80:  }
         -:   81:};
         -:   82:
         -:   83:// the rhs is a matrix
@@ -176,26 +176,26 @@
         -:  172:#ifndef EIGEN_PARSED_BY_DOXYGEN
         -:  173:template<typename MatrixType, unsigned int Mode>
         -:  174:template<int Side, typename OtherDerived>
-      120:  175:EIGEN_DEVICE_FUNC void TriangularViewImpl<MatrixType,Mode,Dense>::solveInPlace(const MatrixBase<OtherDerived>& _other) const
+      360:  175:EIGEN_DEVICE_FUNC void TriangularViewImpl<MatrixType,Mode,Dense>::solveInPlace(const MatrixBase<OtherDerived>& _other) const
         -:  176:{
-      120:  177:  OtherDerived& other = _other.const_cast_derived();
-      240:  178:  eigen_assert( derived().cols() == derived().rows() && ((Side==OnTheLeft && derived().cols() == other.rows()) || (Side==OnTheRight && derived().cols() == other.cols())) );
+      360:  177:  OtherDerived& other = _other.const_cast_derived();
+      720:  178:  eigen_assert( derived().cols() == derived().rows() && ((Side==OnTheLeft && derived().cols() == other.rows()) || (Side==OnTheRight && derived().cols() == other.cols())) );
         -:  179:  eigen_assert((!(int(Mode) & int(ZeroDiag))) && bool(int(Mode) & (int(Upper) | int(Lower))));
         -:  180:  // If solving for a 0x0 matrix, nothing to do, simply return.
-      120:  181:  if (derived().cols() == 0)
+      360:  181:  if (derived().cols() == 0)
     #####:  182:    return;
         -:  183:
         -:  184:  enum { copy = (internal::traits<OtherDerived>::Flags & RowMajorBit)  && OtherDerived::IsVectorAtCompileTime && OtherDerived::SizeAtCompileTime!=1};
         -:  185:  typedef std::conditional_t<copy,
         -:  186:    typename internal::plain_matrix_type_column_major<OtherDerived>::type, OtherDerived&> OtherCopy;
-      120:  187:  OtherCopy otherCopy(other);
+      360:  187:  OtherCopy otherCopy(other);
         -:  188:
-      120:  189:  internal::triangular_solver_selector<MatrixType, std::remove_reference_t<OtherCopy>,
-      120:  190:    Side, Mode>::run(derived().nestedExpression(), otherCopy);
+      360:  189:  internal::triangular_solver_selector<MatrixType, std::remove_reference_t<OtherCopy>,
+      360:  190:    Side, Mode>::run(derived().nestedExpression(), otherCopy);
         -:  191:
         -:  192:  if (copy)
         -:  193:    other = otherCopy;
-      120:  194:}
+      360:  194:}
         -:  195:
         -:  196:template<typename Derived, unsigned int Mode>
         -:  197:template<int Side, typename Other>

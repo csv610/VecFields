@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/products/GeneralMatrixMatrix.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -431,7 +431,7 @@
         -:  427:  typedef generic_product_impl<Lhs,Rhs,DenseShape,DenseShape,CoeffBasedProductMode> lazyproduct;
         -:  428:
         -:  429:  template<typename Dst>
-        1:  430:  static void evalTo(Dst& dst, const Lhs& lhs, const Rhs& rhs)
+        3:  430:  static void evalTo(Dst& dst, const Lhs& lhs, const Rhs& rhs)
         -:  431:  {
         -:  432:    // See http://eigen.tuxfamily.org/bz/show_bug.cgi?id=404 for a discussion and helper program
         -:  433:    // to determine the following heuristic.
@@ -439,14 +439,14 @@
         -:  435:    // unless it has been specialized by the user or for a given architecture.
         -:  436:    // Note that the condition rhs.rows()>0 was required because lazy product is (was?) not happy with empty inputs.
         -:  437:    // I'm not sure it is still required.
-        1:  438:    if((rhs.rows()+dst.rows()+dst.cols())<EIGEN_GEMM_TO_COEFFBASED_THRESHOLD && rhs.rows()>0)
-        1:  439:      lazyproduct::eval_dynamic(dst, lhs, rhs, internal::assign_op<typename Dst::Scalar,Scalar>());
+        3:  438:    if((rhs.rows()+dst.rows()+dst.cols())<EIGEN_GEMM_TO_COEFFBASED_THRESHOLD && rhs.rows()>0)
+        3:  439:      lazyproduct::eval_dynamic(dst, lhs, rhs, internal::assign_op<typename Dst::Scalar,Scalar>());
         -:  440:    else
         -:  441:    {
     #####:  442:      dst.setZero();
     #####:  443:      scaleAndAddTo(dst, lhs, rhs, Scalar(1));
         -:  444:    }
-        1:  445:  }
+        3:  445:  }
         -:  446:
         -:  447:  template<typename Dst>
         -:  448:  static void addTo(Dst& dst, const Lhs& lhs, const Rhs& rhs)

@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/OrderingMethods/Ordering.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1: 
         -:    2:// This file is part of Eigen, a lightweight C++ template library
         -:    3:// for linear algebra.
@@ -31,17 +31,17 @@
         -:   27:  * FIXME: The values should not be considered here
         -:   28:  */
         -:   29:template<typename MatrixType> 
-        1:   30:void ordering_helper_at_plus_a(const MatrixType& A, MatrixType& symmat)
+        3:   30:void ordering_helper_at_plus_a(const MatrixType& A, MatrixType& symmat)
         -:   31:{
-        1:   32:  MatrixType C;
-        1:   33:  C = A.transpose(); // NOTE: Could be  costly
-      120:   34:  for (int i = 0; i < C.rows(); i++) 
+        3:   32:  MatrixType C;
+        3:   33:  C = A.transpose(); // NOTE: Could be  costly
+      360:   34:  for (int i = 0; i < C.rows(); i++) 
         -:   35:  {
-      474:   36:      for (typename MatrixType::InnerIterator it(C, i); it; ++it)
-      355:   37:        it.valueRef() = typename MatrixType::Scalar(0);
-      119:   38:  }
-        1:   39:  symmat = C + A;
-        1:   40:}
+     1422:   36:      for (typename MatrixType::InnerIterator it(C, i); it; ++it)
+     1065:   37:        it.valueRef() = typename MatrixType::Scalar(0);
+      357:   38:  }
+        3:   39:  symmat = C + A;
+        3:   40:}
         -:   41:    
         -:   42:}
         -:   43:
@@ -63,16 +63,16 @@
         -:   59:     * This routine is much faster if the input matrix is column-major     
         -:   60:     */
         -:   61:    template <typename MatrixType>
-        1:   62:    void operator()(const MatrixType& mat, PermutationType& perm)
+        3:   62:    void operator()(const MatrixType& mat, PermutationType& perm)
         -:   63:    {
         -:   64:      // Compute the symmetric pattern
-        1:   65:      SparseMatrix<typename MatrixType::Scalar, ColMajor, StorageIndex> symm;
-        1:   66:      internal::ordering_helper_at_plus_a(mat,symm); 
+        3:   65:      SparseMatrix<typename MatrixType::Scalar, ColMajor, StorageIndex> symm;
+        3:   66:      internal::ordering_helper_at_plus_a(mat,symm); 
         -:   67:    
         -:   68:      // Call the AMD routine 
         -:   69:      //m_mat.prune(keep_diag());
-        1:   70:      internal::minimum_degree_ordering(symm, perm);
-        1:   71:    }
+        3:   70:      internal::minimum_degree_ordering(symm, perm);
+        3:   71:    }
         -:   72:    
         -:   73:    /** Compute the permutation with a selfadjoint matrix */
         -:   74:    template <typename SrcType, unsigned int SrcUpLo> 

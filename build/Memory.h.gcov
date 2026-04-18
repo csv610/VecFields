@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/util/Memory.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -113,8 +113,8 @@
         -:  109:  eigen_assert(is_malloc_allowed() && "heap allocation is forbidden (EIGEN_RUNTIME_NO_MALLOC is defined and g_is_malloc_allowed is false)");
         -:  110:}
         -:  111:#else
-     4846:  112:EIGEN_DEVICE_FUNC inline void check_that_malloc_is_allowed()
-     4846:  113:{}
+    14538:  112:EIGEN_DEVICE_FUNC inline void check_that_malloc_is_allowed()
+    14538:  113:{}
         -:  114:#endif
         -:  115:
         -:  116:
@@ -209,72 +209,72 @@
         -:  205:/** \internal Allocates \a size bytes. The returned pointer is guaranteed to have 16 or 32 bytes alignment depending on the requirements.
         -:  206:  * On allocation error, the returned pointer is null, and std::bad_alloc is thrown.
         -:  207:  */
-     2414:  208:EIGEN_DEVICE_FUNC inline void* aligned_malloc(std::size_t size)
+     7242:  208:EIGEN_DEVICE_FUNC inline void* aligned_malloc(std::size_t size)
         -:  209:{
-     2414:  210:  if (size == 0) return nullptr;
+     7242:  210:  if (size == 0) return nullptr;
         -:  211:  
         -:  212:  void *result;
         -:  213:  #if (EIGEN_DEFAULT_ALIGN_BYTES==0) || EIGEN_MALLOC_ALREADY_ALIGNED
         -:  214:
-     2414:  215:    check_that_malloc_is_allowed();
+     7242:  215:    check_that_malloc_is_allowed();
         -:  216:    EIGEN_USING_STD(malloc)
-     2414:  217:    result = malloc(size);
+     7242:  217:    result = malloc(size);
         -:  218:
         -:  219:    #if EIGEN_DEFAULT_ALIGN_BYTES==16
-     4828:  220:    eigen_assert((size<16 || (std::size_t(result)%16)==0) && "System's malloc returned an unaligned pointer. Compile with EIGEN_MALLOC_ALREADY_ALIGNED=0 to fallback to handmade aligned memory allocator.");
+    14484:  220:    eigen_assert((size<16 || (std::size_t(result)%16)==0) && "System's malloc returned an unaligned pointer. Compile with EIGEN_MALLOC_ALREADY_ALIGNED=0 to fallback to handmade aligned memory allocator.");
         -:  221:    #endif
         -:  222:  #else
         -:  223:    result = handmade_aligned_malloc(size);
         -:  224:  #endif
         -:  225:
-     2414:  226:  if(!result && size)
+     7242:  226:  if(!result && size)
     #####:  227:    throw_std_bad_alloc();
         -:  228:
-     2414:  229:  return result;
-     2414:  230:}
+     7242:  229:  return result;
+     7242:  230:}
         -:  231:
         -:  232:/** \internal Frees memory allocated with aligned_malloc. */
-     4874:  233:EIGEN_DEVICE_FUNC inline void aligned_free(void *ptr)
+    14622:  233:EIGEN_DEVICE_FUNC inline void aligned_free(void *ptr)
         -:  234:{
         -:  235:  #if (EIGEN_DEFAULT_ALIGN_BYTES==0) || EIGEN_MALLOC_ALREADY_ALIGNED
         -:  236:
-     4874:  237:    if(ptr)
-     2414:  238:      check_that_malloc_is_allowed();
+    14622:  237:    if(ptr)
+     7242:  238:      check_that_malloc_is_allowed();
         -:  239:    EIGEN_USING_STD(free)
-     4874:  240:    free(ptr);
+    14622:  240:    free(ptr);
         -:  241:
         -:  242:  #else
         -:  243:    handmade_aligned_free(ptr);
         -:  244:  #endif
-     4874:  245:}
+    14622:  245:}
         -:  246:
         -:  247:/**
         -:  248:  * \internal
         -:  249:  * \brief Reallocates an aligned block of memory.
         -:  250:  * \throws std::bad_alloc on allocation failure
         -:  251:  */
-      265:  252:EIGEN_DEVICE_FUNC inline void* aligned_realloc(void *ptr, std::size_t new_size, std::size_t old_size)
+      795:  252:EIGEN_DEVICE_FUNC inline void* aligned_realloc(void *ptr, std::size_t new_size, std::size_t old_size)
         -:  253:{
-      265:  254:  if (ptr == nullptr) return aligned_malloc(new_size);
-       18:  255:  if (old_size == new_size) return ptr;
-       18:  256:  if (new_size == 0) { aligned_free(ptr); return nullptr; }
+      795:  254:  if (ptr == nullptr) return aligned_malloc(new_size);
+       54:  255:  if (old_size == new_size) return ptr;
+       54:  256:  if (new_size == 0) { aligned_free(ptr); return nullptr; }
         -:  257:
         -:  258:  void *result;
         -:  259:#if (EIGEN_DEFAULT_ALIGN_BYTES==0) || EIGEN_MALLOC_ALREADY_ALIGNED
-       18:  260:  EIGEN_UNUSED_VARIABLE(old_size)
+       54:  260:  EIGEN_UNUSED_VARIABLE(old_size)
         -:  261:
-       18:  262:  check_that_malloc_is_allowed();
+       54:  262:  check_that_malloc_is_allowed();
         -:  263:  EIGEN_USING_STD(realloc)
-       18:  264:  result = realloc(ptr,new_size);
+       54:  264:  result = realloc(ptr,new_size);
         -:  265:#else
         -:  266:  result = handmade_aligned_realloc(ptr,new_size,old_size);
         -:  267:#endif
         -:  268:
-       18:  269:  if (!result && new_size)
+       54:  269:  if (!result && new_size)
     #####:  270:    throw_std_bad_alloc();
         -:  271:
-       18:  272:  return result;
-      265:  273:}
+       54:  272:  return result;
+      795:  273:}
         -:  274:
         -:  275:/*****************************************************************************
         -:  276:*** Implementation of conditionally aligned functions                      ***
@@ -283,9 +283,9 @@
         -:  279:/** \internal Allocates \a size bytes. If Align is true, then the returned ptr is 16-byte-aligned.
         -:  280:  * On allocation error, the returned pointer is null, and a std::bad_alloc is thrown.
         -:  281:  */
-     2167:  282:template<bool Align> EIGEN_DEVICE_FUNC inline void* conditional_aligned_malloc(std::size_t size)
+     6501:  282:template<bool Align> EIGEN_DEVICE_FUNC inline void* conditional_aligned_malloc(std::size_t size)
         -:  283:{
-     2167:  284:  return aligned_malloc(size);
+     6501:  284:  return aligned_malloc(size);
         -:  285:}
         -:  286:
         -:  287:template<> EIGEN_DEVICE_FUNC inline void* conditional_aligned_malloc<false>(std::size_t size)
@@ -302,10 +302,10 @@
         -:  298:}
         -:  299:
         -:  300:/** \internal Frees memory allocated with conditional_aligned_malloc */
-     4874:  301:template<bool Align> EIGEN_DEVICE_FUNC inline void conditional_aligned_free(void *ptr)
+    14622:  301:template<bool Align> EIGEN_DEVICE_FUNC inline void conditional_aligned_free(void *ptr)
         -:  302:{
-     4874:  303:  aligned_free(ptr);
-     4874:  304:}
+    14622:  303:  aligned_free(ptr);
+    14622:  304:}
         -:  305:
         -:  306:template<> EIGEN_DEVICE_FUNC inline void conditional_aligned_free<false>(void *ptr)
         -:  307:{
@@ -315,9 +315,9 @@
         -:  311:  free(ptr);
         -:  312:}
         -:  313:
-      265:  314:template<bool Align> EIGEN_DEVICE_FUNC inline void* conditional_aligned_realloc(void* ptr, std::size_t new_size, std::size_t old_size)
+      795:  314:template<bool Align> EIGEN_DEVICE_FUNC inline void* conditional_aligned_realloc(void* ptr, std::size_t new_size, std::size_t old_size)
         -:  315:{
-      265:  316:  return aligned_realloc(ptr, new_size, old_size);
+      795:  316:  return aligned_realloc(ptr, new_size, old_size);
         -:  317:}
         -:  318:
         -:  319:template<> EIGEN_DEVICE_FUNC inline void* conditional_aligned_realloc<false>(void* ptr, std::size_t new_size, std::size_t old_size)
@@ -404,11 +404,11 @@
         -:  400:*****************************************************************************/
         -:  401:
         -:  402:template<typename T>
-     3452:  403:EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void check_size_for_overflow(std::size_t size)
+    10356:  403:EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void check_size_for_overflow(std::size_t size)
         -:  404:{
-     3452:  405:  if(size > std::size_t(-1) / sizeof(T))
+    10356:  405:  if(size > std::size_t(-1) / sizeof(T))
     #####:  406:    throw_std_bad_alloc();
-     3452:  407:}
+    10356:  407:}
         -:  408:
         -:  409:/** \internal Allocates \a size objects of type T. The returned pointer is guaranteed to have 16 bytes alignment.
         -:  410:  * On allocation error, the returned pointer is undefined, but a std::bad_alloc is thrown.
@@ -498,12 +498,12 @@
         -:  494:}
         -:  495:
         -:  496:
-     2167:  497:template<typename T, bool Align> EIGEN_DEVICE_FUNC inline T* conditional_aligned_new_auto(std::size_t size)
+     6501:  497:template<typename T, bool Align> EIGEN_DEVICE_FUNC inline T* conditional_aligned_new_auto(std::size_t size)
         -:  498:{
-     2167:  499:  if(size==0)
+     6501:  499:  if(size==0)
     #####:  500:    return 0; // short-cut. Also fixes Bug 884
-     2167:  501:  check_size_for_overflow<T>(size);
-     2167:  502:  T *result = static_cast<T*>(conditional_aligned_malloc<Align>(sizeof(T)*size));
+     6501:  501:  check_size_for_overflow<T>(size);
+     6501:  502:  T *result = static_cast<T*>(conditional_aligned_malloc<Align>(sizeof(T)*size));
         -:  503:  if(NumTraits<T>::RequireInitialization)
         -:  504:  {
         -:  505:    EIGEN_TRY
@@ -516,26 +516,26 @@
         -:  512:      EIGEN_THROW;
         -:  513:    }
         -:  514:  }
-     2167:  515:  return result;
-     2167:  516:}
+     6501:  515:  return result;
+     6501:  516:}
         -:  517:
-      265:  518:template<typename T, bool Align> EIGEN_DEVICE_FUNC inline T* conditional_aligned_realloc_new_auto(T* pts, std::size_t new_size, std::size_t old_size)
+      795:  518:template<typename T, bool Align> EIGEN_DEVICE_FUNC inline T* conditional_aligned_realloc_new_auto(T* pts, std::size_t new_size, std::size_t old_size)
         -:  519:{
         -:  520:  if (NumTraits<T>::RequireInitialization) {
         -:  521:    return conditional_aligned_realloc_new<T, Align>(pts, new_size, old_size);
         -:  522:  }
         -:  523:  
-      265:  524:  check_size_for_overflow<T>(new_size);
-      265:  525:  check_size_for_overflow<T>(old_size);
-      265:  526:  return static_cast<T*>(conditional_aligned_realloc<Align>(static_cast<void*>(pts), sizeof(T)*new_size, sizeof(T)*old_size));
+      795:  524:  check_size_for_overflow<T>(new_size);
+      795:  525:  check_size_for_overflow<T>(old_size);
+      795:  526:  return static_cast<T*>(conditional_aligned_realloc<Align>(static_cast<void*>(pts), sizeof(T)*new_size, sizeof(T)*old_size));
         -:  527:}
         -:  528:
-     4874:  529:template<typename T, bool Align> EIGEN_DEVICE_FUNC inline void conditional_aligned_delete_auto(T *ptr, std::size_t size)
+    14622:  529:template<typename T, bool Align> EIGEN_DEVICE_FUNC inline void conditional_aligned_delete_auto(T *ptr, std::size_t size)
         -:  530:{
         -:  531:  if(NumTraits<T>::RequireInitialization)
         -:  532:    destruct_elements_of_array<T>(ptr, size);
-     4874:  533:  conditional_aligned_free<Align>(ptr);
-     4874:  534:}
+    14622:  533:  conditional_aligned_free<Align>(ptr);
+    14622:  534:}
         -:  535:
         -:  536:/****************************************************************************/
         -:  537:
@@ -557,19 +557,19 @@
         -:  553:  * \sa first_default_aligned()
         -:  554:  */
         -:  555:template<int Alignment, typename Scalar, typename Index>
-     3850:  556:EIGEN_DEVICE_FUNC inline Index first_aligned(const Scalar* array, Index size)
+    11550:  556:EIGEN_DEVICE_FUNC inline Index first_aligned(const Scalar* array, Index size)
         -:  557:{
-     3850:  558:  const Index ScalarSize = sizeof(Scalar);
-     3850:  559:  const Index AlignmentSize = Alignment / ScalarSize;
-     3850:  560:  const Index AlignmentMask = AlignmentSize-1;
+    11550:  558:  const Index ScalarSize = sizeof(Scalar);
+    11550:  559:  const Index AlignmentSize = Alignment / ScalarSize;
+    11550:  560:  const Index AlignmentMask = AlignmentSize-1;
         -:  561:
         -:  562:  if(AlignmentSize<=1)
         -:  563:  {
         -:  564:    // Either the requested alignment if smaller than a scalar, or it exactly match a 1 scalar
         -:  565:    // so that all elements of the array have the same alignment.
-        7:  566:    return 0;
+       21:  566:    return 0;
         -:  567:  }
-     3843:  568:  else if( (std::uintptr_t(array) & (sizeof(Scalar)-1)) || (Alignment%ScalarSize)!=0)
+    11529:  568:  else if( (std::uintptr_t(array) & (sizeof(Scalar)-1)) || (Alignment%ScalarSize)!=0)
         -:  569:  {
         -:  570:    // The array is not aligned to the size of a single scalar, or the requested alignment is not a multiple of the scalar size.
         -:  571:    // Consequently, no element of the array is well aligned.
@@ -577,10 +577,10 @@
         -:  573:  }
         -:  574:  else
         -:  575:  {
-     3843:  576:    Index first = (AlignmentSize - (Index((std::uintptr_t(array)/sizeof(Scalar))) & AlignmentMask)) & AlignmentMask;
-     3843:  577:    return (first < size) ? first : size;
+    11529:  576:    Index first = (AlignmentSize - (Index((std::uintptr_t(array)/sizeof(Scalar))) & AlignmentMask)) & AlignmentMask;
+    11529:  577:    return (first < size) ? first : size;
         -:  578:  }
-     3843:  579:}
+    11529:  579:}
         -:  580:
         -:  581:/** \internal Returns the index of the first element of the array that is well aligned with respect the largest packet requirement.
         -:  582:   * \sa first_aligned(Scalar*,Index) and first_default_aligned(DenseBase<Derived>) */
@@ -603,20 +603,20 @@
         -:  599:// use memcpy on trivial types, i.e., on types that does not require an initialization ctor.
         -:  600:template<typename T, bool UseMemcpy> struct smart_copy_helper;
         -:  601:
-      173:  602:template<typename T> EIGEN_DEVICE_FUNC void smart_copy(const T* start, const T* end, T* target)
+      519:  602:template<typename T> EIGEN_DEVICE_FUNC void smart_copy(const T* start, const T* end, T* target)
         -:  603:{
-      173:  604:  smart_copy_helper<T,!NumTraits<T>::RequireInitialization>::run(start, end, target);
-      173:  605:}
+      519:  604:  smart_copy_helper<T,!NumTraits<T>::RequireInitialization>::run(start, end, target);
+      519:  605:}
         -:  606:
         -:  607:template<typename T> struct smart_copy_helper<T,true> {
-      173:  608:  EIGEN_DEVICE_FUNC static inline void run(const T* start, const T* end, T* target)
+      519:  608:  EIGEN_DEVICE_FUNC static inline void run(const T* start, const T* end, T* target)
         -:  609:  {
-      173:  610:    std::intptr_t size = std::intptr_t(end)-std::intptr_t(start);
-      173:  611:    if(size==0) return;
+      519:  610:    std::intptr_t size = std::intptr_t(end)-std::intptr_t(start);
+      519:  611:    if(size==0) return;
         -:  612:    eigen_internal_assert(start!=0 && end!=0 && target!=0);
         -:  613:    EIGEN_USING_STD(memcpy)
-      173:  614:    memcpy(target, start, size);
-      173:  615:  }
+      519:  614:    memcpy(target, start, size);
+      519:  615:  }
         -:  616:};
         -:  617:
         -:  618:template<typename T> struct smart_copy_helper<T,false> {
@@ -697,20 +697,20 @@
         -:  693:     * Finally, if \a dealloc is true, then the pointer \a ptr is freed.
         -:  694:     **/
         -:  695:    EIGEN_DEVICE_FUNC
-     1510:  696:    aligned_stack_memory_handler(T* ptr, std::size_t size, bool dealloc)
-      755:  697:      : m_ptr(ptr), m_size(size), m_deallocate(dealloc)
-      755:  698:    {
+     4530:  696:    aligned_stack_memory_handler(T* ptr, std::size_t size, bool dealloc)
+     2265:  697:      : m_ptr(ptr), m_size(size), m_deallocate(dealloc)
+     2265:  698:    {
         -:  699:      if(NumTraits<T>::RequireInitialization && m_ptr)
         -:  700:        Eigen::internal::default_construct_elements_of_array(m_ptr, size);
-     1510:  701:    }
+     4530:  701:    }
         -:  702:    EIGEN_DEVICE_FUNC
-     1510:  703:    ~aligned_stack_memory_handler()
-      755:  704:    {
+     4530:  703:    ~aligned_stack_memory_handler()
+     2265:  704:    {
         -:  705:      if(NumTraits<T>::RequireInitialization && m_ptr)
         -:  706:        Eigen::internal::destruct_elements_of_array<T>(m_ptr, m_size);
-      755:  707:      if(m_deallocate)
+     2265:  707:      if(m_deallocate)
     #####:  708:        Eigen::internal::aligned_free(m_ptr);
-     1510:  709:    }
+     4530:  709:    }
         -:  710:  protected:
         -:  711:    T* m_ptr;
         -:  712:    std::size_t m_size;
@@ -747,23 +747,23 @@
         -:  743:  ObjectType object;
         -:  744:
         -:  745:  EIGEN_DEVICE_FUNC
-      718:  746:  local_nested_eval_wrapper(const Xpr& xpr, Scalar* ptr)
-      359:  747:    : object(ptr==0 ? reinterpret_cast<Scalar*>(Eigen::internal::aligned_malloc(sizeof(Scalar)*xpr.size())) : ptr, xpr.rows(), xpr.cols()),
-      359:  748:      m_deallocate(ptr==0)
-      359:  749:  {
+     2154:  746:  local_nested_eval_wrapper(const Xpr& xpr, Scalar* ptr)
+     1077:  747:    : object(ptr==0 ? reinterpret_cast<Scalar*>(Eigen::internal::aligned_malloc(sizeof(Scalar)*xpr.size())) : ptr, xpr.rows(), xpr.cols()),
+     1077:  748:      m_deallocate(ptr==0)
+     1077:  749:  {
         -:  750:    if(NumTraits<Scalar>::RequireInitialization && object.data())
         -:  751:      Eigen::internal::default_construct_elements_of_array(object.data(), object.size());
-      359:  752:    object = xpr;
-      718:  753:  }
+     1077:  752:    object = xpr;
+     2154:  753:  }
         -:  754:
         -:  755:  EIGEN_DEVICE_FUNC
-      718:  756:  ~local_nested_eval_wrapper()
-      359:  757:  {
+     2154:  756:  ~local_nested_eval_wrapper()
+     1077:  757:  {
         -:  758:    if(NumTraits<Scalar>::RequireInitialization && object.data())
         -:  759:      Eigen::internal::destruct_elements_of_array(object.data(), object.size());
-      359:  760:    if(m_deallocate)
+     1077:  760:    if(m_deallocate)
     #####:  761:      Eigen::internal::aligned_free(object.data());
-      718:  762:  }
+     2154:  762:  }
         -:  763:
         -:  764:private:
         -:  765:  bool m_deallocate;

@@ -99,7 +99,7 @@
         -:   95:// used internally at Google, is "threadsafe".
         -:   96:static const char kDefaultDeathTestStyle[] = GTEST_DEFAULT_DEATH_TEST_STYLE;
         -:   97:
-       11:   98:GTEST_DEFINE_string_(
+       20:   98:GTEST_DEFINE_string_(
         -:   99:    death_test_style,
         -:  100:    internal::StringFromGTestEnv("death_test_style", kDefaultDeathTestStyle),
         -:  101:    "Indicates how to run a death test in a forked child process: "
@@ -108,7 +108,7 @@
         -:  104:    "\"fast\" (child process runs the death test immediately "
         -:  105:    "after forking).");
         -:  106:
-       11:  107:GTEST_DEFINE_bool_(
+       20:  107:GTEST_DEFINE_bool_(
         -:  108:    death_test_use_fork,
         -:  109:    internal::BoolFromGTestEnv("death_test_use_fork", false),
         -:  110:    "Instructs to use fork()/_exit() instead of clone() in death tests. "
@@ -121,7 +121,7 @@
         -:  117:    "most likely be removed.");
         -:  118:
         -:  119:namespace internal {
-       11:  120:GTEST_DEFINE_string_(
+       20:  120:GTEST_DEFINE_string_(
         -:  121:    internal_run_death_test, "",
         -:  122:    "Indicates the file, line number, temporal index of "
         -:  123:    "the single death test to run, and a file descriptor to "
@@ -395,7 +395,7 @@
     #####:  391:  last_death_test_message_ = message;
     #####:  392:}
         -:  393:
-       11:  394:std::string DeathTest::last_death_test_message_;
+       20:  394:std::string DeathTest::last_death_test_message_;
         -:  395:
         -:  396:// Provides cross platform implementation for some death functionality.
         -:  397:class DeathTestImpl : public DeathTest {
@@ -1596,8 +1596,8 @@
         -: 1592:// Returns a newly created InternalRunDeathTestFlag object with fields
         -: 1593:// initialized from the GTEST_FLAG(internal_run_death_test) flag if
         -: 1594:// the flag is specified; otherwise returns NULL.
-       11: 1595:InternalRunDeathTestFlag* ParseInternalRunDeathTestFlag() {
-       11: 1596:  if (GTEST_FLAG(internal_run_death_test) == "") return nullptr;
+       20: 1595:InternalRunDeathTestFlag* ParseInternalRunDeathTestFlag() {
+       20: 1596:  if (GTEST_FLAG(internal_run_death_test) == "") return nullptr;
         -: 1597:
         -: 1598:  // GTEST_HAS_DEATH_TEST implies that we have ::std::string, so we
         -: 1599:  // can use it here.
@@ -1648,7 +1648,7 @@
         -: 1644:# endif  // GTEST_OS_WINDOWS
         -: 1645:
     #####: 1646:  return new InternalRunDeathTestFlag(fields[0], line, index, write_fd);
-       11: 1647:}
+       20: 1647:}
         -: 1648:
         -: 1649:}  // namespace internal
         -: 1650:

@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/plugins/BlockMethods.inc
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -97,10 +97,10 @@
         -:   93:#else
         -:   94:typename FixedBlockXpr<...,...>::Type
         -:   95:#endif
-     3001:   96:block(Index startRow, Index startCol, NRowsType blockRows, NColsType blockCols)
+     9003:   96:block(Index startRow, Index startCol, NRowsType blockRows, NColsType blockCols)
         -:   97:{
-     3001:   98:  return typename FixedBlockXpr<internal::get_fixed_value<NRowsType>::value,internal::get_fixed_value<NColsType>::value>::Type(
-     3001:   99:            derived(), startRow, startCol, internal::get_runtime_value(blockRows), internal::get_runtime_value(blockCols));
+     9003:   98:  return typename FixedBlockXpr<internal::get_fixed_value<NRowsType>::value,internal::get_fixed_value<NColsType>::value>::Type(
+     9003:   99:            derived(), startRow, startCol, internal::get_runtime_value(blockRows), internal::get_runtime_value(blockCols));
         -:  100:}
         -:  101:
         -:  102:/// This is the const version of block(Index,Index,NRowsType,NColsType)
@@ -111,10 +111,10 @@
         -:  107:#else
         -:  108:const typename ConstFixedBlockXpr<...,...>::Type
         -:  109:#endif
-        2:  110:block(Index startRow, Index startCol, NRowsType blockRows, NColsType blockCols) const
+        6:  110:block(Index startRow, Index startCol, NRowsType blockRows, NColsType blockCols) const
         -:  111:{
-        2:  112:  return typename ConstFixedBlockXpr<internal::get_fixed_value<NRowsType>::value,internal::get_fixed_value<NColsType>::value>::Type(
-        2:  113:            derived(), startRow, startCol, internal::get_runtime_value(blockRows), internal::get_runtime_value(blockCols));
+        6:  112:  return typename ConstFixedBlockXpr<internal::get_fixed_value<NRowsType>::value,internal::get_fixed_value<NColsType>::value>::Type(
+        6:  113:            derived(), startRow, startCol, internal::get_runtime_value(blockRows), internal::get_runtime_value(blockCols));
         -:  114:}
         -:  115:
         -:  116:
@@ -264,10 +264,10 @@
         -:  260:#else
         -:  261:const typename ConstFixedBlockXpr<...,...>::Type
         -:  262:#endif
-      120:  263:topLeftCorner(NRowsType cRows, NColsType cCols) const
+      360:  263:topLeftCorner(NRowsType cRows, NColsType cCols) const
         -:  264:{
-      120:  265:  return typename ConstFixedBlockXpr<internal::get_fixed_value<NRowsType>::value,internal::get_fixed_value<NColsType>::value>::Type
-      120:  266:            (derived(), 0, 0, internal::get_runtime_value(cRows), internal::get_runtime_value(cCols));
+      360:  265:  return typename ConstFixedBlockXpr<internal::get_fixed_value<NRowsType>::value,internal::get_fixed_value<NColsType>::value>::Type
+      360:  266:            (derived(), 0, 0, internal::get_runtime_value(cRows), internal::get_runtime_value(cCols));
         -:  267:}
         -:  268:
         -:  269:/// \returns an expression of a fixed-size top-left corner of \c *this.
@@ -356,11 +356,11 @@
         -:  352:#else
         -:  353:typename FixedBlockXpr<...,...>::Type
         -:  354:#endif
-      838:  355:bottomRightCorner(NRowsType cRows, NColsType cCols)
+     2514:  355:bottomRightCorner(NRowsType cRows, NColsType cCols)
         -:  356:{
-      838:  357:  return typename FixedBlockXpr<internal::get_fixed_value<NRowsType>::value,internal::get_fixed_value<NColsType>::value>::Type
-      838:  358:            (derived(), rows() - internal::get_runtime_value(cRows), cols() - internal::get_runtime_value(cCols),
-      838:  359:                        internal::get_runtime_value(cRows), internal::get_runtime_value(cCols));
+     2514:  357:  return typename FixedBlockXpr<internal::get_fixed_value<NRowsType>::value,internal::get_fixed_value<NColsType>::value>::Type
+     2514:  358:            (derived(), rows() - internal::get_runtime_value(cRows), cols() - internal::get_runtime_value(cCols),
+     2514:  359:                        internal::get_runtime_value(cRows), internal::get_runtime_value(cCols));
         -:  360:}
         -:  361:
         -:  362:/// This is the const version of bottomRightCorner(NRowsType, NColsType).
@@ -571,10 +571,10 @@
         -:  567:#else
         -:  568:typename NRowsBlockXpr<...>::Type
         -:  569:#endif
-      120:  570:topRows(NRowsType n)
+      360:  570:topRows(NRowsType n)
         -:  571:{
-      120:  572:  return typename NRowsBlockXpr<internal::get_fixed_value<NRowsType>::value>::Type
-      120:  573:            (derived(), 0, 0, internal::get_runtime_value(n), cols());
+      360:  572:  return typename NRowsBlockXpr<internal::get_fixed_value<NRowsType>::value>::Type
+      360:  573:            (derived(), 0, 0, internal::get_runtime_value(n), cols());
         -:  574:}
         -:  575:
         -:  576:/// This is the const version of topRows(NRowsType).
@@ -646,10 +646,10 @@
         -:  642:#else
         -:  643:typename NRowsBlockXpr<...>::Type
         -:  644:#endif
-      478:  645:bottomRows(NRowsType n)
+     1434:  645:bottomRows(NRowsType n)
         -:  646:{
-      478:  647:  return typename NRowsBlockXpr<internal::get_fixed_value<NRowsType>::value>::Type
-      478:  648:            (derived(), rows() - internal::get_runtime_value(n), 0, internal::get_runtime_value(n), cols());
+     1434:  647:  return typename NRowsBlockXpr<internal::get_fixed_value<NRowsType>::value>::Type
+     1434:  648:            (derived(), rows() - internal::get_runtime_value(n), 0, internal::get_runtime_value(n), cols());
         -:  649:}
         -:  650:
         -:  651:/// This is the const version of bottomRows(NRowsType).
@@ -1098,16 +1098,16 @@
         -: 1094:/**
         -: 1095:  * \sa row(), class Block */
         -: 1096:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-     5219: 1097:ColXpr col(Index i)
+    15657: 1097:ColXpr col(Index i)
         -: 1098:{
-     5219: 1099:  return ColXpr(derived(), i);
+    15657: 1099:  return ColXpr(derived(), i);
         -: 1100:}
         -: 1101:
         -: 1102:/// This is the const version of col().
         -: 1103:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-      504: 1104:ConstColXpr col(Index i) const
+     1512: 1104:ConstColXpr col(Index i) const
         -: 1105:{
-      504: 1106:  return ConstColXpr(derived(), i);
+     1512: 1106:  return ConstColXpr(derived(), i);
         -: 1107:}
         -: 1108:
         -: 1109:/// \returns an expression of the \a i-th row of \c *this. Note that the numbering starts at 0.
@@ -1119,16 +1119,16 @@
         -: 1115:/**
         -: 1116:  * \sa col(), class Block */
         -: 1117:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-     9366: 1118:RowXpr row(Index i)
+    28098: 1118:RowXpr row(Index i)
         -: 1119:{
-     9366: 1120:  return RowXpr(derived(), i);
+    28098: 1120:  return RowXpr(derived(), i);
         -: 1121:}
         -: 1122:
         -: 1123:/// This is the const version of row(). */
         -: 1124:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-     6976: 1125:ConstRowXpr row(Index i) const
+    20928: 1125:ConstRowXpr row(Index i) const
         -: 1126:{
-     6976: 1127:  return ConstRowXpr(derived(), i);
+    20928: 1127:  return ConstRowXpr(derived(), i);
         -: 1128:}
         -: 1129:
         -: 1130:/// \returns an expression of a segment (i.e. a vector block) in \c *this with either dynamic or fixed sizes.
@@ -1159,11 +1159,11 @@
         -: 1155:#else
         -: 1156:typename FixedSegmentReturnType<...>::Type
         -: 1157:#endif
-      124: 1158:segment(Index start, NType n)
+      372: 1158:segment(Index start, NType n)
         -: 1159:{
         -: 1160:  EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived)
-      124: 1161:  return typename FixedSegmentReturnType<internal::get_fixed_value<NType>::value>::Type
-      124: 1162:            (derived(), start, internal::get_runtime_value(n));
+      372: 1161:  return typename FixedSegmentReturnType<internal::get_fixed_value<NType>::value>::Type
+      372: 1162:            (derived(), start, internal::get_runtime_value(n));
         -: 1163:}
         -: 1164:
         -: 1165:
@@ -1258,11 +1258,11 @@
         -: 1254:#else
         -: 1255:typename FixedSegmentReturnType<...>::Type
         -: 1256:#endif
-     2943: 1257:tail(NType n)
+     8829: 1257:tail(NType n)
         -: 1258:{
         -: 1259:  EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived)
-     2943: 1260:  return typename FixedSegmentReturnType<internal::get_fixed_value<NType>::value>::Type
-     2943: 1261:            (derived(), this->size() - internal::get_runtime_value(n), internal::get_runtime_value(n));
+     8829: 1260:  return typename FixedSegmentReturnType<internal::get_fixed_value<NType>::value>::Type
+     8829: 1261:            (derived(), this->size() - internal::get_runtime_value(n), internal::get_runtime_value(n));
         -: 1262:}
         -: 1263:
         -: 1264:/// This is the const version of tail(Index).
@@ -1273,11 +1273,11 @@
         -: 1269:#else
         -: 1270:const typename ConstFixedSegmentReturnType<...>::Type
         -: 1271:#endif
-      240: 1272:tail(NType n) const
+      720: 1272:tail(NType n) const
         -: 1273:{
         -: 1274:  EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived)
-      240: 1275:  return typename ConstFixedSegmentReturnType<internal::get_fixed_value<NType>::value>::Type
-      240: 1276:            (derived(), this->size() - internal::get_runtime_value(n), internal::get_runtime_value(n));
+      720: 1275:  return typename ConstFixedSegmentReturnType<internal::get_fixed_value<NType>::value>::Type
+      720: 1276:            (derived(), this->size() - internal::get_runtime_value(n), internal::get_runtime_value(n));
         -: 1277:}
         -: 1278:
         -: 1279:/// \returns a fixed-size expression of a segment (i.e. a vector block) in \c *this
@@ -1432,9 +1432,9 @@
         -: 1428:template<DirectionType Direction>
         -: 1429:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
         -: 1430:std::conditional_t<Direction==Vertical,ConstColXpr,ConstRowXpr>
-        6: 1431:subVector(Index i) const
+       18: 1431:subVector(Index i) const
         -: 1432:{
-        6: 1433:  return std::conditional_t<Direction==Vertical,ConstColXpr,ConstRowXpr>(derived(),i);
+       18: 1433:  return std::conditional_t<Direction==Vertical,ConstColXpr,ConstRowXpr>(derived(),i);
         -: 1434:}
         -: 1435:
         -: 1436:/** \returns the number of subvectors (rows or columns) in the direction \c Direction

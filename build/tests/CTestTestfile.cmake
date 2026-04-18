@@ -10,3 +10,5 @@ add_test([=[vecfields_test_mesh_io]=] "/Users/csv610/Projects/Mesh/Directional/b
 set_tests_properties([=[vecfields_test_mesh_io]=] PROPERTIES  _BACKTRACE_TRIPLES "/Users/csv610/Projects/Mesh/Directional/tests/CMakeLists.txt;7;add_test;/Users/csv610/Projects/Mesh/Directional/tests/CMakeLists.txt;0;")
 add_test([=[vecfields_test_field_processing]=] "/Users/csv610/Projects/Mesh/Directional/build/tests/vecfields_test_field_processing")
 set_tests_properties([=[vecfields_test_field_processing]=] PROPERTIES  _BACKTRACE_TRIPLES "/Users/csv610/Projects/Mesh/Directional/tests/CMakeLists.txt;11;add_test;/Users/csv610/Projects/Mesh/Directional/tests/CMakeLists.txt;0;")
+add_test([=[vecfields_test_polyvector_field]=] "/Users/csv610/Projects/Mesh/Directional/build/tests/vecfields_test_polyvector_field")
+set_tests_properties([=[vecfields_test_polyvector_field]=] PROPERTIES  _BACKTRACE_TRIPLES "/Users/csv610/Projects/Mesh/Directional/tests/CMakeLists.txt;15;add_test;/Users/csv610/Projects/Mesh/Directional/tests/CMakeLists.txt;0;")

@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/include/directional/gaussian_curvature.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Directional, a library for directional field processing.
         -:    2:// Copyright (C) 2022 Amir Vaxman <avaxman@gmail.com>
         -:    3://
@@ -24,24 +24,24 @@
         -:   20://  isBoundaryVertex:   #V boolean indicating if vertex is a boundary.
         -:   21://output:
         -:   22://  G:                  #V discrete Gaussian curvature. sum(G) = eulerChar of mesh.
-        1:   23:inline void gaussian_curvature(const Eigen::MatrixXd& V,
+        3:   23:inline void gaussian_curvature(const Eigen::MatrixXd& V,
         -:   24:                               const Eigen::MatrixXi& F,
         -:   25:                               const Eigen::VectorXi& isBoundaryVertex,
         -:   26:                               Eigen::VectorXd& G){
         -:   27:    
-        1:   28:    G.resize(V.rows());
-      121:   29:    for (int i=0;i<V.rows();i++)
-      120:   30:        G(i)=(isBoundaryVertex(i) ? std::numbers::pi : 2.0*std::numbers::pi);
+        3:   28:    G.resize(V.rows());
+      363:   29:    for (int i=0;i<V.rows();i++)
+      360:   30:        G(i)=(isBoundaryVertex(i) ? std::numbers::pi : 2.0*std::numbers::pi);
         -:   31:    
-      121:   32:    for (int i=0;i<F.rows();i++) {
-      480:   33:        for (int j = 0; j < 3; j++) {
-      360:   34:            Eigen::RowVector3d v1 = V.row(F(i, (j + 1) % 3)) - V.row(F(i, j));
-      360:   35:            Eigen::RowVector3d v2 = V.row(F(i, (j + 2) % 3)) - V.row(F(i, j));
-      360:   36:            double currAngle = std::acos(v1.dot(v2) / (v1.norm() * v2.norm()));
-      360:   37:            G(F(i, j)) -= currAngle;
-      360:   38:        }
-      120:   39:    }
-        1:   40:}
+      363:   32:    for (int i=0;i<F.rows();i++) {
+     1440:   33:        for (int j = 0; j < 3; j++) {
+     1080:   34:            Eigen::RowVector3d v1 = V.row(F(i, (j + 1) % 3)) - V.row(F(i, j));
+     1080:   35:            Eigen::RowVector3d v2 = V.row(F(i, (j + 2) % 3)) - V.row(F(i, j));
+     1080:   36:            double currAngle = std::acos(v1.dot(v2) / (v1.norm() * v2.norm()));
+     1080:   37:            G(F(i, j)) -= currAngle;
+     1080:   38:        }
+      360:   39:    }
+        3:   40:}
         -:   41:}
         -:   42:
         -:   43:#endif

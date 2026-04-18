@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/include/directional/shape_operator.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Directional, a library for directional field processing.
         -:    2:// Copyright (C) 2025 Amir Vaxman <avaxman@gmail.com>
         -:    3://
@@ -35,19 +35,19 @@
         -:   31:{
         -:   32:
         -:   33:
-        1:   34:static std::unordered_map<int, std::set<int>> build_adjacency(const Eigen::MatrixXi& EV) {
-        1:   35:    std::unordered_map<int, std::set<int>> adj;
-      241:   36:    for (int i = 0; i < EV.rows(); ++i) {
-      240:   37:        int v0 = EV(i, 0);
-      240:   38:        int v1 = EV(i, 1);
-      240:   39:        adj[v0].insert(v1);
-      240:   40:        adj[v1].insert(v0);
-      240:   41:    }
-        1:   42:    return adj;
-        1:   43:}
+        3:   34:static std::unordered_map<int, std::set<int>> build_adjacency(const Eigen::MatrixXi& EV) {
+        3:   35:    std::unordered_map<int, std::set<int>> adj;
+      723:   36:    for (int i = 0; i < EV.rows(); ++i) {
+      720:   37:        int v0 = EV(i, 0);
+      720:   38:        int v1 = EV(i, 1);
+      720:   39:        adj[v0].insert(v1);
+      720:   40:        adj[v1].insert(v0);
+      720:   41:    }
+        3:   42:    return adj;
+        3:   43:}
         -:   44:
         -:   45:// Compute shape operator (2x2 Hessian of interpolated height function in tangent frame)
-        1:   46:void shape_operator(const Eigen::MatrixXd& V,
+        3:   46:void shape_operator(const Eigen::MatrixXd& V,
         -:   47:                    const Eigen::MatrixXi& EV,
         -:   48:                    const Eigen::MatrixXd& VBx,
         -:   49:                    const Eigen::MatrixXd& VBy,
@@ -55,43 +55,43 @@
         -:   51:                    std::vector<Eigen::Matrix2d>& Sv) {
         -:   52:    
         -:   53:    
-        1:   54:    Sv.resize(V.rows(), Eigen::Matrix2d::Constant(std::nan("")));  // default to NaNs
+        3:   54:    Sv.resize(V.rows(), Eigen::Matrix2d::Constant(std::nan("")));  // default to NaNs
         -:   55:
-        1:   56:    auto adjacency = build_adjacency(EV);
+        3:   56:    auto adjacency = build_adjacency(EV);
         -:   57:
-      121:   58:    for (int vi = 0; vi < V.rows(); ++vi) {
-      120:   59:        const auto& neighbors = adjacency[vi];
+      363:   58:    for (int vi = 0; vi < V.rows(); ++vi) {
+      360:   59:        const auto& neighbors = adjacency[vi];
         -:   60:        
-      120:   61:        const Eigen::RowVector3d origin = V.row(vi);
-      120:   62:        const Eigen::RowVector3d normal = vertexNormals.row(vi).normalized();
-      120:   63:        const Eigen::RowVector3d bx = VBx.row(vi).normalized();
-      120:   64:        const Eigen::RowVector3d by = VBy.row(vi).normalized();
+      360:   61:        const Eigen::RowVector3d origin = V.row(vi);
+      360:   62:        const Eigen::RowVector3d normal = vertexNormals.row(vi).normalized();
+      360:   63:        const Eigen::RowVector3d bx = VBx.row(vi).normalized();
+      360:   64:        const Eigen::RowVector3d by = VBy.row(vi).normalized();
         -:   65:
-      120:   66:        Eigen::MatrixXd A(neighbors.size(), 5);
-      120:   67:        Eigen::VectorXd rhs(neighbors.size());
+      360:   66:        Eigen::MatrixXd A(neighbors.size(), 5);
+      360:   67:        Eigen::VectorXd rhs(neighbors.size());
         -:   68:
-      120:   69:        int currRow = 0;
-      600:   70:        for (int nj : neighbors) {
-      480:   71:            Eigen::RowVector3d delta = V.row(nj) - origin;
-      480:   72:            double x = delta.dot(bx);
-      480:   73:            double y = delta.dot(by);
-      480:   74:            double z = delta.dot(normal);  // height along normal direction
+      360:   69:        int currRow = 0;
+     1800:   70:        for (int nj : neighbors) {
+     1440:   71:            Eigen::RowVector3d delta = V.row(nj) - origin;
+     1440:   72:            double x = delta.dot(bx);
+     1440:   73:            double y = delta.dot(by);
+     1440:   74:            double z = delta.dot(normal);  // height along normal direction
         -:   75:
-      480:   76:            A.row(currRow)<<x * x, x * y, y * y, x, y;
-      480:   77:            rhs(currRow) = z;
-      480:   78:            currRow++;
+     1440:   76:            A.row(currRow)<<x * x, x * y, y * y, x, y;
+     1440:   77:            rhs(currRow) = z;
+     1440:   78:            currRow++;
         -:   79:        }
         -:   80:
-      120:   81:        Eigen::VectorXd coeffs = A.colPivHouseholderQr().solve(rhs);
-      120:   82:        double a = coeffs(0), b = coeffs(1), c = coeffs(2);
+      360:   81:        Eigen::VectorXd coeffs = A.colPivHouseholderQr().solve(rhs);
+      360:   82:        double a = coeffs(0), b = coeffs(1), c = coeffs(2);
         -:   83:
-      120:   84:        Eigen::Matrix2d H;
-      240:   85:        H << 2 * a, b,
-      120:   86:             b, 2 * c;
+      360:   84:        Eigen::Matrix2d H;
+      720:   85:        H << 2 * a, b,
+      360:   86:             b, 2 * c;
         -:   87:
-      120:   88:        Sv[vi] = - H;
-      120:   89:    }
-        1:   90:}
+      360:   88:        Sv[vi] = - H;
+      360:   89:    }
+        3:   90:}
         -:   91:
         -:   92:
         -:   93:/*inline void shape_operator(const Eigen::MatrixXd& V,

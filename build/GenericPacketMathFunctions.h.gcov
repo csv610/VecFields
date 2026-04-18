@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/arch/Default/GenericPacketMathFunctions.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -1002,23 +1002,23 @@
         -:  998:
         -:  999:template<typename Packet>
         -: 1000:EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
-      119: 1001:Packet pdiv_complex(const Packet& x, const Packet& y) {
+      357: 1001:Packet pdiv_complex(const Packet& x, const Packet& y) {
         -: 1002:  typedef typename unpacket_traits<Packet>::as_real RealPacket;
         -: 1003:  // In the following we annotate the code for the case where the inputs
         -: 1004:  // are a pair length-2 SIMD vectors representing a single pair of complex
         -: 1005:  // numbers x = a + i*b, y = c + i*d.
-      119: 1006:  const RealPacket y_abs = pabs(y.v);  // |c|, |d|
-      119: 1007:  const RealPacket y_abs_flip = pcplxflip(Packet(y_abs)).v; // |d|, |c|
-      119: 1008:  const RealPacket y_max = pmax(y_abs, y_abs_flip); // max(|c|, |d|), max(|c|, |d|)
-      119: 1009:  const RealPacket y_scaled = pdiv(y.v, y_max);  // c / max(|c|, |d|), d / max(|c|, |d|)
+      357: 1006:  const RealPacket y_abs = pabs(y.v);  // |c|, |d|
+      357: 1007:  const RealPacket y_abs_flip = pcplxflip(Packet(y_abs)).v; // |d|, |c|
+      357: 1008:  const RealPacket y_max = pmax(y_abs, y_abs_flip); // max(|c|, |d|), max(|c|, |d|)
+      357: 1009:  const RealPacket y_scaled = pdiv(y.v, y_max);  // c / max(|c|, |d|), d / max(|c|, |d|)
         -: 1010:  // Compute scaled denominator.
-      119: 1011:  const RealPacket y_scaled_sq = pmul(y_scaled, y_scaled); // c'**2, d'**2
-      119: 1012:  const RealPacket denom = padd(y_scaled_sq, pcplxflip(Packet(y_scaled_sq)).v);
-      119: 1013:  Packet result_scaled = pmul(x, pconj(Packet(y_scaled)));  // a * c' + b * d', -a * d + b * c
+      357: 1011:  const RealPacket y_scaled_sq = pmul(y_scaled, y_scaled); // c'**2, d'**2
+      357: 1012:  const RealPacket denom = padd(y_scaled_sq, pcplxflip(Packet(y_scaled_sq)).v);
+      357: 1013:  Packet result_scaled = pmul(x, pconj(Packet(y_scaled)));  // a * c' + b * d', -a * d + b * c
         -: 1014:  // Divide elementwise by denom.
-      119: 1015:  result_scaled = Packet(pdiv(result_scaled.v, denom));
+      357: 1015:  result_scaled = Packet(pdiv(result_scaled.v, denom));
         -: 1016:  // Rescale result
-      119: 1017:  return Packet(pdiv(result_scaled.v, y_max));
+      357: 1017:  return Packet(pdiv(result_scaled.v, y_max));
         -: 1018:}
         -: 1019:
         -: 1020:template<typename Packet>

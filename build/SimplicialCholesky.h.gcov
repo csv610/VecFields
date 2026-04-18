@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/SparseCholesky/SimplicialCholesky.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -86,13 +86,13 @@
         -:   82:    using Base::derived;
         -:   83:
         -:   84:    /** Default constructor */
-        6:   85:    SimplicialCholeskyBase()
-        3:   86:      : m_info(Success),
-        3:   87:        m_factorizationIsOk(false),
-        3:   88:        m_analysisIsOk(false),
-        3:   89:        m_shiftOffset(0),
-        3:   90:        m_shiftScale(1)
-        3:   91:    {}
+       18:   85:    SimplicialCholeskyBase()
+        9:   86:      : m_info(Success),
+        9:   87:        m_factorizationIsOk(false),
+        9:   88:        m_analysisIsOk(false),
+        9:   89:        m_shiftOffset(0),
+        9:   90:        m_shiftScale(1)
+        9:   91:    {}
         -:   92:
         -:   93:    explicit SimplicialCholeskyBase(const MatrixType& matrix)
         -:   94:      : m_info(Success),
@@ -104,25 +104,25 @@
         -:  100:      derived().compute(matrix);
         -:  101:    }
         -:  102:
-        3:  103:    ~SimplicialCholeskyBase()
+        9:  103:    ~SimplicialCholeskyBase()
         -:  104:    {
-        3:  105:    }
+        9:  105:    }
         -:  106:
         -:  107:    Derived& derived() { return *static_cast<Derived*>(this); }
-        2:  108:    const Derived& derived() const { return *static_cast<const Derived*>(this); }
+        6:  108:    const Derived& derived() const { return *static_cast<const Derived*>(this); }
         -:  109:    
-        1:  110:    inline Index cols() const { return m_matrix.cols(); }
-        1:  111:    inline Index rows() const { return m_matrix.rows(); }
+        3:  110:    inline Index cols() const { return m_matrix.cols(); }
+        3:  111:    inline Index rows() const { return m_matrix.rows(); }
         -:  112:    
         -:  113:    /** \brief Reports whether previous computation was successful.
         -:  114:      *
         -:  115:      * \returns \c Success if computation was successful,
         -:  116:      *          \c NumericalIssue if the matrix.appears to be negative.
         -:  117:      */
-        1:  118:    ComputationInfo info() const
+        3:  118:    ComputationInfo info() const
         -:  119:    {
-        2:  120:      eigen_assert(m_isInitialized && "Decomposition is not initialized.");
-        1:  121:      return m_info;
+        6:  120:      eigen_assert(m_isInitialized && "Decomposition is not initialized.");
+        3:  121:      return m_info;
         -:  122:    }
         -:  123:    
         -:  124:    /** \returns the permutation P
@@ -168,31 +168,31 @@
         -:  164:
         -:  165:    /** \internal */
         -:  166:    template<typename Rhs,typename Dest>
-        1:  167:    void _solve_impl(const MatrixBase<Rhs> &b, MatrixBase<Dest> &dest) const
+        3:  167:    void _solve_impl(const MatrixBase<Rhs> &b, MatrixBase<Dest> &dest) const
         -:  168:    {
-        2:  169:      eigen_assert(m_factorizationIsOk && "The decomposition is not in a valid state for solving, you must first call either compute() or symbolic()/numeric()");
-        1:  170:      eigen_assert(m_matrix.rows()==b.rows());
+        6:  169:      eigen_assert(m_factorizationIsOk && "The decomposition is not in a valid state for solving, you must first call either compute() or symbolic()/numeric()");
+        3:  170:      eigen_assert(m_matrix.rows()==b.rows());
         -:  171:
-        1:  172:      if(m_info!=Success)
+        3:  172:      if(m_info!=Success)
     #####:  173:        return;
         -:  174:
-        1:  175:      if(m_P.size()>0)
-        1:  176:        dest = m_P * b;
+        3:  175:      if(m_P.size()>0)
+        3:  176:        dest = m_P * b;
         -:  177:      else
     #####:  178:        dest = b;
         -:  179:
-        1:  180:      if(m_matrix.nonZeros()>0) // otherwise L==I
-        1:  181:        derived().matrixL().solveInPlace(dest);
+        3:  180:      if(m_matrix.nonZeros()>0) // otherwise L==I
+        3:  181:        derived().matrixL().solveInPlace(dest);
         -:  182:
-        1:  183:      if(m_diag.size()>0)
-        1:  184:        dest = m_diag.asDiagonal().inverse() * dest;
+        3:  183:      if(m_diag.size()>0)
+        3:  184:        dest = m_diag.asDiagonal().inverse() * dest;
         -:  185:
-        1:  186:      if (m_matrix.nonZeros()>0) // otherwise U==I
-        1:  187:        derived().matrixU().solveInPlace(dest);
+        3:  186:      if (m_matrix.nonZeros()>0) // otherwise U==I
+        3:  187:        derived().matrixU().solveInPlace(dest);
         -:  188:
-        1:  189:      if(m_P.size()>0)
-        1:  190:        dest = m_Pinv * dest;
-        1:  191:    }
+        3:  189:      if(m_P.size()>0)
+        3:  190:        dest = m_Pinv * dest;
+        3:  191:    }
         -:  192:    
         -:  193:    template<typename Rhs,typename Dest>
         -:  194:    void _solve_impl(const SparseMatrixBase<Rhs> &b, SparseMatrixBase<Dest> &dest) const
@@ -206,16 +206,16 @@
         -:  202:    
         -:  203:    /** Computes the sparse Cholesky decomposition of \a matrix */
         -:  204:    template<bool DoLDLT>
-        1:  205:    void compute(const MatrixType& matrix)
+        3:  205:    void compute(const MatrixType& matrix)
         -:  206:    {
-        1:  207:      eigen_assert(matrix.rows()==matrix.cols());
-        1:  208:      Index size = matrix.cols();
-        1:  209:      CholMatrixType tmp(size,size);
+        3:  207:      eigen_assert(matrix.rows()==matrix.cols());
+        3:  208:      Index size = matrix.cols();
+        3:  209:      CholMatrixType tmp(size,size);
         -:  210:      ConstCholMatrixPtr pmat;
-        1:  211:      ordering(matrix, pmat, tmp);
-        1:  212:      analyzePattern_preordered(*pmat, DoLDLT);
-        1:  213:      factorize_preordered<DoLDLT>(*pmat);
-        1:  214:    }
+        3:  211:      ordering(matrix, pmat, tmp);
+        3:  212:      analyzePattern_preordered(*pmat, DoLDLT);
+        3:  213:      factorize_preordered<DoLDLT>(*pmat);
+        3:  214:    }
         -:  215:    
         -:  216:    template<bool DoLDLT>
         -:  217:    void factorize(const MatrixType& a)
@@ -308,8 +308,8 @@
         -:  304:  typedef SparseMatrix<Scalar, ColMajor, StorageIndex>            CholMatrixType;
         -:  305:  typedef TriangularView<const CholMatrixType, Eigen::UnitLower>  MatrixL;
         -:  306:  typedef TriangularView<const typename CholMatrixType::AdjointReturnType, Eigen::UnitUpper> MatrixU;
-        1:  307:  static inline MatrixL getL(const CholMatrixType& m) { return MatrixL(m); }
-        1:  308:  static inline MatrixU getU(const CholMatrixType& m) { return MatrixU(m.adjoint()); }
+        3:  307:  static inline MatrixL getL(const CholMatrixType& m) { return MatrixL(m); }
+        3:  308:  static inline MatrixU getU(const CholMatrixType& m) { return MatrixU(m.adjoint()); }
         -:  309:};
         -:  310:
         -:  311:template<typename MatrixType_, int UpLo_, typename Ordering_> struct traits<SimplicialCholesky<MatrixType_,UpLo_,Ordering_> >
@@ -449,7 +449,7 @@
         -:  445:    typedef typename Traits::MatrixU  MatrixU;
         -:  446:public:
         -:  447:    /** Default constructor */
-        6:  448:    SimplicialLDLT() : Base() {}
+       18:  448:    SimplicialLDLT() : Base() {}
         -:  449:
         -:  450:    /** Constructs and performs the LLT factorization of \a matrix */
         -:  451:    explicit SimplicialLDLT(const MatrixType& matrix)
@@ -461,22 +461,22 @@
         -:  457:        return Base::m_diag;
         -:  458:    }
         -:  459:    /** \returns an expression of the factor L */
-        1:  460:    inline const MatrixL matrixL() const {
-        2:  461:        eigen_assert(Base::m_factorizationIsOk && "Simplicial LDLT not factorized");
-        1:  462:        return Traits::getL(Base::m_matrix);
+        3:  460:    inline const MatrixL matrixL() const {
+        6:  461:        eigen_assert(Base::m_factorizationIsOk && "Simplicial LDLT not factorized");
+        3:  462:        return Traits::getL(Base::m_matrix);
         -:  463:    }
         -:  464:
         -:  465:    /** \returns an expression of the factor U (= L^*) */
-        1:  466:    inline const MatrixU matrixU() const {
-        2:  467:        eigen_assert(Base::m_factorizationIsOk && "Simplicial LDLT not factorized");
-        1:  468:        return Traits::getU(Base::m_matrix);
+        3:  466:    inline const MatrixU matrixU() const {
+        6:  467:        eigen_assert(Base::m_factorizationIsOk && "Simplicial LDLT not factorized");
+        3:  468:        return Traits::getU(Base::m_matrix);
         -:  469:    }
         -:  470:
         -:  471:    /** Computes the sparse Cholesky decomposition of \a matrix */
-        1:  472:    SimplicialLDLT& compute(const MatrixType& matrix)
+        3:  472:    SimplicialLDLT& compute(const MatrixType& matrix)
         -:  473:    {
-        1:  474:      Base::template compute<true>(matrix);
-        1:  475:      return *this;
+        3:  474:      Base::template compute<true>(matrix);
+        3:  475:      return *this;
         -:  476:    }
         -:  477:    
         -:  478:    /** Performs a symbolic decomposition on the sparcity of \a matrix.
@@ -662,27 +662,27 @@
         -:  658:};
         -:  659:
         -:  660:template<typename Derived>
-        1:  661:void SimplicialCholeskyBase<Derived>::ordering(const MatrixType& a, ConstCholMatrixPtr &pmat, CholMatrixType& ap)
+        3:  661:void SimplicialCholeskyBase<Derived>::ordering(const MatrixType& a, ConstCholMatrixPtr &pmat, CholMatrixType& ap)
         -:  662:{
-        1:  663:  eigen_assert(a.rows()==a.cols());
-        1:  664:  const Index size = a.rows();
-        1:  665:  pmat = &ap;
+        3:  663:  eigen_assert(a.rows()==a.cols());
+        3:  664:  const Index size = a.rows();
+        3:  665:  pmat = &ap;
         -:  666:  // Note that ordering methods compute the inverse permutation
         -:  667:  if(!internal::is_same<OrderingType,NaturalOrdering<Index> >::value)
         -:  668:  {
         -:  669:    {
-        1:  670:      CholMatrixType C;
-        1:  671:      C = a.template selfadjointView<UpLo>();
+        3:  670:      CholMatrixType C;
+        3:  671:      C = a.template selfadjointView<UpLo>();
         -:  672:      
         -:  673:      OrderingType ordering;
-        1:  674:      ordering(C,m_Pinv);
-        1:  675:    }
+        3:  674:      ordering(C,m_Pinv);
+        3:  675:    }
         -:  676:
-        1:  677:    if(m_Pinv.size()>0) m_P = m_Pinv.inverse();
+        3:  677:    if(m_Pinv.size()>0) m_P = m_Pinv.inverse();
     #####:  678:    else                m_P.resize(0);
         -:  679:    
-        1:  680:    ap.resize(size,size);
-        1:  681:    ap.template selfadjointView<Upper>() = a.template selfadjointView<UpLo>().twistedBy(m_P);
+        3:  680:    ap.resize(size,size);
+        3:  681:    ap.template selfadjointView<Upper>() = a.template selfadjointView<UpLo>().twistedBy(m_P);
         -:  682:  }
         -:  683:  else
         -:  684:  {
@@ -697,7 +697,7 @@
         -:  693:    else
         -:  694:      internal::simplicial_cholesky_grab_input<CholMatrixType,MatrixType>::run(a, pmat, ap);
         -:  695:  }  
-        1:  696:}
+        3:  696:}
         -:  697:
         -:  698:} // end namespace Eigen
         -:  699:

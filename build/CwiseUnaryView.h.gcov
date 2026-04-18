@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/CwiseUnaryView.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -76,22 +76,22 @@
         -:   72:    typedef typename internal::ref_selector<MatrixType>::non_const_type MatrixTypeNested;
         -:   73:    typedef internal::remove_all_t<MatrixType> NestedExpression;
         -:   74:
-       20:   75:    explicit EIGEN_DEVICE_FUNC inline CwiseUnaryView(MatrixType& mat, const ViewOp& func = ViewOp())
-       20:   76:      : m_matrix(mat), m_functor(func) {}
+       60:   75:    explicit EIGEN_DEVICE_FUNC inline CwiseUnaryView(MatrixType& mat, const ViewOp& func = ViewOp())
+       60:   76:      : m_matrix(mat), m_functor(func) {}
         -:   77:
-        2:   78:    EIGEN_INHERIT_ASSIGNMENT_OPERATORS(CwiseUnaryView)
+        6:   78:    EIGEN_INHERIT_ASSIGNMENT_OPERATORS(CwiseUnaryView)
         -:   79:
         -:   80:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE EIGEN_CONSTEXPR
-       14:   81:    Index rows() const EIGEN_NOEXCEPT { return m_matrix.rows(); }
+       42:   81:    Index rows() const EIGEN_NOEXCEPT { return m_matrix.rows(); }
         -:   82:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE EIGEN_CONSTEXPR
-       14:   83:    Index cols() const EIGEN_NOEXCEPT { return m_matrix.cols(); }
+       42:   83:    Index cols() const EIGEN_NOEXCEPT { return m_matrix.cols(); }
         -:   84:
         -:   85:    /** \returns the functor representing unary operation */
-       10:   86:    EIGEN_DEVICE_FUNC const ViewOp& functor() const { return m_functor; }
+       30:   86:    EIGEN_DEVICE_FUNC const ViewOp& functor() const { return m_functor; }
         -:   87:
         -:   88:    /** \returns the nested expression */
         -:   89:    EIGEN_DEVICE_FUNC const internal::remove_all_t<MatrixTypeNested>&
-       10:   90:    nestedExpression() const { return m_matrix; }
+       30:   90:    nestedExpression() const { return m_matrix; }
         -:   91:
         -:   92:    /** \returns the nested expression */
         -:   93:    EIGEN_DEVICE_FUNC std::remove_reference_t<MatrixTypeNested>&
@@ -140,7 +140,7 @@
         -:  136:             : derived().nestedExpression().outerStride() * sizeof(typename internal::traits<MatrixType>::Scalar) / sizeof(Scalar);
         -:  137:    }
         -:  138:  protected:
-       10:  139:    EIGEN_DEFAULT_EMPTY_CONSTRUCTOR_AND_DESTRUCTOR(CwiseUnaryViewImpl)
+       30:  139:    EIGEN_DEFAULT_EMPTY_CONSTRUCTOR_AND_DESTRUCTOR(CwiseUnaryViewImpl)
         -:  140:};
         -:  141:
         -:  142:} // end namespace Eigen

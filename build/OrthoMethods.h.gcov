@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Geometry/OrthoMethods.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -30,19 +30,19 @@
         -:   26:  typedef Matrix<Scalar,MatrixBase<Derived>::RowsAtCompileTime,MatrixBase<Derived>::ColsAtCompileTime> return_type;
         -:   27:
         -:   28:  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-      360:   29:  return_type run(const MatrixBase<Derived>& first, const MatrixBase<OtherDerived>& second)
+     1080:   29:  return_type run(const MatrixBase<Derived>& first, const MatrixBase<OtherDerived>& second)
         -:   30:  {
         -:   31:    EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived,3)
         -:   32:    EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(OtherDerived,3)
         -:   33:
         -:   34:    // Note that there is no need for an expression here since the compiler
         -:   35:    // optimize such a small temporary very well (even within a complex expression)
-      360:   36:    typename internal::nested_eval<Derived,2>::type lhs(first.derived());
-      360:   37:    typename internal::nested_eval<OtherDerived,2>::type rhs(second.derived());
-      360:   38:    return return_type(
-      360:   39:      numext::conj(lhs.coeff(1) * rhs.coeff(2) - lhs.coeff(2) * rhs.coeff(1)),
-      360:   40:      numext::conj(lhs.coeff(2) * rhs.coeff(0) - lhs.coeff(0) * rhs.coeff(2)),
-      360:   41:      numext::conj(lhs.coeff(0) * rhs.coeff(1) - lhs.coeff(1) * rhs.coeff(0))
+     1080:   36:    typename internal::nested_eval<Derived,2>::type lhs(first.derived());
+     1080:   37:    typename internal::nested_eval<OtherDerived,2>::type rhs(second.derived());
+     1080:   38:    return return_type(
+     1080:   39:      numext::conj(lhs.coeff(1) * rhs.coeff(2) - lhs.coeff(2) * rhs.coeff(1)),
+     1080:   40:      numext::conj(lhs.coeff(2) * rhs.coeff(0) - lhs.coeff(0) * rhs.coeff(2)),
+     1080:   41:      numext::conj(lhs.coeff(0) * rhs.coeff(1) - lhs.coeff(1) * rhs.coeff(0))
         -:   42:    );
         -:   43:  }
         -:   44:};
@@ -94,9 +94,9 @@
         -:   90:#else
         -:   91:inline std::conditional_t<SizeAtCompileTime==2, Scalar, PlainObject>
         -:   92:#endif
-      360:   93:MatrixBase<Derived>::cross(const MatrixBase<OtherDerived>& other) const
+     1080:   93:MatrixBase<Derived>::cross(const MatrixBase<OtherDerived>& other) const
         -:   94:{
-      360:   95:  return internal::cross_impl<Derived, OtherDerived>::run(*this, other);
+     1080:   95:  return internal::cross_impl<Derived, OtherDerived>::run(*this, other);
         -:   96:}
         -:   97:
         -:   98:namespace internal {

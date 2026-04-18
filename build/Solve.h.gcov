@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/Solve.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -72,15 +72,15 @@
         -:   68:  typedef typename internal::traits<Solve>::PlainObject PlainObject;
         -:   69:  typedef typename internal::traits<Solve>::StorageIndex StorageIndex;
         -:   70:
-      242:   71:  Solve(const Decomposition &dec, const RhsType &rhs)
-      121:   72:    : m_dec(dec), m_rhs(rhs)
-      242:   73:  {}
+      726:   71:  Solve(const Decomposition &dec, const RhsType &rhs)
+      363:   72:    : m_dec(dec), m_rhs(rhs)
+      726:   73:  {}
         -:   74:
-      481:   75:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR Index rows() const EIGEN_NOEXCEPT { return m_dec.cols(); }
-      481:   76:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR Index cols() const EIGEN_NOEXCEPT { return m_rhs.cols(); }
+     1443:   75:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR Index rows() const EIGEN_NOEXCEPT { return m_dec.cols(); }
+     1443:   76:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR Index cols() const EIGEN_NOEXCEPT { return m_rhs.cols(); }
         -:   77:
-      121:   78:  EIGEN_DEVICE_FUNC const Decomposition& dec() const { return m_dec; }
-      121:   79:  EIGEN_DEVICE_FUNC const RhsType&       rhs() const { return m_rhs; }
+      363:   78:  EIGEN_DEVICE_FUNC const Decomposition& dec() const { return m_dec; }
+      363:   79:  EIGEN_DEVICE_FUNC const RhsType&       rhs() const { return m_rhs; }
         -:   80:
         -:   81:protected:
         -:   82:  const Decomposition &m_dec;
@@ -144,15 +144,15 @@
         -:  140:struct Assignment<DstXprType, Solve<DecType,RhsType>, internal::assign_op<Scalar,Scalar>, Dense2Dense>
         -:  141:{
         -:  142:  typedef Solve<DecType,RhsType> SrcXprType;
-      121:  143:  static void run(DstXprType &dst, const SrcXprType &src, const internal::assign_op<Scalar,Scalar> &)
+      363:  143:  static void run(DstXprType &dst, const SrcXprType &src, const internal::assign_op<Scalar,Scalar> &)
         -:  144:  {
-      121:  145:    Index dstRows = src.rows();
-      121:  146:    Index dstCols = src.cols();
-      121:  147:    if((dst.rows()!=dstRows) || (dst.cols()!=dstCols))
-        1:  148:      dst.resize(dstRows, dstCols);
+      363:  145:    Index dstRows = src.rows();
+      363:  146:    Index dstCols = src.cols();
+      363:  147:    if((dst.rows()!=dstRows) || (dst.cols()!=dstCols))
+        3:  148:      dst.resize(dstRows, dstCols);
         -:  149:
-      121:  150:    src.dec()._solve_impl(src.rhs(), dst);
-      121:  151:  }
+      363:  150:    src.dec()._solve_impl(src.rhs(), dst);
+      363:  151:  }
         -:  152:};
         -:  153:
         -:  154:// Specialization for "dst = dec.transpose().solve(rhs)"

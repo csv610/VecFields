@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/Block.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -118,19 +118,19 @@
         -:  114:    //typedef typename Impl::Base Base;
         -:  115:    typedef Impl Base;
         -:  116:    EIGEN_GENERIC_PUBLIC_INTERFACE(Block)
-     5715:  117:    EIGEN_INHERIT_ASSIGNMENT_OPERATORS(Block)
+    17145:  117:    EIGEN_INHERIT_ASSIGNMENT_OPERATORS(Block)
         -:  118:
         -:  119:    typedef internal::remove_all_t<XprType> NestedExpression;
         -:  120:
         -:  121:    /** Column or Row constructor
         -:  122:      */
         -:  123:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-    45046:  124:    Block(XprType& xpr, Index i) : Impl(xpr,i)
-    22523:  125:    {
-    39566:  126:      eigen_assert( (i>=0) && (
+   135138:  124:    Block(XprType& xpr, Index i) : Impl(xpr,i)
+    67569:  125:    {
+   118698:  126:      eigen_assert( (i>=0) && (
         -:  127:          ((BlockRows==1) && (BlockCols==XprType::ColsAtCompileTime) && i<xpr.rows())
         -:  128:        ||((BlockRows==XprType::RowsAtCompileTime) && (BlockCols==1) && i<xpr.cols())));
-    45046:  129:    }
+   135138:  129:    }
         -:  130:
         -:  131:    /** Fixed-size constructor
         -:  132:      */
@@ -146,16 +146,16 @@
         -:  142:    /** Dynamic-size constructor
         -:  143:      */
         -:  144:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-    16373:  145:    Block(XprType& xpr,
+    49119:  145:    Block(XprType& xpr,
         -:  146:          Index startRow, Index startCol,
         -:  147:          Index blockRows, Index blockCols)
-    10438:  148:      : Impl(xpr, startRow, startCol, blockRows, blockCols)
-     5935:  149:    {
-     6656:  150:      eigen_assert((RowsAtCompileTime==Dynamic || RowsAtCompileTime==blockRows)
+    31314:  148:      : Impl(xpr, startRow, startCol, blockRows, blockCols)
+    17805:  149:    {
+    19968:  150:      eigen_assert((RowsAtCompileTime==Dynamic || RowsAtCompileTime==blockRows)
         -:  151:          && (ColsAtCompileTime==Dynamic || ColsAtCompileTime==blockCols));
-    10438:  152:      eigen_assert(startRow >= 0 && blockRows >= 0 && startRow  <= xpr.rows() - blockRows
+    31314:  152:      eigen_assert(startRow >= 0 && blockRows >= 0 && startRow  <= xpr.rows() - blockRows
         -:  153:          && startCol >= 0 && blockCols >= 0 && startCol <= xpr.cols() - blockCols);
-    16373:  154:    }
+    49119:  154:    }
         -:  155:
         -:  156:    // convert nested blocks (e.g. Block<Block<MatrixType>>) to a simple block expression (Block<MatrixType>)
         -:  157:
@@ -184,12 +184,12 @@
         -:  180:    typedef typename XprType::StorageIndex StorageIndex;
         -:  181:  public:
         -:  182:    typedef Impl Base;
-     4968:  183:    EIGEN_INHERIT_ASSIGNMENT_OPERATORS(BlockImpl)
-    22523:  184:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE BlockImpl(XprType& xpr, Index i) : Impl(xpr,i) {}
+    14904:  183:    EIGEN_INHERIT_ASSIGNMENT_OPERATORS(BlockImpl)
+    67569:  184:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE BlockImpl(XprType& xpr, Index i) : Impl(xpr,i) {}
         -:  185:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE BlockImpl(XprType& xpr, Index startRow, Index startCol) : Impl(xpr, startRow, startCol) {}
         -:  186:    EIGEN_DEVICE_FUNC
-    10438:  187:    EIGEN_STRONG_INLINE BlockImpl(XprType& xpr, Index startRow, Index startCol, Index blockRows, Index blockCols)
-    10438:  188:      : Impl(xpr, startRow, startCol, blockRows, blockCols) {}
+    31314:  187:    EIGEN_STRONG_INLINE BlockImpl(XprType& xpr, Index startRow, Index startCol, Index blockRows, Index blockCols)
+    31314:  188:      : Impl(xpr, startRow, startCol, blockRows, blockCols) {}
         -:  189:};
         -:  190:
         -:  191:namespace internal {
@@ -204,24 +204,24 @@
         -:  200:
         -:  201:    typedef typename internal::dense_xpr_base<BlockType>::type Base;
         -:  202:    EIGEN_DENSE_PUBLIC_INTERFACE(BlockType)
-      498:  203:    EIGEN_INHERIT_ASSIGNMENT_OPERATORS(BlockImpl_dense)
+     1494:  203:    EIGEN_INHERIT_ASSIGNMENT_OPERATORS(BlockImpl_dense)
         -:  204:
         -:  205:    // class InnerIterator; // FIXME apparently never used
         -:  206:
         -:  207:    /** Column or Row constructor
         -:  208:      */
         -:  209:    EIGEN_DEVICE_FUNC
-      249:  210:    inline BlockImpl_dense(XprType& xpr, Index i)
-      249:  211:      : m_xpr(xpr),
+      747:  210:    inline BlockImpl_dense(XprType& xpr, Index i)
+      747:  211:      : m_xpr(xpr),
         -:  212:        // It is a row if and only if BlockRows==1 and BlockCols==XprType::ColsAtCompileTime,
         -:  213:        // and it is a column if and only if BlockRows==XprType::RowsAtCompileTime and BlockCols==1,
         -:  214:        // all other cases are invalid.
         -:  215:        // The case a 1x1 matrix seems ambiguous, but the result is the same anyway.
-      249:  216:        m_startRow( (BlockRows==1) && (BlockCols==XprType::ColsAtCompileTime) ? i : 0),
-      249:  217:        m_startCol( (BlockRows==XprType::RowsAtCompileTime) && (BlockCols==1) ? i : 0),
-      249:  218:        m_blockRows(BlockRows==1 ? 1 : xpr.rows()),
-      249:  219:        m_blockCols(BlockCols==1 ? 1 : xpr.cols())
-      249:  220:    {}
+      747:  216:        m_startRow( (BlockRows==1) && (BlockCols==XprType::ColsAtCompileTime) ? i : 0),
+      747:  217:        m_startCol( (BlockRows==XprType::RowsAtCompileTime) && (BlockCols==1) ? i : 0),
+      747:  218:        m_blockRows(BlockRows==1 ? 1 : xpr.rows()),
+      747:  219:        m_blockCols(BlockCols==1 ? 1 : xpr.cols())
+      747:  220:    {}
         -:  221:
         -:  222:    /** Fixed-size constructor
         -:  223:      */
@@ -234,15 +234,15 @@
         -:  230:    /** Dynamic-size constructor
         -:  231:      */
         -:  232:    EIGEN_DEVICE_FUNC
-       60:  233:    inline BlockImpl_dense(XprType& xpr,
+      180:  233:    inline BlockImpl_dense(XprType& xpr,
         -:  234:          Index startRow, Index startCol,
         -:  235:          Index blockRows, Index blockCols)
-       60:  236:      : m_xpr(xpr), m_startRow(startRow), m_startCol(startCol),
-       60:  237:                    m_blockRows(blockRows), m_blockCols(blockCols)
-       60:  238:    {}
+      180:  236:      : m_xpr(xpr), m_startRow(startRow), m_startCol(startCol),
+      180:  237:                    m_blockRows(blockRows), m_blockCols(blockCols)
+      180:  238:    {}
         -:  239:
-      747:  240:    EIGEN_DEVICE_FUNC inline Index rows() const { return m_blockRows.value(); }
-      747:  241:    EIGEN_DEVICE_FUNC inline Index cols() const { return m_blockCols.value(); }
+     2241:  240:    EIGEN_DEVICE_FUNC inline Index rows() const { return m_blockRows.value(); }
+     2241:  241:    EIGEN_DEVICE_FUNC inline Index cols() const { return m_blockCols.value(); }
         -:  242:
         -:  243:    EIGEN_DEVICE_FUNC
         -:  244:    inline Scalar& coeffRef(Index rowId, Index colId)
@@ -321,24 +321,24 @@
         -:  317:    #endif
         -:  318:
         -:  319:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-      618:  320:    const internal::remove_all_t<XprTypeNested>& nestedExpression() const
+     1854:  320:    const internal::remove_all_t<XprTypeNested>& nestedExpression() const
         -:  321:    {
-      618:  322:      return m_xpr;
+     1854:  322:      return m_xpr;
         -:  323:    }
         -:  324:
         -:  325:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
         -:  326:    XprType& nestedExpression() { return m_xpr; }
         -:  327:
         -:  328:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE EIGEN_CONSTEXPR
-      618:  329:    StorageIndex startRow() const EIGEN_NOEXCEPT
+     1854:  329:    StorageIndex startRow() const EIGEN_NOEXCEPT
         -:  330:    {
-      618:  331:      return m_startRow.value();
+     1854:  331:      return m_startRow.value();
         -:  332:    }
         -:  333:
         -:  334:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE EIGEN_CONSTEXPR
-      618:  335:    StorageIndex startCol() const EIGEN_NOEXCEPT
+     1854:  335:    StorageIndex startCol() const EIGEN_NOEXCEPT
         -:  336:    {
-      618:  337:      return m_startCol.value();
+     1854:  337:      return m_startCol.value();
         -:  338:    }
         -:  339:
         -:  340:  protected:
@@ -366,32 +366,32 @@
         -:  362:      */
         -:  363:    template <typename Scalar>
         -:  364:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR EIGEN_ALWAYS_INLINE
-    31743:  365:    static Scalar* add_to_nullable_pointer(Scalar* base, Index offset)
+    95229:  365:    static Scalar* add_to_nullable_pointer(Scalar* base, Index offset)
         -:  366:    {
-    31743:  367:      return base != nullptr ? base+offset : nullptr;
+    95229:  367:      return base != nullptr ? base+offset : nullptr;
         -:  368:    }
         -:  369:
         -:  370:  public:
         -:  371:
         -:  372:    typedef MapBase<BlockType> Base;
         -:  373:    EIGEN_DENSE_PUBLIC_INTERFACE(BlockType)
-     4470:  374:    EIGEN_INHERIT_ASSIGNMENT_OPERATORS(BlockImpl_dense)
+    13410:  374:    EIGEN_INHERIT_ASSIGNMENT_OPERATORS(BlockImpl_dense)
         -:  375:
         -:  376:    /** Column or Row constructor
         -:  377:      */
         -:  378:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-    22274:  379:    BlockImpl_dense(XprType& xpr, Index i)
-    64325:  380:      : Base((BlockRows == 0 || BlockCols == 0) ? nullptr : add_to_nullable_pointer(xpr.data(),
-    44548:  381:                 i * (    ((BlockRows==1) && (BlockCols==XprType::ColsAtCompileTime) && (!XprTypeIsRowMajor))
-    22274:  382:                       || ((BlockRows==XprType::RowsAtCompileTime) && (BlockCols==1) && ( XprTypeIsRowMajor)) ? xpr.innerStride() : xpr.outerStride())),
-     5480:  383:             BlockRows==1 ? 1 : xpr.rows(),
-    14297:  384:             BlockCols==1 ? 1 : xpr.cols()),
-    22274:  385:        m_xpr(xpr),
-    22274:  386:        m_startRow( (BlockRows==1) && (BlockCols==XprType::ColsAtCompileTime) ? i : 0),
-    22274:  387:        m_startCol( (BlockRows==XprType::RowsAtCompileTime) && (BlockCols==1) ? i : 0)
+    66822:  379:    BlockImpl_dense(XprType& xpr, Index i)
+   192975:  380:      : Base((BlockRows == 0 || BlockCols == 0) ? nullptr : add_to_nullable_pointer(xpr.data(),
+   133644:  381:                 i * (    ((BlockRows==1) && (BlockCols==XprType::ColsAtCompileTime) && (!XprTypeIsRowMajor))
+    66822:  382:                       || ((BlockRows==XprType::RowsAtCompileTime) && (BlockCols==1) && ( XprTypeIsRowMajor)) ? xpr.innerStride() : xpr.outerStride())),
+    16440:  383:             BlockRows==1 ? 1 : xpr.rows(),
+    42891:  384:             BlockCols==1 ? 1 : xpr.cols()),
+    66822:  385:        m_xpr(xpr),
+    66822:  386:        m_startRow( (BlockRows==1) && (BlockCols==XprType::ColsAtCompileTime) ? i : 0),
+    66822:  387:        m_startCol( (BlockRows==XprType::RowsAtCompileTime) && (BlockCols==1) ? i : 0)
         -:  388:    {
-    22274:  389:      init();
-    22274:  390:    }
+    66822:  389:      init();
+    66822:  390:    }
         -:  391:
         -:  392:    /** Fixed-size constructor
         -:  393:      */
@@ -407,16 +407,16 @@
         -:  403:    /** Dynamic-size constructor
         -:  404:      */
         -:  405:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-    10378:  406:    BlockImpl_dense(XprType& xpr,
+    31134:  406:    BlockImpl_dense(XprType& xpr,
         -:  407:          Index startRow, Index startCol,
         -:  408:          Index blockRows, Index blockCols)
-    10378:  409:      : Base((blockRows == 0 || blockCols == 0) ? nullptr : add_to_nullable_pointer(xpr.data(),
-     9469:  410:                 xpr.innerStride()*(XprTypeIsRowMajor?startCol:startRow) + xpr.outerStride()*(XprTypeIsRowMajor?startRow:startCol)),
-    10378:  411:             blockRows, blockCols),
-    10378:  412:        m_xpr(xpr), m_startRow(startRow), m_startCol(startCol)
+    31134:  409:      : Base((blockRows == 0 || blockCols == 0) ? nullptr : add_to_nullable_pointer(xpr.data(),
+    28407:  410:                 xpr.innerStride()*(XprTypeIsRowMajor?startCol:startRow) + xpr.outerStride()*(XprTypeIsRowMajor?startRow:startCol)),
+    31134:  411:             blockRows, blockCols),
+    31134:  412:        m_xpr(xpr), m_startRow(startRow), m_startCol(startCol)
         -:  413:    {
-    10378:  414:      init();
-    10378:  415:    }
+    31134:  414:      init();
+    31134:  415:    }
         -:  416:
         -:  417:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
         -:  418:    const internal::remove_all_t<XprTypeNested>& nestedExpression() const EIGEN_NOEXCEPT
@@ -429,20 +429,20 @@
         -:  425:
         -:  426:    /** \sa MapBase::innerStride() */
         -:  427:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE EIGEN_CONSTEXPR
-    48337:  428:    Index innerStride() const EIGEN_NOEXCEPT
+   145011:  428:    Index innerStride() const EIGEN_NOEXCEPT
         -:  429:    {
-    48337:  430:      return internal::traits<BlockType>::HasSameStorageOrderAsXprType
-    30912:  431:             ? m_xpr.innerStride()
-    17425:  432:             : m_xpr.outerStride();
+   145011:  430:      return internal::traits<BlockType>::HasSameStorageOrderAsXprType
+    92736:  431:             ? m_xpr.innerStride()
+    52275:  432:             : m_xpr.outerStride();
         -:  433:    }
         -:  434:
         -:  435:    /** \sa MapBase::outerStride() */
         -:  436:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE EIGEN_CONSTEXPR
-    57005:  437:    Index outerStride() const EIGEN_NOEXCEPT
+   171015:  437:    Index outerStride() const EIGEN_NOEXCEPT
         -:  438:    {
-    57005:  439:      return internal::traits<BlockType>::HasSameStorageOrderAsXprType
-    39580:  440:                    ? m_xpr.outerStride()
-    17425:  441:                    : m_xpr.innerStride();
+   171015:  439:      return internal::traits<BlockType>::HasSameStorageOrderAsXprType
+   118740:  440:                    ? m_xpr.outerStride()
+    52275:  441:                    : m_xpr.innerStride();
         -:  442:    }
         -:  443:
         -:  444:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE EIGEN_CONSTEXPR
@@ -469,12 +469,12 @@
         -:  465:
         -:  466:  protected:
         -:  467:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-    32652:  468:    void init()
+    97956:  468:    void init()
         -:  469:    {
-    32652:  470:      m_outerStride = internal::traits<BlockType>::HasSameStorageOrderAsXprType
-    18359:  471:                    ? m_xpr.outerStride()
-    14293:  472:                    : m_xpr.innerStride();
-    32652:  473:    }
+    97956:  470:      m_outerStride = internal::traits<BlockType>::HasSameStorageOrderAsXprType
+    55077:  471:                    ? m_xpr.outerStride()
+    42879:  472:                    : m_xpr.innerStride();
+    97956:  473:    }
         -:  474:
         -:  475:    XprTypeNested m_xpr;
         -:  476:    const internal::variable_if_dynamic<StorageIndex, (XprType::RowsAtCompileTime == 1 && BlockRows==1) ? 0 : Dynamic> m_startRow;

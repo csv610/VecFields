@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/SparseCore/SparseMatrix.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -167,53 +167,53 @@
         -:  163:  public:
         -:  164:    
         -:  165:    /** \returns the number of rows of the matrix */
-     3490:  166:    inline Index rows() const { return IsRowMajor ? m_outerSize : m_innerSize; }
+    10470:  166:    inline Index rows() const { return IsRowMajor ? m_outerSize : m_innerSize; }
         -:  167:    /** \returns the number of columns of the matrix */
-     3747:  168:    inline Index cols() const { return IsRowMajor ? m_innerSize : m_outerSize; }
+    11241:  168:    inline Index cols() const { return IsRowMajor ? m_innerSize : m_outerSize; }
         -:  169:
         -:  170:    /** \returns the number of rows (resp. columns) of the matrix if the storage order column major (resp. row major) */
-       79:  171:    inline Index innerSize() const { return m_innerSize; }
+      237:  171:    inline Index innerSize() const { return m_innerSize; }
         -:  172:    /** \returns the number of columns (resp. rows) of the matrix if the storage order column major (resp. row major) */
-    22054:  173:    inline Index outerSize() const { return m_outerSize; }
+    66162:  173:    inline Index outerSize() const { return m_outerSize; }
         -:  174:    
         -:  175:    /** \returns a const pointer to the array of values.
         -:  176:      * This function is aimed at interoperability with other libraries.
         -:  177:      * \sa innerIndexPtr(), outerIndexPtr() */
-    28309:  178:    inline const Scalar* valuePtr() const { return m_data.valuePtr(); }
+    84927:  178:    inline const Scalar* valuePtr() const { return m_data.valuePtr(); }
         -:  179:    /** \returns a non-const pointer to the array of values.
         -:  180:      * This function is aimed at interoperability with other libraries.
         -:  181:      * \sa innerIndexPtr(), outerIndexPtr() */
-      593:  182:    inline Scalar* valuePtr() { return m_data.valuePtr(); }
+     1779:  182:    inline Scalar* valuePtr() { return m_data.valuePtr(); }
         -:  183:
         -:  184:    /** \returns a const pointer to the array of inner indices.
         -:  185:      * This function is aimed at interoperability with other libraries.
         -:  186:      * \sa valuePtr(), outerIndexPtr() */
-    28309:  187:    inline const StorageIndex* innerIndexPtr() const { return m_data.indexPtr(); }
+    84927:  187:    inline const StorageIndex* innerIndexPtr() const { return m_data.indexPtr(); }
         -:  188:    /** \returns a non-const pointer to the array of inner indices.
         -:  189:      * This function is aimed at interoperability with other libraries.
         -:  190:      * \sa valuePtr(), outerIndexPtr() */
-      594:  191:    inline StorageIndex* innerIndexPtr() { return m_data.indexPtr(); }
+     1782:  191:    inline StorageIndex* innerIndexPtr() { return m_data.indexPtr(); }
         -:  192:
         -:  193:    /** \returns a const pointer to the array of the starting positions of the inner vectors.
         -:  194:      * This function is aimed at interoperability with other libraries.
         -:  195:      * \sa valuePtr(), innerIndexPtr() */
-    56654:  196:    inline const StorageIndex* outerIndexPtr() const { return m_outerIndex; }
+   169962:  196:    inline const StorageIndex* outerIndexPtr() const { return m_outerIndex; }
         -:  197:    /** \returns a non-const pointer to the array of the starting positions of the inner vectors.
         -:  198:      * This function is aimed at interoperability with other libraries.
         -:  199:      * \sa valuePtr(), innerIndexPtr() */
-     4027:  200:    inline StorageIndex* outerIndexPtr() { return m_outerIndex; }
+    12081:  200:    inline StorageIndex* outerIndexPtr() { return m_outerIndex; }
         -:  201:
         -:  202:    /** \returns a const pointer to the array of the number of non zeros of the inner vectors.
         -:  203:      * This function is aimed at interoperability with other libraries.
         -:  204:      * \warning it returns the null pointer 0 in compressed mode */
-    28386:  205:    inline const StorageIndex* innerNonZeroPtr() const { return m_innerNonZeros; }
+    85158:  205:    inline const StorageIndex* innerNonZeroPtr() const { return m_innerNonZeros; }
         -:  206:    /** \returns a non-const pointer to the array of the number of non zeros of the inner vectors.
         -:  207:      * This function is aimed at interoperability with other libraries.
         -:  208:      * \warning it returns the null pointer 0 in compressed mode */
     #####:  209:    inline StorageIndex* innerNonZeroPtr() { return m_innerNonZeros; }
         -:  210:
         -:  211:    /** \internal */
-     6482:  212:    inline Storage& data() { return m_data; }
+    19446:  212:    inline Storage& data() { return m_data; }
         -:  213:    /** \internal */
         -:  214:    inline const Storage& data() const { return m_data; }
         -:  215:
@@ -290,23 +290,23 @@
         -:  286:      * 
         -:  287:      * \sa resize(Index,Index), data()
         -:  288:      */
-        8:  289:    inline void setZero()
+       24:  289:    inline void setZero()
         -:  290:    {
-        8:  291:      m_data.clear();
-        8:  292:      std::fill_n(m_outerIndex, m_outerSize + 1, StorageIndex(0));
-        8:  293:      if(m_innerNonZeros) {
+       24:  291:      m_data.clear();
+       24:  292:      std::fill_n(m_outerIndex, m_outerSize + 1, StorageIndex(0));
+       24:  293:      if(m_innerNonZeros) {
     #####:  294:        std::fill_n(m_innerNonZeros, m_outerSize, StorageIndex(0));
     #####:  295:      }
-        8:  296:    }
+       24:  296:    }
         -:  297:
         -:  298:    /** Preallocates \a reserveSize non zeros.
         -:  299:      *
         -:  300:      * Precondition: the matrix must be in compressed mode. */
-       16:  301:    inline void reserve(Index reserveSize)
+       48:  301:    inline void reserve(Index reserveSize)
         -:  302:    {
-       32:  303:      eigen_assert(isCompressed() && "This function does not make sense in non compressed mode.");
-       16:  304:      m_data.reserve(reserveSize);
-       16:  305:    }
+       96:  303:      eigen_assert(isCompressed() && "This function does not make sense in non compressed mode.");
+       48:  304:      m_data.reserve(reserveSize);
+       48:  305:    }
         -:  306:    
         -:  307:    #ifdef EIGEN_PARSED_BY_DOXYGEN
         -:  308:    /** Preallocates \a reserveSize[\c j] non zeros for each column (resp. row) \c j.
@@ -427,55 +427,55 @@
         -:  423:
         -:  424:    /** \internal
         -:  425:      * \sa insertBack, startVec */
-     4430:  426:    inline Scalar& insertBackByOuterInner(Index outer, Index inner)
+    13290:  426:    inline Scalar& insertBackByOuterInner(Index outer, Index inner)
         -:  427:    {
-     8860:  428:      eigen_assert(Index(m_outerIndex[outer+1]) == m_data.size() && "Invalid ordered insertion (invalid outer index)");
-     8860:  429:      eigen_assert( (m_outerIndex[outer+1]-m_outerIndex[outer]==0 || m_data.index(m_data.size()-1)<inner) && "Invalid ordered insertion (invalid inner index)");
-     4430:  430:      StorageIndex p = m_outerIndex[outer+1];
-     4430:  431:      ++m_outerIndex[outer+1];
-     4430:  432:      m_data.append(Scalar(0), inner);
-     4430:  433:      return m_data.value(p);
+    26580:  428:      eigen_assert(Index(m_outerIndex[outer+1]) == m_data.size() && "Invalid ordered insertion (invalid outer index)");
+    26580:  429:      eigen_assert( (m_outerIndex[outer+1]-m_outerIndex[outer]==0 || m_data.index(m_data.size()-1)<inner) && "Invalid ordered insertion (invalid inner index)");
+    13290:  430:      StorageIndex p = m_outerIndex[outer+1];
+    13290:  431:      ++m_outerIndex[outer+1];
+    13290:  432:      m_data.append(Scalar(0), inner);
+    13290:  433:      return m_data.value(p);
         -:  434:    }
         -:  435:
         -:  436:    /** \internal
         -:  437:      * \warning use it only if you know what you are doing */
-     4546:  438:    inline Scalar& insertBackByOuterInnerUnordered(Index outer, Index inner)
+    13638:  438:    inline Scalar& insertBackByOuterInnerUnordered(Index outer, Index inner)
         -:  439:    {
-     4546:  440:      StorageIndex p = m_outerIndex[outer+1];
-     4546:  441:      ++m_outerIndex[outer+1];
-     4546:  442:      m_data.append(Scalar(0), inner);
-     4546:  443:      return m_data.value(p);
+    13638:  440:      StorageIndex p = m_outerIndex[outer+1];
+    13638:  441:      ++m_outerIndex[outer+1];
+    13638:  442:      m_data.append(Scalar(0), inner);
+    13638:  443:      return m_data.value(p);
         -:  444:    }
         -:  445:
         -:  446:    /** \internal
         -:  447:      * \sa insertBack, insertBackByOuterInner */
-     5037:  448:    inline void startVec(Index outer)
+    15111:  448:    inline void startVec(Index outer)
         -:  449:    {
-    10074:  450:      eigen_assert(m_outerIndex[outer]==Index(m_data.size()) && "You must call startVec for each inner vector sequentially");
-    10074:  451:      eigen_assert(m_outerIndex[outer+1]==0 && "You must call startVec for each inner vector sequentially");
-     5037:  452:      m_outerIndex[outer+1] = m_outerIndex[outer];
-     5037:  453:    }
+    30222:  450:      eigen_assert(m_outerIndex[outer]==Index(m_data.size()) && "You must call startVec for each inner vector sequentially");
+    30222:  451:      eigen_assert(m_outerIndex[outer+1]==0 && "You must call startVec for each inner vector sequentially");
+    15111:  452:      m_outerIndex[outer+1] = m_outerIndex[outer];
+    15111:  453:    }
         -:  454:
         -:  455:    /** \internal
         -:  456:      * Must be called after inserting a set of non zero entries using the low level compressed API.
         -:  457:      */
-       16:  458:    inline void finalize()
+       48:  458:    inline void finalize()
         -:  459:    {
-       16:  460:      if(isCompressed())
+       48:  460:      if(isCompressed())
         -:  461:      {
-       16:  462:        StorageIndex size = internal::convert_index<StorageIndex>(m_data.size());
-       16:  463:        Index i = m_outerSize;
+       48:  462:        StorageIndex size = internal::convert_index<StorageIndex>(m_data.size());
+       48:  463:        Index i = m_outerSize;
         -:  464:        // find the last filled column
-      498:  465:        while (i>=0 && m_outerIndex[i]==0)
-      482:  466:          --i;
-       16:  467:        ++i;
-      498:  468:        while (i<=m_outerSize)
+     1494:  465:        while (i>=0 && m_outerIndex[i]==0)
+     1446:  466:          --i;
+       48:  467:        ++i;
+     1494:  468:        while (i<=m_outerSize)
         -:  469:        {
-      482:  470:          m_outerIndex[i] = size;
-      482:  471:          ++i;
+     1446:  470:          m_outerIndex[i] = size;
+     1446:  471:          ++i;
         -:  472:        }
-       16:  473:      }
-       16:  474:    }
+       48:  473:      }
+       48:  474:    }
         -:  475:
         -:  476:    // remove outer vectors j, j+1 ... j+num-1 and resize the matrix
         -:  477:    void removeOuterVectors(Index j, Index num = 1) {
@@ -741,29 +741,29 @@
         -:  737:      * 
         -:  738:      * \sa reserve(), setZero()
         -:  739:      */
-      120:  740:    void resize(Index rows, Index cols)
+      360:  740:    void resize(Index rows, Index cols)
         -:  741:    {
-      120:  742:      const Index outerSize = IsRowMajor ? rows : cols;
-      120:  743:      m_innerSize = IsRowMajor ? cols : rows;
-      120:  744:      m_data.clear();
+      360:  742:      const Index outerSize = IsRowMajor ? rows : cols;
+      360:  743:      m_innerSize = IsRowMajor ? cols : rows;
+      360:  744:      m_data.clear();
         -:  745:
-      120:  746:      if ((m_outerIndex == 0) || (m_outerSize != outerSize)) {
-      116:  747:        m_outerIndex = internal::conditional_aligned_realloc_new_auto<StorageIndex, true>(m_outerIndex, outerSize + 1, m_outerSize + 1);
-      116:  748:        m_outerSize = outerSize;
-      116:  749:      }
+      360:  746:      if ((m_outerIndex == 0) || (m_outerSize != outerSize)) {
+      348:  747:        m_outerIndex = internal::conditional_aligned_realloc_new_auto<StorageIndex, true>(m_outerIndex, outerSize + 1, m_outerSize + 1);
+      348:  748:        m_outerSize = outerSize;
+      348:  749:      }
         -:  750:
-      120:  751:      internal::conditional_aligned_delete_auto<StorageIndex, true>(m_innerNonZeros, m_outerSize);
-      120:  752:      m_innerNonZeros = 0;
+      360:  751:      internal::conditional_aligned_delete_auto<StorageIndex, true>(m_innerNonZeros, m_outerSize);
+      360:  752:      m_innerNonZeros = 0;
         -:  753:
-      120:  754:      std::fill_n(m_outerIndex, m_outerSize + 1, StorageIndex(0));
-      120:  755:    }
+      360:  754:      std::fill_n(m_outerIndex, m_outerSize + 1, StorageIndex(0));
+      360:  755:    }
         -:  756:
         -:  757:    /** \internal
         -:  758:      * Resize the nonzero vector to \a size */
-       15:  759:    void resizeNonZeros(Index size)
+       45:  759:    void resizeNonZeros(Index size)
         -:  760:    {
-       15:  761:      m_data.resize(size);
-       15:  762:    }
+       45:  761:      m_data.resize(size);
+       45:  762:    }
         -:  763:
         -:  764:    /** \returns a const expression of the diagonal coefficients. */
         -:  765:    const ConstDiagonalReturnType diagonal() const { return ConstDiagonalReturnType(*this); }
@@ -775,37 +775,37 @@
         -:  771:    DiagonalReturnType diagonal() { return DiagonalReturnType(*this); }
         -:  772:
         -:  773:    /** Default constructor yielding an empty \c 0 \c x \c 0 matrix */
-       69:  774:    inline SparseMatrix()
-       23:  775:      : m_outerSize(0), m_innerSize(0), m_outerIndex(0), m_innerNonZeros(0)
-       23:  776:    {
-       23:  777:      resize(0, 0);
-       46:  778:    }
+      207:  774:    inline SparseMatrix()
+       69:  775:      : m_outerSize(0), m_innerSize(0), m_outerIndex(0), m_innerNonZeros(0)
+       69:  776:    {
+       69:  777:      resize(0, 0);
+      138:  778:    }
         -:  779:
         -:  780:    /** Constructs a \a rows \c x \a cols empty matrix */
-      210:  781:    inline SparseMatrix(Index rows, Index cols)
-       70:  782:      : m_outerSize(0), m_innerSize(0), m_outerIndex(0), m_innerNonZeros(0)
-       70:  783:    {
-       70:  784:      resize(rows, cols);
-      140:  785:    }
+      630:  781:    inline SparseMatrix(Index rows, Index cols)
+      210:  782:      : m_outerSize(0), m_innerSize(0), m_outerIndex(0), m_innerNonZeros(0)
+      210:  783:    {
+      210:  784:      resize(rows, cols);
+      420:  785:    }
         -:  786:
         -:  787:    /** Constructs a sparse matrix from the sparse expression \a other */
         -:  788:    template<typename OtherDerived>
-       39:  789:    inline SparseMatrix(const SparseMatrixBase<OtherDerived>& other)
-       13:  790:      : m_outerSize(0), m_innerSize(0), m_outerIndex(0), m_innerNonZeros(0)
-       13:  791:    {
+      117:  789:    inline SparseMatrix(const SparseMatrixBase<OtherDerived>& other)
+       39:  790:      : m_outerSize(0), m_innerSize(0), m_outerIndex(0), m_innerNonZeros(0)
+       39:  791:    {
         -:  792:      EIGEN_STATIC_ASSERT((internal::is_same<Scalar, typename OtherDerived::Scalar>::value),
         -:  793:        YOU_MIXED_DIFFERENT_NUMERIC_TYPES__YOU_NEED_TO_USE_THE_CAST_METHOD_OF_MATRIXBASE_TO_CAST_NUMERIC_TYPES_EXPLICITLY)
-       13:  794:      const bool needToTranspose = (Flags & RowMajorBit) != (internal::evaluator<OtherDerived>::Flags & RowMajorBit);
+       39:  794:      const bool needToTranspose = (Flags & RowMajorBit) != (internal::evaluator<OtherDerived>::Flags & RowMajorBit);
         -:  795:      if (needToTranspose)
-        8:  796:        *this = other.derived();
+       24:  796:        *this = other.derived();
         -:  797:      else
         -:  798:      {
         -:  799:        #ifdef EIGEN_SPARSE_CREATE_TEMPORARY_PLUGIN
         -:  800:          EIGEN_SPARSE_CREATE_TEMPORARY_PLUGIN
         -:  801:        #endif
-        5:  802:        internal::call_assignment_no_alias(*this, other.derived());
+       15:  802:        internal::call_assignment_no_alias(*this, other.derived());
         -:  803:      }
-       26:  804:    }
+       78:  804:    }
         -:  805:
         -:  806:    /** Constructs a sparse matrix from the sparse selfadjoint view \a other */
         -:  807:    template<typename OtherDerived, unsigned int UpLo>
@@ -821,11 +821,11 @@
     #####:  817:    }
         -:  818:
         -:  819:    /** Copy constructor (it performs a deep copy) */
-       42:  820:    inline SparseMatrix(const SparseMatrix& other)
-       14:  821:      : Base(), m_outerSize(0), m_innerSize(0), m_outerIndex(0), m_innerNonZeros(0)
-       14:  822:    {
-       14:  823:      *this = other.derived();
-       28:  824:    }
+      126:  820:    inline SparseMatrix(const SparseMatrix& other)
+       42:  821:      : Base(), m_outerSize(0), m_innerSize(0), m_outerIndex(0), m_innerNonZeros(0)
+       42:  822:    {
+       42:  823:      *this = other.derived();
+       84:  824:    }
         -:  825:
         -:  826:    /** \brief Copy constructor with in-place evaluation */
         -:  827:    template<typename OtherDerived>
@@ -846,15 +846,15 @@
         -:  842:
         -:  843:    /** Swaps the content of two sparse matrices of the same type.
         -:  844:      * This is a fast operation that simply swaps the underlying pointers and parameters. */
-       42:  845:    inline void swap(SparseMatrix& other)
+      126:  845:    inline void swap(SparseMatrix& other)
         -:  846:    {
         -:  847:      //EIGEN_DBG_SPARSE(std::cout << "SparseMatrix:: swap\n");
-       42:  848:      std::swap(m_outerIndex, other.m_outerIndex);
-       42:  849:      std::swap(m_innerSize, other.m_innerSize);
-       42:  850:      std::swap(m_outerSize, other.m_outerSize);
-       42:  851:      std::swap(m_innerNonZeros, other.m_innerNonZeros);
-       42:  852:      m_data.swap(other.m_data);
-       42:  853:    }
+      126:  848:      std::swap(m_outerIndex, other.m_outerIndex);
+      126:  849:      std::swap(m_innerSize, other.m_innerSize);
+      126:  850:      std::swap(m_outerSize, other.m_outerSize);
+      126:  851:      std::swap(m_innerNonZeros, other.m_innerNonZeros);
+      126:  852:      m_data.swap(other.m_data);
+      126:  853:    }
         -:  854:
         -:  855:    /** Sets *this to the identity matrix.
         -:  856:      * This function also turns the matrix into compressed mode, and drop any reserved memory. */
@@ -871,39 +871,39 @@
     #####:  867:      std::fill_n(valuePtr(), m_outerSize, Scalar(1));
     #####:  868:    }
         -:  869:
-       25:  870:    inline SparseMatrix& operator=(const SparseMatrix& other)
+       75:  870:    inline SparseMatrix& operator=(const SparseMatrix& other)
         -:  871:    {
-       25:  872:      if (other.isRValue())
+       75:  872:      if (other.isRValue())
         -:  873:      {
-       11:  874:        swap(other.const_cast_derived());
-       11:  875:      }
-       14:  876:      else if(this!=&other)
+       33:  874:        swap(other.const_cast_derived());
+       33:  875:      }
+       42:  876:      else if(this!=&other)
         -:  877:      {
         -:  878:        #ifdef EIGEN_SPARSE_CREATE_TEMPORARY_PLUGIN
         -:  879:          EIGEN_SPARSE_CREATE_TEMPORARY_PLUGIN
         -:  880:        #endif
-       14:  881:        initAssignment(other);
-       14:  882:        if(other.isCompressed())
+       42:  881:        initAssignment(other);
+       42:  882:        if(other.isCompressed())
         -:  883:        {
-       14:  884:          internal::smart_copy(other.m_outerIndex, other.m_outerIndex + m_outerSize + 1, m_outerIndex);
-       14:  885:          m_data = other.m_data;
-       14:  886:        }
+       42:  884:          internal::smart_copy(other.m_outerIndex, other.m_outerIndex + m_outerSize + 1, m_outerIndex);
+       42:  885:          m_data = other.m_data;
+       42:  886:        }
         -:  887:        else
         -:  888:        {
     #####:  889:          Base::operator=(other);
         -:  890:        }
-       14:  891:      }
-       25:  892:      return *this;
+       42:  891:      }
+       75:  892:      return *this;
         -:  893:    }
         -:  894:
-        3:  895:    inline SparseMatrix& operator=(SparseMatrix&& other) {
-        3:  896:      return *this = other.derived().markAsRValue();
+        9:  895:    inline SparseMatrix& operator=(SparseMatrix&& other) {
+        9:  896:      return *this = other.derived().markAsRValue();
         -:  897:    }
         -:  898:
         -:  899:#ifndef EIGEN_PARSED_BY_DOXYGEN
         -:  900:    template<typename OtherDerived>
-        1:  901:    inline SparseMatrix& operator=(const EigenBase<OtherDerived>& other)
-        1:  902:    { return Base::operator=(other.derived()); }
+        3:  901:    inline SparseMatrix& operator=(const EigenBase<OtherDerived>& other)
+        3:  902:    { return Base::operator=(other.derived()); }
         -:  903:
         -:  904:    template<typename Lhs, typename Rhs>
         -:  905:    inline SparseMatrix& operator=(const Product<Lhs,Rhs,AliasFreeProduct>& other);
@@ -960,11 +960,11 @@
         -:  956:#endif
         -:  957:
         -:  958:    /** Destructor */
-      240:  959:    inline ~SparseMatrix()
-      120:  960:    {
-      120:  961:      internal::conditional_aligned_delete_auto<StorageIndex, true>(m_outerIndex, m_outerSize + 1);
-      120:  962:      internal::conditional_aligned_delete_auto<StorageIndex, true>(m_innerNonZeros, m_outerSize);
-      240:  963:    }
+      720:  959:    inline ~SparseMatrix()
+      360:  960:    {
+      360:  961:      internal::conditional_aligned_delete_auto<StorageIndex, true>(m_outerIndex, m_outerSize + 1);
+      360:  962:      internal::conditional_aligned_delete_auto<StorageIndex, true>(m_innerNonZeros, m_outerSize);
+      720:  963:    }
         -:  964:
         -:  965:    /** Overloaded for performance */
         -:  966:    Scalar sum() const;
@@ -976,12 +976,12 @@
         -:  972:protected:
         -:  973:
         -:  974:    template<typename Other>
-       14:  975:    void initAssignment(const Other& other)
+       42:  975:    void initAssignment(const Other& other)
         -:  976:    {
-       14:  977:      resize(other.rows(), other.cols());
-       14:  978:      internal::conditional_aligned_delete_auto<StorageIndex, true>(m_innerNonZeros, m_outerSize);
-       14:  979:      m_innerNonZeros = 0;
-       14:  980:    }
+       42:  977:      resize(other.rows(), other.cols());
+       42:  978:      internal::conditional_aligned_delete_auto<StorageIndex, true>(m_innerNonZeros, m_outerSize);
+       42:  979:      m_innerNonZeros = 0;
+       42:  980:    }
         -:  981:
         -:  982:    /** \internal
         -:  983:      * \sa insert(Index,Index) */
@@ -1168,54 +1168,54 @@
         -: 1164:// Creates a compressed sparse matrix from a range of unsorted triplets
         -: 1165:// Requires temporary storage to handle duplicate entries
         -: 1166:template <typename InputIterator, typename SparseMatrixType, typename DupFunctor>
-       13: 1167:void set_from_triplets(const InputIterator& begin, const InputIterator& end, SparseMatrixType& mat,
+       39: 1167:void set_from_triplets(const InputIterator& begin, const InputIterator& end, SparseMatrixType& mat,
         -: 1168:                       DupFunctor dup_func) {
-       13: 1169:  constexpr bool IsRowMajor = SparseMatrixType::IsRowMajor;
+       39: 1169:  constexpr bool IsRowMajor = SparseMatrixType::IsRowMajor;
         -: 1170:  using StorageIndex = typename SparseMatrixType::StorageIndex;
         -: 1171:  using IndexMap = typename VectorX<StorageIndex>::AlignedMapType;
         -: 1172:  using TransposedSparseMatrix = SparseMatrix<typename SparseMatrixType::Scalar, IsRowMajor ? ColMajor : RowMajor, StorageIndex>;
         -: 1173:
-       13: 1174:  if (begin == end) return;
+       39: 1174:  if (begin == end) return;
         -: 1175:
         -: 1176:  // There are two strategies to consider for constructing a matrix from unordered triplets:
         -: 1177:  // A) construct the 'mat' in its native storage order and sort in-place (less memory); or, 
         -: 1178:  // B) construct the transposed matrix and use an implicit sort upon assignment to `mat` (less time).
         -: 1179:  // This routine uses B) for faster execution time.
-       11: 1180:  TransposedSparseMatrix trmat(mat.rows(), mat.cols());
+       33: 1180:  TransposedSparseMatrix trmat(mat.rows(), mat.cols());
         -: 1181:
         -: 1182:  // scan triplets to determine allocation size before constructing matrix
-       11: 1183:  Index nonZeros = 0;
-     3252: 1184:  for (InputIterator it(begin); it != end; ++it) {
-     3241: 1185:    eigen_assert(it->row() >= 0 && it->row() < mat.rows() && it->col() >= 0 && it->col() < mat.cols());
-     3241: 1186:    StorageIndex j = convert_index<StorageIndex>(IsRowMajor ? it->col() : it->row());
-     3241: 1187:    if (nonZeros == NumTraits<StorageIndex>::highest()) internal::throw_std_bad_alloc();
-     3241: 1188:    trmat.outerIndexPtr()[j + 1]++;
-     3241: 1189:    nonZeros++;
-     3241: 1190:  }
+       33: 1183:  Index nonZeros = 0;
+     9756: 1184:  for (InputIterator it(begin); it != end; ++it) {
+     9723: 1185:    eigen_assert(it->row() >= 0 && it->row() < mat.rows() && it->col() >= 0 && it->col() < mat.cols());
+     9723: 1186:    StorageIndex j = convert_index<StorageIndex>(IsRowMajor ? it->col() : it->row());
+     9723: 1187:    if (nonZeros == NumTraits<StorageIndex>::highest()) internal::throw_std_bad_alloc();
+     9723: 1188:    trmat.outerIndexPtr()[j + 1]++;
+     9723: 1189:    nonZeros++;
+     9723: 1190:  }
         -: 1191:
-       11: 1192:  std::partial_sum(trmat.outerIndexPtr(), trmat.outerIndexPtr() + trmat.outerSize() + 1, trmat.outerIndexPtr());
-       11: 1193:  eigen_assert(nonZeros == trmat.outerIndexPtr()[trmat.outerSize()]);
-       11: 1194:  trmat.resizeNonZeros(nonZeros);
+       33: 1192:  std::partial_sum(trmat.outerIndexPtr(), trmat.outerIndexPtr() + trmat.outerSize() + 1, trmat.outerIndexPtr());
+       33: 1193:  eigen_assert(nonZeros == trmat.outerIndexPtr()[trmat.outerSize()]);
+       33: 1194:  trmat.resizeNonZeros(nonZeros);
         -: 1195:
         -: 1196:  // construct temporary array to track insertions (outersize) and collapse duplicates (innersize)
-       11: 1197:  ei_declare_aligned_stack_constructed_variable(StorageIndex, tmp, numext::maxi(mat.innerSize(), mat.outerSize()), 0);
-       11: 1198:  smart_copy(trmat.outerIndexPtr(), trmat.outerIndexPtr() + trmat.outerSize(), tmp);
+       33: 1197:  ei_declare_aligned_stack_constructed_variable(StorageIndex, tmp, numext::maxi(mat.innerSize(), mat.outerSize()), 0);
+       33: 1198:  smart_copy(trmat.outerIndexPtr(), trmat.outerIndexPtr() + trmat.outerSize(), tmp);
         -: 1199:
         -: 1200:  // push triplets to back of each vector
-     3252: 1201:  for (InputIterator it(begin); it != end; ++it) {
-     3241: 1202:    StorageIndex j = convert_index<StorageIndex>(IsRowMajor ? it->col() : it->row());
-     3241: 1203:    StorageIndex i = convert_index<StorageIndex>(IsRowMajor ? it->row() : it->col());
-     3241: 1204:    StorageIndex k = tmp[j];
-     3241: 1205:    trmat.data().index(k) = i;
-     3241: 1206:    trmat.data().value(k) = it->value();
-     3241: 1207:    tmp[j]++;
-     3241: 1208:  }
+     9756: 1201:  for (InputIterator it(begin); it != end; ++it) {
+     9723: 1202:    StorageIndex j = convert_index<StorageIndex>(IsRowMajor ? it->col() : it->row());
+     9723: 1203:    StorageIndex i = convert_index<StorageIndex>(IsRowMajor ? it->row() : it->col());
+     9723: 1204:    StorageIndex k = tmp[j];
+     9723: 1205:    trmat.data().index(k) = i;
+     9723: 1206:    trmat.data().value(k) = it->value();
+     9723: 1207:    tmp[j]++;
+     9723: 1208:  }
         -: 1209:
-       11: 1210:  IndexMap wi(tmp, trmat.innerSize());
-       11: 1211:  trmat.collapseDuplicates(wi, dup_func);
+       33: 1210:  IndexMap wi(tmp, trmat.innerSize());
+       33: 1211:  trmat.collapseDuplicates(wi, dup_func);
         -: 1212:  // implicit sorting
-       11: 1213:  mat = trmat;
-       13: 1214:}
+       33: 1213:  mat = trmat;
+       39: 1214:}
         -: 1215:
         -: 1216:// Creates a compressed sparse matrix from a sorted range of triplets
         -: 1217:template <typename InputIterator, typename SparseMatrixType, typename DupFunctor>
@@ -1364,10 +1364,10 @@
         -: 1360:  */
         -: 1361:template<typename Scalar, int Options_, typename StorageIndex_>
         -: 1362:template<typename InputIterators>
-       13: 1363:void SparseMatrix<Scalar,Options_,StorageIndex_>::setFromTriplets(const InputIterators& begin, const InputIterators& end)
+       39: 1363:void SparseMatrix<Scalar,Options_,StorageIndex_>::setFromTriplets(const InputIterators& begin, const InputIterators& end)
         -: 1364:{
-       13: 1365:  internal::set_from_triplets<InputIterators, SparseMatrix<Scalar,Options_,StorageIndex_> >(begin, end, *this, internal::scalar_sum_op<Scalar,Scalar>());
-       13: 1366:}
+       39: 1365:  internal::set_from_triplets<InputIterators, SparseMatrix<Scalar,Options_,StorageIndex_> >(begin, end, *this, internal::scalar_sum_op<Scalar,Scalar>());
+       39: 1366:}
         -: 1367:
         -: 1368:/** The same as setFromTriplets but when duplicates are met the functor \a dup_func is applied:
         -: 1369:  * \code
@@ -1508,48 +1508,48 @@
         -: 1504:/** \internal */
         -: 1505:template <typename Scalar_, int Options_, typename StorageIndex_>
         -: 1506:template <typename Derived, typename DupFunctor>
-       11: 1507:void SparseMatrix<Scalar_, Options_, StorageIndex_>::collapseDuplicates(DenseBase<Derived>& wi, DupFunctor dup_func) {
+       33: 1507:void SparseMatrix<Scalar_, Options_, StorageIndex_>::collapseDuplicates(DenseBase<Derived>& wi, DupFunctor dup_func) {
         -: 1508:  // removes duplicate entries and compresses the matrix
         -: 1509:  // the excess allocated memory is not released
         -: 1510:  // the inner indices do not need to be sorted, nor is the matrix returned in a sorted state
-       11: 1511:  eigen_assert(wi.size() == m_innerSize);
-       11: 1512:  constexpr StorageIndex kEmptyIndexValue(-1);
-       11: 1513:  wi.setConstant(kEmptyIndexValue);
-       11: 1514:  StorageIndex count = 0;
-       11: 1515:  const bool is_compressed = isCompressed();
+       33: 1511:  eigen_assert(wi.size() == m_innerSize);
+       33: 1512:  constexpr StorageIndex kEmptyIndexValue(-1);
+       33: 1513:  wi.setConstant(kEmptyIndexValue);
+       33: 1514:  StorageIndex count = 0;
+       33: 1515:  const bool is_compressed = isCompressed();
         -: 1516:  // for each inner-vector, wi[inner_index] will hold the position of first element into the index/value buffers
-     2775: 1517:  for (Index j = 0; j < m_outerSize; ++j) {
-     2764: 1518:    const StorageIndex newBegin = count;
-     2764: 1519:    const StorageIndex end = is_compressed ? m_outerIndex[j + 1] : m_outerIndex[j] + m_innerNonZeros[j];
-     6005: 1520:    for (StorageIndex k = m_outerIndex[j]; k < end; ++k) {
-     3241: 1521:      StorageIndex i = m_data.index(k);
-     3241: 1522:      if (wi(i) >= newBegin) {
+     8325: 1517:  for (Index j = 0; j < m_outerSize; ++j) {
+     8292: 1518:    const StorageIndex newBegin = count;
+     8292: 1519:    const StorageIndex end = is_compressed ? m_outerIndex[j + 1] : m_outerIndex[j] + m_innerNonZeros[j];
+    18015: 1520:    for (StorageIndex k = m_outerIndex[j]; k < end; ++k) {
+     9723: 1521:      StorageIndex i = m_data.index(k);
+     9723: 1522:      if (wi(i) >= newBegin) {
         -: 1523:        // entry at k is a duplicate
         -: 1524:        // accumulate it into the primary entry located at wi(i)
     #####: 1525:        m_data.value(wi(i)) = dup_func(m_data.value(wi(i)), m_data.value(k));
     #####: 1526:      } else {
         -: 1527:        // k is the primary entry in j with inner index i
         -: 1528:        // shift it to the left and record its location at wi(i)
-     3241: 1529:        m_data.index(count) = i;
-     3241: 1530:        m_data.value(count) = m_data.value(k);
-     3241: 1531:        wi(i) = count;
-     3241: 1532:        ++count;
+     9723: 1529:        m_data.index(count) = i;
+     9723: 1530:        m_data.value(count) = m_data.value(k);
+     9723: 1531:        wi(i) = count;
+     9723: 1532:        ++count;
         -: 1533:      }
-     3241: 1534:    }
-     2764: 1535:    m_outerIndex[j] = newBegin;
-     2764: 1536:  }
-       11: 1537:  m_outerIndex[m_outerSize] = count;
-       11: 1538:  m_data.resize(count);
+     9723: 1534:    }
+     8292: 1535:    m_outerIndex[j] = newBegin;
+     8292: 1536:  }
+       33: 1537:  m_outerIndex[m_outerSize] = count;
+       33: 1538:  m_data.resize(count);
         -: 1539:
         -: 1540:  // turn the matrix into compressed form (if it is not already)
-       11: 1541:  internal::conditional_aligned_delete_auto<StorageIndex, true>(m_innerNonZeros, m_outerSize);
-       11: 1542:  m_innerNonZeros = 0;
-       11: 1543:}
+       33: 1541:  internal::conditional_aligned_delete_auto<StorageIndex, true>(m_innerNonZeros, m_outerSize);
+       33: 1542:  m_innerNonZeros = 0;
+       33: 1543:}
         -: 1544:
         -: 1545:/** \internal */
         -: 1546:template<typename Scalar, int Options_, typename StorageIndex_>
         -: 1547:template<typename OtherDerived>
-       31: 1548:EIGEN_DONT_INLINE SparseMatrix<Scalar,Options_,StorageIndex_>& SparseMatrix<Scalar,Options_,StorageIndex_>::operator=(const SparseMatrixBase<OtherDerived>& other)
+       93: 1548:EIGEN_DONT_INLINE SparseMatrix<Scalar,Options_,StorageIndex_>& SparseMatrix<Scalar,Options_,StorageIndex_>::operator=(const SparseMatrixBase<OtherDerived>& other)
         -: 1549:{
         -: 1550:  EIGEN_STATIC_ASSERT((internal::is_same<Scalar, typename OtherDerived::Scalar>::value),
         -: 1551:        YOU_MIXED_DIFFERENT_NUMERIC_TYPES__YOU_NEED_TO_USE_THE_CAST_METHOD_OF_MATRIXBASE_TO_CAST_NUMERIC_TYPES_EXPLICITLY)
@@ -1558,7 +1558,7 @@
         -: 1554:    EIGEN_SPARSE_CREATE_TEMPORARY_PLUGIN
         -: 1555:  #endif
         -: 1556:      
-       31: 1557:  const bool needToTranspose = (Flags & RowMajorBit) != (internal::evaluator<OtherDerived>::Flags & RowMajorBit);
+       93: 1557:  const bool needToTranspose = (Flags & RowMajorBit) != (internal::evaluator<OtherDerived>::Flags & RowMajorBit);
         -: 1558:  if (needToTranspose)
         -: 1559:  {
         -: 1560:    #ifdef EIGEN_SPARSE_TRANSPOSED_COPY_PLUGIN
@@ -1571,52 +1571,52 @@
         -: 1567:    typedef typename internal::nested_eval<OtherDerived,2,typename internal::plain_matrix_type<OtherDerived>::type >::type OtherCopy;
         -: 1568:    typedef internal::remove_all_t<OtherCopy> OtherCopy_;
         -: 1569:    typedef internal::evaluator<OtherCopy_> OtherCopyEval;
-       28: 1570:    OtherCopy otherCopy(other.derived());
-       28: 1571:    OtherCopyEval otherCopyEval(otherCopy);
+       84: 1570:    OtherCopy otherCopy(other.derived());
+       84: 1571:    OtherCopyEval otherCopyEval(otherCopy);
         -: 1572:
-       28: 1573:    SparseMatrix dest(other.rows(),other.cols());
-       28: 1574:    Eigen::Map<IndexVector> (dest.m_outerIndex,dest.outerSize()).setZero();
+       84: 1573:    SparseMatrix dest(other.rows(),other.cols());
+       84: 1574:    Eigen::Map<IndexVector> (dest.m_outerIndex,dest.outerSize()).setZero();
         -: 1575:
         -: 1576:    // pass 1
         -: 1577:    // FIXME the above copy could be merged with that pass
-     6874: 1578:    for (Index j=0; j<otherCopy.outerSize(); ++j)
-    20137: 1579:      for (typename OtherCopyEval::InnerIterator it(otherCopyEval, j); it; ++it)
-    20137: 1580:        ++dest.m_outerIndex[it.index()];
+    20622: 1578:    for (Index j=0; j<otherCopy.outerSize(); ++j)
+    60411: 1579:      for (typename OtherCopyEval::InnerIterator it(otherCopyEval, j); it; ++it)
+    60411: 1580:        ++dest.m_outerIndex[it.index()];
         -: 1581:
         -: 1582:    // prefix sum
-       28: 1583:    StorageIndex count = 0;
-       28: 1584:    IndexVector positions(dest.outerSize());
-     6512: 1585:    for (Index j=0; j<dest.outerSize(); ++j)
+       84: 1583:    StorageIndex count = 0;
+       84: 1584:    IndexVector positions(dest.outerSize());
+    19536: 1585:    for (Index j=0; j<dest.outerSize(); ++j)
         -: 1586:    {
-     6484: 1587:      StorageIndex tmp = dest.m_outerIndex[j];
-     6484: 1588:      dest.m_outerIndex[j] = count;
-     6484: 1589:      positions[j] = count;
-     6484: 1590:      count += tmp;
-     6484: 1591:    }
-       28: 1592:    dest.m_outerIndex[dest.outerSize()] = count;
+    19452: 1587:      StorageIndex tmp = dest.m_outerIndex[j];
+    19452: 1588:      dest.m_outerIndex[j] = count;
+    19452: 1589:      positions[j] = count;
+    19452: 1590:      count += tmp;
+    19452: 1591:    }
+       84: 1592:    dest.m_outerIndex[dest.outerSize()] = count;
         -: 1593:    // alloc
-       28: 1594:    dest.m_data.resize(count);
+       84: 1594:    dest.m_data.resize(count);
         -: 1595:    // pass 2
-     6874: 1596:    for (StorageIndex j=0; j<otherCopy.outerSize(); ++j)
+    20622: 1596:    for (StorageIndex j=0; j<otherCopy.outerSize(); ++j)
         -: 1597:    {
-    20137: 1598:      for (typename OtherCopyEval::InnerIterator it(otherCopyEval, j); it; ++it)
+    60411: 1598:      for (typename OtherCopyEval::InnerIterator it(otherCopyEval, j); it; ++it)
         -: 1599:      {
-    13291: 1600:        Index pos = positions[it.index()]++;
-    13291: 1601:        dest.m_data.index(pos) = j;
-    13291: 1602:        dest.m_data.value(pos) = it.value();
-    13291: 1603:      }
-     6846: 1604:    }
-       28: 1605:    this->swap(dest);
-       28: 1606:    return *this;
-       28: 1607:  }
+    39873: 1600:        Index pos = positions[it.index()]++;
+    39873: 1601:        dest.m_data.index(pos) = j;
+    39873: 1602:        dest.m_data.value(pos) = it.value();
+    39873: 1603:      }
+    20538: 1604:    }
+       84: 1605:    this->swap(dest);
+       84: 1606:    return *this;
+       84: 1607:  }
         -: 1608:  else
         -: 1609:  {
-        3: 1610:    if(other.isRValue())
+        9: 1610:    if(other.isRValue())
         -: 1611:    {
     #####: 1612:      initAssignment(other.derived());
     #####: 1613:    }
         -: 1614:    // there is no special optimization
-        3: 1615:    return Base::operator=(other.derived());
+        9: 1615:    return Base::operator=(other.derived());
         -: 1616:  }
     #####: 1617:}
         -: 1618:
@@ -1786,8 +1786,8 @@
         -: 1782:        : evaluator<SparseCompressedBase<SparseMatrix<Scalar_, Options_, StorageIndex_>>> {
         -: 1783:      typedef evaluator<SparseCompressedBase<SparseMatrix<Scalar_, Options_, StorageIndex_>>> Base;
         -: 1784:      typedef SparseMatrix<Scalar_, Options_, StorageIndex_> SparseMatrixType;
-        5: 1785:      evaluator() : Base() {}
-      113: 1786:      explicit evaluator(const SparseMatrixType& mat) : Base(mat) {}
+       15: 1785:      evaluator() : Base() {}
+      339: 1786:      explicit evaluator(const SparseMatrixType& mat) : Base(mat) {}
         -: 1787:    };
         -: 1788:
         -: 1789:}

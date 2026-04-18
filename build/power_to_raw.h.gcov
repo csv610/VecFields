@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/include/directional/power_to_raw.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Directional, a library for directional field processing.
         -:    2:// Copyright (C) 2018 Amir Vaxman <avaxman@gmail.com>
         -:    3://
@@ -25,34 +25,34 @@
         -:   21://  normalize: whether to produce a normalized result (length = 1)
         -:   22:// Output:
         -:   23://  rawField: a RAW_FIELD object representing the (CCW sorted) roots of the power field.
-        1:   24:inline void power_to_raw(const directional::CartesianField& powerField,
+        3:   24:inline void power_to_raw(const directional::CartesianField& powerField,
         -:   25:                         int N,
         -:   26:                         directional::CartesianField& rawField,
         -:   27:                         bool normalize=false)
         -:   28:{
-        2:   29:    assert(powerField.fieldType==fieldTypeEnum::POWER_FIELD && "The input field should be a power/PolyVector field");
-        1:   30:    rawField.init(*(powerField.tb), fieldTypeEnum::RAW_FIELD,N);
-        1:   31:    Eigen::MatrixXcd intFieldComplex(powerField.intField.rows(),N);
-        1:   32:    Eigen::VectorXcd complexPowerField(powerField.intField.rows());
+        6:   29:    assert(powerField.fieldType==fieldTypeEnum::POWER_FIELD && "The input field should be a power/PolyVector field");
+        3:   30:    rawField.init(*(powerField.tb), fieldTypeEnum::RAW_FIELD,N);
+        3:   31:    Eigen::MatrixXcd intFieldComplex(powerField.intField.rows(),N);
+        3:   32:    Eigen::VectorXcd complexPowerField(powerField.intField.rows());
         -:   33:    
         -:   34:    //power fields are represented as -u^N since they are a special case of PVs.
-        1:   35:    complexPowerField.array().real()=-powerField.intField.col(0);
-        1:   36:    complexPowerField.array().imag()=-powerField.intField.col(1);
-        1:   37:    intFieldComplex.col(0)=pow(complexPowerField.array(),1.0/(double)N);
-        4:   38:    for (int i=1;i<N;i++)
-        3:   39:        intFieldComplex.col(i)=intFieldComplex.col(0)*exp(std::complex<double>(0,2*std::numbers::pi*(double)i/(double)N));
+        3:   35:    complexPowerField.array().real()=-powerField.intField.col(0);
+        3:   36:    complexPowerField.array().imag()=-powerField.intField.col(1);
+        3:   37:    intFieldComplex.col(0)=pow(complexPowerField.array(),1.0/(double)N);
+       12:   38:    for (int i=1;i<N;i++)
+        9:   39:        intFieldComplex.col(i)=intFieldComplex.col(0)*exp(std::complex<double>(0,2*std::numbers::pi*(double)i/(double)N));
         -:   40:    
-        1:   41:    if (normalize)
+        3:   41:    if (normalize)
     #####:   42:        intFieldComplex.array()/=intFieldComplex.array().abs();
         -:   43:    
-        1:   44:    Eigen::MatrixXd intField(intFieldComplex.rows(),2*N);
-        5:   45:    for (int i=0;i<N;i++){
-        4:   46:        intField.col(2*i)=intFieldComplex.col(i).real();
-        4:   47:        intField.col(2*i+1)=intFieldComplex.col(i).imag();
-        4:   48:    }
+        3:   44:    Eigen::MatrixXd intField(intFieldComplex.rows(),2*N);
+       15:   45:    for (int i=0;i<N;i++){
+       12:   46:        intField.col(2*i)=intFieldComplex.col(i).real();
+       12:   47:        intField.col(2*i+1)=intFieldComplex.col(i).imag();
+       12:   48:    }
         -:   49:    
-        1:   50:    rawField.set_intrinsic_field(intField);
-        1:   51:}
+        3:   50:    rawField.set_intrinsic_field(intField);
+        3:   51:}
         -:   52:
         -:   53:}
         -:   54:

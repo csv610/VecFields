@@ -86,16 +86,16 @@
         -:   82:#endif  // GTEST_OS_WINDOWS
         -:   83:
         -:   84:// Returns whether the given character is a valid path separator.
-      707:   85:static bool IsPathSeparator(char c) {
+     1284:   85:static bool IsPathSeparator(char c) {
         -:   86:#if GTEST_HAS_ALT_PATH_SEP_
         -:   87:  return (c == kPathSeparator) || (c == kAlternatePathSeparator);
         -:   88:#else
-      707:   89:  return c == kPathSeparator;
+     1284:   89:  return c == kPathSeparator;
         -:   90:#endif
         -:   91:}
         -:   92:
         -:   93:// Returns the current working directory, or "" if unsuccessful.
-       11:   94:FilePath FilePath::GetCurrentDir() {
+       20:   94:FilePath FilePath::GetCurrentDir() {
         -:   95:#if GTEST_OS_WINDOWS_MOBILE || GTEST_OS_WINDOWS_PHONE || \
         -:   96:    GTEST_OS_WINDOWS_RT || GTEST_OS_ESP8266 || GTEST_OS_ESP32
         -:   97:  // These platforms do not have a current directory, so we just return
@@ -105,15 +105,15 @@
         -:  101:  char cwd[GTEST_PATH_MAX_ + 1] = { '\0' };
         -:  102:  return FilePath(_getcwd(cwd, sizeof(cwd)) == nullptr ? "" : cwd);
         -:  103:#else
-       11:  104:  char cwd[GTEST_PATH_MAX_ + 1] = { '\0' };
-       11:  105:  char* result = getcwd(cwd, sizeof(cwd));
+       20:  104:  char cwd[GTEST_PATH_MAX_ + 1] = { '\0' };
+       20:  105:  char* result = getcwd(cwd, sizeof(cwd));
         -:  106:# if GTEST_OS_NACL
         -:  107:  // getcwd will likely fail in NaCl due to the sandbox, so return something
         -:  108:  // reasonable. The user may have provided a shim implementation for getcwd,
         -:  109:  // however, so fallback only when failure is detected.
         -:  110:  return FilePath(result == nullptr ? kCurrentDirectoryString : cwd);
         -:  111:# endif  // GTEST_OS_NACL
-       11:  112:  return FilePath(result == nullptr ? "" : cwd);
+       20:  112:  return FilePath(result == nullptr ? "" : cwd);
         -:  113:#endif  // GTEST_OS_WINDOWS_MOBILE
     #####:  114:}
         -:  115:
@@ -352,35 +352,35 @@
         -:  348:// Removes any redundant separators that might be in the pathname.
         -:  349:// For example, "bar///foo" becomes "bar/foo". Does not eliminate other
         -:  350:// redundancies that might be in a pathname involving "." or "..".
-       11:  351:void FilePath::Normalize() {
-       11:  352:  if (pathname_.c_str() == nullptr) {
+       20:  351:void FilePath::Normalize() {
+       20:  352:  if (pathname_.c_str() == nullptr) {
     #####:  353:    pathname_ = "";
     #####:  354:    return;
         -:  355:  }
-       11:  356:  const char* src = pathname_.c_str();
-       11:  357:  char* const dest = new char[pathname_.length() + 1];
-       11:  358:  char* dest_ptr = dest;
-       11:  359:  memset(dest_ptr, 0, pathname_.length() + 1);
+       20:  356:  const char* src = pathname_.c_str();
+       20:  357:  char* const dest = new char[pathname_.length() + 1];
+       20:  358:  char* dest_ptr = dest;
+       20:  359:  memset(dest_ptr, 0, pathname_.length() + 1);
         -:  360:
-      566:  361:  while (*src != '\0') {
-      555:  362:    *dest_ptr = *src;
-      555:  363:    if (!IsPathSeparator(*src)) {
-      479:  364:      src++;
-      479:  365:    } else {
+     1028:  361:  while (*src != '\0') {
+     1008:  362:    *dest_ptr = *src;
+     1008:  363:    if (!IsPathSeparator(*src)) {
+      870:  364:      src++;
+      870:  365:    } else {
         -:  366:#if GTEST_HAS_ALT_PATH_SEP_
         -:  367:      if (*dest_ptr == kAlternatePathSeparator) {
         -:  368:        *dest_ptr = kPathSeparator;
         -:  369:      }
         -:  370:#endif
-      152:  371:      while (IsPathSeparator(*src))
-       76:  372:        src++;
+      276:  371:      while (IsPathSeparator(*src))
+      138:  372:        src++;
         -:  373:    }
-      555:  374:    dest_ptr++;
+     1008:  374:    dest_ptr++;
         -:  375:  }
-       11:  376:  *dest_ptr = '\0';
-       11:  377:  pathname_ = dest;
-       11:  378:  delete[] dest;
-       11:  379:}
+       20:  376:  *dest_ptr = '\0';
+       20:  377:  pathname_ = dest;
+       20:  378:  delete[] dest;
+       20:  379:}
         -:  380:
         -:  381:}  // namespace internal
         -:  382:}  // namespace testing

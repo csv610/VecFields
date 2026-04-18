@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/include/directional/sparse_diagonal.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Directional, a library for directional field processing.
         -:    2://
         -:    3:// Copyright (C) 2025 Amir Vaxman <avaxman@gmail.com>
@@ -22,44 +22,44 @@
         -:   18:
         -:   19://Computing a diagonal sparse matrix from a given vector of values.
         -:   20:template <typename Scalar>
-        3:   21:Eigen::SparseMatrix<Scalar> sparse_diagonal(const Eigen::Vector<Scalar, Eigen::Dynamic>& diagValues){
+        9:   21:Eigen::SparseMatrix<Scalar> sparse_diagonal(const Eigen::Vector<Scalar, Eigen::Dynamic>& diagValues){
         -:   22:    
-        3:   23:    Eigen::SparseMatrix<Scalar> diagMatrix(diagValues.size(), diagValues.size());
-        3:   24:    std::vector<Eigen::Triplet<Scalar>> diagMatTris;
-      363:   25:    for (int i=0;i<diagValues.size();i++)
-      360:   26:        diagMatTris.push_back(Eigen::Triplet<Scalar>(i,i,diagValues(i)));
+        9:   23:    Eigen::SparseMatrix<Scalar> diagMatrix(diagValues.size(), diagValues.size());
+        9:   24:    std::vector<Eigen::Triplet<Scalar>> diagMatTris;
+     1089:   25:    for (int i=0;i<diagValues.size();i++)
+     1080:   26:        diagMatTris.push_back(Eigen::Triplet<Scalar>(i,i,diagValues(i)));
         -:   27:    
-        3:   28:    diagMatrix.setFromTriplets(diagMatTris.begin(), diagMatTris.end());
-        3:   29:    return diagMatrix;
+        9:   28:    diagMatrix.setFromTriplets(diagMatTris.begin(), diagMatTris.end());
+        9:   29:    return diagMatrix;
         -:   30:    
-        3:   31:}
+        9:   31:}
         -:   32:
         -:   33://A version that returns the matrix as a parameter
         -:   34:template <typename Scalar>
-        2:   35:inline void sparse_diagonal(const std::vector<Eigen::SparseMatrix<Scalar>>& diagValues,
+        6:   35:inline void sparse_diagonal(const std::vector<Eigen::SparseMatrix<Scalar>>& diagValues,
         -:   36:                            Eigen::SparseMatrix<Scalar>& diagMatrix){
         -:   37:    
-        2:   38:    int numRows=0, numCols=0;
-        2:   39:    Eigen::MatrixXi offsets(diagValues.size(),2);
-       10:   40:    for (int i=0;i<diagValues.size();i++) {
-        8:   41:        offsets.row(i)<<numRows, numCols;
-        8:   42:        numRows += diagValues[i].rows();
-        8:   43:        numCols += diagValues[i].cols();
-        8:   44:    }
-        2:   45:    diagMatrix.resize(numRows, numCols);
-        2:   46:    std::vector<Eigen::Triplet<Scalar>> diagMatTris;
-       10:   47:    for (int i=0;i<diagValues.size();i++) {
-      968:   48:        for (int k = 0; k < diagValues[i].outerSize(); ++k) {
-     1920:   49:            for (Eigen::SparseMatrix<double>::InnerIterator it(diagValues[i], k); it; ++it) {
-      960:   50:                diagMatTris.push_back(Eigen::Triplet<Scalar>(offsets(i,0)+it.row(), offsets(i,1)+it.col(), it.value()));
-      960:   51:            }
-      960:   52:        }
-        8:   53:    }
+        6:   38:    int numRows=0, numCols=0;
+        6:   39:    Eigen::MatrixXi offsets(diagValues.size(),2);
+       30:   40:    for (int i=0;i<diagValues.size();i++) {
+       24:   41:        offsets.row(i)<<numRows, numCols;
+       24:   42:        numRows += diagValues[i].rows();
+       24:   43:        numCols += diagValues[i].cols();
+       24:   44:    }
+        6:   45:    diagMatrix.resize(numRows, numCols);
+        6:   46:    std::vector<Eigen::Triplet<Scalar>> diagMatTris;
+       30:   47:    for (int i=0;i<diagValues.size();i++) {
+     2904:   48:        for (int k = 0; k < diagValues[i].outerSize(); ++k) {
+     5760:   49:            for (Eigen::SparseMatrix<double>::InnerIterator it(diagValues[i], k); it; ++it) {
+     2880:   50:                diagMatTris.push_back(Eigen::Triplet<Scalar>(offsets(i,0)+it.row(), offsets(i,1)+it.col(), it.value()));
+     2880:   51:            }
+     2880:   52:        }
+       24:   53:    }
         -:   54:    
-        2:   55:    diagMatrix.setFromTriplets(diagMatTris.begin(), diagMatTris.end());
+        6:   55:    diagMatrix.setFromTriplets(diagMatTris.begin(), diagMatTris.end());
         -:   56:    //return diagMatrix;
         -:   57:    
-        2:   58:}
+        6:   58:}
         -:   59:
         -:   60:
         -:   61:

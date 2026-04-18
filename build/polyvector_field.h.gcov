@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/include/directional/polyvector_field.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Directional, a library for directional field processing.
         -:    2:// Copyright (C) 2021 Amir Vaxman <avaxman@gmail.com>
         -:    3://
@@ -39,59 +39,59 @@
         -:   35:// Output:
         -:   36://  pvField: the computer field (returned in the input parameter)
         -:   37://  pvData:  Updated structure with all operators
-        1:   38:inline void polyvector_precompute(directional::CartesianField& pvField,
+        3:   38:inline void polyvector_precompute(directional::CartesianField& pvField,
         -:   39:                                  PolyVectorData& pvData)
         -:   40:{
         -:   41:    
         -:   42:    using namespace std;
         -:   43:    using namespace Eigen;
         -:   44:    
-        1:   45:    pvField.init(*(pvData.tb), fieldTypeEnum::POLYVECTOR_FIELD, pvData.N);
+        3:   45:    pvField.init(*(pvData.tb), fieldTypeEnum::POLYVECTOR_FIELD, pvData.N);
         -:   46:    
         -:   47:    //Building the smoothness matrices, with an energy term for each inner edge and degree
-        1:   48:    int rowCounter=0;
-        1:   49:    std::vector< Triplet<complex<double> > > dTriplets, WTriplets;
-        1:   50:    if (pvData.N%2!=0) pvData.signSymmetry=false;  //it has to be for odd N
+        3:   48:    int rowCounter=0;
+        3:   49:    std::vector< Triplet<complex<double> > > dTriplets, WTriplets;
+        3:   50:    if (pvData.N%2!=0) pvData.signSymmetry=false;  //it has to be for odd N
         -:   51:    
-        1:   52:    pvData.totalSmoothWeight = pvField.tb->connectionMass.sum();
-        1:   53:    pvData.totalMass = pvField.tb->tangentSpaceMass.sum();
+        3:   52:    pvData.totalSmoothWeight = pvField.tb->connectionMass.sum();
+        3:   53:    pvData.totalMass = pvField.tb->tangentSpaceMass.sum();
         -:   54:    
         -:   55:    //vector<Triplet<complex<double>>> WSmoothTriplets, MTriplets;
-        5:   56:    for (int n = 0; n < pvData.N; n++)
+       15:   56:    for (int n = 0; n < pvData.N; n++)
         -:   57:    {
-      964:   58:        for (int i=0;i<pvField.tb->adjSpaces.rows();i++)
+     2892:   58:        for (int i=0;i<pvField.tb->adjSpaces.rows();i++)
         -:   59:        {
-      960:   60:            if ((pvField.tb->adjSpaces(i,0)==-1)||(pvField.tb->adjSpaces(i,1)==-1))
-      480:   61:                continue;  //boundary edge
+     2880:   60:            if ((pvField.tb->adjSpaces(i,0)==-1)||(pvField.tb->adjSpaces(i,1)==-1))
+     1440:   61:                continue;  //boundary edge
         -:   62:            
         -:   63:            // differential matrix between two tangent spaces
-      480:   64:            dTriplets.push_back(Triplet<complex<double> >(rowCounter, n*pvField.intField.rows()+pvField.tb->adjSpaces(i,0), pow(pvField.tb->connection(i),pvData.N-n)));
-      480:   65:            dTriplets.push_back(Triplet<complex<double> >(rowCounter, n*pvField.intField.rows()+pvField.tb->adjSpaces(i,1), -1.0));
+     1440:   64:            dTriplets.push_back(Triplet<complex<double> >(rowCounter, n*pvField.intField.rows()+pvField.tb->adjSpaces(i,0), pow(pvField.tb->connection(i),pvData.N-n)));
+     1440:   65:            dTriplets.push_back(Triplet<complex<double> >(rowCounter, n*pvField.intField.rows()+pvField.tb->adjSpaces(i,1), -1.0));
         -:   66:            
         -:   67:            //stiffness weights
         -:   68:            //WSmoothTriplets.push_back(Triplet<complex<double> >(rowCounter, rowCounter, pvField.tb->connectionMass(i)));
-      480:   69:            rowCounter++;
-      480:   70:        }
+     1440:   69:            rowCounter++;
+     1440:   70:        }
         -:   71:        
         -:   72:        //for (int i=0;i<pvField.intField.rows();i++)
         -:   73:        //    MTriplets.push_back(Triplet<complex<double>>(n*pvField.intField.rows()+i, n*pvField.intField.rows()+i, pvField.tb->tangentSpaceMass(i)));
-        4:   74:    }
+       12:   74:    }
         -:   75:    
-        1:   76:    pvData.smoothMat.resize(rowCounter, pvData.N*pvField.intField.rows());
-        1:   77:    pvData.smoothMat.setFromTriplets(dTriplets.begin(), dTriplets.end());
+        3:   76:    pvData.smoothMat.resize(rowCounter, pvData.N*pvField.intField.rows());
+        3:   77:    pvData.smoothMat.setFromTriplets(dTriplets.begin(), dTriplets.end());
         -:   78:    
-        1:   79:    std::vector<Eigen::SparseMatrix<double>> WVector, MVector;
-        1:   80:    MatrixXi blkDiagIndices(pvData.N,2);
-        5:   81:    for (int n=0; n<pvData.N;n++) {
-        4:   82:        WVector.push_back(pvField.tb->connectionMass);
-        4:   83:        MVector.push_back(pvField.tb->tangentSpaceMass);
-        4:   84:        blkDiagIndices.row(n) << n, n;
-        4:   85:    }
-        1:   86:    SparseMatrix<double> WSmooth, M;
-        1:   87:    directional::sparse_diagonal(WVector, WSmooth);
-        1:   88:    directional::sparse_diagonal(MVector, M);
-        1:   89:    pvData.WSmooth = WSmooth.cast<std::complex<double>>();
-        1:   90:    pvData.M = M.cast<std::complex<double>>();
+        3:   79:    std::vector<Eigen::SparseMatrix<double>> WVector, MVector;
+        3:   80:    MatrixXi blkDiagIndices(pvData.N,2);
+       15:   81:    for (int n=0; n<pvData.N;n++) {
+       12:   82:        WVector.push_back(pvField.tb->connectionMass);
+       12:   83:        MVector.push_back(pvField.tb->tangentSpaceMass);
+       12:   84:        blkDiagIndices.row(n) << n, n;
+       12:   85:    }
+        3:   86:    SparseMatrix<double> WSmooth, M;
+        3:   87:    directional::sparse_diagonal(WVector, WSmooth);
+        3:   88:    directional::sparse_diagonal(MVector, M);
+        3:   89:    pvData.WSmooth = WSmooth.cast<std::complex<double>>();
+        3:   90:    pvData.M = M.cast<std::complex<double>>();
         -:   91:    
         -:   92:    
         -:   93:    
@@ -102,73 +102,73 @@
         -:   98:    //pvData.M.setFromTriplets(MTriplets.begin(), MTriplets.end());
         -:   99:    
         -:  100:    //creating reduction transformation
-        1:  101:    VectorXi numSpaceConstraints = Eigen::VectorXi::Zero(pvField.intField.rows());
-        1:  102:    int realN = (pvData.signSymmetry ? pvData.N/2 : pvData.N);
-        1:  103:    realN = (pvData.wRoSy < 0.0 ? 1 : realN);
+        3:  101:    VectorXi numSpaceConstraints = Eigen::VectorXi::Zero(pvField.intField.rows());
+        3:  102:    int realN = (pvData.signSymmetry ? pvData.N/2 : pvData.N);
+        3:  103:    realN = (pvData.wRoSy < 0.0 ? 1 : realN);
         -:  104:    //MatrixXcd faceConstraints(F.rows(),realN);
-        1:  105:    std::vector<MatrixXcd> localSpaceReducMats; localSpaceReducMats.resize(pvField.intField.rows());
-        1:  106:    std::vector<VectorXcd> localSpaceReducRhs;  localSpaceReducRhs.resize(pvField.intField.rows());
+        3:  105:    std::vector<MatrixXcd> localSpaceReducMats; localSpaceReducMats.resize(pvField.intField.rows());
+        3:  106:    std::vector<VectorXcd> localSpaceReducRhs;  localSpaceReducRhs.resize(pvField.intField.rows());
         -:  107:    
-      121:  108:    for (int i=0;i<pvField.intField.rows();i++){
-      120:  109:        localSpaceReducMats[i]=MatrixXcd::Identity(realN,realN);
-      120:  110:        localSpaceReducRhs[i]=VectorXcd::Zero(realN);
-      120:  111:    }
+      363:  108:    for (int i=0;i<pvField.intField.rows();i++){
+      360:  109:        localSpaceReducMats[i]=MatrixXcd::Identity(realN,realN);
+      360:  110:        localSpaceReducRhs[i]=VectorXcd::Zero(realN);
+      360:  111:    }
         -:  112:    
         -:  113:    /*************Hard-constraint reduction matrices******************/
-        1:  114:    MatrixXd constVectorsIntrinsic=pvField.tb->project_to_intrinsic(pvData.constSpaces,pvData.constVectors);
+        3:  114:    MatrixXd constVectorsIntrinsic=pvField.tb->project_to_intrinsic(pvData.constSpaces,pvData.constVectors);
         -:  115:    //cout<<"constVectorsIntrinsic: "<<constVectorsIntrinsic<<endl;
-        2:  116:    for (int i=0;i<pvData.constSpaces.size();i++){
-        1:  117:        if (pvData.wAlignment(i)>=0.0)
+        6:  116:    for (int i=0;i<pvData.constSpaces.size();i++){
+        3:  117:        if (pvData.wAlignment(i)>=0.0)
     #####:  118:            continue;  //here we only handle the reduction caused by a fixed dof
-        1:  119:        if (numSpaceConstraints(pvData.constSpaces(i))==realN)
+        3:  119:        if (numSpaceConstraints(pvData.constSpaces(i))==realN)
     #####:  120:            continue; //overconstrained; we ignore any further constraints on that face
         -:  121:        
-        1:  122:        int currSpaceNumDof = numSpaceConstraints(pvData.constSpaces(i));
+        3:  122:        int currSpaceNumDof = numSpaceConstraints(pvData.constSpaces(i));
         -:  123:        
-        1:  124:        complex<double> constVectorComplexRaw = complex<double>(constVectorsIntrinsic(i,0),constVectorsIntrinsic(i,1));
-        1:  125:        complex<double> constVectorComplex = (pvData.signSymmetry ? constVectorComplexRaw*constVectorComplexRaw : constVectorComplexRaw);
-        1:  126:        constVectorComplex = (pvData.wRoSy < 0.0 ? pow(constVectorComplexRaw, pvData.N) :constVectorComplex);
+        3:  124:        complex<double> constVectorComplexRaw = complex<double>(constVectorsIntrinsic(i,0),constVectorsIntrinsic(i,1));
+        3:  125:        complex<double> constVectorComplex = (pvData.signSymmetry ? constVectorComplexRaw*constVectorComplexRaw : constVectorComplexRaw);
+        3:  126:        constVectorComplex = (pvData.wRoSy < 0.0 ? pow(constVectorComplexRaw, pvData.N) :constVectorComplex);
         -:  127:        
-        1:  128:        MatrixXcd singleReducMat=MatrixXcd::Zero(realN-currSpaceNumDof,realN-currSpaceNumDof-1);
-        1:  129:        VectorXcd singleReducRhs=VectorXcd::Zero(realN-currSpaceNumDof);
-        1:  130:        for (int j=0;j<realN-currSpaceNumDof-1;j++){
+        3:  128:        MatrixXcd singleReducMat=MatrixXcd::Zero(realN-currSpaceNumDof,realN-currSpaceNumDof-1);
+        3:  129:        VectorXcd singleReducRhs=VectorXcd::Zero(realN-currSpaceNumDof);
+        3:  130:        for (int j=0;j<realN-currSpaceNumDof-1;j++){
     #####:  131:            singleReducMat(j,j)=-constVectorComplex;
     #####:  132:            singleReducMat(j+1,j)=complex<double>(1.0,0.0);
     #####:  133:        }
-        1:  134:        singleReducRhs(realN-currSpaceNumDof-1) = -constVectorComplex;
+        3:  134:        singleReducRhs(realN-currSpaceNumDof-1) = -constVectorComplex;
         -:  135:        
-        1:  136:        localSpaceReducRhs[pvData.constSpaces(i)] = localSpaceReducMats[pvData.constSpaces(i)]*singleReducRhs + localSpaceReducRhs[pvData.constSpaces(i)];
-        1:  137:        localSpaceReducMats[pvData.constSpaces(i)] = localSpaceReducMats[pvData.constSpaces(i)]*singleReducMat;
+        3:  136:        localSpaceReducRhs[pvData.constSpaces(i)] = localSpaceReducMats[pvData.constSpaces(i)]*singleReducRhs + localSpaceReducRhs[pvData.constSpaces(i)];
+        3:  137:        localSpaceReducMats[pvData.constSpaces(i)] = localSpaceReducMats[pvData.constSpaces(i)]*singleReducMat;
         -:  138:        
-        1:  139:        numSpaceConstraints(pvData.constSpaces(i))++;
+        3:  139:        numSpaceConstraints(pvData.constSpaces(i))++;
         -:  140:        
         -:  141:        //faceConstraints(pvData.constSpaces(i), numSpaceConstraints(pvData.constSpaces(i))++) = constVectorComplex;
-        1:  142:    }
+        3:  142:    }
         -:  143:    
         -:  144:    //creating the global reduction matrices
-        1:  145:    double colCounter=0;
-        1:  146:    pvData.reducRhs=VectorXcd::Zero(pvData.N*pvField.intField.rows());
-        1:  147:    vector<Triplet<complex<double>>> reducMatTriplets;
-        1:  148:    int jump = (pvData.signSymmetry ? 2 : 1);
-        1:  149:    jump = (pvData.wRoSy < 0.0 ? pvData.N : jump);
-      121:  150:    for (int i=0;i<pvField.intField.rows();i++){
-      240:  151:        for (int j=0;j<pvData.N;j+=jump){
-      239:  152:            for (int k=0;k<localSpaceReducMats[i].cols();k++)
-      119:  153:                reducMatTriplets.push_back(Triplet<complex<double>>(j*pvField.intField.rows()+i, colCounter+k, localSpaceReducMats[i](j/jump,k)));
+        3:  145:    double colCounter=0;
+        3:  146:    pvData.reducRhs=VectorXcd::Zero(pvData.N*pvField.intField.rows());
+        3:  147:    vector<Triplet<complex<double>>> reducMatTriplets;
+        3:  148:    int jump = (pvData.signSymmetry ? 2 : 1);
+        3:  149:    jump = (pvData.wRoSy < 0.0 ? pvData.N : jump);
+      363:  150:    for (int i=0;i<pvField.intField.rows();i++){
+      720:  151:        for (int j=0;j<pvData.N;j+=jump){
+      717:  152:            for (int k=0;k<localSpaceReducMats[i].cols();k++)
+      357:  153:                reducMatTriplets.push_back(Triplet<complex<double>>(j*pvField.intField.rows()+i, colCounter+k, localSpaceReducMats[i](j/jump,k)));
         -:  154:            
-      120:  155:            pvData.reducRhs(j*pvField.intField.rows()+i) = localSpaceReducRhs[i](j/jump);
-      120:  156:        }
+      360:  155:            pvData.reducRhs(j*pvField.intField.rows()+i) = localSpaceReducRhs[i](j/jump);
+      360:  156:        }
         -:  157:        
-      120:  158:        colCounter+=localSpaceReducMats[i].cols();
-      120:  159:    }
+      360:  158:        colCounter+=localSpaceReducMats[i].cols();
+      360:  159:    }
         -:  160:    
-        1:  161:    pvData.reducMat.resize(pvData.N*pvField.intField.rows(), colCounter);
-        1:  162:    pvData.reducMat.setFromTriplets(reducMatTriplets.begin(), reducMatTriplets.end());
+        3:  161:    pvData.reducMat.resize(pvData.N*pvField.intField.rows(), colCounter);
+        3:  162:    pvData.reducMat.setFromTriplets(reducMatTriplets.begin(), reducMatTriplets.end());
         -:  163:    
         -:  164:    
         -:  165:    /****************rotational-symmetry matrices********************/
         -:  166:    //TODO: use new massweights
-        1:  167:    if (pvData.wRoSy >= 0.0){ //this is anyhow enforced, this matrix is unnecessary)
+        3:  167:    if (pvData.wRoSy >= 0.0){ //this is anyhow enforced, this matrix is unnecessary)
     #####:  168:        vector<Triplet<complex<double>>> roSyTriplets;
     #####:  169:        for (int i=pvField.intField.rows();i<pvData.N*pvField.intField.rows();i++){
     #####:  170:            roSyTriplets.push_back(Triplet<complex<double>>(i,i,1.0));
@@ -195,21 +195,21 @@
         -:  191:        
     #####:  192:        pvData.totalRoSyWeight=((double)pvData.N-1.0)*pvField.tb->tangentSpaceMass.sum();
     #####:  193:    } else {
-        1:  194:        pvData.roSyMat.resize(0, pvData.N*pvField.intField.rows());
-        1:  195:        pvData.WRoSy.resize(0,0);  //Even necessary?
-        1:  196:        pvData.totalRoSyWeight=1.0;
+        3:  194:        pvData.roSyMat.resize(0, pvData.N*pvField.intField.rows());
+        3:  195:        pvData.WRoSy.resize(0,0);  //Even necessary?
+        3:  196:        pvData.totalRoSyWeight=1.0;
         -:  197:    }
         -:  198:    
         -:  199:    /*****************Soft alignment matrices*******************/
-        1:  200:    rowCounter=0;
-        1:  201:    vector<Triplet<complex<double>>> alignTriplets;
-        1:  202:    vector<VectorXcd> alignRhsList;
-        1:  203:    vector<Triplet<complex<double>>> WAlignTriplets;
-        1:  204:    pvData.totalConstrainedWeight=0.0;
-        1:  205:    bool noSoftAlignment = true;
-        2:  206:    for (int i=0;i<pvData.constSpaces.size();i++){
-        1:  207:        if (pvData.wAlignment(i)<0.0)
-        1:  208:            continue;  //here we only handle soft alignments
+        3:  200:    rowCounter=0;
+        3:  201:    vector<Triplet<complex<double>>> alignTriplets;
+        3:  202:    vector<VectorXcd> alignRhsList;
+        3:  203:    vector<Triplet<complex<double>>> WAlignTriplets;
+        3:  204:    pvData.totalConstrainedWeight=0.0;
+        3:  205:    bool noSoftAlignment = true;
+        6:  206:    for (int i=0;i<pvData.constSpaces.size();i++){
+        3:  207:        if (pvData.wAlignment(i)<0.0)
+        3:  208:            continue;  //here we only handle soft alignments
         -:  209:        
     #####:  210:        noSoftAlignment=false;
         -:  211:        
@@ -247,19 +247,19 @@
     #####:  243:        rowCounter+=realN;
     #####:  244:    }
         -:  245:    
-        1:  246:    if (noSoftAlignment)
-        1:  247:        pvData.totalConstrainedWeight=1.0;  //it wouldn't be used, except just to avoid a division by zero in the energy formulation
+        3:  246:    if (noSoftAlignment)
+        3:  247:        pvData.totalConstrainedWeight=1.0;  //it wouldn't be used, except just to avoid a division by zero in the energy formulation
         -:  248:    
-        1:  249:    pvData.alignRhs.resize(rowCounter);
-        1:  250:    for (int i=0;i<alignRhsList.size();i++)
+        3:  249:    pvData.alignRhs.resize(rowCounter);
+        3:  250:    for (int i=0;i<alignRhsList.size();i++)
     #####:  251:        pvData.alignRhs.segment(i*realN,realN)=alignRhsList[i];
         -:  252:    
-        1:  253:    pvData.alignMat.resize(rowCounter, pvData.N*pvField.intField.rows());
-        1:  254:    pvData.alignMat.setFromTriplets(alignTriplets.begin(), alignTriplets.end());
+        3:  253:    pvData.alignMat.resize(rowCounter, pvData.N*pvField.intField.rows());
+        3:  254:    pvData.alignMat.setFromTriplets(alignTriplets.begin(), alignTriplets.end());
         -:  255:    
-        1:  256:    pvData.WAlign.resize(rowCounter,rowCounter);
-        1:  257:    pvData.WAlign.setFromTriplets(WAlignTriplets.begin(), WAlignTriplets.end());
-        1:  258:}
+        3:  256:    pvData.WAlign.resize(rowCounter,rowCounter);
+        3:  257:    pvData.WAlign.setFromTriplets(WAlignTriplets.begin(), WAlignTriplets.end());
+        3:  258:}
         -:  259:
         -:  260:
         -:  261:// Computes a polyvector field on the entire mesh, where precomputation has taken place.
@@ -267,47 +267,47 @@
         -:  263://  PolyVectorData: The data structure which should have been initialized with polyvector_precompute()
         -:  264:// Outputs:
         -:  265://  pvField: a POLYVECTOR_FIELD type cartesian field object
-        1:  266:inline void polyvector_field(PolyVectorData& pvData,
+        3:  266:inline void polyvector_field(PolyVectorData& pvData,
         -:  267:                             directional::CartesianField& pvField)
         -:  268:{
         -:  269:    using namespace std;
         -:  270:    using namespace Eigen;
         -:  271:    
         -:  272:    //Using a temporary pvData so it could be updated and given to the iteration functions if needed
-        1:  273:    polyvector_precompute(pvField,pvData);
+        3:  273:    polyvector_precompute(pvField,pvData);
         -:  274:    
         -:  275:    //forming total energy matrix;
-        1:  276:    SparseMatrix<complex<double>> totalUnreducedLhs =(pvData.smoothMat.adjoint()*pvData.WSmooth*pvData.smoothMat) * (pvData.wSmooth / pvData.totalSmoothWeight);
-        1:  277:    if (pvData.roSyMat.rows()!=0)
+        3:  276:    SparseMatrix<complex<double>> totalUnreducedLhs =(pvData.smoothMat.adjoint()*pvData.WSmooth*pvData.smoothMat) * (pvData.wSmooth / pvData.totalSmoothWeight);
+        3:  277:    if (pvData.roSyMat.rows()!=0)
     #####:  278:        totalUnreducedLhs=totalUnreducedLhs+(pvData.roSyMat.adjoint()*pvData.WRoSy*pvData.roSyMat)*(pvData.wRoSy/pvData.totalRoSyWeight);
-        1:  279:    if (pvData.alignMat.rows()!=0)
+        3:  279:    if (pvData.alignMat.rows()!=0)
     #####:  280:        totalUnreducedLhs=totalUnreducedLhs+(pvData.alignMat.adjoint()*pvData.WAlign*pvData.alignMat)/pvData.totalConstrainedWeight;
-        1:  281:    VectorXcd totalUnreducedRhs= (pvData.alignMat.adjoint()*pvData.WAlign*pvData.alignRhs)/pvData.totalConstrainedWeight;
+        3:  281:    VectorXcd totalUnreducedRhs= (pvData.alignMat.adjoint()*pvData.WAlign*pvData.alignRhs)/pvData.totalConstrainedWeight;
         -:  282:    
-        1:  283:    pvData.totalLhs = pvData.reducMat.adjoint()*totalUnreducedLhs*pvData.reducMat;
-        1:  284:    pvData.totalRhs = pvData.reducMat.adjoint()*(totalUnreducedRhs - totalUnreducedLhs*pvData.reducRhs);
+        3:  283:    pvData.totalLhs = pvData.reducMat.adjoint()*totalUnreducedLhs*pvData.reducMat;
+        3:  284:    pvData.totalRhs = pvData.reducMat.adjoint()*(totalUnreducedRhs - totalUnreducedLhs*pvData.reducRhs);
         -:  285:    
         -:  286:    //Initial solution (or only solution if numIterations = 0)
-        1:  287:    SimplicialLDLT<SparseMatrix<complex<double>>> solver;
-        1:  288:    solver.compute(pvData.totalLhs);
-        1:  289:    pvData.reducedDofs = solver.solve(pvData.totalRhs);
-        2:  290:    assert(solver.info() == Success && "PolyVector solver failed!");
-        1:  291:    VectorXcd fullDofs = pvData.reducMat*pvData.reducedDofs+pvData.reducRhs;
+        3:  287:    SimplicialLDLT<SparseMatrix<complex<double>>> solver;
+        3:  288:    solver.compute(pvData.totalLhs);
+        3:  289:    pvData.reducedDofs = solver.solve(pvData.totalRhs);
+        6:  290:    assert(solver.info() == Success && "PolyVector solver failed!");
+        3:  291:    VectorXcd fullDofs = pvData.reducMat*pvData.reducedDofs+pvData.reducRhs;
         -:  292:    
-        1:  293:    if (pvData.verbose){
+        3:  293:    if (pvData.verbose){
     #####:  294:        std::cout<<"Smoothness energy: "<<std::abs((fullDofs.adjoint()*pvData.smoothMat.adjoint()*pvData.WSmooth*pvData.smoothMat*fullDofs).coeff(0,0) * (pvData.wSmooth / pvData.totalSmoothWeight))<<std::endl;
     #####:  295:        std::cout<<"RoSy energy: "<<std::abs((fullDofs.adjoint()*(pvData.roSyMat.adjoint()*pvData.WRoSy*pvData.roSyMat)*fullDofs).coeff(0,0) * (pvData.wRoSy/pvData.totalRoSyWeight))<<std::endl;
     #####:  296:        std::cout<<"Alignment energy: "<<((pvData.alignMat.adjoint()*pvData.WAlign*pvData.alignMat)/pvData.totalConstrainedWeight * fullDofs - totalUnreducedRhs).cwiseAbs().maxCoeff()<<std::endl;
     #####:  297:    }
         -:  298:    
-        1:  299:    MatrixXcd intField(pvData.tb->numSpaces, pvData.N);
-        5:  300:    for (int i=0;i<pvData.N;i++)
-        4:  301:        intField.col(i) = fullDofs.segment(i*pvData.tb->numSpaces,pvData.tb->numSpaces);
+        3:  299:    MatrixXcd intField(pvData.tb->numSpaces, pvData.N);
+       15:  300:    for (int i=0;i<pvData.N;i++)
+       12:  301:        intField.col(i) = fullDofs.segment(i*pvData.tb->numSpaces,pvData.tb->numSpaces);
         -:  302:    
-        1:  303:    pvField.fieldType = fieldTypeEnum::POLYVECTOR_FIELD;
-        1:  304:    pvField.set_intrinsic_field(intField);
+        3:  303:    pvField.fieldType = fieldTypeEnum::POLYVECTOR_FIELD;
+        3:  304:    pvField.set_intrinsic_field(intField);
         -:  305:    
-        1:  306:    if (pvData.iterationMode){
+        3:  306:    if (pvData.iterationMode){
     #####:  307:        if (pvData.verbose)
     #####:  308:            std::cout<<"Iteration Mode"<<std::endl;
         -:  309:        
@@ -338,7 +338,7 @@
     #####:  334:        pvData.implicitSolver.compute(pvData.implicitLhs);
     #####:  335:        assert(pvData.implicitSolver.info() == Success && "Implicit factorization failed!");
     #####:  336:    }
-        1:  337:}
+        3:  337:}
         -:  338:
         -:  339:
         -:  340:// Computes iterations of the extended PolyVector algorithm, which includes a single implicit step and running the set of projection iteration functions by order once.

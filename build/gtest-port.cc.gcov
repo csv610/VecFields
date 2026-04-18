@@ -1019,18 +1019,18 @@
         -: 1015:
         -: 1016:// Formats a source file path and a line number as they would appear
         -: 1017:// in an error message from the compiler used to compile this code.
-       12: 1018:GTEST_API_ ::std::string FormatFileLocation(const char* file, int line) {
-       12: 1019:  const std::string file_name(file == nullptr ? kUnknownFile : file);
+       14: 1018:GTEST_API_ ::std::string FormatFileLocation(const char* file, int line) {
+       14: 1019:  const std::string file_name(file == nullptr ? kUnknownFile : file);
         -: 1020:
-       12: 1021:  if (line < 0) {
+       14: 1021:  if (line < 0) {
     #####: 1022:    return file_name + ":";
         -: 1023:  }
         -: 1024:#ifdef _MSC_VER
         -: 1025:  return file_name + "(" + StreamableToString(line) + "):";
         -: 1026:#else
-       12: 1027:  return file_name + ":" + StreamableToString(line) + ":";
+       14: 1027:  return file_name + ":" + StreamableToString(line) + ":";
         -: 1028:#endif  // _MSC_VER
-       12: 1029:}
+       14: 1029:}
         -: 1030:
         -: 1031:// Formats a file location for compiler-independent XML output.
         -: 1032:// Although this function is not platform dependent, we put it next to
@@ -1275,17 +1275,17 @@
         -: 1271:// Returns the name of the environment variable corresponding to the
         -: 1272:// given flag.  For example, FlagToEnvVar("foo") will return
         -: 1273:// "GTEST_FOO" in the open-source version.
-      198: 1274:static std::string FlagToEnvVar(const char* flag) {
+      360: 1274:static std::string FlagToEnvVar(const char* flag) {
         -: 1275:  const std::string full_flag =
-      198: 1276:      (Message() << GTEST_FLAG_PREFIX_ << flag).GetString();
+      360: 1276:      (Message() << GTEST_FLAG_PREFIX_ << flag).GetString();
         -: 1277:
-      198: 1278:  Message env_var;
-     4004: 1279:  for (size_t i = 0; i != full_flag.length(); i++) {
-     3806: 1280:    env_var << ToUpper(full_flag.c_str()[i]);
-     3806: 1281:  }
+      360: 1278:  Message env_var;
+     7280: 1279:  for (size_t i = 0; i != full_flag.length(); i++) {
+     6920: 1280:    env_var << ToUpper(full_flag.c_str()[i]);
+     6920: 1281:  }
         -: 1282:
-      198: 1283:  return env_var.GetString();
-      198: 1284:}
+      360: 1283:  return env_var.GetString();
+      360: 1284:}
         -: 1285:
         -: 1286:// Parses 'str' for a 32-bit signed integer.  If successful, writes
         -: 1287:// the result to *value and returns true; otherwise leaves *value
@@ -1332,29 +1332,29 @@
         -: 1328:// the given flag; if it's not set, returns default_value.
         -: 1329://
         -: 1330:// The value is considered true if and only if it's not "0".
-       99: 1331:bool BoolFromGTestEnv(const char* flag, bool default_value) {
+      180: 1331:bool BoolFromGTestEnv(const char* flag, bool default_value) {
         -: 1332:#if defined(GTEST_GET_BOOL_FROM_ENV_)
         -: 1333:  return GTEST_GET_BOOL_FROM_ENV_(flag, default_value);
         -: 1334:#else
-       99: 1335:  const std::string env_var = FlagToEnvVar(flag);
-       99: 1336:  const char* const string_value = posix::GetEnv(env_var.c_str());
-       99: 1337:  return string_value == nullptr ? default_value
+      180: 1335:  const std::string env_var = FlagToEnvVar(flag);
+      180: 1336:  const char* const string_value = posix::GetEnv(env_var.c_str());
+      180: 1337:  return string_value == nullptr ? default_value
     #####: 1338:                                 : strcmp(string_value, "0") != 0;
         -: 1339:#endif  // defined(GTEST_GET_BOOL_FROM_ENV_)
-       99: 1340:}
+      180: 1340:}
         -: 1341:
         -: 1342:// Reads and returns a 32-bit integer stored in the environment
         -: 1343:// variable corresponding to the given flag; if it isn't set or
         -: 1344:// doesn't represent a valid 32-bit integer, returns default_value.
-       33: 1345:Int32 Int32FromGTestEnv(const char* flag, Int32 default_value) {
+       60: 1345:Int32 Int32FromGTestEnv(const char* flag, Int32 default_value) {
         -: 1346:#if defined(GTEST_GET_INT32_FROM_ENV_)
         -: 1347:  return GTEST_GET_INT32_FROM_ENV_(flag, default_value);
         -: 1348:#else
-       33: 1349:  const std::string env_var = FlagToEnvVar(flag);
-       33: 1350:  const char* const string_value = posix::GetEnv(env_var.c_str());
-       33: 1351:  if (string_value == nullptr) {
+       60: 1349:  const std::string env_var = FlagToEnvVar(flag);
+       60: 1350:  const char* const string_value = posix::GetEnv(env_var.c_str());
+       60: 1351:  if (string_value == nullptr) {
         -: 1352:    // The environment variable is not set.
-       33: 1353:    return default_value;
+       60: 1353:    return default_value;
         -: 1354:  }
         -: 1355:
     #####: 1356:  Int32 result = default_value;
@@ -1368,7 +1368,7 @@
         -: 1364:
     #####: 1365:  return result;
         -: 1366:#endif  // defined(GTEST_GET_INT32_FROM_ENV_)
-       33: 1367:}
+       60: 1367:}
         -: 1368:
         -: 1369:// As a special case for the 'output' flag, if GTEST_OUTPUT is not
         -: 1370:// set, we look for XML_OUTPUT_FILE, which is set by the Bazel build
@@ -1378,10 +1378,10 @@
         -: 1374:// not check that the flag is 'output'
         -: 1375:// In essence this checks an env variable called XML_OUTPUT_FILE
         -: 1376:// and if it is set we prepend "xml:" to its value, if it not set we return ""
-       11: 1377:std::string OutputFlagAlsoCheckEnvVar(){
-       11: 1378:  std::string default_value_for_output_flag = "";
-       11: 1379:  const char* xml_output_file_env = posix::GetEnv("XML_OUTPUT_FILE");
-       11: 1380:  if (nullptr != xml_output_file_env) {
+       20: 1377:std::string OutputFlagAlsoCheckEnvVar(){
+       20: 1378:  std::string default_value_for_output_flag = "";
+       20: 1379:  const char* xml_output_file_env = posix::GetEnv("XML_OUTPUT_FILE");
+       20: 1380:  if (nullptr != xml_output_file_env) {
     #####: 1381:    default_value_for_output_flag = std::string("xml:") + xml_output_file_env;
     #####: 1382:  }
     #####: 1383:  return default_value_for_output_flag;
@@ -1389,15 +1389,15 @@
         -: 1385:
         -: 1386:// Reads and returns the string environment variable corresponding to
         -: 1387:// the given flag; if it's not set, returns default_value.
-       66: 1388:const char* StringFromGTestEnv(const char* flag, const char* default_value) {
+      120: 1388:const char* StringFromGTestEnv(const char* flag, const char* default_value) {
         -: 1389:#if defined(GTEST_GET_STRING_FROM_ENV_)
         -: 1390:  return GTEST_GET_STRING_FROM_ENV_(flag, default_value);
         -: 1391:#else
-       66: 1392:  const std::string env_var = FlagToEnvVar(flag);
-       66: 1393:  const char* const value = posix::GetEnv(env_var.c_str());
-       66: 1394:  return value == nullptr ? default_value : value;
+      120: 1392:  const std::string env_var = FlagToEnvVar(flag);
+      120: 1393:  const char* const value = posix::GetEnv(env_var.c_str());
+      120: 1394:  return value == nullptr ? default_value : value;
         -: 1395:#endif  // defined(GTEST_GET_STRING_FROM_ENV_)
-       66: 1396:}
+      120: 1396:}
         -: 1397:
         -: 1398:}  // namespace internal
         -: 1399:}  // namespace testing

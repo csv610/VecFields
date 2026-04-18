@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/SparseCore/SparseSolverBase.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -76,17 +76,17 @@
         -:   72:  public:
         -:   73:
         -:   74:    /** Default constructor */
-        3:   75:    SparseSolverBase()
-        3:   76:      : m_isInitialized(false)
-        3:   77:    {}
+        9:   75:    SparseSolverBase()
+        9:   76:      : m_isInitialized(false)
+        9:   77:    {}
         -:   78:
         -:   79:    SparseSolverBase(SparseSolverBase&&other ) : internal::noncopyable{}, m_isInitialized{other.m_isInitialized} {}
         -:   80:
-        3:   81:    ~SparseSolverBase()
-        3:   82:    {}
+        9:   81:    ~SparseSolverBase()
+        9:   82:    {}
         -:   83:
         -:   84:    Derived& derived() { return *static_cast<Derived*>(this); }
-        2:   85:    const Derived& derived() const { return *static_cast<const Derived*>(this); }
+        6:   85:    const Derived& derived() const { return *static_cast<const Derived*>(this); }
         -:   86:    
         -:   87:    /** \returns an expression of the solution x of \f$ A x = b \f$ using the current decomposition of A.
         -:   88:      *
@@ -94,11 +94,11 @@
         -:   90:      */
         -:   91:    template<typename Rhs>
         -:   92:    inline const Solve<Derived, Rhs>
-        1:   93:    solve(const MatrixBase<Rhs>& b) const
+        3:   93:    solve(const MatrixBase<Rhs>& b) const
         -:   94:    {
-        2:   95:      eigen_assert(m_isInitialized && "Solver is not initialized.");
-        2:   96:      eigen_assert(derived().rows()==b.rows() && "solve(): invalid number of rows of the right hand side matrix b");
-        1:   97:      return Solve<Derived, Rhs>(derived(), b.derived());
+        6:   95:      eigen_assert(m_isInitialized && "Solver is not initialized.");
+        6:   96:      eigen_assert(derived().rows()==b.rows() && "solve(): invalid number of rows of the right hand side matrix b");
+        3:   97:      return Solve<Derived, Rhs>(derived(), b.derived());
         -:   98:    }
         -:   99:    
         -:  100:    /** \returns an expression of the solution x of \f$ A x = b \f$ using the current decomposition of A.

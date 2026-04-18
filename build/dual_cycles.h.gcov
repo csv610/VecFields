@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/include/directional/dual_cycles.h
         -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
         -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
-        -:    0:Runs:1
+        -:    0:Runs:3
         -:    1://This file is part of Directional, a library for directional field processing.
         -:    2:// Copyright (C) 2016 Amir Vaxman <avaxman@gmail.com>
         -:    3://
@@ -36,7 +36,7 @@
         -:   32://  vertex2cycle:     #v by 1 map between vertex and corresponding cycle (for comfort of input from the user's side; inner vertices map to their cycles, boundary vertices to the bigger boundary cycle.
         -:   33://  innerEdges:       #iE by 1 the subset of #EV that are inner edges, and with the same ordering as the columns of basisCycles.
         -:   34:
-        1:   35:inline void dual_cycles(const TriMesh& mesh,
+        3:   35:inline void dual_cycles(const TriMesh& mesh,
         -:   36:                        Eigen::SparseMatrix<double>& basisCycles,
         -:   37:                        Eigen::VectorXd& cycleCurvature,
         -:   38:                        Eigen::VectorXi& vertex2cycle,
@@ -44,37 +44,37 @@
         -:   40:{
         -:   41:    using namespace Eigen;
         -:   42:    using namespace std;
-        1:   43:    int numV = mesh.F.maxCoeff() + 1;
-        1:   44:    int eulerChar = numV - mesh.EV.rows() + mesh.F.rows();
-        1:   45:    vertex2cycle.conservativeResize(mesh.V.rows());
+        3:   43:    int numV = mesh.F.maxCoeff() + 1;
+        3:   44:    int eulerChar = numV - mesh.EV.rows() + mesh.F.rows();
+        3:   45:    vertex2cycle.conservativeResize(mesh.V.rows());
         -:   46:    
         -:   47:    
-        1:   48:    int numBoundaries=mesh.boundaryLoops.size();
-        1:   49:    int numGenerators=2-numBoundaries-eulerChar;
+        3:   48:    int numBoundaries=mesh.boundaryLoops.size();
+        3:   49:    int numGenerators=2-numBoundaries-eulerChar;
         -:   50:    
-        1:   51:    vector<Triplet<double> > basisCycleTriplets(mesh.EV.rows() * 2);
+        3:   51:    vector<Triplet<double> > basisCycleTriplets(mesh.EV.rows() * 2);
         -:   52:    
         -:   53:    //all 1-ring cycles, including boundaries
-      241:   54:    for (int i = 0; i < mesh.EV.rows(); i++) {
-      240:   55:        basisCycleTriplets[2*i]=Triplet<double>(mesh.EV(i, 0), i, -1.0);
-      240:   56:        basisCycleTriplets[2*i+1]=Triplet<double>(mesh.EV(i, 1), i, 1.0);
-      240:   57:    }
+      723:   54:    for (int i = 0; i < mesh.EV.rows(); i++) {
+      720:   55:        basisCycleTriplets[2*i]=Triplet<double>(mesh.EV(i, 0), i, -1.0);
+      720:   56:        basisCycleTriplets[2*i+1]=Triplet<double>(mesh.EV(i, 1), i, 1.0);
+      720:   57:    }
         -:   58:    
         -:   59:    //Creating boundary cycles by building a matrix the sums up boundary loops and zeros out boundary vertex cycles - it will be multiplied from the left to basisCyclesMat
-        1:   60:    VectorXi isBoundary(mesh.V.rows()); isBoundary.setZero();
-        3:   61:    for (int i=0;i<mesh.boundaryLoops.size();i++)
-      122:   62:        for (int j=0;j<mesh.boundaryLoops[i].size();j++)
-      122:   63:            isBoundary(mesh.boundaryLoops[i][j])=1;
+        3:   60:    VectorXi isBoundary(mesh.V.rows()); isBoundary.setZero();
+        9:   61:    for (int i=0;i<mesh.boundaryLoops.size();i++)
+      366:   62:        for (int j=0;j<mesh.boundaryLoops[i].size();j++)
+      366:   63:            isBoundary(mesh.boundaryLoops[i][j])=1;
         -:   64:    
-        1:   65:    VectorXi pureInnerEdgeMask=VectorXi::Constant(mesh.EV.rows(),1);
-      241:   66:    for (int i=0;i<mesh.EV.rows();i++)
-      480:   67:        if ((isBoundary(mesh.EV(i,0)))||(isBoundary(mesh.EV(i,1))))
-      240:   68:            pureInnerEdgeMask(i)=0;
+        3:   65:    VectorXi pureInnerEdgeMask=VectorXi::Constant(mesh.EV.rows(),1);
+      723:   66:    for (int i=0;i<mesh.EV.rows();i++)
+     1440:   67:        if ((isBoundary(mesh.EV(i,0)))||(isBoundary(mesh.EV(i,1))))
+      720:   68:            pureInnerEdgeMask(i)=0;
         -:   69:    
-        1:   70:    int currGeneratorCycle=0;
-        1:   71:    int currBoundaryCycle=0;
+        3:   70:    int currGeneratorCycle=0;
+        3:   71:    int currBoundaryCycle=0;
         -:   72:    
-        1:   73:    if ((numGenerators!=0)/*||(numBoundaries!=0)*/){
+        3:   73:    if ((numGenerators!=0)/*||(numBoundaries!=0)*/){
     #####:   74:        MatrixXi reducedEV(mesh.EV);
     #####:   75:        for (int i = 1; i < reducedEV.rows(); i++)
     #####:   76:            if(isBoundary(reducedEV(i,0)) || isBoundary(reducedEV(i, 1)))
@@ -167,129 +167,129 @@
         -:  163:        //assert(currBoundaryCycle==numBoundaries && currGeneratorCycle==numGenerators);
     #####:  164:    }
         -:  165:    
-        1:  166:    numGenerators =currGeneratorCycle;
+        3:  166:    numGenerators =currGeneratorCycle;
         -:  167:    
-        1:  168:    SparseMatrix<double> sumBoundaryLoops(numV+numBoundaries+numGenerators,numV+numGenerators);
-        1:  169:    vector<Triplet<double>> sumBoundaryLoopsTriplets;
-        1:  170:    vector<int> innerVerticesList, innerEdgesList;
-        1:  171:    VectorXi remainRows, remainColumns;
+        3:  168:    SparseMatrix<double> sumBoundaryLoops(numV+numBoundaries+numGenerators,numV+numGenerators);
+        3:  169:    vector<Triplet<double>> sumBoundaryLoopsTriplets;
+        3:  170:    vector<int> innerVerticesList, innerEdgesList;
+        3:  171:    VectorXi remainRows, remainColumns;
         -:  172:    
-      121:  173:    for (int i=0;i<numV;i++){
-      120:  174:        sumBoundaryLoopsTriplets.push_back(Triplet<double>(i, i,1.0-isBoundary[i]));
-      120:  175:        if (!isBoundary(i)){
+      363:  173:    for (int i=0;i<numV;i++){
+      360:  174:        sumBoundaryLoopsTriplets.push_back(Triplet<double>(i, i,1.0-isBoundary[i]));
+      360:  175:        if (!isBoundary(i)){
     #####:  176:            innerVerticesList.push_back(i);
     #####:  177:            vertex2cycle(i)=innerVerticesList.size()-1;
     #####:  178:        }
-      120:  179:    }
+      360:  179:    }
         -:  180:    
-      241:  181:    for (int i=0;i<mesh.EV.rows();i++)
-      360:  182:        if ((mesh.EF(i,0) != -1)&&(mesh.EF(i,1) != -1))
-      120:  183:            innerEdgesList.push_back(i);
+      723:  181:    for (int i=0;i<mesh.EV.rows();i++)
+     1080:  182:        if ((mesh.EF(i,0) != -1)&&(mesh.EF(i,1) != -1))
+      360:  183:            innerEdgesList.push_back(i);
         -:  184:    
         -:  185:    //summing up boundary loops
-        3:  186:    for (int i=0;i<mesh.boundaryLoops.size();i++)
-      122:  187:        for (int j=0;j<mesh.boundaryLoops[i].size();j++){
-      120:  188:            sumBoundaryLoopsTriplets.push_back(Triplet<double>(numV+i, mesh.boundaryLoops[i][j],1.0));
-      120:  189:            vertex2cycle(mesh.boundaryLoops[i][j])=innerVerticesList.size()+i;
-      122:  190:        }
+        9:  186:    for (int i=0;i<mesh.boundaryLoops.size();i++)
+      366:  187:        for (int j=0;j<mesh.boundaryLoops[i].size();j++){
+      360:  188:            sumBoundaryLoopsTriplets.push_back(Triplet<double>(numV+i, mesh.boundaryLoops[i][j],1.0));
+      360:  189:            vertex2cycle(mesh.boundaryLoops[i][j])=innerVerticesList.size()+i;
+      366:  190:        }
         -:  191:    
         -:  192:    
         -:  193:    //just passing generators through;
-        1:  194:    for (int i=numV;i<numV+numGenerators;i++)
+        3:  194:    for (int i=numV;i<numV+numGenerators;i++)
     #####:  195:        sumBoundaryLoopsTriplets.push_back(Triplet<double>(i, i,1.0));
         -:  196:    
         -:  197:    //Creating a matrix that aggregates basic cycles on boundary vertices
-        1:  198:    sumBoundaryLoops.setFromTriplets(sumBoundaryLoopsTriplets.begin(), sumBoundaryLoopsTriplets.end());
+        3:  198:    sumBoundaryLoops.setFromTriplets(sumBoundaryLoopsTriplets.begin(), sumBoundaryLoopsTriplets.end());
         -:  199:    
-        1:  200:    basisCycles.resize(numV+numGenerators, mesh.EV.rows());
-        1:  201:    basisCycles.setFromTriplets(basisCycleTriplets.begin(), basisCycleTriplets.end());
-        1:  202:    basisCycles=sumBoundaryLoops*basisCycles;
+        3:  200:    basisCycles.resize(numV+numGenerators, mesh.EV.rows());
+        3:  201:    basisCycles.setFromTriplets(basisCycleTriplets.begin(), basisCycleTriplets.end());
+        3:  202:    basisCycles=sumBoundaryLoops*basisCycles;
         -:  203:    
         -:  204:    //removing rows and columns of boundary vertices
-        1:  205:    remainRows.resize(innerVerticesList.size()+numBoundaries+numGenerators);
-        1:  206:    remainColumns.resize(innerEdgesList.size());
-        1:  207:    for (int i=0;i<innerVerticesList.size();i++)
+        3:  205:    remainRows.resize(innerVerticesList.size()+numBoundaries+numGenerators);
+        3:  206:    remainColumns.resize(innerEdgesList.size());
+        3:  207:    for (int i=0;i<innerVerticesList.size();i++)
     #####:  208:        remainRows(i)=innerVerticesList[i];
         -:  209:    
-        3:  210:    for (int i=0;i<numBoundaries+numGenerators;i++)
-        2:  211:        remainRows(innerVerticesList.size()+i)=numV+i;
+        9:  210:    for (int i=0;i<numBoundaries+numGenerators;i++)
+        6:  211:        remainRows(innerVerticesList.size()+i)=numV+i;
         -:  212:    
-      121:  213:    for (int i=0;i<innerEdgesList.size();i++)
-      120:  214:        remainColumns(i)=innerEdgesList[i];
+      363:  213:    for (int i=0;i<innerEdgesList.size();i++)
+      360:  214:        remainColumns(i)=innerEdgesList[i];
         -:  215:    
         -:  216:    //creating slicing matrices
-        1:  217:    std::vector<Triplet<double> > rowSliceTriplets, colSliceTriplets;
-        3:  218:    for (int i=0;i<remainRows.size();i++)
-        2:  219:        rowSliceTriplets.push_back(Triplet<double>(i, remainRows(i), 1.0));
-      121:  220:    for (int i=0;i<remainColumns.size();i++)
-      120:  221:        colSliceTriplets.push_back(Triplet<double>(remainColumns(i), i, 1.0));
+        3:  217:    std::vector<Triplet<double> > rowSliceTriplets, colSliceTriplets;
+        9:  218:    for (int i=0;i<remainRows.size();i++)
+        6:  219:        rowSliceTriplets.push_back(Triplet<double>(i, remainRows(i), 1.0));
+      363:  220:    for (int i=0;i<remainColumns.size();i++)
+      360:  221:        colSliceTriplets.push_back(Triplet<double>(remainColumns(i), i, 1.0));
         -:  222:    
-        1:  223:    SparseMatrix<double> rowSliceMat(remainRows.rows(), basisCycles.rows());
-        1:  224:    rowSliceMat.setFromTriplets(rowSliceTriplets.begin(), rowSliceTriplets.end());
+        3:  223:    SparseMatrix<double> rowSliceMat(remainRows.rows(), basisCycles.rows());
+        3:  224:    rowSliceMat.setFromTriplets(rowSliceTriplets.begin(), rowSliceTriplets.end());
         -:  225:    
-        1:  226:    SparseMatrix<double> colSliceMat(basisCycles.cols(), remainColumns.rows());
-        1:  227:    colSliceMat.setFromTriplets(colSliceTriplets.begin(), colSliceTriplets.end());
+        3:  226:    SparseMatrix<double> colSliceMat(basisCycles.cols(), remainColumns.rows());
+        3:  227:    colSliceMat.setFromTriplets(colSliceTriplets.begin(), colSliceTriplets.end());
         -:  228:    
-        1:  229:    basisCycles=rowSliceMat*basisCycles*colSliceMat;
+        3:  229:    basisCycles=rowSliceMat*basisCycles*colSliceMat;
         -:  230:    
-        1:  231:    innerEdges.conservativeResize(innerEdgesList.size());
-      121:  232:    for (int i=0;i<innerEdgesList.size();i++)
-      120:  233:        innerEdges(i)=innerEdgesList[i];
+        3:  231:    innerEdges.conservativeResize(innerEdgesList.size());
+      363:  232:    for (int i=0;i<innerEdgesList.size();i++)
+      360:  233:        innerEdges(i)=innerEdgesList[i];
         -:  234:    
         -:  235:    //Correct computation of cycle curvature by adding angles
         -:  236:    //getting corner angle sum
-        1:  237:    VectorXd allAngles(3*mesh.F.rows());
-      121:  238:    for (int i=0;i<mesh.F.rows();i++){
-      480:  239:        for (int j=0;j<3;j++){
-      360:  240:            RowVector3d edgeVec12=mesh.V.row(mesh.F(i,(j+1)%3))-mesh.V.row(mesh.F(i,j));
-      360:  241:            RowVector3d edgeVec13=mesh.V.row(mesh.F(i,(j+2)%3))-mesh.V.row(mesh.F(i,j));
-      360:  242:            allAngles(3*i+j)=acos(edgeVec12.normalized().dot(edgeVec13.normalized()));
-      360:  243:        }
-      120:  244:    }
+        3:  237:    VectorXd allAngles(3*mesh.F.rows());
+      363:  238:    for (int i=0;i<mesh.F.rows();i++){
+     1440:  239:        for (int j=0;j<3;j++){
+     1080:  240:            RowVector3d edgeVec12=mesh.V.row(mesh.F(i,(j+1)%3))-mesh.V.row(mesh.F(i,j));
+     1080:  241:            RowVector3d edgeVec13=mesh.V.row(mesh.F(i,(j+2)%3))-mesh.V.row(mesh.F(i,j));
+     1080:  242:            allAngles(3*i+j)=acos(edgeVec12.normalized().dot(edgeVec13.normalized()));
+     1080:  243:        }
+      360:  244:    }
         -:  245:    
         -:  246:    //for each cycle, summing up all its internal angles negatively  + either 2*pi*|cycle| for internal cycles or pi*|cycle| for boundary cycles.
-        1:  247:    cycleCurvature=VectorXd::Zero(basisCycles.rows());
-        1:  248:    VectorXi isBigCycle=VectorXi::Ones(basisCycles.rows());  //TODO: retain it rather then reverse-engineer...
+        3:  247:    cycleCurvature=VectorXd::Zero(basisCycles.rows());
+        3:  248:    VectorXi isBigCycle=VectorXi::Ones(basisCycles.rows());  //TODO: retain it rather then reverse-engineer...
         -:  249:    
-      121:  250:    for (int i=0;i<mesh.V.rows();i++)  //inner cycles
-      120:  251:        if (!isBoundary(i))
+      363:  250:    for (int i=0;i<mesh.V.rows();i++)  //inner cycles
+      360:  251:        if (!isBoundary(i))
     #####:  252:            isBigCycle(vertex2cycle(i))=0;
         -:  253:    
         -:  254:    //getting the 4 corners of each edge to allocated later to cycles according to the sign of the edge.
-        1:  255:    vector<set<int>> cornerSets(basisCycles.rows());
-        1:  256:    vector<set<int>> vertexSets(basisCycles.rows());
-        1:  257:    MatrixXi edgeCorners(innerEdges.size(),4);
-      121:  258:    for (int i=0;i<innerEdges.rows();i++){
-      120:  259:        int inFace1=0;
-      219:  260:        while (mesh.F(mesh.EF(innerEdges(i),0),inFace1)!=mesh.EV(innerEdges(i),0))
-       99:  261:            inFace1=(inFace1+1)%3;
-      120:  262:        int inFace2=0;
-      275:  263:        while (mesh.F(mesh.EF(innerEdges(i),1),inFace2)!=mesh.EV(innerEdges(i),1))
-      155:  264:            inFace2=(inFace2+1)%3;
+        3:  255:    vector<set<int>> cornerSets(basisCycles.rows());
+        3:  256:    vector<set<int>> vertexSets(basisCycles.rows());
+        3:  257:    MatrixXi edgeCorners(innerEdges.size(),4);
+      363:  258:    for (int i=0;i<innerEdges.rows();i++){
+      360:  259:        int inFace1=0;
+      657:  260:        while (mesh.F(mesh.EF(innerEdges(i),0),inFace1)!=mesh.EV(innerEdges(i),0))
+      297:  261:            inFace1=(inFace1+1)%3;
+      360:  262:        int inFace2=0;
+      825:  263:        while (mesh.F(mesh.EF(innerEdges(i),1),inFace2)!=mesh.EV(innerEdges(i),1))
+      465:  264:            inFace2=(inFace2+1)%3;
         -:  265:        
-      120:  266:        edgeCorners(i,0)=mesh.EF(innerEdges(i),0)*3+inFace1;
-      120:  267:        edgeCorners(i,1)=mesh.EF(innerEdges(i),1)*3+(inFace2+1)%3;
-      120:  268:        edgeCorners(i,2)=mesh.EF(innerEdges(i),0)*3+(inFace1+1)%3;
-      120:  269:        edgeCorners(i,3)=mesh.EF(innerEdges(i),1)*3+inFace2;
-      120:  270:    }
+      360:  266:        edgeCorners(i,0)=mesh.EF(innerEdges(i),0)*3+inFace1;
+      360:  267:        edgeCorners(i,1)=mesh.EF(innerEdges(i),1)*3+(inFace2+1)%3;
+      360:  268:        edgeCorners(i,2)=mesh.EF(innerEdges(i),0)*3+(inFace1+1)%3;
+      360:  269:        edgeCorners(i,3)=mesh.EF(innerEdges(i),1)*3+inFace2;
+      360:  270:    }
         -:  271:    
-      121:  272:    for (int k=0; k<basisCycles.outerSize(); ++k)
-      358:  273:        for (SparseMatrix<double>::InnerIterator it(basisCycles,k); it; ++it){
-      238:  274:            cornerSets[it.row()].insert(edgeCorners(it.col(),it.value()<0 ? 0 : 2));
-      238:  275:            cornerSets[it.row()].insert(edgeCorners(it.col(),it.value()<0 ? 1 : 3));
-      238:  276:            vertexSets[it.row()].insert(mesh.EV(innerEdges(it.col()), it.value()<0 ? 0 : 1));
-      358:  277:        }
+      363:  272:    for (int k=0; k<basisCycles.outerSize(); ++k)
+     1074:  273:        for (SparseMatrix<double>::InnerIterator it(basisCycles,k); it; ++it){
+      714:  274:            cornerSets[it.row()].insert(edgeCorners(it.col(),it.value()<0 ? 0 : 2));
+      714:  275:            cornerSets[it.row()].insert(edgeCorners(it.col(),it.value()<0 ? 1 : 3));
+      714:  276:            vertexSets[it.row()].insert(mesh.EV(innerEdges(it.col()), it.value()<0 ? 0 : 1));
+     1074:  277:        }
         -:  278:    
-        3:  279:    for (int i=0;i<cornerSets.size();i++){
-        2:  280:        if (isBigCycle(i))
-        2:  281:            cycleCurvature(i)=std::numbers::pi*(double)(vertexSets[i].size());
+        9:  279:    for (int i=0;i<cornerSets.size();i++){
+        6:  280:        if (isBigCycle(i))
+        6:  281:            cycleCurvature(i)=std::numbers::pi*(double)(vertexSets[i].size());
         -:  282:        else
     #####:  283:            cycleCurvature(i)=2.0*std::numbers::pi;
-      358:  284:        for (set<int>::iterator si=cornerSets[i].begin();si!=cornerSets[i].end();si++)
-      356:  285:            cycleCurvature(i)-=allAngles(*si);
-        2:  286:    }
+     1074:  284:        for (set<int>::iterator si=cornerSets[i].begin();si!=cornerSets[i].end();si++)
+     1068:  285:            cycleCurvature(i)-=allAngles(*si);
+        6:  286:    }
         -:  287:    
-        1:  288:}
+        3:  288:}
         -:  289:}
         -:  290:
         -:  291:#endif
