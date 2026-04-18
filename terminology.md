@@ -17,7 +17,22 @@ A geometric quantity that defines how to "parallel transport" a vector from one 
 The operation of moving a vector along a curve (or across mesh elements) such that it remains "parallel" according to the connection, accounting for the surface's curvature.
 
 ### Parallel Transport Problem
-A fundamental challenge in geometry processing arising from surface curvature. Unlike in flat space, parallel transporting a vector from point A to point B is path-dependent. Moving a vector around a closed loop results in a rotation called **holonomy**, which is directly proportional to the Gaussian curvature enclosed by the loop. In discrete meshes, this holonomy is concentrated at vertices (angle defect), forcing the presence of singularities and making it impossible to define a globally "parallel" field on any surface that is not topologically a cylinder or a torus.
+A fundamental challenge in geometry processing arising from surface curvature. Unlike in flat space, parallel transporting a vector from point A to point B is path-dependent. Moving a vector around a closed loop results in a rotation called **holonomy**, which is directly proportional to the Gaussian curvature enclosed by the loop.
+
+### Holonomy
+The cumulative rotation experienced by a vector after being parallel transported around a closed loop. It measures the total curvature enclosed by the loop.
+
+### Angle Defect
+The difference between $2\pi$ and the sum of interior angles around a vertex. It is the discrete equivalent of Gaussian curvature concentrated at a vertex.
+
+### Dual Mesh
+A topological representation where the roles of vertices and faces are swapped (e.g., Voronoi mesh). In vector field processing, matching and singularities are often defined on the dual elements.
+
+### Genus
+A topological invariant representing the number of "holes" or handles in a surface (e.g., sphere = 0, torus = 1).
+
+### Euler Characteristic ($\chi$)
+A constant related to a surface's topology ($\chi = V - E + F = 2 - 2g - b$). It determines the total singularity index of any vector field on that surface (Poincaré-Hopf theorem).
 
 ---
 
@@ -34,6 +49,9 @@ A representation of $N$-RoSy fields using a single complex number $z = A \cdot e
 
 ### PolyVector Field
 A generalization of power fields where $N$ vectors are represented as the roots of a monic complex polynomial. This allows for independent vectors that don't necessarily share the same magnitude or perfect rotational symmetry.
+
+### Monic Polynomial
+A polynomial where the highest-degree coefficient is 1 ($f(z) = z^N + \sum a_i z^i$). PolyVector fields use the roots of such polynomials to represent $N$ independent directions.
 
 ### Raw Field
 The most explicit representation, storing $N$ individual vectors per tangent space as a list of coordinates.
@@ -55,10 +73,23 @@ Paths on the mesh where the field cannot be combed continuously. These paths oft
 A point where the field direction is undefined. In a discrete field, this occurs when the total rotation (holonomy) of the field around a local cycle (like a vertex) is a non-zero multiple of $2\pi/N$.
 
 ### Singularity Index
-A number (often fractional, like $1/4$ or $-1/2$) describing the amount of field rotation around a singularity. The sum of all indices is constrained by the mesh topology (Gauss-Bonnet/Poincaré-Hopf theorem).
+A number (often fractional, like $1/4$ or $-1/2$) describing the amount of field rotation around a singularity. The sum of all indices is constrained by the mesh topology.
 
 ### Effort
 A measure of the total rotation or "energy" required to align the field across the mesh edges according to a given matching.
+
+### Constraints (Hard/Soft)
+- **Hard Constraints**: Forcing the field at a specific location to align exactly with a prescribed direction.
+- **Soft Constraints**: Guiding the field toward a direction using a weight, allowing the optimization to balance alignment with smoothness.
+
+### MBO (Merriman-Bence-Osher) Iterations
+A numerical scheme involving alternating steps of smoothing and thresholding (or projection), used in VecFields for Ginzburg-Landau optimization of PolyVectors.
+
+### Turn Number
+The integer number of times a vector field rotates relative to a local reference frame along a closed path.
+
+### Tree-Cotree Decomposition
+A graph-theoretic method to partition mesh edges into a spanning tree and a "cotree" of dual edges, used to find a basis for independent cycles on the mesh.
 
 ---
 
@@ -74,6 +105,9 @@ The theorem stating that any vector field can be uniquely decomposed into three 
 1. **Exact**: The gradient of a scalar function (curl-free).
 2. **Coexact**: The rotated gradient of a scalar function (divergence-free).
 3. **Harmonic**: Both curl-free and divergence-free, related to the global topology (handles) of the surface.
+
+### Whitney Forms
+Basis functions used to interpolate discrete values (like 1-forms on edges) into a continuous vector field inside mesh elements, ensuring specific continuity properties.
 
 ### Seamless Integration
 The process of finding scalar functions whose gradients best match a given directional field. "Seamless" implies that the functions match across mesh cuts up to a symmetry transformation (rotation and translation), enabling the generation of consistent textures or quad meshes.
