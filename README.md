@@ -32,91 +32,61 @@ Vector fields naturally contain **singularities** - points where the field direc
 
 ## Complete Pipeline
 
-```
-┌─────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                              DIRECTIONAL FIELD PROCESSING PIPELINE                                │
-└─────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    subgraph Input ["1. Input & Setup"]
+        A[3D Mesh: .off, .obj] --> B{Tangent Bundle Type}
+        B -->|Face-based| C[PCFaceTangentBundle]
+        B -->|Vertex-based| D[IntrinsicVertexTangentBundle]
+    end
 
-    ┌──────────┐
-    │ Triangle │
-    │   Mesh   │
-    │  (.obj)  │
-    └────┬─────┘
-         │
-         ▼
-    ┌────────────┐    ┌────────────┐    ┌──────────┐
-    │   Power   │    │  PolyVector│    │   Raw    │
-    │   Field   │    │   Field    │    │  Field   │
-    │  .field   │    │   .field   │    │  .field  │
-    └────┬─────┘    └────┬─────┘    └────┬─────┘
-         │                │                │
-         ▼                ▼                ▼
-    ┌──────────────────────────────────────────────────────────────┐
-    │                    FIELD CONVERSION                            │
-    │  power_to_raw  │  polyvector_to_raw  │  raw_to_polyvector    │
-    └──────────────────────────────────────────────────────────────┘
-                                │
-                                ▼
-                         ┌────────────┐
-                         │    Raw    │
-                         │   Field  │
-                         │ (uncombed)│
-                         └────┬─────┘
-                              │
-                              ▼
-                    ┌────────────────┐
-                    │ Principal       │
-                    │ Matching       │
-                    └────┬───────────┘
-                         │
-                         ▼
-                    ┌────────────┐
-                    │  Combing   │
-                    └────┬─────┘
-                         │
-          ┌──────────────┴──────────────┐
-          ▼                             ▼
-   ┌─────────────┐               ┌─────────────┐
-   │   Combed   │               │   Seams    │
-   │   Field   │               │  Detected  │
-   └─────┬─────┘               └────────────┘
-         │
-         ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                    DOWNSTREAM APPLICATIONS                         │
-└─────────────────────────────────────────────────────────────────────────┘
+    subgraph Design ["2. Field Design & Optimization"]
+        C & D --> E[Representation Selection]
+        E --> F[Power Fields: N-RoSy]
+        E --> G[PolyVector Fields: Independent N-vectors]
+        E --> H[Principal Directions: Curvature-aligned]
+        
+        subgraph Constraints ["Prescription & Constraints"]
+            I[Hard/Soft Alignment] --> F & G
+            J[Singularity Index Prescription] --> K[Index Prescription: Trivial Connections]
+        end
+    end
 
-    ┌────────────┐    ┌────────────┐    ┌────────────┐
-    │ Streamlines│    │  Isolines │    │  Cut Mesh │
-    │ Rendering │    │  Generat. │    │  w/ Sings │
-    └─────┬──────┘    └─────┬──────┘    └─────┬──────┘
-         │                  │                  │
-         ▼                  ▼                  ▼
-    ┌────────────┐    ┌────────────┐    ┌────────────┐
-    │   Flow    │    │  Contour  │    │ Seamless  │
-    │   Viz    │    │   Maps    │    │  Param.  │
-    └────────────┘    └────────────┘    └─────┬────┘
-                                            │
-                                            ▼
-                                     ┌────────────┐
-                                     │  Quad     │
-                                     │  Mesh     │
-                                     └───────────┘
+    subgraph Processing ["3. Processing & Smoothing"]
+        F & G & H & K --> L[Principal Matching: Resolves Ambiguity]
+        L --> M[Combing: Smooths Indexing/Seams]
+        
+        subgraph Optimization ["Iterative Refinement"]
+            G --> N[Ginzburg-Landau: MBO Iterations]
+            N --> G
+            G --> O[Integrable Fields: Curl Reduction]
+            O --> G
+        end
+    end
 
-├─────────────────────────────────────────────────────────────────────────┤
-│                 GEOMETRIC OPERATORS (Optional)                    │
-└─────────────────────────────────────────────────────────────────────────┘
+    subgraph Applications ["4. Applications & Output"]
+        M --> P[Streamline Tracing]
+        M --> Q[Seamless Integration: Poisson Solver]
+        Q --> R[Meshing: Quad/Hex-dominant]
+        
+        subgraph Analysis ["Cochain Complexes"]
+            S[Hodge Decomposition]
+            T[Harmonic Fields]
+            U[Discrete Exterior Calculus]
+        end
+    end
 
-    ┌────────────┐    ┌────────────┐    ┌────────────┐
-    │   DEC    │    │  Gradient │    │   Curl    │
-    │ Matrices │    │  Matrices │    │  Matrices │
-    └─────┬────┘    └─────┬────┘    └─────┬────┘
-         │                │                │
-         ▼                ▼                ▼
-    ┌────────────┐    ┌────────────┐    ┌────────────┐
-    │  Hodge   │    │  Discrete │    │ Circulation│
-    │ Decomp.  │    │  Poisson │    │  Analysis │
-    └──────────┘    └──────────┘    └──────────┘
+    subgraph Visualization ["5. Visualization"]
+        P & R & S & T --> V[DirectionalViewer: PolyScope Wrapper]
+        L --> W[Singularity Extraction]
+        W --> V
+    end
+
+    style Input fill:#f9f,stroke:#333,stroke-width:2px
+    style Design fill:#bbf,stroke:#333,stroke-width:2px
+    style Processing fill:#bfb,stroke:#333,stroke-width:2px
+    style Applications fill:#fbf,stroke:#333,stroke-width:2px
+    style Visualization fill:#ffb,stroke:#333,stroke-width:2px
 ```
 
 **Pipeline Stages:**
