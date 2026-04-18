@@ -16,6 +16,9 @@ A geometric quantity that defines how to "parallel transport" a vector from one 
 ### Parallel Transport
 The operation of moving a vector along a curve (or across mesh elements) such that it remains "parallel" according to the connection, accounting for the surface's curvature.
 
+### Parallel Transport Problem
+A fundamental challenge in geometry processing arising from surface curvature. Unlike in flat space, parallel transporting a vector from point A to point B is path-dependent. Moving a vector around a closed loop results in a rotation called **holonomy**, which is directly proportional to the Gaussian curvature enclosed by the loop. In discrete meshes, this holonomy is concentrated at vertices (angle defect), forcing the presence of singularities and making it impossible to define a globally "parallel" field on any surface that is not topologically a cylinder or a torus.
+
 ---
 
 ## Field Representations
