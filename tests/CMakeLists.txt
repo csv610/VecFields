@@ -1,0 +1,3 @@
+add_executable(vecfields_test_basic test_basic.cpp)
+target_link_libraries(vecfields_test_basic gtest gtest_main)
+add_test(NAME vecfields_test_basic COMMAND vecfields_test_basic)
