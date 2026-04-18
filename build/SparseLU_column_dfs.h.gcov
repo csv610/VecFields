@@ -1,0 +1,186 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/SparseLU/SparseLU_column_dfs.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2012 Désiré Nuentsa-Wakam <desire.nuentsa_wakam@inria.fr>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:/* 
+        -:   11: 
+        -:   12: * NOTE: This file is the modified version of [s,d,c,z]column_dfs.c file in SuperLU 
+        -:   13: 
+        -:   14: * -- SuperLU routine (version 2.0) --
+        -:   15: * Univ. of California Berkeley, Xerox Palo Alto Research Center,
+        -:   16: * and Lawrence Berkeley National Lab.
+        -:   17: * November 15, 1997
+        -:   18: *
+        -:   19: * Copyright (c) 1994 by Xerox Corporation.  All rights reserved.
+        -:   20: *
+        -:   21: * THIS MATERIAL IS PROVIDED AS IS, WITH ABSOLUTELY NO WARRANTY
+        -:   22: * EXPRESSED OR IMPLIED.  ANY USE IS AT YOUR OWN RISK.
+        -:   23: *
+        -:   24: * Permission is hereby granted to use or copy this program for any
+        -:   25: * purpose, provided the above notices are retained on all copies.
+        -:   26: * Permission to modify the code and to distribute modified code is
+        -:   27: * granted, provided the above notices are retained, and a notice that
+        -:   28: * the code was modified is included with the above copyright notice.
+        -:   29: */
+        -:   30:#ifndef SPARSELU_COLUMN_DFS_H
+        -:   31:#define SPARSELU_COLUMN_DFS_H
+        -:   32:
+        -:   33:template <typename Scalar, typename StorageIndex> class SparseLUImpl;
+        -:   34:// IWYU pragma: private
+        -:   35:#include "./InternalHeaderCheck.h"
+        -:   36:
+        -:   37:namespace Eigen {
+        -:   38:
+        -:   39:namespace internal {
+        -:   40:
+        -:   41:template<typename IndexVector, typename ScalarVector>
+        -:   42:struct column_dfs_traits : no_assignment_operator
+        -:   43:{
+        -:   44:  typedef typename ScalarVector::Scalar Scalar;
+        -:   45:  typedef typename IndexVector::Scalar StorageIndex;
+    #####:   46:  column_dfs_traits(Index jcol, Index& jsuper, typename SparseLUImpl<Scalar, StorageIndex>::GlobalLU_t& glu, SparseLUImpl<Scalar, StorageIndex>& luImpl)
+    #####:   47:   : m_jcol(jcol), m_jsuper_ref(jsuper), m_glu(glu), m_luImpl(luImpl)
+    #####:   48: {}
+    #####:   49:  bool update_segrep(Index /*krep*/, Index /*jj*/)
+        -:   50:  {
+    #####:   51:    return true;
+        -:   52:  }
+    #####:   53:  void mem_expand(IndexVector& lsub, Index& nextl, Index chmark)
+        -:   54:  {
+    #####:   55:    if (nextl >= m_glu.nzlmax)
+    #####:   56:      m_luImpl.memXpand(lsub, m_glu.nzlmax, nextl, LSUB, m_glu.num_expansions); 
+    #####:   57:    if (chmark != (m_jcol-1)) m_jsuper_ref = emptyIdxLU;
+    #####:   58:  }
+        -:   59:  enum { ExpandMem = true };
+        -:   60:  
+        -:   61:  Index m_jcol;
+        -:   62:  Index& m_jsuper_ref;
+        -:   63:  typename SparseLUImpl<Scalar, StorageIndex>::GlobalLU_t& m_glu;
+        -:   64:  SparseLUImpl<Scalar, StorageIndex>& m_luImpl;
+        -:   65:};
+        -:   66:
+        -:   67:
+        -:   68:/**
+        -:   69: * \brief Performs a symbolic factorization on column jcol and decide the supernode boundary
+        -:   70: * 
+        -:   71: * A supernode representative is the last column of a supernode.
+        -:   72: * The nonzeros in U[*,j] are segments that end at supernodes representatives. 
+        -:   73: * The routine returns a list of the supernodal representatives 
+        -:   74: * in topological order of the dfs that generates them. 
+        -:   75: * The location of the first nonzero in each supernodal segment 
+        -:   76: * (supernodal entry location) is also returned. 
+        -:   77: * 
+        -:   78: * \param m number of rows in the matrix
+        -:   79: * \param jcol Current column 
+        -:   80: * \param perm_r Row permutation
+        -:   81: * \param maxsuper  Maximum number of column allowed in a supernode
+        -:   82: * \param [in,out] nseg Number of segments in current U[*,j] - new segments appended
+        -:   83: * \param lsub_col defines the rhs vector to start the dfs
+        -:   84: * \param [in,out] segrep Segment representatives - new segments appended 
+        -:   85: * \param repfnz  First nonzero location in each row
+        -:   86: * \param xprune 
+        -:   87: * \param marker  marker[i] == jj, if i was visited during dfs of current column jj;
+        -:   88: * \param parent
+        -:   89: * \param xplore working array
+        -:   90: * \param glu global LU data 
+        -:   91: * \return 0 success
+        -:   92: *         > 0 number of bytes allocated when run out of space
+        -:   93: * 
+        -:   94: */
+        -:   95:template <typename Scalar, typename StorageIndex>
+    #####:   96:Index SparseLUImpl<Scalar,StorageIndex>::column_dfs(const Index m, const Index jcol, IndexVector& perm_r, Index maxsuper, Index& nseg,
+        -:   97:                                                    BlockIndexVector lsub_col, IndexVector& segrep, BlockIndexVector repfnz, IndexVector& xprune,
+        -:   98:                                                    IndexVector& marker, IndexVector& parent, IndexVector& xplore, GlobalLU_t& glu)
+        -:   99:{
+        -:  100:  
+    #####:  101:  Index jsuper = glu.supno(jcol); 
+    #####:  102:  Index nextl = glu.xlsub(jcol); 
+    #####:  103:  VectorBlock<IndexVector> marker2(marker, 2*m, m); 
+        -:  104:  
+        -:  105:  
+    #####:  106:  column_dfs_traits<IndexVector, ScalarVector> traits(jcol, jsuper, glu, *this);
+        -:  107:  
+        -:  108:  // For each nonzero in A(*,jcol) do dfs 
+    #####:  109:  for (Index k = 0; ((k < m) ? lsub_col[k] != emptyIdxLU : false) ; k++)
+        -:  110:  {
+    #####:  111:    Index krow = lsub_col(k); 
+    #####:  112:    lsub_col(k) = emptyIdxLU; 
+    #####:  113:    Index kmark = marker2(krow); 
+        -:  114:    
+        -:  115:    // krow was visited before, go to the next nonz; 
+    #####:  116:    if (kmark == jcol) continue;
+        -:  117:    
+    #####:  118:    dfs_kernel(StorageIndex(jcol), perm_r, nseg, glu.lsub, segrep, repfnz, xprune, marker2, parent,
+    #####:  119:                   xplore, glu, nextl, krow, traits);
+    #####:  120:  } // for each nonzero ... 
+        -:  121:  
+        -:  122:  Index fsupc;
+    #####:  123:  StorageIndex nsuper = glu.supno(jcol);
+    #####:  124:  StorageIndex jcolp1 = StorageIndex(jcol) + 1;
+    #####:  125:  Index jcolm1 = jcol - 1;
+        -:  126:  
+        -:  127:  // check to see if j belongs in the same supernode as j-1
+    #####:  128:  if ( jcol == 0 )
+        -:  129:  { // Do nothing for column 0 
+    #####:  130:    nsuper = glu.supno(0) = 0 ;
+    #####:  131:  }
+        -:  132:  else 
+        -:  133:  {
+    #####:  134:    fsupc = glu.xsup(nsuper); 
+    #####:  135:    StorageIndex jptr = glu.xlsub(jcol); // Not yet compressed
+    #####:  136:    StorageIndex jm1ptr = glu.xlsub(jcolm1); 
+        -:  137:    
+        -:  138:    // Use supernodes of type T2 : see SuperLU paper
+    #####:  139:    if ( (nextl-jptr != jptr-jm1ptr-1) ) jsuper = emptyIdxLU;
+        -:  140:    
+        -:  141:    // Make sure the number of columns in a supernode doesn't
+        -:  142:    // exceed threshold
+    #####:  143:    if ( (jcol - fsupc) >= maxsuper) jsuper = emptyIdxLU; 
+        -:  144:    
+        -:  145:    /* If jcol starts a new supernode, reclaim storage space in
+        -:  146:     * glu.lsub from previous supernode. Note we only store 
+        -:  147:     * the subscript set of the first and last columns of 
+        -:  148:     * a supernode. (first for num values, last for pruning)
+        -:  149:     */
+    #####:  150:    if (jsuper == emptyIdxLU)
+        -:  151:    { // starts a new supernode 
+    #####:  152:      if ( (fsupc < jcolm1-1) ) 
+        -:  153:      { // >= 3 columns in nsuper
+    #####:  154:        StorageIndex ito = glu.xlsub(fsupc+1);
+    #####:  155:        glu.xlsub(jcolm1) = ito; 
+    #####:  156:        StorageIndex istop = ito + jptr - jm1ptr; 
+    #####:  157:        xprune(jcolm1) = istop; // initialize xprune(jcol-1)
+    #####:  158:        glu.xlsub(jcol) = istop; 
+        -:  159:        
+    #####:  160:        for (StorageIndex ifrom = jm1ptr; ifrom < nextl; ++ifrom, ++ito)
+    #####:  161:          glu.lsub(ito) = glu.lsub(ifrom); 
+    #####:  162:        nextl = ito;  // = istop + length(jcol)
+    #####:  163:      }
+    #####:  164:      nsuper++; 
+    #####:  165:      glu.supno(jcol) = nsuper; 
+    #####:  166:    } // if a new supernode 
+        -:  167:  } // end else:  jcol > 0
+        -:  168:  
+        -:  169:  // Tidy up the pointers before exit
+    #####:  170:  glu.xsup(nsuper+1) = jcolp1; 
+    #####:  171:  glu.supno(jcolp1) = nsuper; 
+    #####:  172:  xprune(jcol) = StorageIndex(nextl);  // Initialize upper bound for pruning
+    #####:  173:  glu.xlsub(jcolp1) = StorageIndex(nextl); 
+        -:  174:  
+    #####:  175:  return 0; 
+        -:  176:}
+        -:  177:
+        -:  178:} // end namespace internal
+        -:  179:
+        -:  180:} // end namespace Eigen
+        -:  181:
+        -:  182:#endif

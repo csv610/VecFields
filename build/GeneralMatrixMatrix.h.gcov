@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/products/GeneralMatrixMatrix.h
-        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
-        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
-        -:    0:Runs:4
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -65,7 +65,7 @@
         -:   61:typedef gebp_traits<LhsScalar,RhsScalar> Traits;
         -:   62:
         -:   63:typedef typename ScalarBinaryOpTraits<LhsScalar, RhsScalar>::ReturnType ResScalar;
-        -:   64:static void run(Index rows, Index cols, Index depth,
+    #####:   64:static void run(Index rows, Index cols, Index depth,
         -:   65:  const LhsScalar* lhs_, Index lhsStride,
         -:   66:  const RhsScalar* rhs_, Index rhsStride,
         -:   67:  ResScalar* res_, Index resIncr, Index resStride,
@@ -76,13 +76,13 @@
         -:   72:  typedef const_blas_data_mapper<LhsScalar, Index, LhsStorageOrder> LhsMapper;
         -:   73:  typedef const_blas_data_mapper<RhsScalar, Index, RhsStorageOrder> RhsMapper;
         -:   74:  typedef blas_data_mapper<typename Traits::ResScalar, Index, ColMajor,Unaligned,ResInnerStride> ResMapper;
-        -:   75:  LhsMapper lhs(lhs_, lhsStride);
-        -:   76:  RhsMapper rhs(rhs_, rhsStride);
-        -:   77:  ResMapper res(res_, resStride, resIncr);
+    #####:   75:  LhsMapper lhs(lhs_, lhsStride);
+    #####:   76:  RhsMapper rhs(rhs_, rhsStride);
+    #####:   77:  ResMapper res(res_, resStride, resIncr);
         -:   78:
-        -:   79:  Index kc = blocking.kc();                   // cache block size along the K direction
-        -:   80:  Index mc = (std::min)(rows,blocking.mc());  // cache block size along the M direction
-        -:   81:  Index nc = (std::min)(cols,blocking.nc());  // cache block size along the N direction
+    #####:   79:  Index kc = blocking.kc();                   // cache block size along the K direction
+    #####:   80:  Index mc = (std::min)(rows,blocking.mc());  // cache block size along the M direction
+    #####:   81:  Index nc = (std::min)(cols,blocking.nc());  // cache block size along the N direction
         -:   82:
         -:   83:  gemm_pack_lhs<LhsScalar, Index, LhsMapper, Traits::mr, Traits::LhsProgress, typename Traits::LhsPacket4Packing, LhsStorageOrder> pack_lhs;
         -:   84:  gemm_pack_rhs<RhsScalar, Index, RhsMapper, Traits::nr, RhsStorageOrder> pack_rhs;
@@ -161,50 +161,50 @@
         -:  157:  else
         -:  158:#endif // EIGEN_HAS_OPENMP
         -:  159:  {
-        -:  160:    EIGEN_UNUSED_VARIABLE(info);
+    #####:  160:    EIGEN_UNUSED_VARIABLE(info);
         -:  161:
         -:  162:    // this is the sequential version!
-        -:  163:    std::size_t sizeA = kc*mc;
-        -:  164:    std::size_t sizeB = kc*nc;
+    #####:  163:    std::size_t sizeA = kc*mc;
+    #####:  164:    std::size_t sizeB = kc*nc;
         -:  165:
-        -:  166:    ei_declare_aligned_stack_constructed_variable(LhsScalar, blockA, sizeA, blocking.blockA());
-        -:  167:    ei_declare_aligned_stack_constructed_variable(RhsScalar, blockB, sizeB, blocking.blockB());
+    #####:  166:    ei_declare_aligned_stack_constructed_variable(LhsScalar, blockA, sizeA, blocking.blockA());
+    #####:  167:    ei_declare_aligned_stack_constructed_variable(RhsScalar, blockB, sizeB, blocking.blockB());
         -:  168:
-        -:  169:    const bool pack_rhs_once = mc!=rows && kc==depth && nc==cols;
+    #####:  169:    const bool pack_rhs_once = mc!=rows && kc==depth && nc==cols;
         -:  170:
         -:  171:    // For each horizontal panel of the rhs, and corresponding panel of the lhs...
-        -:  172:    for(Index i2=0; i2<rows; i2+=mc)
+    #####:  172:    for(Index i2=0; i2<rows; i2+=mc)
         -:  173:    {
-        -:  174:      const Index actual_mc = (std::min)(i2+mc,rows)-i2;
+    #####:  174:      const Index actual_mc = (std::min)(i2+mc,rows)-i2;
         -:  175:
-        -:  176:      for(Index k2=0; k2<depth; k2+=kc)
+    #####:  176:      for(Index k2=0; k2<depth; k2+=kc)
         -:  177:      {
-        -:  178:        const Index actual_kc = (std::min)(k2+kc,depth)-k2;
+    #####:  178:        const Index actual_kc = (std::min)(k2+kc,depth)-k2;
         -:  179:
         -:  180:        // OK, here we have selected one horizontal panel of rhs and one vertical panel of lhs.
         -:  181:        // => Pack lhs's panel into a sequential chunk of memory (L2/L3 caching)
         -:  182:        // Note that this panel will be read as many times as the number of blocks in the rhs's
         -:  183:        // horizontal panel which is, in practice, a very low number.
-        -:  184:        pack_lhs(blockA, lhs.getSubMapper(i2,k2), actual_kc, actual_mc);
+    #####:  184:        pack_lhs(blockA, lhs.getSubMapper(i2,k2), actual_kc, actual_mc);
         -:  185:
         -:  186:        // For each kc x nc block of the rhs's horizontal panel...
-        -:  187:        for(Index j2=0; j2<cols; j2+=nc)
+    #####:  187:        for(Index j2=0; j2<cols; j2+=nc)
         -:  188:        {
-        -:  189:          const Index actual_nc = (std::min)(j2+nc,cols)-j2;
+    #####:  189:          const Index actual_nc = (std::min)(j2+nc,cols)-j2;
         -:  190:
         -:  191:          // We pack the rhs's block into a sequential chunk of memory (L2 caching)
         -:  192:          // Note that this block will be read a very high number of times, which is equal to the number of
         -:  193:          // micro horizontal panel of the large rhs's panel (e.g., rows/12 times).
-        -:  194:          if((!pack_rhs_once) || i2==0)
-        -:  195:            pack_rhs(blockB, rhs.getSubMapper(k2,j2), actual_kc, actual_nc);
+    #####:  194:          if((!pack_rhs_once) || i2==0)
+    #####:  195:            pack_rhs(blockB, rhs.getSubMapper(k2,j2), actual_kc, actual_nc);
         -:  196:
         -:  197:          // Everything is packed, we can now call the panel * block kernel:
-        -:  198:          gebp(res.getSubMapper(i2, j2), blockA, blockB, actual_mc, actual_kc, actual_nc, alpha);
-        -:  199:        }
-        -:  200:      }
-        -:  201:    }
-        -:  202:  }
-        -:  203:}
+    #####:  198:          gebp(res.getSubMapper(i2, j2), blockA, blockB, actual_mc, actual_kc, actual_nc, alpha);
+    #####:  199:        }
+    #####:  200:      }
+    #####:  201:    }
+    #####:  202:  }
+    #####:  203:}
         -:  204:
         -:  205:};
         -:  206:
@@ -216,9 +216,9 @@
         -:  212:template<typename Scalar, typename Index, typename Gemm, typename Lhs, typename Rhs, typename Dest, typename BlockingType>
         -:  213:struct gemm_functor
         -:  214:{
-        -:  215:  gemm_functor(const Lhs& lhs, const Rhs& rhs, Dest& dest, const Scalar& actualAlpha, BlockingType& blocking)
-        -:  216:    : m_lhs(lhs), m_rhs(rhs), m_dest(dest), m_actualAlpha(actualAlpha), m_blocking(blocking)
-        -:  217:  {}
+    #####:  215:  gemm_functor(const Lhs& lhs, const Rhs& rhs, Dest& dest, const Scalar& actualAlpha, BlockingType& blocking)
+    #####:  216:    : m_lhs(lhs), m_rhs(rhs), m_dest(dest), m_actualAlpha(actualAlpha), m_blocking(blocking)
+    #####:  217:  {}
         -:  218:
         -:  219:  void initParallelSession(Index num_threads) const
         -:  220:  {
@@ -226,17 +226,17 @@
         -:  222:    m_blocking.allocateA();
         -:  223:  }
         -:  224:
-        -:  225:  void operator() (Index row, Index rows, Index col=0, Index cols=-1, GemmParallelInfo<Index>* info=0) const
+    #####:  225:  void operator() (Index row, Index rows, Index col=0, Index cols=-1, GemmParallelInfo<Index>* info=0) const
         -:  226:  {
-        -:  227:    if(cols==-1)
-        -:  228:      cols = m_rhs.cols();
+    #####:  227:    if(cols==-1)
+    #####:  228:      cols = m_rhs.cols();
         -:  229:
-        -:  230:    Gemm::run(rows, cols, m_lhs.cols(),
-        -:  231:              &m_lhs.coeffRef(row,0), m_lhs.outerStride(),
-        -:  232:              &m_rhs.coeffRef(0,col), m_rhs.outerStride(),
-        -:  233:              (Scalar*)&(m_dest.coeffRef(row,col)), m_dest.innerStride(), m_dest.outerStride(),
-        -:  234:              m_actualAlpha, m_blocking, info);
-        -:  235:  }
+    #####:  230:    Gemm::run(rows, cols, m_lhs.cols(),
+    #####:  231:              &m_lhs.coeffRef(row,0), m_lhs.outerStride(),
+    #####:  232:              &m_rhs.coeffRef(0,col), m_rhs.outerStride(),
+    #####:  233:              (Scalar*)&(m_dest.coeffRef(row,col)), m_dest.innerStride(), m_dest.outerStride(),
+    #####:  234:              m_actualAlpha, m_blocking, info);
+    #####:  235:  }
         -:  236:
         -:  237:  typedef typename Gemm::Traits Traits;
         -:  238:
@@ -272,7 +272,7 @@
     #####:  268:    {}
         -:  269:
     #####:  270:    inline Index mc() const { return m_mc; }
-        -:  271:    inline Index nc() const { return m_nc; }
+    #####:  271:    inline Index nc() const { return m_nc; }
     #####:  272:    inline Index kc() const { return m_kc; }
         -:  273:
     #####:  274:    inline LhsScalar* blockA() { return m_blockA; }
@@ -431,7 +431,7 @@
         -:  427:  typedef generic_product_impl<Lhs,Rhs,DenseShape,DenseShape,CoeffBasedProductMode> lazyproduct;
         -:  428:
         -:  429:  template<typename Dst>
-        -:  430:  static void evalTo(Dst& dst, const Lhs& lhs, const Rhs& rhs)
+        1:  430:  static void evalTo(Dst& dst, const Lhs& lhs, const Rhs& rhs)
         -:  431:  {
         -:  432:    // See http://eigen.tuxfamily.org/bz/show_bug.cgi?id=404 for a discussion and helper program
         -:  433:    // to determine the following heuristic.
@@ -439,14 +439,14 @@
         -:  435:    // unless it has been specialized by the user or for a given architecture.
         -:  436:    // Note that the condition rhs.rows()>0 was required because lazy product is (was?) not happy with empty inputs.
         -:  437:    // I'm not sure it is still required.
-        -:  438:    if((rhs.rows()+dst.rows()+dst.cols())<EIGEN_GEMM_TO_COEFFBASED_THRESHOLD && rhs.rows()>0)
-        -:  439:      lazyproduct::eval_dynamic(dst, lhs, rhs, internal::assign_op<typename Dst::Scalar,Scalar>());
+        1:  438:    if((rhs.rows()+dst.rows()+dst.cols())<EIGEN_GEMM_TO_COEFFBASED_THRESHOLD && rhs.rows()>0)
+        1:  439:      lazyproduct::eval_dynamic(dst, lhs, rhs, internal::assign_op<typename Dst::Scalar,Scalar>());
         -:  440:    else
         -:  441:    {
-        -:  442:      dst.setZero();
-        -:  443:      scaleAndAddTo(dst, lhs, rhs, Scalar(1));
+    #####:  442:      dst.setZero();
+    #####:  443:      scaleAndAddTo(dst, lhs, rhs, Scalar(1));
         -:  444:    }
-        -:  445:  }
+        1:  445:  }
         -:  446:
         -:  447:  template<typename Dst>
         -:  448:  static void addTo(Dst& dst, const Lhs& lhs, const Rhs& rhs)
@@ -458,40 +458,40 @@
         -:  454:  }
         -:  455:
         -:  456:  template<typename Dst>
-        -:  457:  static void subTo(Dst& dst, const Lhs& lhs, const Rhs& rhs)
+    #####:  457:  static void subTo(Dst& dst, const Lhs& lhs, const Rhs& rhs)
         -:  458:  {
-        -:  459:    if((rhs.rows()+dst.rows()+dst.cols())<EIGEN_GEMM_TO_COEFFBASED_THRESHOLD && rhs.rows()>0)
-        -:  460:      lazyproduct::eval_dynamic(dst, lhs, rhs, internal::sub_assign_op<typename Dst::Scalar,Scalar>());
+    #####:  459:    if((rhs.rows()+dst.rows()+dst.cols())<EIGEN_GEMM_TO_COEFFBASED_THRESHOLD && rhs.rows()>0)
+    #####:  460:      lazyproduct::eval_dynamic(dst, lhs, rhs, internal::sub_assign_op<typename Dst::Scalar,Scalar>());
         -:  461:    else
-        -:  462:      scaleAndAddTo(dst, lhs, rhs, Scalar(-1));
-        -:  463:  }
+    #####:  462:      scaleAndAddTo(dst, lhs, rhs, Scalar(-1));
+    #####:  463:  }
         -:  464:
         -:  465:  template<typename Dest>
-        -:  466:  static void scaleAndAddTo(Dest& dst, const Lhs& a_lhs, const Rhs& a_rhs, const Scalar& alpha)
+    #####:  466:  static void scaleAndAddTo(Dest& dst, const Lhs& a_lhs, const Rhs& a_rhs, const Scalar& alpha)
         -:  467:  {
-        -:  468:    eigen_assert(dst.rows()==a_lhs.rows() && dst.cols()==a_rhs.cols());
-        -:  469:    if(a_lhs.cols()==0 || a_lhs.rows()==0 || a_rhs.cols()==0)
-        -:  470:      return;
+    #####:  468:    eigen_assert(dst.rows()==a_lhs.rows() && dst.cols()==a_rhs.cols());
+    #####:  469:    if(a_lhs.cols()==0 || a_lhs.rows()==0 || a_rhs.cols()==0)
+    #####:  470:      return;
         -:  471:
-        -:  472:    if (dst.cols() == 1)
+    #####:  472:    if (dst.cols() == 1)
         -:  473:    {
         -:  474:      // Fallback to GEMV if either the lhs or rhs is a runtime vector
-        -:  475:      typename Dest::ColXpr dst_vec(dst.col(0));
-        -:  476:      return internal::generic_product_impl<Lhs,typename Rhs::ConstColXpr,DenseShape,DenseShape,GemvProduct>
-        -:  477:        ::scaleAndAddTo(dst_vec, a_lhs, a_rhs.col(0), alpha);
+    #####:  475:      typename Dest::ColXpr dst_vec(dst.col(0));
+    #####:  476:      return internal::generic_product_impl<Lhs,typename Rhs::ConstColXpr,DenseShape,DenseShape,GemvProduct>
+    #####:  477:        ::scaleAndAddTo(dst_vec, a_lhs, a_rhs.col(0), alpha);
         -:  478:    }
-        -:  479:    else if (dst.rows() == 1)
+    #####:  479:    else if (dst.rows() == 1)
         -:  480:    {
         -:  481:      // Fallback to GEMV if either the lhs or rhs is a runtime vector
-        -:  482:      typename Dest::RowXpr dst_vec(dst.row(0));
-        -:  483:      return internal::generic_product_impl<typename Lhs::ConstRowXpr,Rhs,DenseShape,DenseShape,GemvProduct>
-        -:  484:        ::scaleAndAddTo(dst_vec, a_lhs.row(0), a_rhs, alpha);
+    #####:  482:      typename Dest::RowXpr dst_vec(dst.row(0));
+    #####:  483:      return internal::generic_product_impl<typename Lhs::ConstRowXpr,Rhs,DenseShape,DenseShape,GemvProduct>
+    #####:  484:        ::scaleAndAddTo(dst_vec, a_lhs.row(0), a_rhs, alpha);
         -:  485:    }
         -:  486:
-        -:  487:    add_const_on_value_type_t<ActualLhsType> lhs = LhsBlasTraits::extract(a_lhs);
-        -:  488:    add_const_on_value_type_t<ActualRhsType> rhs = RhsBlasTraits::extract(a_rhs);
+    #####:  487:    add_const_on_value_type_t<ActualLhsType> lhs = LhsBlasTraits::extract(a_lhs);
+    #####:  488:    add_const_on_value_type_t<ActualRhsType> rhs = RhsBlasTraits::extract(a_rhs);
         -:  489:
-        -:  490:    Scalar actualAlpha = combine_scalar_factors(alpha, a_lhs, a_rhs);
+    #####:  490:    Scalar actualAlpha = combine_scalar_factors(alpha, a_lhs, a_rhs);
         -:  491:
         -:  492:    typedef internal::gemm_blocking_space<(Dest::Flags&RowMajorBit) ? RowMajor : ColMajor,LhsScalar,RhsScalar,
         -:  493:            Dest::MaxRowsAtCompileTime,Dest::MaxColsAtCompileTime,MaxDepthAtCompileTime> BlockingType;
@@ -506,10 +506,10 @@
         -:  502:        Dest::InnerStrideAtCompileTime>,
         -:  503:      ActualLhsTypeCleaned, ActualRhsTypeCleaned, Dest, BlockingType> GemmFunctor;
         -:  504:
-        -:  505:    BlockingType blocking(dst.rows(), dst.cols(), lhs.cols(), 1, true);
-        -:  506:    internal::parallelize_gemm<(Dest::MaxRowsAtCompileTime>32 || Dest::MaxRowsAtCompileTime==Dynamic)>
-        -:  507:        (GemmFunctor(lhs, rhs, dst, actualAlpha, blocking), a_lhs.rows(), a_rhs.cols(), a_lhs.cols(), Dest::Flags&RowMajorBit);
-        -:  508:  }
+    #####:  505:    BlockingType blocking(dst.rows(), dst.cols(), lhs.cols(), 1, true);
+    #####:  506:    internal::parallelize_gemm<(Dest::MaxRowsAtCompileTime>32 || Dest::MaxRowsAtCompileTime==Dynamic)>
+    #####:  507:        (GemmFunctor(lhs, rhs, dst, actualAlpha, blocking), a_lhs.rows(), a_rhs.cols(), a_lhs.cols(), Dest::Flags&RowMajorBit);
+    #####:  508:  }
         -:  509:};
         -:  510:
         -:  511:} // end namespace internal

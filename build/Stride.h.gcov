@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/Stride.h
-        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
-        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
-        -:    0:Runs:4
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -67,33 +67,33 @@
         -:   63:
         -:   64:    /** Default constructor, for use when strides are fixed at compile time */
         -:   65:    EIGEN_DEVICE_FUNC
-    54136:   66:    Stride()
-    27068:   67:      : m_outer(OuterStrideAtCompileTime), m_inner(InnerStrideAtCompileTime)
-    27068:   68:    {
+     2480:   66:    Stride()
+     1240:   67:      : m_outer(OuterStrideAtCompileTime), m_inner(InnerStrideAtCompileTime)
+     1240:   68:    {
         -:   69:      // FIXME: for Eigen 4 we should use DynamicIndex instead of Dynamic.
         -:   70:      // FIXME: for Eigen 4 we should also unify this API with fix<>
         -:   71:      eigen_assert(InnerStrideAtCompileTime != Dynamic && OuterStrideAtCompileTime != Dynamic);
-    54136:   72:    }
+     2480:   72:    }
         -:   73:
         -:   74:    /** Constructor allowing to pass the strides at runtime */
         -:   75:    EIGEN_DEVICE_FUNC
-     1490:   76:    Stride(Index outerStride, Index innerStride)
-     1490:   77:      : m_outer(outerStride), m_inner(innerStride)
-        -:   78:    {
-     1490:   79:    }
+      120:   76:    Stride(Index outerStride, Index innerStride)
+      120:   77:      : m_outer(outerStride), m_inner(innerStride)
+    #####:   78:    {
+      120:   79:    }
         -:   80:
         -:   81:    /** Copy constructor */
         -:   82:    EIGEN_DEVICE_FUNC
-   242888:   83:    Stride(const Stride& other)
-   129578:   84:      : m_outer(other.outer()), m_inner(other.inner())
-   242888:   85:    {}
+    12174:   83:    Stride(const Stride& other)
+     6147:   84:      : m_outer(other.outer()), m_inner(other.inner())
+    12174:   85:    {}
         -:   86:
         -:   87:    /** \returns the outer stride */
         -:   88:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
-   160384:   89:    inline Index outer() const { return m_outer.value(); }
+     6147:   89:    inline Index outer() const { return m_outer.value(); }
         -:   90:    /** \returns the inner stride */
         -:   91:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
-   129578:   92:    inline Index inner() const { return m_inner.value(); }
+     6147:   92:    inline Index inner() const { return m_inner.value(); }
         -:   93:
         -:   94:  protected:
         -:   95:    internal::variable_if_dynamic<Index, OuterStrideAtCompileTime> m_outer;
@@ -119,7 +119,7 @@
         -:  115:    typedef Stride<Value, 0> Base;
         -:  116:  public:
         -:  117:    EIGEN_DEVICE_FUNC OuterStride() : Base() {}
-     2980:  118:    EIGEN_DEVICE_FUNC OuterStride(Index v) : Base(v,0) {} // FIXME making this explicit could break valid code
+      240:  118:    EIGEN_DEVICE_FUNC OuterStride(Index v) : Base(v,0) {} // FIXME making this explicit could break valid code
         -:  119:};
         -:  120:
         -:  121:} // end namespace Eigen

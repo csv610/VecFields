@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/CwiseNullaryOp.h
-        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
-        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
-        -:    0:Runs:4
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -72,23 +72,23 @@
         -:   68:    EIGEN_DENSE_PUBLIC_INTERFACE(CwiseNullaryOp)
         -:   69:
         -:   70:    EIGEN_DEVICE_FUNC
-   236712:   71:    CwiseNullaryOp(Index rows, Index cols, const NullaryOp& func = NullaryOp())
-   118356:   72:      : m_rows(rows), m_cols(cols), m_functor(func)
-   118356:   73:    {
-   163564:   74:      eigen_assert(rows >= 0
+    21228:   71:    CwiseNullaryOp(Index rows, Index cols, const NullaryOp& func = NullaryOp())
+    10614:   72:      : m_rows(rows), m_cols(cols), m_functor(func)
+    10614:   73:    {
+    15656:   74:      eigen_assert(rows >= 0
         -:   75:            && (RowsAtCompileTime == Dynamic || RowsAtCompileTime == rows)
         -:   76:            &&  cols >= 0
         -:   77:            && (ColsAtCompileTime == Dynamic || ColsAtCompileTime == cols));
-   236712:   78:    }
+    21228:   78:    }
         -:   79:
         -:   80:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE EIGEN_CONSTEXPR
-   148262:   81:    Index rows() const { return m_rows.value(); }
+    12570:   81:    Index rows() const { return m_rows.value(); }
         -:   82:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE EIGEN_CONSTEXPR
-   233756:   83:    Index cols() const { return m_cols.value(); }
+    20699:   83:    Index cols() const { return m_cols.value(); }
         -:   84:
         -:   85:    /** \returns the functor representing the nullary operation */
         -:   86:    EIGEN_DEVICE_FUNC
-   125018:   87:    const NullaryOp& functor() const { return m_functor; }
+    10863:   87:    const NullaryOp& functor() const { return m_functor; }
         -:   88:
         -:   89:  protected:
         -:   90:    const internal::variable_if_dynamic<Index, RowsAtCompileTime> m_rows;
@@ -118,9 +118,9 @@
         -:  114:#else
         -:  115:const CwiseNullaryOp<CustomNullaryOp,PlainObject>
         -:  116:#endif
-    23660:  117:DenseBase<Derived>::NullaryExpr(Index rows, Index cols, const CustomNullaryOp& func)
+     2211:  117:DenseBase<Derived>::NullaryExpr(Index rows, Index cols, const CustomNullaryOp& func)
         -:  118:{
-    23660:  119:  return CwiseNullaryOp<CustomNullaryOp, PlainObject>(rows, cols, func);
+     2211:  119:  return CwiseNullaryOp<CustomNullaryOp, PlainObject>(rows, cols, func);
         -:  120:}
         -:  121:
         -:  122:/** \returns an expression of a matrix defined by a custom functor \a func
@@ -149,11 +149,11 @@
         -:  145:#else
         -:  146:const CwiseNullaryOp<CustomNullaryOp, PlainObject>
         -:  147:#endif
-       16:  148:DenseBase<Derived>::NullaryExpr(Index size, const CustomNullaryOp& func)
+      135:  148:DenseBase<Derived>::NullaryExpr(Index size, const CustomNullaryOp& func)
         -:  149:{
         -:  150:  EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived)
         -:  151:  if(RowsAtCompileTime == 1) return CwiseNullaryOp<CustomNullaryOp, PlainObject>(1, size, func);
-       16:  152:  else return CwiseNullaryOp<CustomNullaryOp, PlainObject>(size, 1, func);
+      135:  152:  else return CwiseNullaryOp<CustomNullaryOp, PlainObject>(size, 1, func);
         -:  153:}
         -:  154:
         -:  155:/** \returns an expression of a matrix defined by a custom functor \a func
@@ -193,9 +193,9 @@
         -:  189:  */
         -:  190:template<typename Derived>
         -:  191:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const typename DenseBase<Derived>::ConstantReturnType
-    23656:  192:DenseBase<Derived>::Constant(Index rows, Index cols, const Scalar& value)
+     2090:  192:DenseBase<Derived>::Constant(Index rows, Index cols, const Scalar& value)
         -:  193:{
-    23656:  194:  return DenseBase<Derived>::NullaryExpr(rows, cols, internal::scalar_constant_op<Scalar>(value));
+     2090:  194:  return DenseBase<Derived>::NullaryExpr(rows, cols, internal::scalar_constant_op<Scalar>(value));
         -:  195:}
         -:  196:
         -:  197:/** \returns an expression of a constant matrix of value \a value
@@ -215,9 +215,9 @@
         -:  211:  */
         -:  212:template<typename Derived>
         -:  213:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const typename DenseBase<Derived>::ConstantReturnType
-       16:  214:DenseBase<Derived>::Constant(Index size, const Scalar& value)
+      133:  214:DenseBase<Derived>::Constant(Index size, const Scalar& value)
         -:  215:{
-       16:  216:  return DenseBase<Derived>::NullaryExpr(size, internal::scalar_constant_op<Scalar>(value));
+      133:  216:  return DenseBase<Derived>::NullaryExpr(size, internal::scalar_constant_op<Scalar>(value));
         -:  217:}
         -:  218:
         -:  219:/** \returns an expression of a constant matrix of value \a value
@@ -231,10 +231,10 @@
         -:  227:  */
         -:  228:template<typename Derived>
         -:  229:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const typename DenseBase<Derived>::ConstantReturnType
-        4:  230:DenseBase<Derived>::Constant(const Scalar& value)
+        1:  230:DenseBase<Derived>::Constant(const Scalar& value)
         -:  231:{
         -:  232:  EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived)
-        4:  233:  return DenseBase<Derived>::NullaryExpr(RowsAtCompileTime, ColsAtCompileTime, internal::scalar_constant_op<Scalar>(value));
+        1:  233:  return DenseBase<Derived>::NullaryExpr(RowsAtCompileTime, ColsAtCompileTime, internal::scalar_constant_op<Scalar>(value));
         -:  234:}
         -:  235:
         -:  236:/** \deprecated because of accuracy loss. In Eigen 3.3, it is an alias for LinSpaced(Index,const Scalar&,const Scalar&)
@@ -292,10 +292,10 @@
         -:  288:  */
         -:  289:template<typename Derived>
         -:  290:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const typename DenseBase<Derived>::RandomAccessLinSpacedReturnType
-        -:  291:DenseBase<Derived>::LinSpaced(Index size, const Scalar& low, const Scalar& high)
+        2:  291:DenseBase<Derived>::LinSpaced(Index size, const Scalar& low, const Scalar& high)
         -:  292:{
         -:  293:  EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived)
-        -:  294:  return DenseBase<Derived>::NullaryExpr(size, internal::linspaced_op<Scalar>(low,high,size));
+        2:  294:  return DenseBase<Derived>::NullaryExpr(size, internal::linspaced_op<Scalar>(low,high,size));
         -:  295:}
         -:  296:
         -:  297:/**
@@ -353,19 +353,19 @@
         -:  349:  * \sa setConstant(), Constant(), class CwiseNullaryOp
         -:  350:  */
         -:  351:template<typename Derived>
-        -:  352:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void DenseBase<Derived>::fill(const Scalar& val)
+        1:  352:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void DenseBase<Derived>::fill(const Scalar& val)
         -:  353:{
-        -:  354:  setConstant(val);
-        -:  355:}
+        1:  354:  setConstant(val);
+        1:  355:}
         -:  356:
         -:  357:/** Sets all coefficients in this expression to value \a val.
         -:  358:  *
         -:  359:  * \sa fill(), setConstant(Index,const Scalar&), setConstant(Index,Index,const Scalar&), setZero(), setOnes(), Constant(), class CwiseNullaryOp, setZero(), setOnes()
         -:  360:  */
         -:  361:template<typename Derived>
-    14900:  362:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Derived& DenseBase<Derived>::setConstant(const Scalar& val)
+     1249:  362:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Derived& DenseBase<Derived>::setConstant(const Scalar& val)
         -:  363:{
-    14900:  364:  return derived() = Constant(rows(), cols(), val);
+     1249:  364:  return derived() = Constant(rows(), cols(), val);
         -:  365:}
         -:  366:
         -:  367:/** Resizes to the given \a size, and sets all coefficients in this expression to the given value \a val.
@@ -448,10 +448,10 @@
         -:  444:  * \sa LinSpaced(Index,const Scalar&,const Scalar&), CwiseNullaryOp
         -:  445:  */
         -:  446:template<typename Derived>
-        -:  447:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Derived& DenseBase<Derived>::setLinSpaced(Index newSize, const Scalar& low, const Scalar& high)
+    #####:  447:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Derived& DenseBase<Derived>::setLinSpaced(Index newSize, const Scalar& low, const Scalar& high)
         -:  448:{
         -:  449:  EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived)
-        -:  450:  return derived() = Derived::NullaryExpr(newSize, internal::linspaced_op<Scalar>(low,high,newSize));
+    #####:  450:  return derived() = Derived::NullaryExpr(newSize, internal::linspaced_op<Scalar>(low,high,newSize));
         -:  451:}
         -:  452:
         -:  453:/**
@@ -505,9 +505,9 @@
         -:  501:  */
         -:  502:template<typename Derived>
         -:  503:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const typename DenseBase<Derived>::ConstantReturnType
-        4:  504:DenseBase<Derived>::Zero(Index rows, Index cols)
+        2:  504:DenseBase<Derived>::Zero(Index rows, Index cols)
         -:  505:{
-        4:  506:  return Constant(rows, cols, Scalar(0));
+        2:  506:  return Constant(rows, cols, Scalar(0));
         -:  507:}
         -:  508:
         -:  509:/** \returns an expression of a zero vector.
@@ -528,9 +528,9 @@
         -:  524:  */
         -:  525:template<typename Derived>
         -:  526:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const typename DenseBase<Derived>::ConstantReturnType
-       12:  527:DenseBase<Derived>::Zero(Index size)
+      129:  527:DenseBase<Derived>::Zero(Index size)
         -:  528:{
-       12:  529:  return Constant(size, Scalar(0));
+      129:  529:  return Constant(size, Scalar(0));
         -:  530:}
         -:  531:
         -:  532:/** \returns an expression of a fixed-size zero matrix or vector.
@@ -577,9 +577,9 @@
         -:  573:  * \sa class CwiseNullaryOp, Zero()
         -:  574:  */
         -:  575:template<typename Derived>
-    13410:  576:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Derived& DenseBase<Derived>::setZero()
+     1116:  576:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Derived& DenseBase<Derived>::setZero()
         -:  577:{
-    13410:  578:  return setConstant(Scalar(0));
+     1116:  578:  return setConstant(Scalar(0));
         -:  579:}
         -:  580:
         -:  581:/** Resizes to the given \a size, and sets all coefficients in this expression to zero.
@@ -593,10 +593,10 @@
         -:  589:  */
         -:  590:template<typename Derived>
         -:  591:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Derived&
-        -:  592:PlainObjectBase<Derived>::setZero(Index newSize)
+    #####:  592:PlainObjectBase<Derived>::setZero(Index newSize)
         -:  593:{
-        -:  594:  resize(newSize);
-        -:  595:  return setConstant(Scalar(0));
+    #####:  594:  resize(newSize);
+    #####:  595:  return setConstant(Scalar(0));
         -:  596:}
         -:  597:
         -:  598:/** Resizes to the given size, and sets all coefficients in this expression to zero.
@@ -661,9 +661,9 @@
         -:  657:  */
         -:  658:template<typename Derived>
         -:  659:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const typename DenseBase<Derived>::ConstantReturnType
-        -:  660:DenseBase<Derived>::Ones(Index rows, Index cols)
+    #####:  660:DenseBase<Derived>::Ones(Index rows, Index cols)
         -:  661:{
-        -:  662:  return Constant(rows, cols, Scalar(1));
+    #####:  662:  return Constant(rows, cols, Scalar(1));
         -:  663:}
         -:  664:
         -:  665:/** \returns an expression of a vector where all coefficients equal one.
@@ -684,9 +684,9 @@
         -:  680:  */
         -:  681:template<typename Derived>
         -:  682:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const typename DenseBase<Derived>::ConstantReturnType
-        -:  683:DenseBase<Derived>::Ones(Index newSize)
+        1:  683:DenseBase<Derived>::Ones(Index newSize)
         -:  684:{
-        -:  685:  return Constant(newSize, Scalar(1));
+        1:  685:  return Constant(newSize, Scalar(1));
         -:  686:}
         -:  687:
         -:  688:/** \returns an expression of a fixed-size matrix or vector where all coefficients equal one.
@@ -729,9 +729,9 @@
         -:  725:  * \sa class CwiseNullaryOp, Ones()
         -:  726:  */
         -:  727:template<typename Derived>
-     1490:  728:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Derived& DenseBase<Derived>::setOnes()
+      120:  728:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Derived& DenseBase<Derived>::setOnes()
         -:  729:{
-     1490:  730:  return setConstant(Scalar(1));
+      120:  730:  return setConstant(Scalar(1));
         -:  731:}
         -:  732:
         -:  733:/** Resizes to the given \a newSize, and sets all coefficients in this expression to one.
@@ -813,9 +813,9 @@
         -:  809:  */
         -:  810:template<typename Derived>
         -:  811:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const typename MatrixBase<Derived>::IdentityReturnType
-    #####:  812:MatrixBase<Derived>::Identity(Index rows, Index cols)
+      120:  812:MatrixBase<Derived>::Identity(Index rows, Index cols)
         -:  813:{
-    #####:  814:  return DenseBase<Derived>::NullaryExpr(rows, cols, internal::scalar_identity_op<Scalar>());
+      120:  814:  return DenseBase<Derived>::NullaryExpr(rows, cols, internal::scalar_identity_op<Scalar>());
         -:  815:}
         -:  816:
         -:  817:/** \returns an expression of the identity matrix (not necessarily square).

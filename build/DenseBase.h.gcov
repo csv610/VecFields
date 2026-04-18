@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/DenseBase.h
-        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
-        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
-        -:    0:Runs:4
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -214,10 +214,10 @@
         -:  210:      * with respect to the \ref TopicStorageOrders "storage order", i.e., the number of columns for a
         -:  211:      * column-major matrix, and the number of rows for a row-major matrix. */
         -:  212:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
-     2896:  213:    Index outerSize() const
+     4389:  213:    Index outerSize() const
         -:  214:    {
-     2896:  215:      return IsVectorAtCompileTime ? 1
-     2896:  216:           : int(IsRowMajor) ? this->rows() : this->cols();
+     4389:  215:      return IsVectorAtCompileTime ? 1
+     4389:  216:           : int(IsRowMajor) ? this->rows() : this->cols();
         -:  217:    }
         -:  218:
         -:  219:    /** \returns the inner size.
@@ -226,10 +226,10 @@
         -:  222:      * with respect to the \ref TopicStorageOrders "storage order", i.e., the number of rows for a
         -:  223:      * column-major matrix, and the number of columns for a row-major matrix. */
         -:  224:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
-   954376:  225:    Index innerSize() const
+    98627:  225:    Index innerSize() const
         -:  226:    {
-   954376:  227:      return IsVectorAtCompileTime ? this->size()
-   808724:  228:           : int(IsRowMajor) ? this->cols() : this->rows();
+    98627:  227:      return IsVectorAtCompileTime ? this->size()
+    87890:  228:           : int(IsRowMajor) ? this->cols() : this->rows();
         -:  229:    }
         -:  230:
         -:  231:    /** Only plain matrices/arrays, not expressions, may be resized; therefore the only useful resize methods are
@@ -407,12 +407,12 @@
         -:  403:      * \warning Be careful with eval() and the auto C++ keyword, as detailed in this \link TopicPitfalls_auto_keyword page \endlink.
         -:  404:      */
         -:  405:    EIGEN_DEVICE_FUNC
-     1490:  406:    EIGEN_STRONG_INLINE EvalReturnType eval() const
+      120:  406:    EIGEN_STRONG_INLINE EvalReturnType eval() const
         -:  407:    {
         -:  408:      // Even though MSVC does not honor strong inlining when the return type
         -:  409:      // is a dynamic matrix, we desperately need strong inlining for fixed
         -:  410:      // size types on MSVC.
-     1490:  411:      return typename internal::eval<Derived>::type(derived());
+      120:  411:      return typename internal::eval<Derived>::type(derived());
         -:  412:    }
         -:  413:
         -:  414:    /** swaps *this with the expression \a other.
@@ -420,12 +420,12 @@
         -:  416:      */
         -:  417:    template<typename OtherDerived>
         -:  418:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-     5474:  419:    void swap(const DenseBase<OtherDerived>& other)
+      576:  419:    void swap(const DenseBase<OtherDerived>& other)
         -:  420:    {
         -:  421:      EIGEN_STATIC_ASSERT(!OtherDerived::IsPlainObjectBase,THIS_EXPRESSION_IS_NOT_A_LVALUE__IT_IS_READ_ONLY);
-     5474:  422:      eigen_assert(rows()==other.rows() && cols()==other.cols());
-     5474:  423:      call_assignment(derived(), other.const_cast_derived(), internal::swap_assign_op<Scalar>());
-     5474:  424:    }
+      576:  422:      eigen_assert(rows()==other.rows() && cols()==other.cols());
+      576:  423:      call_assignment(derived(), other.const_cast_derived(), internal::swap_assign_op<Scalar>());
+      576:  424:    }
         -:  425:
         -:  426:    /** swaps *this with the matrix or array \a other.
         -:  427:      *
@@ -462,11 +462,11 @@
         -:  458:    // used.
         -:  459:    // TODO(rmlarsen): Replace with default template argument when we move to
         -:  460:    // c++11 or beyond.
-       14:  461:    EIGEN_DEVICE_FUNC inline typename internal::traits<Derived>::Scalar minCoeff() const {
-       14:  462:      return minCoeff<PropagateFast>();
+        4:  461:    EIGEN_DEVICE_FUNC inline typename internal::traits<Derived>::Scalar minCoeff() const {
+        4:  462:      return minCoeff<PropagateFast>();
         -:  463:    }
-     3000:  464:    EIGEN_DEVICE_FUNC inline typename internal::traits<Derived>::Scalar maxCoeff() const {
-     3000:  465:      return maxCoeff<PropagateFast>();
+      246:  464:    EIGEN_DEVICE_FUNC inline typename internal::traits<Derived>::Scalar maxCoeff() const {
+      246:  465:      return maxCoeff<PropagateFast>();
         -:  466:    }
         -:  467:
         -:  468:    template<int NaNPropagation, typename IndexType>
@@ -495,13 +495,13 @@
         -:  491:    }
         -:  492:    template<typename IndexType>
         -:  493:     EIGEN_DEVICE_FUNC inline
-     2980:  494:    typename internal::traits<Derived>::Scalar minCoeff(IndexType* index) const {
-     2980:  495:      return minCoeff<PropagateFast>(index);
+      240:  494:    typename internal::traits<Derived>::Scalar minCoeff(IndexType* index) const {
+      240:  495:      return minCoeff<PropagateFast>(index);
         -:  496:    }
         -:  497:    template<typename IndexType>
         -:  498:    EIGEN_DEVICE_FUNC inline
-     7132:  499:    typename internal::traits<Derived>::Scalar maxCoeff(IndexType* index) const {
-     7132:  500:      return maxCoeff<PropagateFast>(index);
+      478:  499:    typename internal::traits<Derived>::Scalar maxCoeff(IndexType* index) const {
+      478:  500:      return maxCoeff<PropagateFast>(index);
         -:  501:    }
         -:  502:  
         -:  503:    template<typename BinaryOp>
@@ -685,7 +685,7 @@
         -:  681:  protected:
         -:  682:    EIGEN_DEFAULT_COPY_CONSTRUCTOR(DenseBase)
         -:  683:    /** Default constructor. Do nothing. */
-  1009510:  684:    EIGEN_DEVICE_FUNC constexpr DenseBase() {
+    83378:  684:    EIGEN_DEVICE_FUNC constexpr DenseBase() {
         -:  685:      /* Just checks for self-consistency of the flags.
         -:  686:       * Only do it when debugging Eigen, as this borders on paranoia and could slow compilation down
         -:  687:       */
@@ -694,7 +694,7 @@
         -:  690:                        && internal::check_implication(MaxColsAtCompileTime==1 && MaxRowsAtCompileTime!=1, int(!IsRowMajor))),
         -:  691:                          INVALID_STORAGE_ORDER_FOR_THIS_VECTOR_EXPRESSION)
         -:  692:#endif
-  1009510:  693:    }
+    83378:  693:    }
         -:  694:
         -:  695:  private:
         -:  696:    EIGEN_DEVICE_FUNC explicit DenseBase(int);

@@ -1,0 +1,213 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/SparseCore/SparseColEtree.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2012 Désiré Nuentsa-Wakam <desire.nuentsa_wakam@inria.fr>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:
+        -:   11:/* 
+        -:   12: 
+        -:   13: * NOTE: This file is the modified version of sp_coletree.c file in SuperLU 
+        -:   14: 
+        -:   15: * -- SuperLU routine (version 3.1) --
+        -:   16: * Univ. of California Berkeley, Xerox Palo Alto Research Center,
+        -:   17: * and Lawrence Berkeley National Lab.
+        -:   18: * August 1, 2008
+        -:   19: *
+        -:   20: * Copyright (c) 1994 by Xerox Corporation.  All rights reserved.
+        -:   21: *
+        -:   22: * THIS MATERIAL IS PROVIDED AS IS, WITH ABSOLUTELY NO WARRANTY
+        -:   23: * EXPRESSED OR IMPLIED.  ANY USE IS AT YOUR OWN RISK.
+        -:   24: *
+        -:   25: * Permission is hereby granted to use or copy this program for any
+        -:   26: * purpose, provided the above notices are retained on all copies.
+        -:   27: * Permission to modify the code and to distribute modified code is
+        -:   28: * granted, provided the above notices are retained, and a notice that
+        -:   29: * the code was modified is included with the above copyright notice.
+        -:   30: */
+        -:   31:#ifndef SPARSE_COLETREE_H
+        -:   32:#define SPARSE_COLETREE_H
+        -:   33:
+        -:   34:// IWYU pragma: private
+        -:   35:#include "./InternalHeaderCheck.h"
+        -:   36:
+        -:   37:namespace Eigen {
+        -:   38:
+        -:   39:namespace internal {
+        -:   40:
+        -:   41:/** Find the root of the tree/set containing the vertex i : Use Path halving */ 
+        -:   42:template<typename Index, typename IndexVector>
+    #####:   43:Index etree_find (Index i, IndexVector& pp)
+        -:   44:{
+    #####:   45:  Index p = pp(i); // Parent 
+    #####:   46:  Index gp = pp(p); // Grand parent 
+    #####:   47:  while (gp != p) 
+        -:   48:  {
+    #####:   49:    pp(i) = gp; // Parent pointer on find path is changed to former grand parent
+    #####:   50:    i = gp; 
+    #####:   51:    p = pp(i);
+    #####:   52:    gp = pp(p);
+        -:   53:  }
+    #####:   54:  return p; 
+        -:   55:}
+        -:   56:
+        -:   57:/** Compute the column elimination tree of a sparse matrix
+        -:   58:  * \param mat The matrix in column-major format. 
+        -:   59:  * \param parent The elimination tree
+        -:   60:  * \param firstRowElt The column index of the first element in each row
+        -:   61:  * \param perm The permutation to apply to the column of \b mat
+        -:   62:  */
+        -:   63:template <typename MatrixType, typename IndexVector>
+    #####:   64:int coletree(const MatrixType& mat, IndexVector& parent, IndexVector& firstRowElt, typename MatrixType::StorageIndex *perm=0)
+        -:   65:{
+        -:   66:  typedef typename MatrixType::StorageIndex StorageIndex;
+    #####:   67:  StorageIndex nc = convert_index<StorageIndex>(mat.cols()); // Number of columns
+    #####:   68:  StorageIndex m = convert_index<StorageIndex>(mat.rows());
+    #####:   69:  StorageIndex diagSize = (std::min)(nc,m);
+    #####:   70:  IndexVector root(nc); // root of subtree of etree 
+    #####:   71:  root.setZero();
+    #####:   72:  IndexVector pp(nc); // disjoint sets 
+    #####:   73:  pp.setZero(); // Initialize disjoint sets 
+    #####:   74:  parent.resize(mat.cols());
+        -:   75:  //Compute first nonzero column in each row 
+    #####:   76:  firstRowElt.resize(m);
+    #####:   77:  firstRowElt.setConstant(nc);
+    #####:   78:  firstRowElt.segment(0, diagSize).setLinSpaced(diagSize, 0, diagSize-1);
+        -:   79:  bool found_diag;
+    #####:   80:  for (StorageIndex col = 0; col < nc; col++)
+        -:   81:  {
+    #####:   82:    StorageIndex pcol = col;
+    #####:   83:    if(perm) pcol  = perm[col];
+    #####:   84:    for (typename MatrixType::InnerIterator it(mat, pcol); it; ++it)
+        -:   85:    { 
+    #####:   86:      Index row = it.row();
+    #####:   87:      firstRowElt(row) = (std::min)(firstRowElt(row), col);
+    #####:   88:    }
+    #####:   89:  }
+        -:   90:  /* Compute etree by Liu's algorithm for symmetric matrices,
+        -:   91:          except use (firstRowElt[r],c) in place of an edge (r,c) of A.
+        -:   92:    Thus each row clique in A'*A is replaced by a star
+        -:   93:    centered at its first vertex, which has the same fill. */
+        -:   94:  StorageIndex rset, cset, rroot;
+    #####:   95:  for (StorageIndex col = 0; col < nc; col++) 
+        -:   96:  {
+    #####:   97:    found_diag = col>=m;
+    #####:   98:    pp(col) = col; 
+    #####:   99:    cset = col; 
+    #####:  100:    root(cset) = col; 
+    #####:  101:    parent(col) = nc; 
+        -:  102:    /* The diagonal element is treated here even if it does not exist in the matrix
+        -:  103:     * hence the loop is executed once more */ 
+    #####:  104:    StorageIndex pcol = col;
+    #####:  105:    if(perm) pcol  = perm[col];
+    #####:  106:    for (typename MatrixType::InnerIterator it(mat, pcol); it||!found_diag; ++it)
+        -:  107:    { //  A sequence of interleaved find and union is performed 
+    #####:  108:      Index i = col;
+    #####:  109:      if(it) i = it.index();
+    #####:  110:      if (i == col) found_diag = true;
+        -:  111:      
+    #####:  112:      StorageIndex row = firstRowElt(i);
+    #####:  113:      if (row >= col) continue; 
+    #####:  114:      rset = internal::etree_find(row, pp); // Find the name of the set containing row
+    #####:  115:      rroot = root(rset);
+    #####:  116:      if (rroot != col) 
+        -:  117:      {
+    #####:  118:        parent(rroot) = col; 
+    #####:  119:        pp(cset) = rset; 
+    #####:  120:        cset = rset; 
+    #####:  121:        root(cset) = col; 
+    #####:  122:      }
+    #####:  123:    }
+    #####:  124:  }
+        -:  125:  return 0;  
+    #####:  126:}
+        -:  127:
+        -:  128:/** 
+        -:  129:  * Depth-first search from vertex n.  No recursion.
+        -:  130:  * This routine was contributed by Cédric Doucet, CEDRAT Group, Meylan, France.
+        -:  131:*/
+        -:  132:template <typename IndexVector>
+    #####:  133:void nr_etdfs (typename IndexVector::Scalar n, IndexVector& parent, IndexVector& first_kid, IndexVector& next_kid, IndexVector& post, typename IndexVector::Scalar postnum)
+        -:  134:{
+        -:  135:  typedef typename IndexVector::Scalar StorageIndex;
+    #####:  136:  StorageIndex current = n, first, next;
+    #####:  137:  while (postnum != n) 
+        -:  138:  {
+        -:  139:    // No kid for the current node
+    #####:  140:    first = first_kid(current);
+        -:  141:    
+        -:  142:    // no kid for the current node
+    #####:  143:    if (first == -1) 
+        -:  144:    {
+        -:  145:      // Numbering this node because it has no kid 
+    #####:  146:      post(current) = postnum++;
+        -:  147:      
+        -:  148:      // looking for the next kid 
+    #####:  149:      next = next_kid(current); 
+    #####:  150:      while (next == -1) 
+        -:  151:      {
+        -:  152:        // No more kids : back to the parent node
+    #####:  153:        current = parent(current); 
+        -:  154:        // numbering the parent node 
+    #####:  155:        post(current) = postnum++;
+        -:  156:        
+        -:  157:        // Get the next kid 
+    #####:  158:        next = next_kid(current); 
+        -:  159:      }
+        -:  160:      // stopping criterion 
+    #####:  161:      if (postnum == n+1) return; 
+        -:  162:      
+        -:  163:      // Updating current node 
+    #####:  164:      current = next; 
+    #####:  165:    }
+        -:  166:    else 
+        -:  167:    {
+    #####:  168:      current = first; 
+        -:  169:    }
+        -:  170:  }
+    #####:  171:}
+        -:  172:
+        -:  173:
+        -:  174:/**
+        -:  175:  * \brief Post order a tree 
+        -:  176:  * \param n the number of nodes
+        -:  177:  * \param parent Input tree
+        -:  178:  * \param post postordered tree
+        -:  179:  */
+        -:  180:template <typename IndexVector>
+    #####:  181:void treePostorder(typename IndexVector::Scalar n, IndexVector& parent, IndexVector& post)
+        -:  182:{
+        -:  183:  typedef typename IndexVector::Scalar StorageIndex;
+    #####:  184:  IndexVector first_kid, next_kid; // Linked list of children 
+        -:  185:  StorageIndex postnum; 
+        -:  186:  // Allocate storage for working arrays and results 
+    #####:  187:  first_kid.resize(n+1); 
+    #####:  188:  next_kid.setZero(n+1);
+    #####:  189:  post.setZero(n+1);
+        -:  190:  
+        -:  191:  // Set up structure describing children
+    #####:  192:  first_kid.setConstant(-1); 
+    #####:  193:  for (StorageIndex v = n-1; v >= 0; v--) 
+        -:  194:  {
+    #####:  195:    StorageIndex dad = parent(v);
+    #####:  196:    next_kid(v) = first_kid(dad); 
+    #####:  197:    first_kid(dad) = v; 
+    #####:  198:  }
+        -:  199:  
+        -:  200:  // Depth-first search from dummy root vertex #n
+    #####:  201:  postnum = 0; 
+    #####:  202:  internal::nr_etdfs(n, parent, first_kid, next_kid, post, postnum);
+    #####:  203:}
+        -:  204:
+        -:  205:} // end namespace internal
+        -:  206:
+        -:  207:} // end namespace Eigen
+        -:  208:
+        -:  209:#endif // SPARSE_COLETREE_H

@@ -1,0 +1,188 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/SparseLU/SparseLU_column_bmod.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2012 Désiré Nuentsa-Wakam <desire.nuentsa_wakam@inria.fr>
+        -:    5:// Copyright (C) 2012 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    6://
+        -:    7:// This Source Code Form is subject to the terms of the Mozilla
+        -:    8:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    9:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:   10:
+        -:   11:/* 
+        -:   12: 
+        -:   13: * NOTE: This file is the modified version of xcolumn_bmod.c file in SuperLU 
+        -:   14: 
+        -:   15: * -- SuperLU routine (version 3.0) --
+        -:   16: * Univ. of California Berkeley, Xerox Palo Alto Research Center,
+        -:   17: * and Lawrence Berkeley National Lab.
+        -:   18: * October 15, 2003
+        -:   19: *
+        -:   20: * Copyright (c) 1994 by Xerox Corporation.  All rights reserved.
+        -:   21: *
+        -:   22: * THIS MATERIAL IS PROVIDED AS IS, WITH ABSOLUTELY NO WARRANTY
+        -:   23: * EXPRESSED OR IMPLIED.  ANY USE IS AT YOUR OWN RISK.
+        -:   24: *
+        -:   25: * Permission is hereby granted to use or copy this program for any
+        -:   26: * purpose, provided the above notices are retained on all copies.
+        -:   27: * Permission to modify the code and to distribute modified code is
+        -:   28: * granted, provided the above notices are retained, and a notice that
+        -:   29: * the code was modified is included with the above copyright notice.
+        -:   30: */
+        -:   31:#ifndef SPARSELU_COLUMN_BMOD_H
+        -:   32:#define SPARSELU_COLUMN_BMOD_H
+        -:   33:
+        -:   34:// IWYU pragma: private
+        -:   35:#include "./InternalHeaderCheck.h"
+        -:   36:
+        -:   37:namespace Eigen {
+        -:   38:
+        -:   39:namespace internal {
+        -:   40:/**
+        -:   41: * \brief Performs numeric block updates (sup-col) in topological order
+        -:   42: * 
+        -:   43: * \param jcol current column to update
+        -:   44: * \param nseg Number of segments in the U part
+        -:   45: * \param dense Store the full representation of the column
+        -:   46: * \param tempv working array 
+        -:   47: * \param segrep segment representative ...
+        -:   48: * \param repfnz ??? First nonzero column in each row ???  ...
+        -:   49: * \param fpanelc First column in the current panel
+        -:   50: * \param glu Global LU data. 
+        -:   51: * \return 0 - successful return 
+        -:   52: *         > 0 - number of bytes allocated when run out of space
+        -:   53: * 
+        -:   54: */
+        -:   55:template <typename Scalar, typename StorageIndex>
+    #####:   56:Index SparseLUImpl<Scalar,StorageIndex>::column_bmod(const Index jcol, const Index nseg, BlockScalarVector dense, ScalarVector& tempv,
+        -:   57:                                                     BlockIndexVector segrep, BlockIndexVector repfnz, Index fpanelc, GlobalLU_t& glu)
+        -:   58:{
+        -:   59:  Index  jsupno, k, ksub, krep, ksupno; 
+        -:   60:  Index lptr, nrow, isub, irow, nextlu, new_next, ufirst; 
+        -:   61:  Index fsupc, nsupc, nsupr, luptr, kfnz, no_zeros; 
+        -:   62:  /* krep = representative of current k-th supernode
+        -:   63:    * fsupc =  first supernodal column
+        -:   64:    * nsupc = number of columns in a supernode
+        -:   65:    * nsupr = number of rows in a supernode
+        -:   66:    * luptr = location of supernodal LU-block in storage
+        -:   67:    * kfnz = first nonz in the k-th supernodal segment
+        -:   68:    * no_zeros = no lf leading zeros in a supernodal U-segment
+        -:   69:    */
+        -:   70:  
+    #####:   71:  jsupno = glu.supno(jcol);
+        -:   72:  // For each nonzero supernode segment of U[*,j] in topological order 
+    #####:   73:  k = nseg - 1; 
+        -:   74:  Index d_fsupc; // distance between the first column of the current panel and the 
+        -:   75:               // first column of the current snode
+        -:   76:  Index fst_col; // First column within small LU update
+        -:   77:  Index segsize; 
+    #####:   78:  for (ksub = 0; ksub < nseg; ksub++)
+        -:   79:  {
+    #####:   80:    krep = segrep(k); k--; 
+    #####:   81:    ksupno = glu.supno(krep); 
+    #####:   82:    if (jsupno != ksupno )
+        -:   83:    {
+        -:   84:      // outside the rectangular supernode 
+    #####:   85:      fsupc = glu.xsup(ksupno); 
+    #####:   86:      fst_col = (std::max)(fsupc, fpanelc); 
+        -:   87:      
+        -:   88:      // Distance from the current supernode to the current panel; 
+        -:   89:      // d_fsupc = 0 if fsupc > fpanelc
+    #####:   90:      d_fsupc = fst_col - fsupc; 
+        -:   91:      
+    #####:   92:      luptr = glu.xlusup(fst_col) + d_fsupc; 
+    #####:   93:      lptr = glu.xlsub(fsupc) + d_fsupc; 
+        -:   94:      
+    #####:   95:      kfnz = repfnz(krep); 
+    #####:   96:      kfnz = (std::max)(kfnz, fpanelc); 
+        -:   97:      
+    #####:   98:      segsize = krep - kfnz + 1; 
+    #####:   99:      nsupc = krep - fst_col + 1; 
+    #####:  100:      nsupr = glu.xlsub(fsupc+1) - glu.xlsub(fsupc); 
+    #####:  101:      nrow = nsupr - d_fsupc - nsupc;
+    #####:  102:      Index lda = glu.xlusup(fst_col+1) - glu.xlusup(fst_col);
+        -:  103:      
+        -:  104:      
+        -:  105:      // Perform a triangular solver and block update, 
+        -:  106:      // then scatter the result of sup-col update to dense
+    #####:  107:      no_zeros = kfnz - fst_col; 
+    #####:  108:      if(segsize==1)
+    #####:  109:        LU_kernel_bmod<1>::run(segsize, dense, tempv, glu.lusup, luptr, lda, nrow, glu.lsub, lptr, no_zeros);
+        -:  110:      else
+    #####:  111:        LU_kernel_bmod<Dynamic>::run(segsize, dense, tempv, glu.lusup, luptr, lda, nrow, glu.lsub, lptr, no_zeros);
+    #####:  112:    } // end if jsupno 
+    #####:  113:  } // end for each segment
+        -:  114:  
+        -:  115:  // Process the supernodal portion of  L\U[*,j]
+    #####:  116:  nextlu = glu.xlusup(jcol); 
+    #####:  117:  fsupc = glu.xsup(jsupno);
+        -:  118:  
+        -:  119:  // copy the SPA dense into L\U[*,j]
+        -:  120:  Index mem; 
+    #####:  121:  new_next = nextlu + glu.xlsub(fsupc + 1) - glu.xlsub(fsupc); 
+    #####:  122:  Index offset = internal::first_multiple<Index>(new_next, internal::packet_traits<Scalar>::size) - new_next;
+    #####:  123:  if(offset)
+    #####:  124:    new_next += offset;
+    #####:  125:  while (new_next > glu.nzlumax )
+        -:  126:  {
+    #####:  127:    mem = memXpand<ScalarVector>(glu.lusup, glu.nzlumax, nextlu, LUSUP, glu.num_expansions);  
+    #####:  128:    if (mem) return mem; 
+        -:  129:  }
+        -:  130:  
+    #####:  131:  for (isub = glu.xlsub(fsupc); isub < glu.xlsub(fsupc+1); isub++)
+        -:  132:  {
+    #####:  133:    irow = glu.lsub(isub);
+    #####:  134:    glu.lusup(nextlu) = dense(irow);
+    #####:  135:    dense(irow) = Scalar(0.0); 
+    #####:  136:    ++nextlu; 
+    #####:  137:  }
+        -:  138:  
+    #####:  139:  if(offset)
+        -:  140:  {
+    #####:  141:    glu.lusup.segment(nextlu,offset).setZero();
+    #####:  142:    nextlu += offset;
+    #####:  143:  }
+    #####:  144:  glu.xlusup(jcol + 1) = StorageIndex(nextlu);  // close L\U(*,jcol); 
+        -:  145:  
+        -:  146:  /* For more updates within the panel (also within the current supernode),
+        -:  147:   * should start from the first column of the panel, or the first column
+        -:  148:   * of the supernode, whichever is bigger. There are two cases:
+        -:  149:   *  1) fsupc < fpanelc, then fst_col <-- fpanelc
+        -:  150:   *  2) fsupc >= fpanelc, then fst_col <-- fsupc
+        -:  151:   */
+    #####:  152:  fst_col = (std::max)(fsupc, fpanelc); 
+        -:  153:  
+    #####:  154:  if (fst_col  < jcol)
+        -:  155:  {
+        -:  156:    // Distance between the current supernode and the current panel
+        -:  157:    // d_fsupc = 0 if fsupc >= fpanelc
+    #####:  158:    d_fsupc = fst_col - fsupc; 
+        -:  159:    
+    #####:  160:    lptr = glu.xlsub(fsupc) + d_fsupc; 
+    #####:  161:    luptr = glu.xlusup(fst_col) + d_fsupc; 
+    #####:  162:    nsupr = glu.xlsub(fsupc+1) - glu.xlsub(fsupc); // leading dimension
+    #####:  163:    nsupc = jcol - fst_col; // excluding jcol 
+    #####:  164:    nrow = nsupr - d_fsupc - nsupc; 
+        -:  165:    
+        -:  166:    // points to the beginning of jcol in snode L\U(jsupno) 
+    #####:  167:    ufirst = glu.xlusup(jcol) + d_fsupc; 
+    #####:  168:    Index lda = glu.xlusup(jcol+1) - glu.xlusup(jcol);
+    #####:  169:    MappedMatrixBlock A( &(glu.lusup.data()[luptr]), nsupc, nsupc, OuterStride<>(lda) );
+    #####:  170:    VectorBlock<ScalarVector> u(glu.lusup, ufirst, nsupc); 
+    #####:  171:    u = A.template triangularView<UnitLower>().solve(u); 
+        -:  172:    
+    #####:  173:    new (&A) MappedMatrixBlock ( &(glu.lusup.data()[luptr+nsupc]), nrow, nsupc, OuterStride<>(lda) );
+    #####:  174:    VectorBlock<ScalarVector> l(glu.lusup, ufirst+nsupc, nrow); 
+    #####:  175:    l.noalias() -= A * u;
+        -:  176:    
+    #####:  177:  } // End if fst_col
+    #####:  178:  return 0; 
+    #####:  179:}
+        -:  180:
+        -:  181:} // end namespace internal
+        -:  182:} // end namespace Eigen
+        -:  183:
+        -:  184:#endif // SPARSELU_COLUMN_BMOD_H

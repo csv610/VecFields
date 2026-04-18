@@ -1,0 +1,38 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/include/directional/matrix_slice.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Directional, a library for directional field processing.
+        -:    2://
+        -:    3:// Copyright (C) 2025 Amir Vaxman <avaxman@gmail.com>
+        -:    4://
+        -:    5:// This Source Code Form is subject to the terms of the Mozilla Public License
+        -:    6:// v. 2.0. If a copy of the MPL was not distributed with this file, You can
+        -:    7:// obtain one at http://mozilla.org/MPL/2.0/.
+        -:    8:
+        -:    9:#ifndef DIRECTIONAL_MATRIX_SLICE_H
+        -:   10:#define DIRECTIONAL_MATRIX_SLICE_H
+        -:   11:
+        -:   12:#include <vector>
+        -:   13:#include <set>
+        -:   14:#include <Eigen/Core>
+        -:   15:
+        -:   16:namespace directional{
+        -:   17:
+        -:   18://Slicing a matrix by rowIndices and colIndices, and outputting the results in B.
+        -:   19:template<typename T>
+    #####:   20:inline void matrix_slice(const Eigen::Matrix<T, Eigen::Dynamic,  Eigen::Dynamic> A,
+        -:   21:                         const Eigen::VectorXi& rowIndices,
+        -:   22:                         const Eigen::VectorXi& colIndices,
+        -:   23:                         Eigen::Matrix<T, Eigen::Dynamic,  Eigen::Dynamic>& B){
+        -:   24:    
+    #####:   25:    B.resize(rowIndices.size(), colIndices.size());
+    #####:   26:    for (int i=0;i<rowIndices.size();i++)
+    #####:   27:        for (int j=0;j<colIndices.size();j++)
+    #####:   28:            B(i,j) = A(rowIndices(i), colIndices(j));
+        -:   29:    
+    #####:   30:}
+        -:   31:
+        -:   32:}
+        -:   33:
+        -:   34:#endif //DIRECTIONAL_TUTORIALS_INDEX_OPERATIONS_H

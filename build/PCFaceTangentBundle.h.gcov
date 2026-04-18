@@ -1,0 +1,169 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/include/directional/PCFaceTangentBundle.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Directional, a library for directional field processing.
+        -:    2:// Copyright (C) 2025 Amir Vaxman <avaxman@gmail.com>
+        -:    3://
+        -:    4:// This Source Code Form is subject to the terms of the Mozilla Public License
+        -:    5:// v. 2.0. If a copy of the MPL was not distributed with this file, You can
+        -:    6:// obtain one at http://mozilla.org/MPL/2.0/.
+        -:    7:
+        -:    8:#ifndef DIRECTIONAL_PIECWISE_CONSTANT_FACE_TANGENT_BUNDLE_H
+        -:    9:#define DIRECTIONAL_PIECWISE_CONSTANT_FACE_TANGENT_BUNDLE_H
+        -:   10:
+        -:   11:#include <iostream>
+        -:   12:#include <Eigen/Geometry>
+        -:   13:#include <Eigen/Sparse>
+        -:   14:#include <directional/dual_cycles.h>
+        -:   15:#include <directional/TriMesh.h>
+        -:   16:#include <directional/TangentBundle.h>
+        -:   17:#include <directional/sparse_diagonal.h>
+        -:   18:
+        -:   19:
+        -:   20:/***
+        -:   21: This class represents piecewise-constant face-based tangent bundles, where tangent spaces identify with the natural plane to every triangle of a 2-manifold mesh, connections are across
+        -:   22: (dual) edges, and local cycles are around vertices, with curvature being discrete angle defect.
+        -:   23: ***/
+        -:   24:
+        -:   25:namespace directional{
+        -:   26:
+        -:   27:class PCFaceTangentBundle : public TangentBundle{
+        -:   28:public:
+        -:   29:    
+        -:   30:    const TriMesh* mesh;
+        -:   31:    
+    #####:   32:    discTangTypeEnum discTangType() const {return discTangTypeEnum::FACE_SPACES;}
+        -:   33:    
+        -:   34:    bool hasCochainSequence() const { return true; }
+    #####:   35:    bool hasEmbedding() const { return true; }
+        -:   36:    
+        2:   37:    PCFaceTangentBundle(){}
+        2:   38:    ~PCFaceTangentBundle(){}
+        -:   39:    
+        1:   40:    void inline init(const TriMesh& _mesh){
+        -:   41:        
+        1:   42:        intDimension = 2;
+        1:   43:        numSpaces = _mesh.F.rows();
+        1:   44:        avgAdjLength = _mesh.avgEdgeLength;
+        -:   45:        typedef std::complex<double> Complex;
+        1:   46:        mesh = &_mesh;
+        -:   47:        
+        -:   48:        //adjacency relation is by dual edges.
+        1:   49:        adjSpaces = mesh->EF;
+        1:   50:        oneRing = mesh->FE;
+        1:   51:        sources = mesh->barycenters;
+        1:   52:        normals = mesh->faceNormals;
+        1:   53:        cycleSources = mesh->V;
+        1:   54:        cycleNormals = mesh->vertexNormals;
+        -:   55:        
+        -:   56:        //connection is the ratio of the complex representation of edges
+        1:   57:        connection.resize(mesh->EF.rows(),1);  //the difference in the angle representation of edge i from EF(i,0) to EF(i,1)
+        1:   58:        Eigen::MatrixXd edgeVectors(mesh->EF.rows(), 3);
+      241:   59:        for (int i = 0; i < mesh->EF.rows(); i++) {
+      240:   60:            if (mesh->EF(i, 0) == -1 || mesh->EF(i, 1) == -1)
+      120:   61:                continue;
+      120:   62:            edgeVectors.row(i) = (mesh->V.row(mesh->EV(i, 1)) - mesh->V.row(mesh->EV(i, 0))).normalized();
+      120:   63:            Complex ef(edgeVectors.row(i).dot(mesh->FBx.row(mesh->EF(i, 0))), edgeVectors.row(i).dot(mesh->FBy.row(mesh->EF(i, 0))));
+      120:   64:            Complex eg(edgeVectors.row(i).dot(mesh->FBx.row(mesh->EF(i, 1))), edgeVectors.row(i).dot(mesh->FBy.row(mesh->EF(i, 1))));
+      120:   65:            connection(i) = eg / ef;
+      120:   66:        }
+        -:   67:        
+        -:   68:        //TODO: cycles, cycleCurvature
+        1:   69:        directional::dual_cycles(*mesh, cycles, cycleCurvatures, local2Cycle, innerAdjacencies);
+        -:   70:        
+        -:   71:        //drawing from mesh geometry
+        -:   72:        
+        -:   73:        /************masses****************/
+        -:   74:        
+        -:   75:        //mass are face areas
+        -:   76:        //igl::doublearea(mesh->V,mesh->F,tangentSpaceMass);
+        -:   77:        
+        1:   78:        tangentSpaceMass = directional::sparse_diagonal(mesh->faceAreas);
+        1:   79:        Eigen::VectorXd invFaceAreas = mesh->faceAreas.array().inverse();
+        1:   80:        invTangentSpaceMass = directional::sparse_diagonal(invFaceAreas);
+        -:   81:        
+        -:   82:        //The "harmonic" weights from [Brandt et al. 2020].
+        1:   83:        Eigen::VectorXd connMassVector = Eigen::VectorXd::Zero(mesh->innerEdges.size());
+      121:   84:        for (int i=0;i<mesh->innerEdges.size();i++){
+        -:   85:            //if ((mesh->EF(i,0)==-1)||(mesh->EF(i,1)==-1))
+        -:   86:            //    continue;  //boundary edge
+        -:   87:            
+      120:   88:            double primalLengthSquared = (mesh->V.row(mesh->EV(mesh->innerEdges(i),0))-mesh->V.row(mesh->EV(mesh->innerEdges(i),1))).squaredNorm();
+      120:   89:            connMassVector(i) = 3.0*primalLengthSquared/(mesh->faceAreas(mesh->EF(mesh->innerEdges(i),0))+mesh->faceAreas(mesh->EF(mesh->innerEdges(i),1)));
+      120:   90:        }
+        1:   91:        connectionMass = directional::sparse_diagonal(connMassVector);
+        1:   92:    }
+        -:   93:    
+        -:   94:    //projecting an arbitrary set of extrinsic vectors (e.g. coming from user-prescribed constraints) into intrinsic vectors.
+        1:   95:    Eigen::MatrixXd  virtual inline project_to_intrinsic(const Eigen::VectorXi& tangentSpaces, const Eigen::MatrixXd& extDirectionals) const{
+        1:   96:        assert(tangentSpaces.rows()==extDirectionals.rows());
+        -:   97:        
+        1:   98:        int N = extDirectionals.cols()/3;
+        1:   99:        Eigen::MatrixXd intDirectionals(tangentSpaces.rows(),2*N);
+        -:  100:        
+        2:  101:        for (int i=0;i<tangentSpaces.rows();i++)
+        2:  102:            for (int j=0;j<N;j++)
+        2:  103:                intDirectionals.block(i,2*j,1,2)<<(extDirectionals.block(i,3*j,1,3).array()*mesh->FBx.row(tangentSpaces(i)).array()).sum(),(extDirectionals.block(i,3*j,1,3).array()*mesh->FBy.row(tangentSpaces(i)).array()).sum();
+        -:  104:        
+        1:  105:        return intDirectionals;
+        1:  106:    }
+        -:  107:    
+        -:  108:    
+        -:  109:    //projecting intrinsic to extrinsic
+        2:  110:    Eigen::MatrixXd virtual inline project_to_extrinsic(const Eigen::VectorXi& tangentSpaces, const Eigen::MatrixXd& intDirectionals) const {
+        -:  111:        
+        2:  112:        assert(tangentSpaces.rows()==intDirectionals.rows() || tangentSpaces.rows()==0);
+        2:  113:        Eigen::VectorXi actualTangentSpaces;
+        2:  114:        if (tangentSpaces.rows()==0)
+        2:  115:            actualTangentSpaces = Eigen::VectorXi::LinSpaced(sources.rows(), 0, sources.rows()-1);
+        -:  116:        else
+    #####:  117:            actualTangentSpaces = tangentSpaces;
+        -:  118:        
+        2:  119:        int N = intDirectionals.cols()/2;
+        2:  120:        Eigen::MatrixXd extDirectionals(actualTangentSpaces.rows(),3);
+        -:  121:        
+        2:  122:        extDirectionals.conservativeResize(intDirectionals.rows(),intDirectionals.cols()*3/2);
+      242:  123:        for (int i=0;i<intDirectionals.rows();i++)
+     1200:  124:            for (int j=0;j<intDirectionals.cols();j+=2)
+     1200:  125:                extDirectionals.block(i,3*j/2,1,3)=mesh->FBx.row(actualTangentSpaces(i))*intDirectionals(i,j)+mesh->FBy.row(actualTangentSpaces(i))*intDirectionals(i,j+1);
+        -:  126:        
+        2:  127:        return extDirectionals;
+        2:  128:    }
+        -:  129:    
+    #####:  130:    void inline interpolate(const Eigen::MatrixXi &elemIndices,
+        -:  131:                            const Eigen::MatrixXd &baryCoords,
+        -:  132:                            const Eigen::MatrixXd &intDirectionals,
+        -:  133:                            Eigen::MatrixXd& interpSources,
+        -:  134:                            Eigen::MatrixXd& interpNormals,
+        -:  135:                            Eigen::MatrixXd& interpField) const {
+        -:  136:        
+    #####:  137:        assert(elemIndices.rows()==baryCoords.rows());
+    #####:  138:        assert(baryCoords.rows()==intDirectionals.rows());
+        -:  139:        
+    #####:  140:        int N = intDirectionals.cols()/2;
+    #####:  141:        interpSources=Eigen::MatrixXd::Zero(elemIndices.rows(),3);
+    #####:  142:        interpNormals=Eigen::MatrixXd::Zero(elemIndices.rows(),3);
+    #####:  143:        interpField=Eigen::MatrixXd::Zero(elemIndices.rows(),3*N);
+        -:  144:        
+        -:  145:        //in face based fields the only thing that matters is the identity of the face
+    #####:  146:        for (int i=0;i<elemIndices.rows();i++){
+    #####:  147:            for (int j=0;j<3;j++)
+    #####:  148:                interpSources.row(i).array()+=mesh->V.row(mesh->F(elemIndices(i),j)).array()*baryCoords(i,j);
+    #####:  149:            interpNormals.row(i)=mesh->faceNormals.row(elemIndices(i));
+    #####:  150:            for (int j=0;j<N;j++)
+    #####:  151:                interpField.block(i,j*3,1,3)=intDirectionals(elemIndices(i),j*2)*mesh->FBx.row(elemIndices(i))+intDirectionals(elemIndices(i),j*2+1)*mesh->FBy.row(elemIndices(i));
+    #####:  152:        }
+        -:  153:        
+    #####:  154:    }
+        -:  155:    
+        -:  156:    
+        -:  157:};
+        -:  158:
+        -:  159:}
+        -:  160:
+        -:  161:
+        -:  162:
+        -:  163:#endif
+        -:  164:
+        -:  165:

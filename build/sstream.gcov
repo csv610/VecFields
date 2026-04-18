@@ -1,7 +1,7 @@
         -:    0:Source:/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/sstream
-        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
-        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
-        -:    0:Runs:4
+        -:    0:Graph:./external/googletest/googlemock/CMakeFiles/gmock.dir/src/gmock-all.cc.gcno
+        -:    0:Data:-
+        -:    0:Runs:0
         -:    1:// -*- C++ -*-
         -:    2://===----------------------------------------------------------------------===//
         -:    3://
@@ -371,16 +371,16 @@
         -:  367:    __init_buf_ptrs();
         -:  368:  }
         -:  369:
-      684:  370:  _LIBCPP_HIDE_FROM_ABI explicit basic_stringbuf(ios_base::openmode __wch) : __hm_(nullptr), __mode_(__wch) {
+    #####:  370:  _LIBCPP_HIDE_FROM_ABI explicit basic_stringbuf(ios_base::openmode __wch) : __hm_(nullptr), __mode_(__wch) {
         -:  371:    // it is implementation-defined whether we initialize eback() & friends to nullptr, and libc++ doesn't
-      342:  372:    __init_buf_ptrs();
-      684:  373:  }
+    #####:  372:    __init_buf_ptrs();
+    #####:  373:  }
         -:  374:
-     2424:  375:  _LIBCPP_HIDE_FROM_ABI explicit basic_stringbuf(const string_type& __s,
+        -:  375:  _LIBCPP_HIDE_FROM_ABI explicit basic_stringbuf(const string_type& __s,
         -:  376:                                                 ios_base::openmode __wch = ios_base::in | ios_base::out)
-     2424:  377:      : __str_(__s.get_allocator()), __hm_(nullptr), __mode_(__wch) {
-     1212:  378:    str(__s);
-     2424:  379:  }
+        -:  377:      : __str_(__s.get_allocator()), __hm_(nullptr), __mode_(__wch) {
+        -:  378:    str(__s);
+        -:  379:  }
         -:  380:
         -:  381:#    if _LIBCPP_STD_VER >= 20
         -:  382:  _LIBCPP_HIDE_FROM_ABI explicit basic_stringbuf(const allocator_type& __a)
@@ -471,7 +471,7 @@
         -:  467:#    if _LIBCPP_STD_VER <= 17 || defined(_LIBCPP_BUILDING_LIBRARY)
         -:  468:  string_type str() const;
         -:  469:#    else
-       16:  470:  _LIBCPP_HIDE_FROM_ABI string_type str() const& { return str(__str_.get_allocator()); }
+        -:  470:  _LIBCPP_HIDE_FROM_ABI string_type str() const& { return str(__str_.get_allocator()); }
         -:  471:
         -:  472:  _LIBCPP_HIDE_FROM_ABI string_type str() && {
         -:  473:    const basic_string_view<_CharT, _Traits> __view = view();
@@ -489,8 +489,8 @@
         -:  485:#    if _LIBCPP_STD_VER >= 20
         -:  486:  template <class _SAlloc>
         -:  487:    requires __is_allocator<_SAlloc>::value
-       16:  488:  _LIBCPP_HIDE_FROM_ABI basic_string<char_type, traits_type, _SAlloc> str(const _SAlloc& __sa) const {
-       16:  489:    return basic_string<_CharT, _Traits, _SAlloc>(view(), __sa);
+        -:  488:  _LIBCPP_HIDE_FROM_ABI basic_string<char_type, traits_type, _SAlloc> str(const _SAlloc& __sa) const {
+        -:  489:    return basic_string<_CharT, _Traits, _SAlloc>(view(), __sa);
         -:  490:  }
         -:  491:
         -:  492:  _LIBCPP_HIDE_FROM_ABI basic_string_view<char_type, traits_type> view() const noexcept;
@@ -715,19 +715,19 @@
         -:  711:#    endif // _LIBCPP_STD_VER <= 17 || defined(_LIBCPP_BUILDING_LIBRARY)
         -:  712:
         -:  713:template <class _CharT, class _Traits, class _Allocator>
-      342:  714:_LIBCPP_HIDE_FROM_ABI void basic_stringbuf<_CharT, _Traits, _Allocator>::__init_buf_ptrs() {
-      342:  715:  __hm_                                = nullptr;
-      342:  716:  char_type* __data                    = const_cast<char_type*>(__str_.data());
-      342:  717:  typename string_type::size_type __sz = __str_.size();
-      342:  718:  if (__mode_ & ios_base::in) {
-      342:  719:    __hm_ = __data + __sz;
-      342:  720:    this->setg(__data, __data, __hm_);
-      342:  721:  }
-      342:  722:  if (__mode_ & ios_base::out) {
-      342:  723:    __hm_ = __data + __sz;
-      342:  724:    __str_.resize(__str_.capacity());
-      342:  725:    this->setp(__data, __data + __str_.size());
-      342:  726:    if (__mode_ & (ios_base::app | ios_base::ate)) {
+    #####:  714:_LIBCPP_HIDE_FROM_ABI void basic_stringbuf<_CharT, _Traits, _Allocator>::__init_buf_ptrs() {
+    #####:  715:  __hm_                                = nullptr;
+    #####:  716:  char_type* __data                    = const_cast<char_type*>(__str_.data());
+    #####:  717:  typename string_type::size_type __sz = __str_.size();
+    #####:  718:  if (__mode_ & ios_base::in) {
+    #####:  719:    __hm_ = __data + __sz;
+    #####:  720:    this->setg(__data, __data, __hm_);
+    #####:  721:  }
+    #####:  722:  if (__mode_ & ios_base::out) {
+    #####:  723:    __hm_ = __data + __sz;
+    #####:  724:    __str_.resize(__str_.capacity());
+    #####:  725:    this->setp(__data, __data + __str_.size());
+    #####:  726:    if (__mode_ & (ios_base::app | ios_base::ate)) {
     #####:  727:      while (__sz > INT_MAX) {
     #####:  728:        this->pbump(INT_MAX);
     #####:  729:        __sz -= INT_MAX;
@@ -735,21 +735,21 @@
     #####:  731:      if (__sz > 0)
     #####:  732:        this->pbump(__sz);
     #####:  733:    }
-      342:  734:  }
-      342:  735:}
+    #####:  734:  }
+    #####:  735:}
         -:  736:
         -:  737:#    if _LIBCPP_STD_VER >= 20
         -:  738:template <class _CharT, class _Traits, class _Allocator>
         -:  739:_LIBCPP_HIDE_FROM_ABI basic_string_view<_CharT, _Traits>
-       16:  740:basic_stringbuf<_CharT, _Traits, _Allocator>::view() const noexcept {
-       16:  741:  if (__mode_ & ios_base::out) {
-       16:  742:    if (__hm_ < this->pptr())
-       16:  743:      __hm_ = this->pptr();
-       16:  744:    return basic_string_view<_CharT, _Traits>(this->pbase(), __hm_);
-    #####:  745:  } else if (__mode_ & ios_base::in)
-    #####:  746:    return basic_string_view<_CharT, _Traits>(this->eback(), this->egptr());
-    #####:  747:  return basic_string_view<_CharT, _Traits>();
-       16:  748:}
+        -:  740:basic_stringbuf<_CharT, _Traits, _Allocator>::view() const noexcept {
+        -:  741:  if (__mode_ & ios_base::out) {
+        -:  742:    if (__hm_ < this->pptr())
+        -:  743:      __hm_ = this->pptr();
+        -:  744:    return basic_string_view<_CharT, _Traits>(this->pbase(), __hm_);
+        -:  745:  } else if (__mode_ & ios_base::in)
+        -:  746:    return basic_string_view<_CharT, _Traits>(this->eback(), this->egptr());
+        -:  747:  return basic_string_view<_CharT, _Traits>();
+        -:  748:}
         -:  749:#    endif // _LIBCPP_STD_VER >= 20
         -:  750:
         -:  751:template <class _CharT, class _Traits, class _Allocator>
@@ -1020,8 +1020,8 @@
         -: 1016:
         -: 1017:public:
         -: 1018:  // [ostringstream.cons] Constructors:
-        -: 1019:  _LIBCPP_HIDE_FROM_ABI basic_ostringstream()
-        -: 1020:      : basic_ostream<_CharT, _Traits>(std::addressof(__sb_)), __sb_(ios_base::out) {}
+    #####: 1019:  _LIBCPP_HIDE_FROM_ABI basic_ostringstream()
+    #####: 1020:      : basic_ostream<_CharT, _Traits>(std::addressof(__sb_)), __sb_(ios_base::out) {}
         -: 1021:
         -: 1022:  _LIBCPP_HIDE_FROM_ABI explicit basic_ostringstream(ios_base::openmode __wch)
         -: 1023:      : basic_ostream<_CharT, _Traits>(std::addressof(__sb_)), __sb_(__wch | ios_base::out) {}
@@ -1096,7 +1096,7 @@
         -: 1092:  }
         -: 1093:
         -: 1094:#    if _LIBCPP_STD_VER <= 17 || defined(_LIBCPP_BUILDING_LIBRARY)
-        -: 1095:  _LIBCPP_HIDE_FROM_ABI string_type str() const { return __sb_.str(); }
+    #####: 1095:  _LIBCPP_HIDE_FROM_ABI string_type str() const { return __sb_.str(); }
         -: 1096:#    else
         -: 1097:  _LIBCPP_HIDE_FROM_ABI string_type str() const& { return __sb_.str(); }
         -: 1098:
@@ -1158,15 +1158,15 @@
         -: 1154:
         -: 1155:public:
         -: 1156:  // [stringstream.cons] constructors
-      684: 1157:  _LIBCPP_HIDE_FROM_ABI basic_stringstream()
-      684: 1158:      : basic_iostream<_CharT, _Traits>(std::addressof(__sb_)), __sb_(ios_base::in | ios_base::out) {}
+    #####: 1157:  _LIBCPP_HIDE_FROM_ABI basic_stringstream()
+    #####: 1158:      : basic_iostream<_CharT, _Traits>(std::addressof(__sb_)), __sb_(ios_base::in | ios_base::out) {}
         -: 1159:
         -: 1160:  _LIBCPP_HIDE_FROM_ABI explicit basic_stringstream(ios_base::openmode __wch)
         -: 1161:      : basic_iostream<_CharT, _Traits>(std::addressof(__sb_)), __sb_(__wch) {}
         -: 1162:
-     2424: 1163:  _LIBCPP_HIDE_FROM_ABI explicit basic_stringstream(const string_type& __s,
+        -: 1163:  _LIBCPP_HIDE_FROM_ABI explicit basic_stringstream(const string_type& __s,
         -: 1164:                                                    ios_base::openmode __wch = ios_base::in | ios_base::out)
-     2424: 1165:      : basic_iostream<_CharT, _Traits>(std::addressof(__sb_)), __sb_(__s, __wch) {}
+        -: 1165:      : basic_iostream<_CharT, _Traits>(std::addressof(__sb_)), __sb_(__s, __wch) {}
         -: 1166:
         -: 1167:#    if _LIBCPP_STD_VER >= 20
         -: 1168:  _LIBCPP_HIDE_FROM_ABI basic_stringstream(ios_base::openmode __wch, const _Allocator& __a)
@@ -1236,9 +1236,9 @@
         -: 1232:  }
         -: 1233:
         -: 1234:#    if _LIBCPP_STD_VER <= 17 || defined(_LIBCPP_BUILDING_LIBRARY)
-        -: 1235:  _LIBCPP_HIDE_FROM_ABI string_type str() const { return __sb_.str(); }
+    #####: 1235:  _LIBCPP_HIDE_FROM_ABI string_type str() const { return __sb_.str(); }
         -: 1236:#    else
-       16: 1237:  _LIBCPP_HIDE_FROM_ABI string_type str() const& { return __sb_.str(); }
+        -: 1237:  _LIBCPP_HIDE_FROM_ABI string_type str() const& { return __sb_.str(); }
         -: 1238:
         -: 1239:  _LIBCPP_HIDE_FROM_ABI string_type str() && { return std::move(__sb_).str(); }
         -: 1240:#    endif

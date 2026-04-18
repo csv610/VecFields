@@ -1,0 +1,124 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/Inverse.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2014-2019 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:#ifndef EIGEN_INVERSE_H
+        -:   11:#define EIGEN_INVERSE_H
+        -:   12:
+        -:   13:// IWYU pragma: private
+        -:   14:#include "./InternalHeaderCheck.h"
+        -:   15:
+        -:   16:namespace Eigen {
+        -:   17:
+        -:   18:template<typename XprType,typename StorageKind> class InverseImpl;
+        -:   19:
+        -:   20:namespace internal {
+        -:   21:
+        -:   22:template<typename XprType>
+        -:   23:struct traits<Inverse<XprType> >
+        -:   24:  : traits<typename XprType::PlainObject>
+        -:   25:{
+        -:   26:  typedef typename XprType::PlainObject PlainObject;
+        -:   27:  typedef traits<PlainObject> BaseTraits;
+        -:   28:  enum {
+        -:   29:    Flags = BaseTraits::Flags & RowMajorBit
+        -:   30:  };
+        -:   31:};
+        -:   32:
+        -:   33:} // end namespace internal
+        -:   34:
+        -:   35:/** \class Inverse
+        -:   36:  *
+        -:   37:  * \brief Expression of the inverse of another expression
+        -:   38:  *
+        -:   39:  * \tparam XprType the type of the expression we are taking the inverse
+        -:   40:  *
+        -:   41:  * This class represents an abstract expression of A.inverse()
+        -:   42:  * and most of the time this is the only way it is used.
+        -:   43:  *
+        -:   44:  */
+        -:   45:template<typename XprType>
+        -:   46:class Inverse : public InverseImpl<XprType,typename internal::traits<XprType>::StorageKind>
+        -:   47:{
+        -:   48:public:
+        -:   49:  typedef typename XprType::StorageIndex StorageIndex;
+        -:   50:  typedef typename XprType::Scalar                            Scalar;
+        -:   51:  typedef typename internal::ref_selector<XprType>::type      XprTypeNested;
+        -:   52:  typedef internal::remove_all_t<XprTypeNested>  XprTypeNestedCleaned;
+        -:   53:  typedef typename internal::ref_selector<Inverse>::type Nested;
+        -:   54:  typedef internal::remove_all_t<XprType> NestedExpression;
+        -:   55:
+        2:   56:  explicit EIGEN_DEVICE_FUNC Inverse(const XprType &xpr)
+        1:   57:    : m_xpr(xpr)
+        2:   58:  {}
+        -:   59:
+    #####:   60:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR  Index rows() const EIGEN_NOEXCEPT { return m_xpr.cols(); }
+    #####:   61:  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR  Index cols() const EIGEN_NOEXCEPT { return m_xpr.rows(); }
+        -:   62:
+      120:   63:  EIGEN_DEVICE_FUNC const XprTypeNestedCleaned& nestedExpression() const { return m_xpr; }
+        -:   64:
+        -:   65:protected:
+        -:   66:  XprTypeNested m_xpr;
+        -:   67:};
+        -:   68:
+        -:   69:// Generic API dispatcher
+        -:   70:template<typename XprType, typename StorageKind>
+        -:   71:class InverseImpl
+        -:   72:  : public internal::generic_xpr_base<Inverse<XprType> >::type
+        -:   73:{
+        -:   74:public:
+        -:   75:  typedef typename internal::generic_xpr_base<Inverse<XprType> >::type Base;
+        -:   76:  typedef typename XprType::Scalar Scalar;
+        -:   77:private:
+        -:   78:
+        -:   79:  Scalar coeff(Index row, Index col) const;
+        -:   80:  Scalar coeff(Index i) const;
+        -:   81:};
+        -:   82:
+        -:   83:namespace internal {
+        -:   84:
+        -:   85:/** \internal
+        -:   86:  * \brief Default evaluator for Inverse expression.
+        -:   87:  *
+        -:   88:  * This default evaluator for Inverse expression simply evaluate the inverse into a temporary
+        -:   89:  * by a call to internal::call_assignment_no_alias.
+        -:   90:  * Therefore, inverse implementers only have to specialize Assignment<Dst,Inverse<...>, ...> for
+        -:   91:  * there own nested expression.
+        -:   92:  *
+        -:   93:  * \sa class Inverse
+        -:   94:  */
+        -:   95:template<typename ArgType>
+        -:   96:struct unary_evaluator<Inverse<ArgType> >
+        -:   97:  : public evaluator<typename Inverse<ArgType>::PlainObject>
+        -:   98:{
+        -:   99:  typedef Inverse<ArgType> InverseType;
+        -:  100:  typedef typename InverseType::PlainObject PlainObject;
+        -:  101:  typedef evaluator<PlainObject> Base;
+        -:  102:
+        -:  103:  enum { Flags = Base::Flags | EvalBeforeNestingBit };
+        -:  104:
+        -:  105:  unary_evaluator(const InverseType& inv_xpr)
+        -:  106:    : m_result(inv_xpr.rows(), inv_xpr.cols())
+        -:  107:  {
+        -:  108:    internal::construct_at<Base>(this, m_result);
+        -:  109:    internal::call_assignment_no_alias(m_result, inv_xpr);
+        -:  110:  }
+        -:  111:
+        -:  112:protected:
+        -:  113:  PlainObject m_result;
+        -:  114:};
+        -:  115:
+        -:  116:} // end namespace internal
+        -:  117:
+        -:  118:} // end namespace Eigen
+        -:  119:
+        -:  120:#endif // EIGEN_INVERSE_H

@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/Dot.h
-        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
-        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
-        -:    0:Runs:4
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -34,9 +34,9 @@
         -:   30:  typedef typename conj_prod::result_type ResScalar;
         -:   31:  EIGEN_DEVICE_FUNC
         -:   32:  EIGEN_STRONG_INLINE
-    36580:   33:  static ResScalar run(const MatrixBase<T>& a, const MatrixBase<U>& b)
+     2880:   33:  static ResScalar run(const MatrixBase<T>& a, const MatrixBase<U>& b)
         -:   34:  {
-    36580:   35:    return a.template binaryExpr<conj_prod>(b).sum();
+     2880:   35:    return a.template binaryExpr<conj_prod>(b).sum();
         -:   36:  }
         -:   37:};
         -:   38:
@@ -47,9 +47,9 @@
         -:   43:  typedef typename conj_prod::result_type ResScalar;
         -:   44:  EIGEN_DEVICE_FUNC
         -:   45:  EIGEN_STRONG_INLINE
-     1188:   46:  static ResScalar run(const MatrixBase<T>& a, const MatrixBase<U>& b)
+        5:   46:  static ResScalar run(const MatrixBase<T>& a, const MatrixBase<U>& b)
         -:   47:  {
-     1188:   48:    return a.transpose().template binaryExpr<conj_prod>(b).sum();
+        5:   48:    return a.transpose().template binaryExpr<conj_prod>(b).sum();
         -:   49:  }
         -:   50:};
         -:   51:
@@ -71,7 +71,7 @@
         -:   67:EIGEN_DEVICE_FUNC
         -:   68:EIGEN_STRONG_INLINE
         -:   69:typename ScalarBinaryOpTraits<typename internal::traits<Derived>::Scalar,typename internal::traits<OtherDerived>::Scalar>::ReturnType
-    37768:   70:MatrixBase<Derived>::dot(const MatrixBase<OtherDerived>& other) const
+     2885:   70:MatrixBase<Derived>::dot(const MatrixBase<OtherDerived>& other) const
         -:   71:{
         -:   72:  EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived)
         -:   73:  EIGEN_STATIC_ASSERT_VECTOR_ONLY(OtherDerived)
@@ -82,9 +82,9 @@
         -:   78:      Scalar, typename OtherDerived::Scalar);
         -:   79:#endif
         -:   80:  
-    37768:   81:  eigen_assert(size() == other.size());
+     2885:   81:  eigen_assert(size() == other.size());
         -:   82:
-    37768:   83:  return internal::dot_nocheck<Derived,OtherDerived>::run(*this, other);
+     2885:   83:  return internal::dot_nocheck<Derived,OtherDerived>::run(*this, other);
         -:   84:}
         -:   85:
         -:   86://---------- implementation of L2 norm and related functions ----------
@@ -96,9 +96,9 @@
         -:   92:  * \sa dot(), norm(), lpNorm()
         -:   93:  */
         -:   94:template<typename Derived>
-    53468:   95:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE typename NumTraits<typename internal::traits<Derived>::Scalar>::Real MatrixBase<Derived>::squaredNorm() const
+     4150:   95:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE typename NumTraits<typename internal::traits<Derived>::Scalar>::Real MatrixBase<Derived>::squaredNorm() const
         -:   96:{
-    53468:   97:  return numext::real((*this).cwiseAbs2().sum());
+     4150:   97:  return numext::real((*this).cwiseAbs2().sum());
         -:   98:}
         -:   99:
         -:  100:/** \returns, for vectors, the \em l2 norm of \c *this, and for matrices the Frobenius norm.
@@ -108,9 +108,9 @@
         -:  104:  * \sa lpNorm(), dot(), squaredNorm()
         -:  105:  */
         -:  106:template<typename Derived>
-    31312:  107:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE typename NumTraits<typename internal::traits<Derived>::Scalar>::Real MatrixBase<Derived>::norm() const
+     1870:  107:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE typename NumTraits<typename internal::traits<Derived>::Scalar>::Real MatrixBase<Derived>::norm() const
         -:  108:{
-    31312:  109:  return numext::sqrt(squaredNorm());
+     1870:  109:  return numext::sqrt(squaredNorm());
         -:  110:}
         -:  111:
         -:  112:/** \returns an expression of the quotient of \c *this by its own norm.
@@ -124,17 +124,17 @@
         -:  120:  */
         -:  121:template<typename Derived>
         -:  122:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const typename MatrixBase<Derived>::PlainObject
-    12690:  123:MatrixBase<Derived>::normalized() const
+     1560:  123:MatrixBase<Derived>::normalized() const
         -:  124:{
         -:  125:  typedef typename internal::nested_eval<Derived,2>::type Nested_;
-    12690:  126:  Nested_ n(derived());
-    12690:  127:  RealScalar z = n.squaredNorm();
+     1560:  126:  Nested_ n(derived());
+     1560:  127:  RealScalar z = n.squaredNorm();
         -:  128:  // NOTE: after extensive benchmarking, this conditional does not impact performance, at least on recent x86 CPU
-    12690:  129:  if(z>RealScalar(0))
-    12690:  130:    return n / numext::sqrt(z);
+     1560:  129:  if(z>RealScalar(0))
+     1560:  130:    return n / numext::sqrt(z);
         -:  131:  else
     #####:  132:    return n;
-    12690:  133:}
+     1560:  133:}
         -:  134:
         -:  135:/** Normalizes the vector, i.e. divides it by its own norm.
         -:  136:  *
@@ -145,13 +145,13 @@
         -:  141:  * \sa norm(), normalized()
         -:  142:  */
         -:  143:template<typename Derived>
-     2980:  144:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void MatrixBase<Derived>::normalize()
+      240:  144:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void MatrixBase<Derived>::normalize()
         -:  145:{
-     2980:  146:  RealScalar z = squaredNorm();
+      240:  146:  RealScalar z = squaredNorm();
         -:  147:  // NOTE: after extensive benchmarking, this conditional does not impact performance, at least on recent x86 CPU
-     2980:  148:  if(z>RealScalar(0))
-     2980:  149:    derived() /= numext::sqrt(z);
-     2980:  150:}
+      240:  148:  if(z>RealScalar(0))
+      240:  149:    derived() /= numext::sqrt(z);
+      240:  150:}
         -:  151:
         -:  152:/** \returns an expression of the quotient of \c *this by its own norm while avoiding underflow and overflow.
         -:  153:  *
@@ -240,12 +240,12 @@
         -:  236:{
         -:  237:  typedef typename NumTraits<typename traits<Derived>::Scalar>::Real RealScalar;
         -:  238:  EIGEN_DEVICE_FUNC
-        -:  239:  static inline RealScalar run(const MatrixBase<Derived>& m)
+    #####:  239:  static inline RealScalar run(const MatrixBase<Derived>& m)
         -:  240:  {
-        -:  241:    if(Derived::SizeAtCompileTime==0 || (Derived::SizeAtCompileTime==Dynamic && m.size()==0))
-        -:  242:      return RealScalar(0);
-        -:  243:    return m.cwiseAbs().maxCoeff();
-        -:  244:  }
+    #####:  241:    if(Derived::SizeAtCompileTime==0 || (Derived::SizeAtCompileTime==Dynamic && m.size()==0))
+    #####:  242:      return RealScalar(0);
+    #####:  243:    return m.cwiseAbs().maxCoeff();
+    #####:  244:  }
         -:  245:};
         -:  246:
         -:  247:} // end namespace internal
@@ -267,9 +267,9 @@
         -:  263:#else
         -:  264:EIGEN_DEVICE_FUNC MatrixBase<Derived>::RealScalar
         -:  265:#endif
-        -:  266:MatrixBase<Derived>::lpNorm() const
+    #####:  266:MatrixBase<Derived>::lpNorm() const
         -:  267:{
-        -:  268:  return internal::lpNorm_selector<Derived, p>::run(*this);
+    #####:  268:  return internal::lpNorm_selector<Derived, p>::run(*this);
         -:  269:}
         -:  270:
         -:  271://---------- implementation of isOrthogonal / isUnitary ----------

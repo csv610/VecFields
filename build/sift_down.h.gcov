@@ -1,0 +1,122 @@
+        -:    0:Source:/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sift_down.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1://===----------------------------------------------------------------------===//
+        -:    2://
+        -:    3:// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+        -:    4:// See https://llvm.org/LICENSE.txt for license information.
+        -:    5:// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+        -:    6://
+        -:    7://===----------------------------------------------------------------------===//
+        -:    8:
+        -:    9:#ifndef _LIBCPP___ALGORITHM_SIFT_DOWN_H
+        -:   10:#define _LIBCPP___ALGORITHM_SIFT_DOWN_H
+        -:   11:
+        -:   12:#include <__algorithm/iterator_operations.h>
+        -:   13:#include <__assert>
+        -:   14:#include <__config>
+        -:   15:#include <__iterator/iterator_traits.h>
+        -:   16:#include <__utility/move.h>
+        -:   17:
+        -:   18:#if !defined(_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER)
+        -:   19:#  pragma GCC system_header
+        -:   20:#endif
+        -:   21:
+        -:   22:_LIBCPP_PUSH_MACROS
+        -:   23:#include <__undef_macros>
+        -:   24:
+        -:   25:_LIBCPP_BEGIN_NAMESPACE_STD
+        -:   26:
+        -:   27:template <class _AlgPolicy, class _Compare, class _RandomAccessIterator>
+        -:   28:_LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 void
+    #####:   29:__sift_down(_RandomAccessIterator __first,
+        -:   30:            _Compare&& __comp,
+        -:   31:            typename iterator_traits<_RandomAccessIterator>::difference_type __len,
+        -:   32:            _RandomAccessIterator __start) {
+        -:   33:  using _Ops = _IterOps<_AlgPolicy>;
+        -:   34:
+        -:   35:  typedef typename iterator_traits<_RandomAccessIterator>::difference_type difference_type;
+        -:   36:  typedef typename iterator_traits<_RandomAccessIterator>::value_type value_type;
+        -:   37:  // left-child of __start is at 2 * __start + 1
+        -:   38:  // right-child of __start is at 2 * __start + 2
+    #####:   39:  difference_type __child = __start - __first;
+        -:   40:
+    #####:   41:  if (__len < 2 || (__len - 2) / 2 < __child)
+    #####:   42:    return;
+        -:   43:
+    #####:   44:  __child                         = 2 * __child + 1;
+    #####:   45:  _RandomAccessIterator __child_i = __first + __child;
+        -:   46:
+    #####:   47:  if ((__child + 1) < __len && __comp(*__child_i, *(__child_i + difference_type(1)))) {
+        -:   48:    // right-child exists and is greater than left-child
+    #####:   49:    ++__child_i;
+    #####:   50:    ++__child;
+    #####:   51:  }
+        -:   52:
+        -:   53:  // check if we are in heap-order
+    #####:   54:  if (__comp(*__child_i, *__start))
+        -:   55:    // we are, __start is larger than its largest child
+    #####:   56:    return;
+        -:   57:
+    #####:   58:  value_type __top(_Ops::__iter_move(__start));
+    #####:   59:  do {
+        -:   60:    // we are not in heap-order, swap the parent with its largest child
+    #####:   61:    *__start = _Ops::__iter_move(__child_i);
+    #####:   62:    __start  = __child_i;
+        -:   63:
+    #####:   64:    if ((__len - 2) / 2 < __child)
+    #####:   65:      break;
+        -:   66:
+        -:   67:    // recompute the child based off of the updated parent
+    #####:   68:    __child   = 2 * __child + 1;
+    #####:   69:    __child_i = __first + __child;
+        -:   70:
+    #####:   71:    if ((__child + 1) < __len && __comp(*__child_i, *(__child_i + difference_type(1)))) {
+        -:   72:      // right-child exists and is greater than left-child
+    #####:   73:      ++__child_i;
+    #####:   74:      ++__child;
+    #####:   75:    }
+        -:   76:
+        -:   77:    // check if we are in heap-order
+    #####:   78:  } while (!__comp(*__child_i, __top));
+    #####:   79:  *__start = std::move(__top);
+    #####:   80:}
+        -:   81:
+        -:   82:template <class _AlgPolicy, class _Compare, class _RandomAccessIterator>
+    #####:   83:_LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 _RandomAccessIterator __floyd_sift_down(
+        -:   84:    _RandomAccessIterator __first,
+        -:   85:    _Compare&& __comp,
+        -:   86:    typename iterator_traits<_RandomAccessIterator>::difference_type __len) {
+        -:   87:  using difference_type = typename iterator_traits<_RandomAccessIterator>::difference_type;
+        -:   88:  _LIBCPP_ASSERT_INTERNAL(__len >= 2, "shouldn't be called unless __len >= 2");
+        -:   89:
+    #####:   90:  _RandomAccessIterator __hole    = __first;
+    #####:   91:  _RandomAccessIterator __child_i = __first;
+    #####:   92:  difference_type __child         = 0;
+        -:   93:
+    #####:   94:  while (true) {
+    #####:   95:    __child_i += difference_type(__child + 1);
+    #####:   96:    __child = 2 * __child + 1;
+        -:   97:
+    #####:   98:    if ((__child + 1) < __len && __comp(*__child_i, *(__child_i + difference_type(1)))) {
+        -:   99:      // right-child exists and is greater than left-child
+    #####:  100:      ++__child_i;
+    #####:  101:      ++__child;
+    #####:  102:    }
+        -:  103:
+        -:  104:    // swap __hole with its largest child
+    #####:  105:    *__hole = _IterOps<_AlgPolicy>::__iter_move(__child_i);
+    #####:  106:    __hole  = __child_i;
+        -:  107:
+        -:  108:    // if __hole is now a leaf, we're done
+    #####:  109:    if (__child > (__len - 2) / 2)
+    #####:  110:      return __hole;
+        -:  111:  }
+        -:  112:}
+        -:  113:
+        -:  114:_LIBCPP_END_NAMESPACE_STD
+        -:  115:
+        -:  116:_LIBCPP_POP_MACROS
+        -:  117:
+        -:  118:#endif // _LIBCPP___ALGORITHM_SIFT_DOWN_H

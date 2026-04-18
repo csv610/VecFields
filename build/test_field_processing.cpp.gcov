@@ -1,0 +1,45 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/tests/test_field_processing.cpp
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:#include <gtest/gtest.h>
+        -:    2:#include <directional/TriMesh.h>
+        -:    3:#include <directional/readOBJ.h>
+        -:    4:#include <directional/PCFaceTangentBundle.h>
+        -:    5:#include <directional/CartesianField.h>
+        -:    6:#include <directional/power_field.h>
+        -:    7:#include <directional/power_to_raw.h>
+        -:    8:#include <directional/principal_matching.h>
+        -:    9:
+        4:   10:TEST(FieldProcessingTest, PowerFieldAndMatching) {
+        1:   11:    directional::TriMesh mesh;
+        1:   12:    std::string test_mesh = "/Users/csv610/Projects/Mesh/Directional/tutorial/data/loop.obj";
+        1:   13:    ASSERT_TRUE(directional::readOBJ(test_mesh, mesh));
+        -:   14:
+        1:   15:    directional::PCFaceTangentBundle ftb;
+        1:   16:    ftb.init(mesh);
+        -:   17:
+        1:   18:    int N = 4;
+        1:   19:    directional::CartesianField powerField;
+        -:   20:    
+        -:   21:    // Set a constraint on the first face
+        1:   22:    Eigen::VectorXi constFaces(1); constFaces << 0;
+        1:   23:    Eigen::MatrixXd constVectors(1, 3); constVectors << 1.0, 0.0, 0.0; // Pointing along X
+        -:   24:    
+        -:   25:    // Compute power field
+        1:   26:    directional::power_field(ftb, constFaces, constVectors, Eigen::VectorXd::Constant(1, -1.0), N, powerField);
+        -:   27:    
+        -:   28:    // Verify power field
+        1:   29:    EXPECT_EQ(powerField.intField.rows(), mesh.F.rows());
+        1:   30:    EXPECT_GT(powerField.intField.norm(), 1e-6); // Should not be all zero
+        -:   31:
+        -:   32:    // Convert to raw field
+        1:   33:    directional::CartesianField rawField;
+        1:   34:    directional::power_to_raw(powerField, N, rawField);
+        1:   35:    EXPECT_EQ(rawField.extField.rows(), mesh.F.rows());
+        1:   36:    EXPECT_EQ(rawField.extField.cols(), 3 * N);
+        -:   37:
+        -:   38:    // Run principal matching
+        1:   39:    directional::principal_matching(rawField);
+        1:   40:    EXPECT_EQ(rawField.matching.rows(), mesh.EF.rows());
+        1:   41:}

@@ -1,0 +1,69 @@
+        -:    0:Source:/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/for_each.h
+        -:    0:Graph:./external/googletest/googletest/CMakeFiles/gtest.dir/src/gtest-all.cc.gcno
+        -:    0:Data:./external/googletest/googletest/CMakeFiles/gtest.dir/src/gtest-all.cc.gcda
+        -:    0:Runs:1
+        -:    1:// -*- C++ -*-
+        -:    2://===----------------------------------------------------------------------===//
+        -:    3://
+        -:    4:// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+        -:    5:// See https://llvm.org/LICENSE.txt for license information.
+        -:    6:// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+        -:    7://
+        -:    8://===----------------------------------------------------------------------===//
+        -:    9:
+        -:   10:#ifndef _LIBCPP___ALGORITHM_FOR_EACH_H
+        -:   11:#define _LIBCPP___ALGORITHM_FOR_EACH_H
+        -:   12:
+        -:   13:#include <__algorithm/for_each_segment.h>
+        -:   14:#include <__config>
+        -:   15:#include <__functional/identity.h>
+        -:   16:#include <__iterator/segmented_iterator.h>
+        -:   17:#include <__type_traits/enable_if.h>
+        -:   18:#include <__type_traits/invoke.h>
+        -:   19:#include <__utility/move.h>
+        -:   20:
+        -:   21:#if !defined(_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER)
+        -:   22:#  pragma GCC system_header
+        -:   23:#endif
+        -:   24:
+        -:   25:_LIBCPP_PUSH_MACROS
+        -:   26:#include <__undef_macros>
+        -:   27:
+        -:   28:_LIBCPP_BEGIN_NAMESPACE_STD
+        -:   29:
+        -:   30:template <class _InputIterator, class _Sent, class _Func, class _Proj>
+        -:   31:_LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 _InputIterator
+       44:   32:__for_each(_InputIterator __first, _Sent __last, _Func& __f, _Proj& __proj) {
+       76:   33:  for (; __first != __last; ++__first)
+       32:   34:    std::__invoke(__f, std::__invoke(__proj, *__first));
+       44:   35:  return __first;
+        -:   36:}
+        -:   37:
+        -:   38:#ifndef _LIBCPP_CXX03_LANG
+        -:   39:template <class _SegmentedIterator,
+        -:   40:          class _Func,
+        -:   41:          class _Proj,
+        -:   42:          __enable_if_t<__is_segmented_iterator<_SegmentedIterator>::value, int> = 0>
+        -:   43:_LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 _SegmentedIterator
+        -:   44:__for_each(_SegmentedIterator __first, _SegmentedIterator __last, _Func& __func, _Proj& __proj) {
+        -:   45:  using __local_iterator_t = typename __segmented_iterator_traits<_SegmentedIterator>::__local_iterator;
+        -:   46:  std::__for_each_segment(__first, __last, [&](__local_iterator_t __lfirst, __local_iterator_t __llast) {
+        -:   47:    std::__for_each(__lfirst, __llast, __func, __proj);
+        -:   48:  });
+        -:   49:  return __last;
+        -:   50:}
+        -:   51:#endif // !_LIBCPP_CXX03_LANG
+        -:   52:
+        -:   53:template <class _InputIterator, class _Func>
+        -:   54:_LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 _Func
+       44:   55:for_each(_InputIterator __first, _InputIterator __last, _Func __f) {
+        -:   56:  __identity __proj;
+       44:   57:  std::__for_each(__first, __last, __f, __proj);
+       44:   58:  return __f;
+        -:   59:}
+        -:   60:
+        -:   61:_LIBCPP_END_NAMESPACE_STD
+        -:   62:
+        -:   63:_LIBCPP_POP_MACROS
+        -:   64:
+        -:   65:#endif // _LIBCPP___ALGORITHM_FOR_EACH_H

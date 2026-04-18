@@ -1,0 +1,466 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/googletest/googlemock/src/gmock-matchers.cc
+        -:    0:Graph:./external/googletest/googlemock/CMakeFiles/gmock.dir/src/gmock-all.cc.gcno
+        -:    0:Data:-
+        -:    0:Runs:0
+        -:    1:// Copyright 2007, Google Inc.
+        -:    2:// All rights reserved.
+        -:    3://
+        -:    4:// Redistribution and use in source and binary forms, with or without
+        -:    5:// modification, are permitted provided that the following conditions are
+        -:    6:// met:
+        -:    7://
+        -:    8://     * Redistributions of source code must retain the above copyright
+        -:    9:// notice, this list of conditions and the following disclaimer.
+        -:   10://     * Redistributions in binary form must reproduce the above
+        -:   11:// copyright notice, this list of conditions and the following disclaimer
+        -:   12:// in the documentation and/or other materials provided with the
+        -:   13:// distribution.
+        -:   14://     * Neither the name of Google Inc. nor the names of its
+        -:   15:// contributors may be used to endorse or promote products derived from
+        -:   16:// this software without specific prior written permission.
+        -:   17://
+        -:   18:// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+        -:   19:// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+        -:   20:// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+        -:   21:// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+        -:   22:// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+        -:   23:// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+        -:   24:// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+        -:   25:// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+        -:   26:// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+        -:   27:// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+        -:   28:// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+        -:   29:
+        -:   30:
+        -:   31:// Google Mock - a framework for writing C++ mock classes.
+        -:   32://
+        -:   33:// This file implements Matcher<const string&>, Matcher<string>, and
+        -:   34:// utilities for defining matchers.
+        -:   35:
+        -:   36:#include "gmock/gmock-matchers.h"
+        -:   37:#include "gmock/gmock-generated-matchers.h"
+        -:   38:
+        -:   39:#include <string.h>
+        -:   40:#include <iostream>
+        -:   41:#include <sstream>
+        -:   42:#include <string>
+        -:   43:
+        -:   44:namespace testing {
+        -:   45:namespace internal {
+        -:   46:
+        -:   47:// Returns the description for a matcher defined using the MATCHER*()
+        -:   48:// macro where the user-supplied description string is "", if
+        -:   49:// 'negation' is false; otherwise returns the description of the
+        -:   50:// negation of the matcher.  'param_values' contains a list of strings
+        -:   51:// that are the print-out of the matcher's parameters.
+    #####:   52:GTEST_API_ std::string FormatMatcherDescription(bool negation,
+        -:   53:                                                const char* matcher_name,
+        -:   54:                                                const Strings& param_values) {
+    #####:   55:  std::string result = ConvertIdentifierNameToWords(matcher_name);
+    #####:   56:  if (param_values.size() >= 1) result += " " + JoinAsTuple(param_values);
+    #####:   57:  return negation ? "not (" + result + ")" : result;
+    #####:   58:}
+        -:   59:
+        -:   60:// FindMaxBipartiteMatching and its helper class.
+        -:   61://
+        -:   62:// Uses the well-known Ford-Fulkerson max flow method to find a maximum
+        -:   63:// bipartite matching. Flow is considered to be from left to right.
+        -:   64:// There is an implicit source node that is connected to all of the left
+        -:   65:// nodes, and an implicit sink node that is connected to all of the
+        -:   66:// right nodes. All edges have unit capacity.
+        -:   67://
+        -:   68:// Neither the flow graph nor the residual flow graph are represented
+        -:   69:// explicitly. Instead, they are implied by the information in 'graph' and
+        -:   70:// a vector<int> called 'left_' whose elements are initialized to the
+        -:   71:// value kUnused. This represents the initial state of the algorithm,
+        -:   72:// where the flow graph is empty, and the residual flow graph has the
+        -:   73:// following edges:
+        -:   74://   - An edge from source to each left_ node
+        -:   75://   - An edge from each right_ node to sink
+        -:   76://   - An edge from each left_ node to each right_ node, if the
+        -:   77://     corresponding edge exists in 'graph'.
+        -:   78://
+        -:   79:// When the TryAugment() method adds a flow, it sets left_[l] = r for some
+        -:   80:// nodes l and r. This induces the following changes:
+        -:   81://   - The edges (source, l), (l, r), and (r, sink) are added to the
+        -:   82://     flow graph.
+        -:   83://   - The same three edges are removed from the residual flow graph.
+        -:   84://   - The reverse edges (l, source), (r, l), and (sink, r) are added
+        -:   85://     to the residual flow graph, which is a directional graph
+        -:   86://     representing unused flow capacity.
+        -:   87://
+        -:   88:// When the method augments a flow (moving left_[l] from some r1 to some
+        -:   89:// other r2), this can be thought of as "undoing" the above steps with
+        -:   90:// respect to r1 and "redoing" them with respect to r2.
+        -:   91://
+        -:   92:// It bears repeating that the flow graph and residual flow graph are
+        -:   93:// never represented explicitly, but can be derived by looking at the
+        -:   94:// information in 'graph' and in left_.
+        -:   95://
+        -:   96:// As an optimization, there is a second vector<int> called right_ which
+        -:   97:// does not provide any new information. Instead, it enables more
+        -:   98:// efficient queries about edges entering or leaving the right-side nodes
+        -:   99:// of the flow or residual flow graphs. The following invariants are
+        -:  100:// maintained:
+        -:  101://
+        -:  102:// left[l] == kUnused or right[left[l]] == l
+        -:  103:// right[r] == kUnused or left[right[r]] == r
+        -:  104://
+        -:  105:// . [ source ]                                        .
+        -:  106:// .   |||                                             .
+        -:  107:// .   |||                                             .
+        -:  108:// .   ||\--> left[0]=1  ---\    right[0]=-1 ----\     .
+        -:  109:// .   ||                   |                    |     .
+        -:  110:// .   |\---> left[1]=-1    \--> right[1]=0  ---\|     .
+        -:  111:// .   |                                        ||     .
+        -:  112:// .   \----> left[2]=2  ------> right[2]=2  --\||     .
+        -:  113:// .                                           |||     .
+        -:  114:// .         elements           matchers       vvv     .
+        -:  115:// .                                         [ sink ]  .
+        -:  116://
+        -:  117:// See Also:
+        -:  118://   [1] Cormen, et al (2001). "Section 26.2: The Ford-Fulkerson method".
+        -:  119://       "Introduction to Algorithms (Second ed.)", pp. 651-664.
+        -:  120://   [2] "Ford-Fulkerson algorithm", Wikipedia,
+        -:  121://       'http://en.wikipedia.org/wiki/Ford%E2%80%93Fulkerson_algorithm'
+        -:  122:class MaxBipartiteMatchState {
+        -:  123: public:
+    #####:  124:  explicit MaxBipartiteMatchState(const MatchMatrix& graph)
+    #####:  125:      : graph_(&graph),
+    #####:  126:        left_(graph_->LhsSize(), kUnused),
+    #####:  127:        right_(graph_->RhsSize(), kUnused) {}
+        -:  128:
+        -:  129:  // Returns the edges of a maximal match, each in the form {left, right}.
+    #####:  130:  ElementMatcherPairs Compute() {
+        -:  131:    // 'seen' is used for path finding { 0: unseen, 1: seen }.
+    #####:  132:    ::std::vector<char> seen;
+        -:  133:    // Searches the residual flow graph for a path from each left node to
+        -:  134:    // the sink in the residual flow graph, and if one is found, add flow
+        -:  135:    // to the graph. It's okay to search through the left nodes once. The
+        -:  136:    // edge from the implicit source node to each previously-visited left
+        -:  137:    // node will have flow if that left node has any path to the sink
+        -:  138:    // whatsoever. Subsequent augmentations can only add flow to the
+        -:  139:    // network, and cannot take away that previous flow unit from the source.
+        -:  140:    // Since the source-to-left edge can only carry one flow unit (or,
+        -:  141:    // each element can be matched to only one matcher), there is no need
+        -:  142:    // to visit the left nodes more than once looking for augmented paths.
+        -:  143:    // The flow is known to be possible or impossible by looking at the
+        -:  144:    // node once.
+    #####:  145:    for (size_t ilhs = 0; ilhs < graph_->LhsSize(); ++ilhs) {
+        -:  146:      // Reset the path-marking vector and try to find a path from
+        -:  147:      // source to sink starting at the left_[ilhs] node.
+    #####:  148:      GTEST_CHECK_(left_[ilhs] == kUnused)
+    #####:  149:          << "ilhs: " << ilhs << ", left_[ilhs]: " << left_[ilhs];
+        -:  150:      // 'seen' initialized to 'graph_->RhsSize()' copies of 0.
+    #####:  151:      seen.assign(graph_->RhsSize(), 0);
+    #####:  152:      TryAugment(ilhs, &seen);
+    #####:  153:    }
+    #####:  154:    ElementMatcherPairs result;
+    #####:  155:    for (size_t ilhs = 0; ilhs < left_.size(); ++ilhs) {
+    #####:  156:      size_t irhs = left_[ilhs];
+    #####:  157:      if (irhs == kUnused) continue;
+    #####:  158:      result.push_back(ElementMatcherPair(ilhs, irhs));
+    #####:  159:    }
+    #####:  160:    return result;
+    #####:  161:  }
+        -:  162:
+        -:  163: private:
+        -:  164:  static const size_t kUnused = static_cast<size_t>(-1);
+        -:  165:
+        -:  166:  // Perform a depth-first search from left node ilhs to the sink.  If a
+        -:  167:  // path is found, flow is added to the network by linking the left and
+        -:  168:  // right vector elements corresponding each segment of the path.
+        -:  169:  // Returns true if a path to sink was found, which means that a unit of
+        -:  170:  // flow was added to the network. The 'seen' vector elements correspond
+        -:  171:  // to right nodes and are marked to eliminate cycles from the search.
+        -:  172:  //
+        -:  173:  // Left nodes will only be explored at most once because they
+        -:  174:  // are accessible from at most one right node in the residual flow
+        -:  175:  // graph.
+        -:  176:  //
+        -:  177:  // Note that left_[ilhs] is the only element of left_ that TryAugment will
+        -:  178:  // potentially transition from kUnused to another value. Any other
+        -:  179:  // left_ element holding kUnused before TryAugment will be holding it
+        -:  180:  // when TryAugment returns.
+        -:  181:  //
+    #####:  182:  bool TryAugment(size_t ilhs, ::std::vector<char>* seen) {
+    #####:  183:    for (size_t irhs = 0; irhs < graph_->RhsSize(); ++irhs) {
+    #####:  184:      if ((*seen)[irhs]) continue;
+    #####:  185:      if (!graph_->HasEdge(ilhs, irhs)) continue;
+        -:  186:      // There's an available edge from ilhs to irhs.
+    #####:  187:      (*seen)[irhs] = 1;
+        -:  188:      // Next a search is performed to determine whether
+        -:  189:      // this edge is a dead end or leads to the sink.
+        -:  190:      //
+        -:  191:      // right_[irhs] == kUnused means that there is residual flow from
+        -:  192:      // right node irhs to the sink, so we can use that to finish this
+        -:  193:      // flow path and return success.
+        -:  194:      //
+        -:  195:      // Otherwise there is residual flow to some ilhs. We push flow
+        -:  196:      // along that path and call ourselves recursively to see if this
+        -:  197:      // ultimately leads to sink.
+    #####:  198:      if (right_[irhs] == kUnused || TryAugment(right_[irhs], seen)) {
+        -:  199:        // Add flow from left_[ilhs] to right_[irhs].
+    #####:  200:        left_[ilhs] = irhs;
+    #####:  201:        right_[irhs] = ilhs;
+    #####:  202:        return true;
+        -:  203:      }
+    #####:  204:    }
+    #####:  205:    return false;
+    #####:  206:  }
+        -:  207:
+        -:  208:  const MatchMatrix* graph_;  // not owned
+        -:  209:  // Each element of the left_ vector represents a left hand side node
+        -:  210:  // (i.e. an element) and each element of right_ is a right hand side
+        -:  211:  // node (i.e. a matcher). The values in the left_ vector indicate
+        -:  212:  // outflow from that node to a node on the right_ side. The values
+        -:  213:  // in the right_ indicate inflow, and specify which left_ node is
+        -:  214:  // feeding that right_ node, if any. For example, left_[3] == 1 means
+        -:  215:  // there's a flow from element #3 to matcher #1. Such a flow would also
+        -:  216:  // be redundantly represented in the right_ vector as right_[1] == 3.
+        -:  217:  // Elements of left_ and right_ are either kUnused or mutually
+        -:  218:  // referent. Mutually referent means that left_[right_[i]] = i and
+        -:  219:  // right_[left_[i]] = i.
+        -:  220:  ::std::vector<size_t> left_;
+        -:  221:  ::std::vector<size_t> right_;
+        -:  222:
+        -:  223:  GTEST_DISALLOW_ASSIGN_(MaxBipartiteMatchState);
+        -:  224:};
+        -:  225:
+        -:  226:const size_t MaxBipartiteMatchState::kUnused;
+        -:  227:
+    #####:  228:GTEST_API_ ElementMatcherPairs FindMaxBipartiteMatching(const MatchMatrix& g) {
+    #####:  229:  return MaxBipartiteMatchState(g).Compute();
+    #####:  230:}
+        -:  231:
+    #####:  232:static void LogElementMatcherPairVec(const ElementMatcherPairs& pairs,
+        -:  233:                                     ::std::ostream* stream) {
+        -:  234:  typedef ElementMatcherPairs::const_iterator Iter;
+    #####:  235:  ::std::ostream& os = *stream;
+    #####:  236:  os << "{";
+    #####:  237:  const char* sep = "";
+    #####:  238:  for (Iter it = pairs.begin(); it != pairs.end(); ++it) {
+    #####:  239:    os << sep << "\n  ("
+    #####:  240:       << "element #" << it->first << ", "
+    #####:  241:       << "matcher #" << it->second << ")";
+    #####:  242:    sep = ",";
+    #####:  243:  }
+    #####:  244:  os << "\n}";
+    #####:  245:}
+        -:  246:
+    #####:  247:bool MatchMatrix::NextGraph() {
+    #####:  248:  for (size_t ilhs = 0; ilhs < LhsSize(); ++ilhs) {
+    #####:  249:    for (size_t irhs = 0; irhs < RhsSize(); ++irhs) {
+    #####:  250:      char& b = matched_[SpaceIndex(ilhs, irhs)];
+    #####:  251:      if (!b) {
+    #####:  252:        b = 1;
+    #####:  253:        return true;
+        -:  254:      }
+    #####:  255:      b = 0;
+    #####:  256:    }
+    #####:  257:  }
+    #####:  258:  return false;
+    #####:  259:}
+        -:  260:
+    #####:  261:void MatchMatrix::Randomize() {
+    #####:  262:  for (size_t ilhs = 0; ilhs < LhsSize(); ++ilhs) {
+    #####:  263:    for (size_t irhs = 0; irhs < RhsSize(); ++irhs) {
+    #####:  264:      char& b = matched_[SpaceIndex(ilhs, irhs)];
+    #####:  265:      b = static_cast<char>(rand() & 1);  // NOLINT
+    #####:  266:    }
+    #####:  267:  }
+    #####:  268:}
+        -:  269:
+    #####:  270:std::string MatchMatrix::DebugString() const {
+    #####:  271:  ::std::stringstream ss;
+    #####:  272:  const char* sep = "";
+    #####:  273:  for (size_t i = 0; i < LhsSize(); ++i) {
+    #####:  274:    ss << sep;
+    #####:  275:    for (size_t j = 0; j < RhsSize(); ++j) {
+    #####:  276:      ss << HasEdge(i, j);
+    #####:  277:    }
+    #####:  278:    sep = ";";
+    #####:  279:  }
+    #####:  280:  return ss.str();
+    #####:  281:}
+        -:  282:
+    #####:  283:void UnorderedElementsAreMatcherImplBase::DescribeToImpl(
+        -:  284:    ::std::ostream* os) const {
+    #####:  285:  switch (match_flags()) {
+        -:  286:    case UnorderedMatcherRequire::ExactMatch:
+    #####:  287:      if (matcher_describers_.empty()) {
+    #####:  288:        *os << "is empty";
+    #####:  289:        return;
+        -:  290:      }
+    #####:  291:      if (matcher_describers_.size() == 1) {
+    #####:  292:        *os << "has " << Elements(1) << " and that element ";
+    #####:  293:        matcher_describers_[0]->DescribeTo(os);
+    #####:  294:        return;
+        -:  295:      }
+    #####:  296:      *os << "has " << Elements(matcher_describers_.size())
+    #####:  297:          << " and there exists some permutation of elements such that:\n";
+    #####:  298:      break;
+        -:  299:    case UnorderedMatcherRequire::Superset:
+    #####:  300:      *os << "a surjection from elements to requirements exists such that:\n";
+    #####:  301:      break;
+        -:  302:    case UnorderedMatcherRequire::Subset:
+    #####:  303:      *os << "an injection from elements to requirements exists such that:\n";
+    #####:  304:      break;
+        -:  305:  }
+        -:  306:
+    #####:  307:  const char* sep = "";
+    #####:  308:  for (size_t i = 0; i != matcher_describers_.size(); ++i) {
+    #####:  309:    *os << sep;
+    #####:  310:    if (match_flags() == UnorderedMatcherRequire::ExactMatch) {
+    #####:  311:      *os << " - element #" << i << " ";
+    #####:  312:    } else {
+    #####:  313:      *os << " - an element ";
+        -:  314:    }
+    #####:  315:    matcher_describers_[i]->DescribeTo(os);
+    #####:  316:    if (match_flags() == UnorderedMatcherRequire::ExactMatch) {
+    #####:  317:      sep = ", and\n";
+    #####:  318:    } else {
+    #####:  319:      sep = "\n";
+        -:  320:    }
+    #####:  321:  }
+    #####:  322:}
+        -:  323:
+    #####:  324:void UnorderedElementsAreMatcherImplBase::DescribeNegationToImpl(
+        -:  325:    ::std::ostream* os) const {
+    #####:  326:  switch (match_flags()) {
+        -:  327:    case UnorderedMatcherRequire::ExactMatch:
+    #####:  328:      if (matcher_describers_.empty()) {
+    #####:  329:        *os << "isn't empty";
+    #####:  330:        return;
+        -:  331:      }
+    #####:  332:      if (matcher_describers_.size() == 1) {
+    #####:  333:        *os << "doesn't have " << Elements(1) << ", or has " << Elements(1)
+    #####:  334:            << " that ";
+    #####:  335:        matcher_describers_[0]->DescribeNegationTo(os);
+    #####:  336:        return;
+        -:  337:      }
+    #####:  338:      *os << "doesn't have " << Elements(matcher_describers_.size())
+    #####:  339:          << ", or there exists no permutation of elements such that:\n";
+    #####:  340:      break;
+        -:  341:    case UnorderedMatcherRequire::Superset:
+    #####:  342:      *os << "no surjection from elements to requirements exists such that:\n";
+    #####:  343:      break;
+        -:  344:    case UnorderedMatcherRequire::Subset:
+    #####:  345:      *os << "no injection from elements to requirements exists such that:\n";
+    #####:  346:      break;
+        -:  347:  }
+    #####:  348:  const char* sep = "";
+    #####:  349:  for (size_t i = 0; i != matcher_describers_.size(); ++i) {
+    #####:  350:    *os << sep;
+    #####:  351:    if (match_flags() == UnorderedMatcherRequire::ExactMatch) {
+    #####:  352:      *os << " - element #" << i << " ";
+    #####:  353:    } else {
+    #####:  354:      *os << " - an element ";
+        -:  355:    }
+    #####:  356:    matcher_describers_[i]->DescribeTo(os);
+    #####:  357:    if (match_flags() == UnorderedMatcherRequire::ExactMatch) {
+    #####:  358:      sep = ", and\n";
+    #####:  359:    } else {
+    #####:  360:      sep = "\n";
+        -:  361:    }
+    #####:  362:  }
+    #####:  363:}
+        -:  364:
+        -:  365:// Checks that all matchers match at least one element, and that all
+        -:  366:// elements match at least one matcher. This enables faster matching
+        -:  367:// and better error reporting.
+        -:  368:// Returns false, writing an explanation to 'listener', if and only
+        -:  369:// if the success criteria are not met.
+    #####:  370:bool UnorderedElementsAreMatcherImplBase::VerifyMatchMatrix(
+        -:  371:    const ::std::vector<std::string>& element_printouts,
+        -:  372:    const MatchMatrix& matrix, MatchResultListener* listener) const {
+    #####:  373:  bool result = true;
+    #####:  374:  ::std::vector<char> element_matched(matrix.LhsSize(), 0);
+    #####:  375:  ::std::vector<char> matcher_matched(matrix.RhsSize(), 0);
+        -:  376:
+    #####:  377:  for (size_t ilhs = 0; ilhs < matrix.LhsSize(); ilhs++) {
+    #####:  378:    for (size_t irhs = 0; irhs < matrix.RhsSize(); irhs++) {
+    #####:  379:      char matched = matrix.HasEdge(ilhs, irhs);
+    #####:  380:      element_matched[ilhs] |= matched;
+    #####:  381:      matcher_matched[irhs] |= matched;
+    #####:  382:    }
+    #####:  383:  }
+        -:  384:
+    #####:  385:  if (match_flags() & UnorderedMatcherRequire::Superset) {
+    #####:  386:    const char* sep =
+        -:  387:        "where the following matchers don't match any elements:\n";
+    #####:  388:    for (size_t mi = 0; mi < matcher_matched.size(); ++mi) {
+    #####:  389:      if (matcher_matched[mi]) continue;
+    #####:  390:      result = false;
+    #####:  391:      if (listener->IsInterested()) {
+    #####:  392:        *listener << sep << "matcher #" << mi << ": ";
+    #####:  393:        matcher_describers_[mi]->DescribeTo(listener->stream());
+    #####:  394:        sep = ",\n";
+    #####:  395:      }
+    #####:  396:    }
+    #####:  397:  }
+        -:  398:
+    #####:  399:  if (match_flags() & UnorderedMatcherRequire::Subset) {
+    #####:  400:    const char* sep =
+        -:  401:        "where the following elements don't match any matchers:\n";
+    #####:  402:    const char* outer_sep = "";
+    #####:  403:    if (!result) {
+    #####:  404:      outer_sep = "\nand ";
+    #####:  405:    }
+    #####:  406:    for (size_t ei = 0; ei < element_matched.size(); ++ei) {
+    #####:  407:      if (element_matched[ei]) continue;
+    #####:  408:      result = false;
+    #####:  409:      if (listener->IsInterested()) {
+    #####:  410:        *listener << outer_sep << sep << "element #" << ei << ": "
+    #####:  411:                  << element_printouts[ei];
+    #####:  412:        sep = ",\n";
+    #####:  413:        outer_sep = "";
+    #####:  414:      }
+    #####:  415:    }
+    #####:  416:  }
+    #####:  417:  return result;
+    #####:  418:}
+        -:  419:
+    #####:  420:bool UnorderedElementsAreMatcherImplBase::FindPairing(
+        -:  421:    const MatchMatrix& matrix, MatchResultListener* listener) const {
+    #####:  422:  ElementMatcherPairs matches = FindMaxBipartiteMatching(matrix);
+        -:  423:
+    #####:  424:  size_t max_flow = matches.size();
+    #####:  425:  if ((match_flags() & UnorderedMatcherRequire::Superset) &&
+    #####:  426:      max_flow < matrix.RhsSize()) {
+    #####:  427:    if (listener->IsInterested()) {
+    #####:  428:      *listener << "where no permutation of the elements can satisfy all "
+        -:  429:                   "matchers, and the closest match is "
+    #####:  430:                << max_flow << " of " << matrix.RhsSize()
+    #####:  431:                << " matchers with the pairings:\n";
+    #####:  432:      LogElementMatcherPairVec(matches, listener->stream());
+    #####:  433:    }
+    #####:  434:    return false;
+        -:  435:  }
+    #####:  436:  if ((match_flags() & UnorderedMatcherRequire::Subset) &&
+    #####:  437:      max_flow < matrix.LhsSize()) {
+    #####:  438:    if (listener->IsInterested()) {
+    #####:  439:      *listener
+    #####:  440:          << "where not all elements can be matched, and the closest match is "
+    #####:  441:          << max_flow << " of " << matrix.RhsSize()
+    #####:  442:          << " matchers with the pairings:\n";
+    #####:  443:      LogElementMatcherPairVec(matches, listener->stream());
+    #####:  444:    }
+    #####:  445:    return false;
+        -:  446:  }
+        -:  447:
+    #####:  448:  if (matches.size() > 1) {
+    #####:  449:    if (listener->IsInterested()) {
+    #####:  450:      const char* sep = "where:\n";
+    #####:  451:      for (size_t mi = 0; mi < matches.size(); ++mi) {
+    #####:  452:        *listener << sep << " - element #" << matches[mi].first
+    #####:  453:                  << " is matched by matcher #" << matches[mi].second;
+    #####:  454:        sep = ",\n";
+    #####:  455:      }
+    #####:  456:    }
+    #####:  457:  }
+    #####:  458:  return true;
+    #####:  459:}
+        -:  460:
+        -:  461:}  // namespace internal
+        -:  462:}  // namespace testing

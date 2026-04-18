@@ -1,0 +1,222 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/include/directional/polyvector_to_raw.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Directional, a library for directional field processing.
+        -:    2:// Copyright (C) 2020 Amir Vaxman <avaxman@gmail.com>
+        -:    3://
+        -:    4:// This Source Code Form is subject to the terms of the Mozilla Public License
+        -:    5:// v. 2.0. If a copy of the MPL was not distributed with this file, You can
+        -:    6:// obtain one at http://mozilla.org/MPL/2.0/.
+        -:    7:
+        -:    8:#ifndef DIRECTIONAL_POLYVECTOR_TO_RAW_H
+        -:    9:#define DIRECTIONAL_POLYVECTOR_TO_RAW_H
+        -:   10:
+        -:   11:#include <iostream>
+        -:   12:#include <numbers>
+        -:   13:#include <Eigen/Geometry>
+        -:   14:#include <Eigen/Sparse>
+        -:   15:#include <Eigen/SparseCholesky>
+        -:   16:#include <Eigen/Eigenvalues>
+        -:   17:#include <directional/TriMesh.h>
+        -:   18:#include <directional/CartesianField.h>
+        -:   19:
+        -:   20:
+        -:   21:namespace directional {
+        -:   22:
+        -:   23:
+        -:   24://Aiding functions
+        -:   25:
+        -:   26:inline void multiply_polynomials(Eigen::RowVectorXcd &p1,
+        -:   27:                                 const Eigen::RowVectorXcd &p2) {
+        -:   28:    Eigen::RowVectorXcd newp = Eigen::RowVectorXcd::Zero(p1.size() + p2.size());
+        -:   29:    for (int i = 0; i < p1.size(); i++)
+        -:   30:        for (int j = 0; j < p2.size(); j++)
+        -:   31:            newp(i + j) += p1(i) * p2(j);
+        -:   32:    
+        -:   33:    p1 = newp;
+        -:   34:}
+        -:   35:
+    #####:   36:inline void multiply_polynomials(Eigen::MatrixXcd &p1,
+        -:   37:                                 const Eigen::MatrixXcd &p2) {
+    #####:   38:    assert(p1.rows() == p2.rows());
+    #####:   39:    Eigen::MatrixXcd newp = Eigen::MatrixXcd::Zero(p1.rows(), p1.cols() + p2.cols());
+    #####:   40:    for (int i = 0; i < p1.cols(); i++)
+    #####:   41:        for (int j = 0; j < p2.cols(); j++)
+    #####:   42:            newp.col(i + j).array() += p1.col(i).array() * p2.col(j).array();
+        -:   43:    
+        -:   44:    
+    #####:   45:    for (int i =0; i < p1.cols(); i++)
+    #####:   46:        newp.col(i + p2.cols()) += p1.col(i);
+        -:   47:    
+    #####:   48:    for (int i =0; i < p2.cols(); i++)
+    #####:   49:        newp.col(i + p1.cols()) += p2.col(i);
+        -:   50:    
+    #####:   51:    p1 = newp;
+    #####:   52:}
+        -:   53:
+        -:   54:inline void polynomial_eval_from_roots(const Eigen::RowVectorXcd &roots,
+        -:   55:                                       const std::complex<double> &evalPoint,
+        -:   56:                                       std::complex<double> &polyValue) {
+        -:   57:    polyValue = std::complex<double>(1.0, 0.0);
+        -:   58:    for (int i = 0; i < roots.size(); i++)
+        -:   59:        polyValue *= (evalPoint - roots(i));
+        -:   60:}
+        -:   61:
+    #####:   62:inline void polynomial_eval_from_roots(const Eigen::MatrixXcd &roots,
+        -:   63:                                       const Eigen::VectorXcd &evalPoints,
+        -:   64:                                       Eigen::VectorXcd &polyValues) {
+    #####:   65:    assert(evalPoints.rows() == roots.rows());
+    #####:   66:    polyValues = Eigen::VectorXcd::Constant(evalPoints.rows(), std::complex<double>(1.0, 0.0));
+    #####:   67:    for (int i = 0; i < roots.cols(); i++)
+    #####:   68:        polyValues.array() *= (evalPoints - roots.col(i)).array();  //rowwise-product faster?;
+        -:   69:    
+    #####:   70:}
+        -:   71:
+        -:   72:inline void polynomial_eval(const Eigen::RowVectorXcd &coeffs,
+        -:   73:                            const std::complex<double> &evalPoint,
+        -:   74:                            std::complex<double> &polyValue) {
+        -:   75:    polyValue = std::complex<double>(0.0, 0.0);
+        -:   76:    std::complex<double> z = 1;
+        -:   77:    for (int i = 0; i < coeffs.size(); i++) {
+        -:   78:        polyValue += coeffs(i) * z;
+        -:   79:        z *= evalPoint;
+        -:   80:    }
+        -:   81:    std::cout << "z: " << z << std::endl;
+        -:   82:    polyValue += z;  //the biggest and unit power
+        -:   83:}
+        -:   84:
+    #####:   85:inline void polynomial_eval(const Eigen::MatrixXcd &coeffs,
+        -:   86:                            const Eigen::VectorXcd &evalPoints,
+        -:   87:                            Eigen::VectorXcd &polyValues) {
+    #####:   88:    polyValues = Eigen::VectorXcd::Zero(coeffs.rows());
+    #####:   89:    Eigen::VectorXcd z = Eigen::VectorXcd::Constant(coeffs.rows(), 1.0);
+    #####:   90:    for (int i = 0; i < coeffs.cols(); i++) {
+    #####:   91:        polyValues.array() += coeffs.col(i).array() * z.array();
+    #####:   92:        z.array() *= evalPoints.array();
+    #####:   93:    }
+        -:   94:    //std::cout<<"z: "<<z<<std::endl;
+    #####:   95:    polyValues.array() += z.array();  //the biggest and unit power
+    #####:   96:}
+        -:   97:
+        -:   98:
+        -:   99:// Converts a field in PolyVector representation to raw represenation. This is done by the fixed-point Durand-Kerner method.
+        -:  100:// Input:
+        -:  101://  pvField:    a POLYVECTOR_FIELD type cartesian field object
+        -:  102://  signSymmetry: if the field is sign-symmetric (so comprising line-fields). Then all odd PV coefficients are zero.
+        -:  103://  rootTolerance:  the numerical tolerance for the root computation.
+        -:  104://
+        -:  105:// Output:
+        -:  106://  roots:              #TangentSpaces by N complex matrix with all N roots of the PolyVectors in order
+        -:  107://    returns true if succeeded
+    #####:  108:inline bool polyvector_to_raw(const Eigen::MatrixXd& pvField,
+        -:  109:                              const int N,
+        -:  110:                              Eigen::MatrixXcd &roots,
+        -:  111:                              const bool _signSymmetry = true,
+        -:  112:                              const bool normalizeRoots = false,
+        -:  113:                              const double rootTolerance = 1e-8) {
+        -:  114:    using namespace std;
+        -:  115:    using namespace Eigen;
+        -:  116:    
+        -:  117:    
+    #####:  118:    MatrixXcd actualPVField;
+        -:  119:    int actualN;
+    #####:  120:    bool signSymmetry = _signSymmetry;
+    #####:  121:    if (N % 2 != 0) signSymmetry = false;  //by definition
+    #####:  122:    if (signSymmetry) {
+    #####:  123:        actualPVField.resize(pvField.rows(), N / 2);
+    #####:  124:        for (int i = 0; i < N; i += 2) {
+    #####:  125:            actualPVField.col(i / 2).real() = pvField.col(2 * i);
+    #####:  126:            actualPVField.col(i / 2).imag() = pvField.col(2 * i + 1);
+    #####:  127:        }
+    #####:  128:        actualN = N / 2;
+    #####:  129:    } else {
+    #####:  130:        actualPVField.resize(pvField.rows(), N);
+    #####:  131:        for (int i = 0; i < N; i++) {
+    #####:  132:            actualPVField.col(i).real() = pvField.col(2 * i);
+    #####:  133:            actualPVField.col(i).imag() = pvField.col(2 * i + 1);
+    #####:  134:        }
+    #####:  135:        actualN = N;
+        -:  136:    }
+        -:  137:    
+    #####:  138:    roots.resize(actualPVField.rows(), actualN);
+    #####:  139:    roots.col(0).array() = (-actualPVField.col(0).array()).pow(1.0 / (double) actualN);
+    #####:  140:    for (int i = 1; i < actualN; i++)
+    #####:  141:        roots.col(i).array() =
+    #####:  142:        roots.col(i - 1).array() * std::exp(std::complex<double>(0, 2.0 * std::numbers::pi / (double) actualN));
+        -:  143:    
+    #####:  144:    MatrixXd rootError = MatrixXd::Constant(actualPVField.rows(), actualN, 1000.0);
+    #####:  145:    double maxError = 1000.0;
+    #####:  146:    int currRoot = 0;
+    #####:  147:    MatrixXcd mostRoots(actualPVField.rows(), actualN - 1);
+    #####:  148:    int maxIterations = 1000;
+    #####:  149:    int currIteration = 0;
+    #####:  150:    do {
+    #####:  151:        mostRoots.block(0, 0, mostRoots.rows(), currRoot) = roots.block(0, 0, roots.rows(), currRoot);
+    #####:  152:        mostRoots.block(0, currRoot, mostRoots.rows(), actualN - currRoot - 1) = roots.block(0, currRoot + 1,
+    #####:  153:                                                                                             roots.rows(),
+    #####:  154:                                                                                             actualN - currRoot -
+        -:  155:                                                                                             1);
+    #####:  156:        VectorXcd numerator;
+    #####:  157:        polynomial_eval(actualPVField, roots.col(currRoot), numerator);
+    #####:  158:        VectorXcd denominator;
+    #####:  159:        polynomial_eval_from_roots(mostRoots, roots.col(currRoot), denominator);
+    #####:  160:        roots.col(currRoot).array() -= numerator.array() / denominator.array();
+    #####:  161:        rootError.col(currRoot) = numerator.cwiseAbs();
+    #####:  162:        maxError = rootError.lpNorm<Infinity>();  //optimize by only the relevant column?
+    #####:  163:        currRoot = (currRoot + 1) % actualN;
+    #####:  164:        currIteration++;
+    #####:  165:    } while ((maxError > rootTolerance) && (currIteration < maxIterations));
+        -:  166:    
+    #####:  167:    if (currIteration >= maxIterations)
+    #####:  168:        return false;
+        -:  169:    
+    #####:  170:    if (signSymmetry)
+    #####:  171:        roots = roots.cwiseSqrt();
+        -:  172:    
+    #####:  173:    for (int f = 0; f < roots.rows(); f++) {
+    #####:  174:        RowVectorXcd rowRoots = roots.row(f);
+    #####:  175:        std::sort(rowRoots.data(), rowRoots.data() + rowRoots.size(),
+    #####:  176:                  [](std::complex<double> a, std::complex<double> b) { return arg(a) < arg(b); });
+    #####:  177:        roots.row(f) = rowRoots;
+    #####:  178:    }
+        -:  179:    
+    #####:  180:    if (signSymmetry) {
+    #####:  181:        MatrixXcd actualRoots(roots.rows(), 2 * roots.cols());
+    #####:  182:        actualRoots << roots, -roots;
+    #####:  183:        roots = actualRoots;
+    #####:  184:    }
+        -:  185:    
+    #####:  186:    if (normalizeRoots)
+    #####:  187:        roots.array()/=roots.array().abs();
+        -:  188:    
+    #####:  189:    return true;
+    #####:  190:}
+        -:  191:
+        -:  192:// Converts a field in PolyVector representation to raw represenation. This is done by the fixed-point Durand-Kerner method.
+        -:  193:// Input:
+        -:  194://  pvField:                a POLYVECTOR_FIELD type cartesian field object
+        -:  195://  signSymmetry:           if the field is sign-symmetric (so comprising line-fields). Then all odd PV coefficients are zero.
+        -:  196://  rootTolerance:          the numerical tolerance for the root computation.
+        -:  197://
+        -:  198:// Output:
+        -:  199://  rawField:               #the outpur Cartesian field in raw representation
+        -:  200://    returns true if succeeded
+    #####:  201:inline bool polyvector_to_raw(const directional::CartesianField &pvField,
+        -:  202:                              directional::CartesianField &rawField,
+        -:  203:                              const bool signSymmetry = true,
+        -:  204:                              const bool normalizeRoots = false,
+        -:  205:                              const double rootTolerance = 1e-8) {
+        -:  206:    
+    #####:  207:    rawField.init(*(pvField.tb), fieldTypeEnum::RAW_FIELD, pvField.N);
+    #####:  208:    Eigen::MatrixXcd intField;
+    #####:  209:    bool trueSingSymmetry = signSymmetry;
+    #####:  210:    if (pvField.N % 2 != 0) trueSingSymmetry = false;  //by definition
+    #####:  211:    polyvector_to_raw(pvField.intField, pvField.N, intField, trueSingSymmetry, normalizeRoots, rootTolerance);
+    #####:  212:    rawField.set_intrinsic_field(intField);
+        -:  213:    return true;
+    #####:  214:}
+        -:  215:
+        -:  216:}
+        -:  217:
+        -:  218:#endif

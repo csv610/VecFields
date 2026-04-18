@@ -5,3 +5,7 @@ add_test(NAME vecfields_test_basic COMMAND vecfields_test_basic)
 add_executable(vecfields_test_mesh_io test_mesh_io.cpp)
 target_link_libraries(vecfields_test_mesh_io gtest gtest_main)
 add_test(NAME vecfields_test_mesh_io COMMAND vecfields_test_mesh_io)
+
+add_executable(vecfields_test_field_processing test_field_processing.cpp)
+target_link_libraries(vecfields_test_field_processing gtest gtest_main)
+add_test(NAME vecfields_test_field_processing COMMAND vecfields_test_field_processing)

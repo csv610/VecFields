@@ -1,7 +1,7 @@
         -:    0:Source:/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__new/allocate.h
-        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
-        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
-        -:    0:Runs:4
+        -:    0:Graph:./external/googletest/googlemock/CMakeFiles/gmock.dir/src/gmock-all.cc.gcno
+        -:    0:Data:-
+        -:    0:Runs:0
         -:    1://===----------------------------------------------------------------------===//
         -:    2://
         -:    3:// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -30,9 +30,9 @@
         -:   26:
         -:   27:_LIBCPP_BEGIN_NAMESPACE_STD
         -:   28:
-    94716:   29:_LIBCPP_CONSTEXPR inline _LIBCPP_HIDE_FROM_ABI bool __is_overaligned_for_new(size_t __align) _NOEXCEPT {
+        -:   29:_LIBCPP_CONSTEXPR inline _LIBCPP_HIDE_FROM_ABI bool __is_overaligned_for_new(size_t __align) _NOEXCEPT {
         -:   30:#ifdef __STDCPP_DEFAULT_NEW_ALIGNMENT__
-    94716:   31:  return __align > __STDCPP_DEFAULT_NEW_ALIGNMENT__;
+        -:   31:  return __align > __STDCPP_DEFAULT_NEW_ALIGNMENT__;
         -:   32:#else
         -:   33:  return __align > _LIBCPP_ALIGNOF(max_align_t);
         -:   34:#endif
@@ -55,15 +55,15 @@
         -:   51:
         -:   52:template <class _Tp>
         -:   53:inline _LIBCPP_HIDE_FROM_ABI _LIBCPP_NO_CFI _Tp*
-    47368:   54:__libcpp_allocate(__element_count __n, [[__maybe_unused__]] size_t __align = _LIBCPP_ALIGNOF(_Tp)) {
-    47368:   55:  size_t __size = static_cast<size_t>(__n) * sizeof(_Tp);
+    #####:   54:__libcpp_allocate(__element_count __n, [[__maybe_unused__]] size_t __align = _LIBCPP_ALIGNOF(_Tp)) {
+    #####:   55:  size_t __size = static_cast<size_t>(__n) * sizeof(_Tp);
         -:   56:#if _LIBCPP_HAS_ALIGNED_ALLOCATION
-    47368:   57:  if (__is_overaligned_for_new(__align))
-    #####:   58:    return static_cast<_Tp*>(__builtin_operator_new(__size, static_cast<align_val_t>(__align)));
+        -:   57:  if (__is_overaligned_for_new(__align))
+        -:   58:    return static_cast<_Tp*>(__builtin_operator_new(__size, static_cast<align_val_t>(__align)));
         -:   59:#endif
         -:   60:
-    47368:   61:  return static_cast<_Tp*>(__builtin_operator_new(__size _LIBCPP_ADD_TYPE_DESCRIPTOR(_Tp)));
-    47368:   62:}
+    #####:   61:  return static_cast<_Tp*>(__builtin_operator_new(__size _LIBCPP_ADD_TYPE_DESCRIPTOR(_Tp)));
+        -:   62:}
         -:   63:
         -:   64:#if _LIBCPP_HAS_SIZED_DEALLOCATION
         -:   65:#  define _LIBCPP_ONLY_IF_SIZED_DEALLOCATION(...) __VA_ARGS__
@@ -73,17 +73,17 @@
         -:   69:
         -:   70:template <class _Tp>
         -:   71:inline _LIBCPP_HIDE_FROM_ABI void
-    47348:   72:__libcpp_deallocate(__type_identity_t<_Tp>* __ptr,
+    #####:   72:__libcpp_deallocate(__type_identity_t<_Tp>* __ptr,
         -:   73:                    __element_count __n,
         -:   74:                    [[__maybe_unused__]] size_t __align = _LIBCPP_ALIGNOF(_Tp)) _NOEXCEPT {
-    47348:   75:  [[__maybe_unused__]] size_t __size = static_cast<size_t>(__n) * sizeof(_Tp);
+    #####:   75:  [[__maybe_unused__]] size_t __size = static_cast<size_t>(__n) * sizeof(_Tp);
         -:   76:#if _LIBCPP_HAS_ALIGNED_ALLOCATION
-    47348:   77:  if (__is_overaligned_for_new(__align))
-    #####:   78:    return __builtin_operator_delete(
-    #####:   79:        __ptr _LIBCPP_ONLY_IF_SIZED_DEALLOCATION(, __size), static_cast<align_val_t>(__align));
+        -:   77:  if (__is_overaligned_for_new(__align))
+        -:   78:    return __builtin_operator_delete(
+        -:   79:        __ptr _LIBCPP_ONLY_IF_SIZED_DEALLOCATION(, __size), static_cast<align_val_t>(__align));
         -:   80:#endif
-    47348:   81:  return __builtin_operator_delete(__ptr _LIBCPP_ONLY_IF_SIZED_DEALLOCATION(, __size));
-    47348:   82:}
+    #####:   81:  return __builtin_operator_delete(__ptr _LIBCPP_ONLY_IF_SIZED_DEALLOCATION(, __size));
+        -:   82:}
         -:   83:
         -:   84:#undef _LIBCPP_ONLY_IF_SIZED_DEALLOCATION
         -:   85:

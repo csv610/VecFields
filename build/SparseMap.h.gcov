@@ -1,0 +1,313 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/SparseCore/SparseMap.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2015 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:#ifndef EIGEN_SPARSE_MAP_H
+        -:   11:#define EIGEN_SPARSE_MAP_H
+        -:   12:
+        -:   13:// IWYU pragma: private
+        -:   14:#include "./InternalHeaderCheck.h"
+        -:   15:
+        -:   16:namespace Eigen {
+        -:   17:
+        -:   18:namespace internal {
+        -:   19:
+        -:   20:template<typename MatScalar, int MatOptions, typename MatIndex, int Options, typename StrideType>
+        -:   21:struct traits<Map<SparseMatrix<MatScalar,MatOptions,MatIndex>, Options, StrideType> >
+        -:   22:  : public traits<SparseMatrix<MatScalar,MatOptions,MatIndex> >
+        -:   23:{
+        -:   24:  typedef SparseMatrix<MatScalar,MatOptions,MatIndex> PlainObjectType;
+        -:   25:  typedef traits<PlainObjectType> TraitsBase;
+        -:   26:  enum {
+        -:   27:    Flags = TraitsBase::Flags & (~NestByRefBit)
+        -:   28:  };
+        -:   29:};
+        -:   30:
+        -:   31:template<typename MatScalar, int MatOptions, typename MatIndex, int Options, typename StrideType>
+        -:   32:struct traits<Map<const SparseMatrix<MatScalar,MatOptions,MatIndex>, Options, StrideType> >
+        -:   33:  : public traits<SparseMatrix<MatScalar,MatOptions,MatIndex> >
+        -:   34:{
+        -:   35:  typedef SparseMatrix<MatScalar,MatOptions,MatIndex> PlainObjectType;
+        -:   36:  typedef traits<PlainObjectType> TraitsBase;
+        -:   37:  enum {
+        -:   38:    Flags = TraitsBase::Flags & (~ (NestByRefBit | LvalueBit))
+        -:   39:  };
+        -:   40:};
+        -:   41:
+        -:   42:} // end namespace internal
+        -:   43:
+        -:   44:template<typename Derived,
+        -:   45:         int Level = internal::accessors_level<Derived>::has_write_access ? WriteAccessors : ReadOnlyAccessors
+        -:   46:> class SparseMapBase;
+        -:   47:
+        -:   48:/** \ingroup SparseCore_Module
+        -:   49:  * class SparseMapBase
+        -:   50:  * \brief Common base class for Map and Ref instance of sparse matrix and vector.
+        -:   51:  */
+        -:   52:template<typename Derived>
+        -:   53:class SparseMapBase<Derived,ReadOnlyAccessors>
+        -:   54:  : public SparseCompressedBase<Derived>
+        -:   55:{
+        -:   56:  public:
+        -:   57:    typedef SparseCompressedBase<Derived> Base;
+        -:   58:    typedef typename Base::Scalar Scalar;
+        -:   59:    typedef typename Base::StorageIndex StorageIndex;
+        -:   60:    enum { IsRowMajor = Base::IsRowMajor };
+        -:   61:    using Base::operator=;
+        -:   62:  protected:
+        -:   63:    
+        -:   64:    typedef std::conditional_t<
+        -:   65:                 bool(internal::is_lvalue<Derived>::value),
+        -:   66:                 Scalar *, const Scalar *> ScalarPointer;
+        -:   67:    typedef std::conditional_t<
+        -:   68:                 bool(internal::is_lvalue<Derived>::value),
+        -:   69:                 StorageIndex *, const StorageIndex *> IndexPointer;
+        -:   70:
+        -:   71:    Index   m_outerSize;
+        -:   72:    Index   m_innerSize;
+        -:   73:    Array<StorageIndex,2,1>  m_zero_nnz;
+        -:   74:    IndexPointer  m_outerIndex;
+        -:   75:    IndexPointer  m_innerIndices;
+        -:   76:    ScalarPointer m_values;
+        -:   77:    IndexPointer  m_innerNonZeros;
+        -:   78:
+        -:   79:  public:
+        -:   80:
+        -:   81:    /** \copydoc SparseMatrixBase::rows() */
+        -:   82:    inline Index rows() const { return IsRowMajor ? m_outerSize : m_innerSize; }
+        -:   83:    /** \copydoc SparseMatrixBase::cols() */
+        -:   84:    inline Index cols() const { return IsRowMajor ? m_innerSize : m_outerSize; }
+        -:   85:    /** \copydoc SparseMatrixBase::innerSize() */
+        -:   86:    inline Index innerSize() const { return m_innerSize; }
+        -:   87:    /** \copydoc SparseMatrixBase::outerSize() */
+        -:   88:    inline Index outerSize() const { return m_outerSize; }
+        -:   89:    /** \copydoc SparseCompressedBase::nonZeros */
+        -:   90:    inline Index nonZeros() const { return m_zero_nnz[1]; }
+        -:   91:    
+        -:   92:    /** \copydoc SparseCompressedBase::isCompressed */
+        -:   93:    bool isCompressed() const { return m_innerNonZeros==0; }
+        -:   94:
+        -:   95:    //----------------------------------------
+        -:   96:    // direct access interface
+        -:   97:    /** \copydoc SparseMatrix::valuePtr */
+    #####:   98:    inline const Scalar* valuePtr() const { return m_values; }
+        -:   99:    /** \copydoc SparseMatrix::innerIndexPtr */
+    #####:  100:    inline const StorageIndex* innerIndexPtr() const { return m_innerIndices; }
+        -:  101:    /** \copydoc SparseMatrix::outerIndexPtr */
+    #####:  102:    inline const StorageIndex* outerIndexPtr() const { return m_outerIndex; }
+        -:  103:    /** \copydoc SparseMatrix::innerNonZeroPtr */
+    #####:  104:    inline const StorageIndex* innerNonZeroPtr() const { return m_innerNonZeros; }
+        -:  105:    //----------------------------------------
+        -:  106:
+        -:  107:    /** \copydoc SparseMatrix::coeff */
+        -:  108:    inline Scalar coeff(Index row, Index col) const
+        -:  109:    {
+        -:  110:      const Index outer = IsRowMajor ? row : col;
+        -:  111:      const Index inner = IsRowMajor ? col : row;
+        -:  112:
+        -:  113:      Index start = m_outerIndex[outer];
+        -:  114:      Index end = isCompressed() ? m_outerIndex[outer+1] : start + m_innerNonZeros[outer];
+        -:  115:      if (start==end)
+        -:  116:        return Scalar(0);
+        -:  117:      else if (end>0 && inner==m_innerIndices[end-1])
+        -:  118:        return m_values[end-1];
+        -:  119:      // ^^  optimization: let's first check if it is the last coefficient
+        -:  120:      // (very common in high level algorithms)
+        -:  121:
+        -:  122:      const StorageIndex* r = std::lower_bound(&m_innerIndices[start],&m_innerIndices[end-1],inner);
+        -:  123:      const Index id = r-&m_innerIndices[0];
+        -:  124:      return ((*r==inner) && (id<end)) ? m_values[id] : Scalar(0);
+        -:  125:    }
+        -:  126:
+    #####:  127:    inline SparseMapBase(Index rows, Index cols, Index nnz, IndexPointer outerIndexPtr, IndexPointer innerIndexPtr,
+        -:  128:                              ScalarPointer valuePtr, IndexPointer innerNonZerosPtr = 0)
+    #####:  129:      : m_outerSize(IsRowMajor?rows:cols), m_innerSize(IsRowMajor?cols:rows), m_zero_nnz(0,internal::convert_index<StorageIndex>(nnz)), m_outerIndex(outerIndexPtr),
+    #####:  130:        m_innerIndices(innerIndexPtr), m_values(valuePtr), m_innerNonZeros(innerNonZerosPtr)
+    #####:  131:    {}
+        -:  132:
+        -:  133:    // for vectors
+        -:  134:    inline SparseMapBase(Index size, Index nnz, IndexPointer innerIndexPtr, ScalarPointer valuePtr)
+        -:  135:      : m_outerSize(1), m_innerSize(size), m_zero_nnz(0,internal::convert_index<StorageIndex>(nnz)), m_outerIndex(m_zero_nnz.data()),
+        -:  136:        m_innerIndices(innerIndexPtr), m_values(valuePtr), m_innerNonZeros(0)
+        -:  137:    {}
+        -:  138:
+        -:  139:    /** Empty destructor */
+    #####:  140:    inline ~SparseMapBase() {}
+        -:  141:
+        -:  142:  protected:
+        -:  143:    inline SparseMapBase() {}
+        -:  144:};
+        -:  145:
+        -:  146:/** \ingroup SparseCore_Module
+        -:  147:  * class SparseMapBase
+        -:  148:  * \brief Common base class for writable Map and Ref instance of sparse matrix and vector.
+        -:  149:  */
+        -:  150:template<typename Derived>
+        -:  151:class SparseMapBase<Derived,WriteAccessors>
+        -:  152:  : public SparseMapBase<Derived,ReadOnlyAccessors>
+        -:  153:{
+        -:  154:    typedef MapBase<Derived, ReadOnlyAccessors> ReadOnlyMapBase;
+        -:  155:    
+        -:  156:  public:
+        -:  157:    typedef SparseMapBase<Derived, ReadOnlyAccessors> Base;
+        -:  158:    typedef typename Base::Scalar Scalar;
+        -:  159:    typedef typename Base::StorageIndex StorageIndex;
+        -:  160:    enum { IsRowMajor = Base::IsRowMajor };
+        -:  161:    
+        -:  162:    using Base::operator=;
+        -:  163:
+        -:  164:  public:
+        -:  165:    
+        -:  166:    //----------------------------------------
+        -:  167:    // direct access interface
+        -:  168:    using Base::valuePtr;
+        -:  169:    using Base::innerIndexPtr;
+        -:  170:    using Base::outerIndexPtr;
+        -:  171:    using Base::innerNonZeroPtr;
+        -:  172:    /** \copydoc SparseMatrix::valuePtr */
+        -:  173:    inline Scalar* valuePtr()              { return Base::m_values; }
+        -:  174:    /** \copydoc SparseMatrix::innerIndexPtr */
+        -:  175:    inline StorageIndex* innerIndexPtr()   { return Base::m_innerIndices; }
+        -:  176:    /** \copydoc SparseMatrix::outerIndexPtr */
+        -:  177:    inline StorageIndex* outerIndexPtr()   { return Base::m_outerIndex; }
+        -:  178:    /** \copydoc SparseMatrix::innerNonZeroPtr */
+        -:  179:    inline StorageIndex* innerNonZeroPtr() { return Base::m_innerNonZeros; }
+        -:  180:    //----------------------------------------
+        -:  181:
+        -:  182:    /** \copydoc SparseMatrix::coeffRef */
+        -:  183:    inline Scalar& coeffRef(Index row, Index col)
+        -:  184:    {
+        -:  185:      const Index outer = IsRowMajor ? row : col;
+        -:  186:      const Index inner = IsRowMajor ? col : row;
+        -:  187:
+        -:  188:      Index start = Base::m_outerIndex[outer];
+        -:  189:      Index end = Base::isCompressed() ? Base::m_outerIndex[outer+1] : start + Base::m_innerNonZeros[outer];
+        -:  190:      eigen_assert(end>=start && "you probably called coeffRef on a non finalized matrix");
+        -:  191:      eigen_assert(end>start && "coeffRef cannot be called on a zero coefficient");
+        -:  192:      StorageIndex* r = std::lower_bound(&Base::m_innerIndices[start],&Base::m_innerIndices[end],inner);
+        -:  193:      const Index id = r - &Base::m_innerIndices[0];
+        -:  194:      eigen_assert((*r==inner) && (id<end) && "coeffRef cannot be called on a zero coefficient");
+        -:  195:      return const_cast<Scalar*>(Base::m_values)[id];
+        -:  196:    }
+        -:  197:    
+    #####:  198:    inline SparseMapBase(Index rows, Index cols, Index nnz, StorageIndex* outerIndexPtr, StorageIndex* innerIndexPtr,
+        -:  199:                         Scalar* valuePtr, StorageIndex* innerNonZerosPtr = 0)
+    #####:  200:      : Base(rows, cols, nnz, outerIndexPtr, innerIndexPtr, valuePtr, innerNonZerosPtr)
+    #####:  201:    {}
+        -:  202:
+        -:  203:    // for vectors
+        -:  204:    inline SparseMapBase(Index size, Index nnz, StorageIndex* innerIndexPtr, Scalar* valuePtr)
+        -:  205:      : Base(size, nnz, innerIndexPtr, valuePtr)
+        -:  206:    {}
+        -:  207:
+        -:  208:    /** Empty destructor */
+    #####:  209:    inline ~SparseMapBase() {}
+        -:  210:
+        -:  211:  protected:
+        -:  212:    inline SparseMapBase() {}
+        -:  213:};
+        -:  214:
+        -:  215:/** \ingroup SparseCore_Module
+        -:  216:  *
+        -:  217:  * \brief Specialization of class Map for SparseMatrix-like storage.
+        -:  218:  *
+        -:  219:  * \tparam SparseMatrixType the equivalent sparse matrix type of the referenced data, it must be a template instance of class SparseMatrix.
+        -:  220:  *
+        -:  221:  * \sa class Map, class SparseMatrix, class Ref<SparseMatrixType,Options>
+        -:  222:  */
+        -:  223:#ifndef EIGEN_PARSED_BY_DOXYGEN
+        -:  224:template<typename MatScalar, int MatOptions, typename MatIndex, int Options, typename StrideType>
+        -:  225:class Map<SparseMatrix<MatScalar,MatOptions,MatIndex>, Options, StrideType>
+        -:  226:  : public SparseMapBase<Map<SparseMatrix<MatScalar,MatOptions,MatIndex>, Options, StrideType> >
+        -:  227:#else
+        -:  228:template<typename SparseMatrixType>
+        -:  229:class Map<SparseMatrixType>
+        -:  230:  : public SparseMapBase<Derived,WriteAccessors>
+        -:  231:#endif
+        -:  232:{
+        -:  233:  public:
+        -:  234:    typedef SparseMapBase<Map> Base;
+        -:  235:    EIGEN_SPARSE_PUBLIC_INTERFACE(Map)
+        -:  236:    enum { IsRowMajor = Base::IsRowMajor };
+        -:  237:
+        -:  238:  public:
+        -:  239:
+        -:  240:    /** Constructs a read-write Map to a sparse matrix of size \a rows x \a cols, containing \a nnz non-zero coefficients,
+        -:  241:      * stored as a sparse format as defined by the pointers \a outerIndexPtr, \a innerIndexPtr, and \a valuePtr.
+        -:  242:      * If the optional parameter \a innerNonZerosPtr is the null pointer, then a standard compressed format is assumed.
+        -:  243:      * The inner indices must be sorted appropriately.
+        -:  244:      *
+        -:  245:      * This constructor is available only if \c SparseMatrixType is non-const.
+        -:  246:      *
+        -:  247:      * More details on the expected storage schemes are given in the \ref TutorialSparse "manual pages".
+        -:  248:      */
+    #####:  249:    inline Map(Index rows, Index cols, Index nnz, StorageIndex* outerIndexPtr,
+        -:  250:               StorageIndex* innerIndexPtr, Scalar* valuePtr, StorageIndex* innerNonZerosPtr = 0)
+    #####:  251:      : Base(rows, cols, nnz, outerIndexPtr, innerIndexPtr, valuePtr, innerNonZerosPtr)
+    #####:  252:    {}
+        -:  253:#ifndef EIGEN_PARSED_BY_DOXYGEN
+        -:  254:    /** Empty destructor */
+    #####:  255:    inline ~Map() {}
+        -:  256:};
+        -:  257:
+        -:  258:template<typename MatScalar, int MatOptions, typename MatIndex, int Options, typename StrideType>
+        -:  259:class Map<const SparseMatrix<MatScalar,MatOptions,MatIndex>, Options, StrideType>
+        -:  260:  : public SparseMapBase<Map<const SparseMatrix<MatScalar,MatOptions,MatIndex>, Options, StrideType> >
+        -:  261:{
+        -:  262:  public:
+        -:  263:    typedef SparseMapBase<Map> Base;
+        -:  264:    EIGEN_SPARSE_PUBLIC_INTERFACE(Map)
+        -:  265:    enum { IsRowMajor = Base::IsRowMajor };
+        -:  266:
+        -:  267:  public:
+        -:  268:#endif
+        -:  269:    /** This is the const version of the above constructor.
+        -:  270:      *
+        -:  271:      * This constructor is available only if \c SparseMatrixType is const, e.g.:
+        -:  272:      * \code Map<const SparseMatrix<double> >  \endcode
+        -:  273:      */
+        -:  274:    inline Map(Index rows, Index cols, Index nnz, const StorageIndex* outerIndexPtr,
+        -:  275:               const StorageIndex* innerIndexPtr, const Scalar* valuePtr, const StorageIndex* innerNonZerosPtr = 0)
+        -:  276:      : Base(rows, cols, nnz, outerIndexPtr, innerIndexPtr, valuePtr, innerNonZerosPtr)
+        -:  277:    {}
+        -:  278:
+        -:  279:    /** Empty destructor */
+        -:  280:    inline ~Map() {}
+        -:  281:};
+        -:  282:
+        -:  283:namespace internal {
+        -:  284:
+        -:  285:template<typename MatScalar, int MatOptions, typename MatIndex, int Options, typename StrideType>
+        -:  286:struct evaluator<Map<SparseMatrix<MatScalar,MatOptions,MatIndex>, Options, StrideType> >
+        -:  287:  : evaluator<SparseCompressedBase<Map<SparseMatrix<MatScalar,MatOptions,MatIndex>, Options, StrideType> > >
+        -:  288:{
+        -:  289:  typedef evaluator<SparseCompressedBase<Map<SparseMatrix<MatScalar,MatOptions,MatIndex>, Options, StrideType> > > Base;
+        -:  290:  typedef Map<SparseMatrix<MatScalar,MatOptions,MatIndex>, Options, StrideType> XprType;  
+        -:  291:  evaluator() : Base() {}
+        -:  292:  explicit evaluator(const XprType &mat) : Base(mat) {}
+        -:  293:};
+        -:  294:
+        -:  295:template<typename MatScalar, int MatOptions, typename MatIndex, int Options, typename StrideType>
+        -:  296:struct evaluator<Map<const SparseMatrix<MatScalar,MatOptions,MatIndex>, Options, StrideType> >
+        -:  297:  : evaluator<SparseCompressedBase<Map<const SparseMatrix<MatScalar,MatOptions,MatIndex>, Options, StrideType> > >
+        -:  298:{
+        -:  299:  typedef evaluator<SparseCompressedBase<Map<const SparseMatrix<MatScalar,MatOptions,MatIndex>, Options, StrideType> > > Base;
+        -:  300:  typedef Map<const SparseMatrix<MatScalar,MatOptions,MatIndex>, Options, StrideType> XprType;  
+        -:  301:  evaluator() : Base() {}
+        -:  302:  explicit evaluator(const XprType &mat) : Base(mat) {}
+        -:  303:};
+        -:  304:
+        -:  305:}
+        -:  306:
+        -:  307:} // end namespace Eigen
+        -:  308:
+        -:  309:#endif // EIGEN_SPARSE_MAP_H

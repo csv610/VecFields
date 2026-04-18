@@ -1,0 +1,105 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/include/directional/TangentBundle.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Directional, a library for directional field processing.
+        -:    2:// Copyright (C) 2022 Amir Vaxman <avaxman@gmail.com>
+        -:    3://
+        -:    4:// This Source Code Form is subject to the terms of the Mozilla Public License
+        -:    5:// v. 2.0. If a copy of the MPL was not distributed with this file, You can
+        -:    6:// obtain one at http://mozilla.org/MPL/2.0/.
+        -:    7:
+        -:    8:#ifndef DIRECTIONAL_TANGENT_BUNDLE_H
+        -:    9:#define DIRECTIONAL_TANGENT_BUNDLE_H
+        -:   10:
+        -:   11:#include <cassert>
+        -:   12:#include <iostream>
+        -:   13:#include <Eigen/Geometry>
+        -:   14:#include <Eigen/Sparse>
+        -:   15:#include <directional/TriMesh.h>
+        -:   16:
+        -:   17:/***
+        -:   18: This is the interface class for discrete tangent bundles, represented as a graph G_TB of nodes (tangent spaces) and edges (adjacency relations). This represents a d-dimensional tangent bundle.
+        -:   19: Further structure is cycles around which holonomy is measured, and curvature is defined, and consequently one-rings of all edges around a single node.
+        -:   20: The Tangent Bundle is "intrinsic" in the sense that the information required for designing fields does not require any embedding. The class includes variables that include embedding information like sources and normals (assuming the bundle is at most 1-codimensional).
+        -:   21: They are however only used for input/output to the intrinsic variables.
+        -:   22: ***/
+        -:   23:
+        -:   24:namespace directional{
+        -:   25:
+        -:   26:enum class discTangTypeEnum {BASE_CLASS, FACE_SPACES, VERTEX_SPACES};
+        -:   27:enum class boundCondTypeEnum {DIRICHLET, NEUMANN};
+        -:   28:
+        -:   29:class TangentBundle {
+        -:   30:public:
+        -:   31:    
+        -:   32:    //In case some methods are only defined for specific tangent bundles
+    #####:   33:    virtual discTangTypeEnum discTangType() const { return discTangTypeEnum::BASE_CLASS; }
+        -:   34:    
+        -:   35:    //indicates if the tangent bundle has a meaningful embedding
+    #####:   36:    virtual bool hasEmbedding() const { return false; }
+        -:   37:    
+        -:   38:    int intDimension;                                   //Intrinsic dimension of the tangent spaces
+        -:   39:    int numSpaces;                                      //The number of tangent spaces
+        -:   40:    
+        -:   41:    //combinatorics and topology
+        -:   42:    Eigen::Matrix<int, Eigen::Dynamic, 2> adjSpaces;    //Adjacent tangent spaces (edges of the tangent bundle graph). This includes boundaries! one side will be "-1" when this is the case. Also see "innerAdjacencies"
+        -:   43:    Eigen::MatrixXi oneRing;                            //(Ordered) tangent spaces adjacent around each tangent space
+        -:   44:    Eigen::VectorXi innerAdjacencies;                   //Indices into adjSpaces that are not boundary
+        -:   45:    Eigen::SparseMatrix<double> cycles;                 //Adjaceny matrix of cycles
+        -:   46:    Eigen::VectorXd cycleCurvatures;                    //Curvature of cycles.
+        -:   47:    Eigen::VectorXi local2Cycle;                        //Map between local cycles and general cycles
+        -:   48:    
+        -:   49:    //Geometry
+        -:   50:    //the connection between adjacent tangent space. That is, a field is parallel between adjaspaces(i,0) and adjSpaces(i,1) when complex(intField.row(adjSpaceS(i,0))*connection(i))=complex(intField.row(adjSpaceS(i,1))
+        -:   51:    Eigen::VectorXcd connection;                                    //#V, Metric connection between adjacent spaces
+        -:   52:    Eigen::SparseMatrix<double> connectionMass;                     //The mass matrix of connections, of size #adjSpaces x #adjSpaces
+        -:   53:    Eigen::SparseMatrix<double> tangentSpaceMass;                   //The inner-product mass for vectors in tangent spaces, of size #V (self masses) + #E (adjSpaces masses;  optional, usually for high-order fields)
+        -:   54:    Eigen::SparseMatrix<double> invTangentSpaceMass;
+        -:   55:    double avgAdjLength;                                            //The average distance between adjacent spaces
+        -:   56:    
+        -:   57:    //Extrinsic components
+        -:   58:    Eigen::MatrixXd sources;  //the source point of the extrinsic vectors
+        -:   59:    Eigen::MatrixXd normals;  //the normals to the tangent spaces (assuming 1-codimension)
+        -:   60:    Eigen::MatrixXd cycleSources;  //source point of cycles
+        -:   61:    Eigen::MatrixXd cycleNormals;  //normals to cycles
+        -:   62:    
+        1:   63:    TangentBundle() {}
+        1:   64:    ~TangentBundle() {}
+        -:   65:    
+        -:   66:    //projecting an arbitrary set of extrinsic vectors (e.g. coming from user-prescribed constraints) into intrinsic vectors.
+    #####:   67:    Eigen::MatrixXd virtual inline project_to_intrinsic(const Eigen::VectorXi &tangentSpaces, const Eigen::MatrixXd &extDirectionals) const {
+    #####:   68:        assert(false && "The base class does not have an embedding");
+        -:   69:        return Eigen::MatrixXd();
+        -:   70:    }
+        -:   71:    
+        -:   72:    //projecting extrinsic to intrinsic
+    #####:   73:    Eigen::MatrixXd virtual inline project_to_extrinsic(const Eigen::VectorXi &tangentSpaces, const Eigen::MatrixXd &extDirectionals) const {
+    #####:   74:        assert(false && "The base class does not have an embedding");
+        -:   75:        return Eigen::MatrixXd();
+        -:   76:    }
+        -:   77:    
+        -:   78:    //interpolating field from nodes in palces specified by barycentric coordinates. The interpolator needs to interpret them.
+    #####:   79:    void virtual inline interpolate(const Eigen::MatrixXi &elemIndices,
+        -:   80:                                    const Eigen::MatrixXd &baryCoords,
+        -:   81:                                    const Eigen::MatrixXd &intDirectionals,
+        -:   82:                                    Eigen::MatrixXd& interpSources,
+        -:   83:                                    Eigen::MatrixXd& interpNormals,
+        -:   84:                                    Eigen::MatrixXd& interpField)  const{
+    #####:   85:        interpSources=Eigen::MatrixXd();
+    #####:   86:        interpNormals=Eigen::MatrixXd();
+    #####:   87:        interpField=Eigen::MatrixXd();
+    #####:   88:    }
+        -:   89:    
+    #####:   90:    Eigen::SparseMatrix<double> virtual inline curl_matrix(const boundCondTypeEnum boundCondType,
+        -:   91:                                                           const Eigen::VectorXi& matching,
+        -:   92:                                                           const bool intrinsic = false) const{
+    #####:   93:        return Eigen::SparseMatrix<double>();
+        -:   94:    }
+        -:   95:    
+        -:   96:};
+        -:   97:
+        -:   98:}
+        -:   99:
+        -:  100:
+        -:  101:#endif

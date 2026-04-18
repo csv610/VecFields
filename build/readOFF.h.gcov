@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/include/directional/readOFF.h
-        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
-        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
-        -:    0:Runs:4
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
+        -:    0:Runs:5
         -:    1:// This file is part of Directional, a library for directional field processing.
         -:    2:// Copyright (C) 2022 Amir Vaxman <avaxman@gmail.com>
         -:    3://
@@ -23,35 +23,35 @@
         -:   19:namespace directional
         -:   20:{
         -:   21://Reading an OFF file into a TriMesh class
-        4:   22:bool inline readOFF(const std::string off_file_name,
+        5:   22:bool inline readOFF(const std::string off_file_name,
         -:   23:                    directional::TriMesh& mesh){
-        4:   24:    Eigen::MatrixXd V;
-        4:   25:    Eigen::MatrixXi F;
-        4:   26:    std::ifstream file(off_file_name);
-        4:   27:    if (!file.is_open()) {
+        5:   24:    Eigen::MatrixXd V;
+        5:   25:    Eigen::MatrixXi F;
+        5:   26:    std::ifstream file(off_file_name);
+        5:   27:    if (!file.is_open()) {
         2:   28:        std::cerr << "Failed to open OFF file" << std::endl;
         2:   29:        return false;
         -:   30:    }
         -:   31:    
-        2:   32:    std::string line;
+        3:   32:    std::string line;
         -:   33:    int numVertices, numFaces;
-        2:   34:    file >> line >> numVertices >> numFaces;
-        2:   35:    std::getline(file, line); // Skip remaining characters on first line
+        3:   34:    file >> line >> numVertices >> numFaces;
+        3:   35:    std::getline(file, line); // Skip remaining characters on first line
         -:   36:    
-        2:   37:    V.resize(numVertices, 3);
-     1252:   38:    for (int i = 0; i < numVertices; ++i)
-     1250:   39:        file >> V(i,0) >> V(i,1) >> V(i,2);
+        3:   37:    V.resize(numVertices, 3);
+     1878:   38:    for (int i = 0; i < numVertices; ++i)
+     1875:   39:        file >> V(i,0) >> V(i,1) >> V(i,2);
         -:   40:    
-        2:   41:    F.resize(numFaces,3);
-     2502:   42:    for (int i = 0; i < numFaces; ++i) {
+        3:   41:    F.resize(numFaces,3);
+     3753:   42:    for (int i = 0; i < numFaces; ++i) {
         -:   43:        int numVerticesPerFace;
-     2500:   44:        file >> numVerticesPerFace;
-     5000:   45:        assert(numVerticesPerFace==3 && "readOFF() is only intended for triangle meshes.");
-     2500:   46:        file >> F(i,0) >> F(i,1) >> F(i,2);
-     2500:   47:    }
-        2:   48:    mesh.set_mesh(V,F);
-        2:   49:    return true;
-        4:   50:}
+     3750:   44:        file >> numVerticesPerFace;
+     7500:   45:        assert(numVerticesPerFace==3 && "readOFF() is only intended for triangle meshes.");
+     3750:   46:        file >> F(i,0) >> F(i,1) >> F(i,2);
+     3750:   47:    }
+        3:   48:    mesh.set_mesh(V,F);
+        3:   49:    return true;
+        5:   50:}
         -:   51:}
         -:   52:
         -:   53:#endif

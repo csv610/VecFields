@@ -1,0 +1,87 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/SparseLU/SparseLU_Utils.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2012 Désiré Nuentsa-Wakam <desire.nuentsa_wakam@inria.fr>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:
+        -:   11:#ifndef EIGEN_SPARSELU_UTILS_H
+        -:   12:#define EIGEN_SPARSELU_UTILS_H
+        -:   13:
+        -:   14:// IWYU pragma: private
+        -:   15:#include "./InternalHeaderCheck.h"
+        -:   16:
+        -:   17:namespace Eigen {
+        -:   18:namespace internal {
+        -:   19:
+        -:   20:/**
+        -:   21: * \brief Count Nonzero elements in the factors
+        -:   22: */
+        -:   23:template <typename Scalar, typename StorageIndex>
+    #####:   24:void SparseLUImpl<Scalar,StorageIndex>::countnz(const Index n, Index& nnzL, Index& nnzU, GlobalLU_t& glu)
+        -:   25:{
+    #####:   26: nnzL = 0; 
+    #####:   27: nnzU = (glu.xusub)(n); 
+    #####:   28: Index nsuper = (glu.supno)(n); 
+        -:   29: Index jlen; 
+        -:   30: Index i, j, fsupc;
+    #####:   31: if (n <= 0 ) return; 
+        -:   32: // For each supernode
+    #####:   33: for (i = 0; i <= nsuper; i++)
+        -:   34: {
+    #####:   35:   fsupc = glu.xsup(i); 
+    #####:   36:   jlen = glu.xlsub(fsupc+1) - glu.xlsub(fsupc); 
+        -:   37:   
+    #####:   38:   for (j = fsupc; j < glu.xsup(i+1); j++)
+        -:   39:   {
+    #####:   40:     nnzL += jlen; 
+    #####:   41:     nnzU += j - fsupc + 1; 
+    #####:   42:     jlen--; 
+    #####:   43:   }
+    #####:   44: }
+    #####:   45:}
+        -:   46:
+        -:   47:/**
+        -:   48: * \brief Fix up the data storage lsub for L-subscripts. 
+        -:   49: * 
+        -:   50: * It removes the subscripts sets for structural pruning, 
+        -:   51: * and applies permutation to the remaining subscripts
+        -:   52: * 
+        -:   53: */
+        -:   54:template <typename Scalar, typename StorageIndex>
+    #####:   55:void SparseLUImpl<Scalar,StorageIndex>::fixupL(const Index n, const IndexVector& perm_r, GlobalLU_t& glu)
+        -:   56:{
+        -:   57:  Index fsupc, i, j, k, jstart; 
+        -:   58:  
+    #####:   59:  StorageIndex nextl = 0; 
+    #####:   60:  Index nsuper = (glu.supno)(n); 
+        -:   61:  
+        -:   62:  // For each supernode 
+    #####:   63:  for (i = 0; i <= nsuper; i++)
+        -:   64:  {
+    #####:   65:    fsupc = glu.xsup(i); 
+    #####:   66:    jstart = glu.xlsub(fsupc); 
+    #####:   67:    glu.xlsub(fsupc) = nextl; 
+    #####:   68:    for (j = jstart; j < glu.xlsub(fsupc + 1); j++)
+        -:   69:    {
+    #####:   70:      glu.lsub(nextl) = perm_r(glu.lsub(j)); // Now indexed into P*A
+    #####:   71:      nextl++;
+    #####:   72:    }
+    #####:   73:    for (k = fsupc+1; k < glu.xsup(i+1); k++)
+    #####:   74:      glu.xlsub(k) = nextl; // other columns in supernode i
+    #####:   75:  }
+        -:   76:  
+    #####:   77:  glu.xlsub(n) = nextl; 
+    #####:   78:}
+        -:   79:
+        -:   80:} // end namespace internal
+        -:   81:
+        -:   82:} // end namespace Eigen
+        -:   83:#endif // EIGEN_SPARSELU_UTILS_H

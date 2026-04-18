@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/SolverBase.h
-        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
-        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
-        -:    0:Runs:4
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -24,7 +24,7 @@
         -:   20:template<typename Derived>
         -:   21:struct solve_assertion {
         -:   22:    template<bool Transpose_, typename Rhs>
-     1490:   23:    static void run(const Derived& solver, const Rhs& b) { solver.template _check_solve_assertion<Transpose_>(b); }
+      120:   23:    static void run(const Derived& solver, const Rhs& b) { solver.template _check_solve_assertion<Transpose_>(b); }
         -:   24:};
         -:   25:
         -:   26:template<typename Derived>
@@ -97,11 +97,11 @@
         -:   93:    };
         -:   94:
         -:   95:    /** Default constructor */
-     1490:   96:    SolverBase()
-     1490:   97:    {}
+      120:   96:    SolverBase()
+      120:   97:    {}
         -:   98:
-     1490:   99:    ~SolverBase()
-     1490:  100:    {}
+      120:   99:    ~SolverBase()
+      120:  100:    {}
         -:  101:
         -:  102:    using Base::derived;
         -:  103:
@@ -109,10 +109,10 @@
         -:  105:      */
         -:  106:    template<typename Rhs>
         -:  107:    inline const Solve<Derived, Rhs>
-     1490:  108:    solve(const MatrixBase<Rhs>& b) const
+      120:  108:    solve(const MatrixBase<Rhs>& b) const
         -:  109:    {
-     1490:  110:      internal::solve_assertion<internal::remove_all_t<Derived>>::template run<false>(derived(), b);
-     1490:  111:      return Solve<Derived, Rhs>(derived(), b.derived());
+      120:  110:      internal::solve_assertion<internal::remove_all_t<Derived>>::template run<false>(derived(), b);
+      120:  111:      return Solve<Derived, Rhs>(derived(), b.derived());
         -:  112:    }
         -:  113:
         -:  114:    /** \internal the return type of transpose() */
@@ -151,11 +151,11 @@
         -:  147:  protected:
         -:  148:
         -:  149:    template<bool Transpose_, typename Rhs>
-     1490:  150:    void _check_solve_assertion(const Rhs& b) const {
+      120:  150:    void _check_solve_assertion(const Rhs& b) const {
         -:  151:        EIGEN_ONLY_USED_FOR_DEBUG(b);
-     2980:  152:        eigen_assert(derived().m_isInitialized && "Solver is not initialized.");
-     2980:  153:        eigen_assert((Transpose_?derived().cols():derived().rows())==b.rows() && "SolverBase::solve(): invalid number of rows of the right hand side matrix b");
-     1490:  154:    }
+      240:  152:        eigen_assert(derived().m_isInitialized && "Solver is not initialized.");
+      240:  153:        eigen_assert((Transpose_?derived().cols():derived().rows())==b.rows() && "SolverBase::solve(): invalid number of rows of the right hand side matrix b");
+      120:  154:    }
         -:  155:};
         -:  156:
         -:  157:namespace internal {

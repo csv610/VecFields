@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Eigenvalues/SelfAdjointEigenSolver.h
-        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
-        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
-        -:    0:Runs:4
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -180,17 +180,17 @@
         -:  176:      */
         -:  177:    template<typename InputType>
         -:  178:    EIGEN_DEVICE_FUNC
-     2980:  179:    explicit SelfAdjointEigenSolver(const EigenBase<InputType>& matrix, int options = ComputeEigenvectors)
-     1490:  180:      : m_eivec(matrix.rows(), matrix.cols()),
-     1490:  181:        m_workspace(matrix.cols()),
-     1490:  182:        m_eivalues(matrix.cols()),
-     1490:  183:        m_subdiag(matrix.rows() > 1 ? matrix.rows() - 1 : 1),
-     1490:  184:        m_hcoeffs(matrix.cols() > 1 ? matrix.cols() - 1 : 1),
-     1490:  185:        m_isInitialized(false),
-     1490:  186:        m_eigenvectorsOk(false)
-     1490:  187:    {
-     1490:  188:      compute(matrix.derived(), options);
-     2980:  189:    }
+      240:  179:    explicit SelfAdjointEigenSolver(const EigenBase<InputType>& matrix, int options = ComputeEigenvectors)
+      120:  180:      : m_eivec(matrix.rows(), matrix.cols()),
+      120:  181:        m_workspace(matrix.cols()),
+      120:  182:        m_eivalues(matrix.cols()),
+      120:  183:        m_subdiag(matrix.rows() > 1 ? matrix.rows() - 1 : 1),
+      120:  184:        m_hcoeffs(matrix.cols() > 1 ? matrix.cols() - 1 : 1),
+      120:  185:        m_isInitialized(false),
+      120:  186:        m_eigenvectorsOk(false)
+      120:  187:    {
+      120:  188:      compute(matrix.derived(), options);
+      240:  189:    }
         -:  190:
         -:  191:    /** \brief Computes eigendecomposition of given matrix.
         -:  192:      *
@@ -285,11 +285,11 @@
         -:  281:      * \sa eigenvalues()
         -:  282:      */
         -:  283:    EIGEN_DEVICE_FUNC
-     2980:  284:    const EigenvectorsType& eigenvectors() const
+      240:  284:    const EigenvectorsType& eigenvectors() const
         -:  285:    {
-     5960:  286:      eigen_assert(m_isInitialized && "SelfAdjointEigenSolver is not initialized.");
-     5960:  287:      eigen_assert(m_eigenvectorsOk && "The eigenvectors have not been computed together with the eigenvalues.");
-     2980:  288:      return m_eivec;
+      480:  286:      eigen_assert(m_isInitialized && "SelfAdjointEigenSolver is not initialized.");
+      480:  287:      eigen_assert(m_eigenvectorsOk && "The eigenvectors have not been computed together with the eigenvalues.");
+      240:  288:      return m_eivec;
         -:  289:    }
         -:  290:
         -:  291:    /** \brief Returns the eigenvalues of given matrix.
@@ -308,10 +308,10 @@
         -:  304:      * \sa eigenvectors(), MatrixBase::eigenvalues()
         -:  305:      */
         -:  306:    EIGEN_DEVICE_FUNC
-    10430:  307:    const RealVectorType& eigenvalues() const
+      840:  307:    const RealVectorType& eigenvalues() const
         -:  308:    {
-    20860:  309:      eigen_assert(m_isInitialized && "SelfAdjointEigenSolver is not initialized.");
-    10430:  310:      return m_eivalues;
+     1680:  309:      eigen_assert(m_isInitialized && "SelfAdjointEigenSolver is not initialized.");
+      840:  310:      return m_eivalues;
         -:  311:    }
         -:  312:
         -:  313:    /** \brief Computes the positive-definite square root of the matrix.
@@ -369,10 +369,10 @@
         -:  365:      * \returns \c Success if computation was successful, \c NoConvergence otherwise.
         -:  366:      */
         -:  367:    EIGEN_DEVICE_FUNC
-        -:  368:    ComputationInfo info() const
+    #####:  368:    ComputationInfo info() const
         -:  369:    {
-        -:  370:      eigen_assert(m_isInitialized && "SelfAdjointEigenSolver is not initialized.");
-        -:  371:      return m_info;
+    #####:  370:      eigen_assert(m_isInitialized && "SelfAdjointEigenSolver is not initialized.");
+    #####:  371:      return m_info;
         -:  372:    }
         -:  373:
         -:  374:    /** \brief Maximum number of iterations.
@@ -425,20 +425,20 @@
         -:  421:template<typename InputType>
         -:  422:EIGEN_DEVICE_FUNC
         -:  423:SelfAdjointEigenSolver<MatrixType>& SelfAdjointEigenSolver<MatrixType>
-     1490:  424:::compute(const EigenBase<InputType>& a_matrix, int options)
+      120:  424:::compute(const EigenBase<InputType>& a_matrix, int options)
         -:  425:{
-     1490:  426:  const InputType &matrix(a_matrix.derived());
+      120:  426:  const InputType &matrix(a_matrix.derived());
         -:  427:
         -:  428:  EIGEN_USING_STD(abs);
-     1490:  429:  eigen_assert(matrix.cols() == matrix.rows());
-     2980:  430:  eigen_assert((options&~(EigVecMask|GenEigMask))==0
+      120:  429:  eigen_assert(matrix.cols() == matrix.rows());
+      240:  430:  eigen_assert((options&~(EigVecMask|GenEigMask))==0
         -:  431:          && (options&EigVecMask)!=EigVecMask
         -:  432:          && "invalid option parameter");
-     1490:  433:  bool computeEigenvectors = (options&ComputeEigenvectors)==ComputeEigenvectors;
-     1490:  434:  Index n = matrix.cols();
-     1490:  435:  m_eivalues.resize(n,1);
+      120:  433:  bool computeEigenvectors = (options&ComputeEigenvectors)==ComputeEigenvectors;
+      120:  434:  Index n = matrix.cols();
+      120:  435:  m_eivalues.resize(n,1);
         -:  436:
-     1490:  437:  if(n==1)
+      120:  437:  if(n==1)
         -:  438:  {
     #####:  439:    m_eivec = matrix;
     #####:  440:    m_eivalues.coeffRef(0,0) = numext::real(m_eivec.coeff(0,0));
@@ -451,27 +451,27 @@
         -:  447:  }
         -:  448:
         -:  449:  // declare some aliases
-     1490:  450:  RealVectorType& diag = m_eivalues;
-     1490:  451:  EigenvectorsType& mat = m_eivec;
+      120:  450:  RealVectorType& diag = m_eivalues;
+      120:  451:  EigenvectorsType& mat = m_eivec;
         -:  452:
         -:  453:  // map the matrix coefficients to [-1:1] to avoid over- and underflow.
-     1490:  454:  mat = matrix.template triangularView<Lower>();
-     1490:  455:  RealScalar scale = mat.cwiseAbs().maxCoeff();
-     1490:  456:  if(numext::is_exactly_zero(scale)) scale = RealScalar(1);
-     1490:  457:  mat.template triangularView<Lower>() /= scale;
-     1490:  458:  m_subdiag.resize(n-1);
-     1490:  459:  m_hcoeffs.resize(n-1);
-     1490:  460:  internal::tridiagonalization_inplace(mat, diag, m_subdiag, m_hcoeffs, m_workspace, computeEigenvectors);
+      120:  454:  mat = matrix.template triangularView<Lower>();
+      120:  455:  RealScalar scale = mat.cwiseAbs().maxCoeff();
+      120:  456:  if(numext::is_exactly_zero(scale)) scale = RealScalar(1);
+      120:  457:  mat.template triangularView<Lower>() /= scale;
+      120:  458:  m_subdiag.resize(n-1);
+      120:  459:  m_hcoeffs.resize(n-1);
+      120:  460:  internal::tridiagonalization_inplace(mat, diag, m_subdiag, m_hcoeffs, m_workspace, computeEigenvectors);
         -:  461:
-     1490:  462:  m_info = internal::computeFromTridiagonal_impl(diag, m_subdiag, m_maxIterations, computeEigenvectors, m_eivec);
+      120:  462:  m_info = internal::computeFromTridiagonal_impl(diag, m_subdiag, m_maxIterations, computeEigenvectors, m_eivec);
         -:  463:  
         -:  464:  // scale back the eigen values
-     1490:  465:  m_eivalues *= scale;
+      120:  465:  m_eivalues *= scale;
         -:  466:
-     1490:  467:  m_isInitialized = true;
-     1490:  468:  m_eigenvectorsOk = computeEigenvectors;
-     1490:  469:  return *this;
-     1490:  470:}
+      120:  467:  m_isInitialized = true;
+      120:  468:  m_eigenvectorsOk = computeEigenvectors;
+      120:  469:  return *this;
+      120:  470:}
         -:  471:
         -:  472:template<typename MatrixType>
         -:  473:SelfAdjointEigenSolver<MatrixType>& SelfAdjointEigenSolver<MatrixType>
@@ -507,75 +507,75 @@
         -:  503:  */
         -:  504:template<typename MatrixType, typename DiagType, typename SubDiagType>
         -:  505:EIGEN_DEVICE_FUNC
-     1490:  506:ComputationInfo computeFromTridiagonal_impl(DiagType& diag, SubDiagType& subdiag, const Index maxIterations, bool computeEigenvectors, MatrixType& eivec)
+      120:  506:ComputationInfo computeFromTridiagonal_impl(DiagType& diag, SubDiagType& subdiag, const Index maxIterations, bool computeEigenvectors, MatrixType& eivec)
         -:  507:{
         -:  508:  ComputationInfo info;
         -:  509:  typedef typename MatrixType::Scalar Scalar;
         -:  510:
-     1490:  511:  Index n = diag.size();
-     1490:  512:  Index end = n-1;
-     1490:  513:  Index start = 0;
-     1490:  514:  Index iter = 0; // total number of iterations
+      120:  511:  Index n = diag.size();
+      120:  512:  Index end = n-1;
+      120:  513:  Index start = 0;
+      120:  514:  Index iter = 0; // total number of iterations
         -:  515:  
         -:  516:  typedef typename DiagType::RealScalar RealScalar;
-     1490:  517:  const RealScalar considerAsZero = (std::numeric_limits<RealScalar>::min)();
-     1490:  518:  const RealScalar precision_inv = RealScalar(1)/NumTraits<RealScalar>::epsilon();
-     2682:  519:  while (end>0)
+      120:  517:  const RealScalar considerAsZero = (std::numeric_limits<RealScalar>::min)();
+      120:  518:  const RealScalar precision_inv = RealScalar(1)/NumTraits<RealScalar>::epsilon();
+      120:  519:  while (end>0)
         -:  520:  {
-     5364:  521:    for (Index i = start; i<end; ++i) {
-     2682:  522:      if (numext::abs(subdiag[i]) < considerAsZero) {
-      302:  523:        subdiag[i] = RealScalar(0);
-      302:  524:      } else {
+      240:  521:    for (Index i = start; i<end; ++i) {
+      120:  522:      if (numext::abs(subdiag[i]) < considerAsZero) {
+      120:  523:        subdiag[i] = RealScalar(0);
+      120:  524:      } else {
         -:  525:        // abs(subdiag[i]) <= epsilon * sqrt(abs(diag[i]) + abs(diag[i+1]))
         -:  526:        // Scaled to prevent underflows.
-     2380:  527:        const RealScalar scaled_subdiag = precision_inv * subdiag[i];
-     2380:  528:        if (scaled_subdiag * scaled_subdiag <= (numext::abs(diag[i])+numext::abs(diag[i+1]))) {
-     1188:  529:          subdiag[i] = RealScalar(0);
-     1188:  530:        }
+    #####:  527:        const RealScalar scaled_subdiag = precision_inv * subdiag[i];
+    #####:  528:        if (scaled_subdiag * scaled_subdiag <= (numext::abs(diag[i])+numext::abs(diag[i+1]))) {
+    #####:  529:          subdiag[i] = RealScalar(0);
+    #####:  530:        }
         -:  531:      }
-     2682:  532:    }
+      120:  532:    }
         -:  533:
         -:  534:    // find the largest unreduced block at the end of the matrix.
-     4172:  535:    while (end>0 && numext::is_exactly_zero(subdiag[end - 1]))
+      240:  535:    while (end>0 && numext::is_exactly_zero(subdiag[end - 1]))
         -:  536:    {
-     1490:  537:      end--;
+      120:  537:      end--;
         -:  538:    }
-     2682:  539:    if (end<=0)
-     1490:  540:      break;
+      120:  539:    if (end<=0)
+      120:  540:      break;
         -:  541:
         -:  542:    // if we spent too many iterations, we give up
-     1192:  543:    iter++;
-     1192:  544:    if(iter > maxIterations * n) break;
+    #####:  543:    iter++;
+    #####:  544:    if(iter > maxIterations * n) break;
         -:  545:
-     1192:  546:    start = end - 1;
-     1192:  547:    while (start>0 && !numext::is_exactly_zero(subdiag[start - 1]))
+    #####:  546:    start = end - 1;
+    #####:  547:    while (start>0 && !numext::is_exactly_zero(subdiag[start - 1]))
     #####:  548:      start--;
         -:  549:
-     1192:  550:    internal::tridiagonal_qr_step<MatrixType::Flags&RowMajorBit ? RowMajor : ColMajor>(diag.data(), subdiag.data(), start, end, computeEigenvectors ? eivec.data() : (Scalar*)0, n);
+    #####:  550:    internal::tridiagonal_qr_step<MatrixType::Flags&RowMajorBit ? RowMajor : ColMajor>(diag.data(), subdiag.data(), start, end, computeEigenvectors ? eivec.data() : (Scalar*)0, n);
         -:  551:  }
-     1490:  552:  if (iter <= maxIterations * n)
-     1490:  553:    info = Success;
+      120:  552:  if (iter <= maxIterations * n)
+      120:  553:    info = Success;
         -:  554:  else
     #####:  555:    info = NoConvergence;
         -:  556:
         -:  557:  // Sort eigenvalues and corresponding vectors.
         -:  558:  // TODO make the sort optional ?
         -:  559:  // TODO use a better sort algorithm !!
-     1490:  560:  if (info == Success)
+      120:  560:  if (info == Success)
         -:  561:  {
-     2980:  562:    for (Index i = 0; i < n-1; ++i)
+      240:  562:    for (Index i = 0; i < n-1; ++i)
         -:  563:    {
         -:  564:      Index k;
-     1490:  565:      diag.segment(i,n-i).minCoeff(&k);
-     1490:  566:      if (k > 0)
+      120:  565:      diag.segment(i,n-i).minCoeff(&k);
+      120:  566:      if (k > 0)
         -:  567:      {
-      576:  568:        numext::swap(diag[i], diag[k+i]);
-      576:  569:        if(computeEigenvectors)
-      576:  570:          eivec.col(i).swap(eivec.col(k+i));
-      576:  571:      }
-     1490:  572:    }
-     1490:  573:  }
-     1490:  574:  return info;
+    #####:  568:        numext::swap(diag[i], diag[k+i]);
+    #####:  569:        if(computeEigenvectors)
+    #####:  570:          eivec.col(i).swap(eivec.col(k+i));
+    #####:  571:      }
+      120:  572:    }
+      120:  573:  }
+      120:  574:  return info;
         -:  575:}
         -:  576:  
         -:  577:template<typename SolverType,int Size,bool IsComplex> struct direct_selfadjoint_eigenvalues
@@ -842,66 +842,66 @@
         -:  838:// Francis implicit QR step.
         -:  839:template<int StorageOrder,typename RealScalar, typename Scalar, typename Index>
         -:  840:EIGEN_DEVICE_FUNC
-     1192:  841:static void tridiagonal_qr_step(RealScalar* diag, RealScalar* subdiag, Index start, Index end, Scalar* matrixQ, Index n)
+    #####:  841:static void tridiagonal_qr_step(RealScalar* diag, RealScalar* subdiag, Index start, Index end, Scalar* matrixQ, Index n)
         -:  842:{
         -:  843:  // Wilkinson Shift.
-     1192:  844:  RealScalar td = (diag[end-1] - diag[end])*RealScalar(0.5);
-     1192:  845:  RealScalar e = subdiag[end-1];
+    #####:  844:  RealScalar td = (diag[end-1] - diag[end])*RealScalar(0.5);
+    #####:  845:  RealScalar e = subdiag[end-1];
         -:  846:  // Note that thanks to scaling, e^2 or td^2 cannot overflow, however they can still
         -:  847:  // underflow thus leading to inf/NaN values when using the following commented code:
         -:  848:  //   RealScalar e2 = numext::abs2(subdiag[end-1]);
         -:  849:  //   RealScalar mu = diag[end] - e2 / (td + (td>0 ? 1 : -1) * sqrt(td*td + e2));
         -:  850:  // This explain the following, somewhat more complicated, version:
-     1192:  851:  RealScalar mu = diag[end];
-     1192:  852:  if(numext::is_exactly_zero(td)) {
+    #####:  851:  RealScalar mu = diag[end];
+    #####:  852:  if(numext::is_exactly_zero(td)) {
     #####:  853:    mu -= numext::abs(e);
-     1192:  854:  } else if (!numext::is_exactly_zero(e)) {
-     1192:  855:    const RealScalar e2 = numext::abs2(e);
-     1192:  856:    const RealScalar h = numext::hypot(td,e);
-     1192:  857:    if(numext::is_exactly_zero(e2)) {
+    #####:  854:  } else if (!numext::is_exactly_zero(e)) {
+    #####:  855:    const RealScalar e2 = numext::abs2(e);
+    #####:  856:    const RealScalar h = numext::hypot(td,e);
+    #####:  857:    if(numext::is_exactly_zero(e2)) {
     #####:  858:      mu -= e / ((td + (td>RealScalar(0) ? h : -h)) / e);
     #####:  859:    } else {
-     1192:  860:      mu -= e2 / (td + (td>RealScalar(0) ? h : -h)); 
+    #####:  860:      mu -= e2 / (td + (td>RealScalar(0) ? h : -h)); 
         -:  861:    }
-     1192:  862:  }
+    #####:  862:  }
         -:  863:
-     1192:  864:  RealScalar x = diag[start] - mu;
-     1192:  865:  RealScalar z = subdiag[start];
+    #####:  864:  RealScalar x = diag[start] - mu;
+    #####:  865:  RealScalar z = subdiag[start];
         -:  866:  // If z ever becomes zero, the Givens rotation will be the identity and
         -:  867:  // z will stay zero for all future iterations.
-     2384:  868:  for (Index k = start; k < end && !numext::is_exactly_zero(z); ++k)
+    #####:  868:  for (Index k = start; k < end && !numext::is_exactly_zero(z); ++k)
         -:  869:  {
-     1192:  870:    JacobiRotation<RealScalar> rot;
-     1192:  871:    rot.makeGivens(x, z);
+    #####:  870:    JacobiRotation<RealScalar> rot;
+    #####:  871:    rot.makeGivens(x, z);
         -:  872:
         -:  873:    // do T = G' T G
-     1192:  874:    RealScalar sdk = rot.s() * diag[k] + rot.c() * subdiag[k];
-     1192:  875:    RealScalar dkp1 = rot.s() * subdiag[k] + rot.c() * diag[k+1];
+    #####:  874:    RealScalar sdk = rot.s() * diag[k] + rot.c() * subdiag[k];
+    #####:  875:    RealScalar dkp1 = rot.s() * subdiag[k] + rot.c() * diag[k+1];
         -:  876:
-     1192:  877:    diag[k] = rot.c() * (rot.c() * diag[k] - rot.s() * subdiag[k]) - rot.s() * (rot.c() * subdiag[k] - rot.s() * diag[k+1]);
-     1192:  878:    diag[k+1] = rot.s() * sdk + rot.c() * dkp1;
-     1192:  879:    subdiag[k] = rot.c() * sdk - rot.s() * dkp1;
+    #####:  877:    diag[k] = rot.c() * (rot.c() * diag[k] - rot.s() * subdiag[k]) - rot.s() * (rot.c() * subdiag[k] - rot.s() * diag[k+1]);
+    #####:  878:    diag[k+1] = rot.s() * sdk + rot.c() * dkp1;
+    #####:  879:    subdiag[k] = rot.c() * sdk - rot.s() * dkp1;
         -:  880:    
-     1192:  881:    if (k > start)
+    #####:  881:    if (k > start)
     #####:  882:      subdiag[k - 1] = rot.c() * subdiag[k-1] - rot.s() * z;
         -:  883:
         -:  884:    // "Chasing the bulge" to return to triangular form.
-     1192:  885:    x = subdiag[k];
-     1192:  886:    if (k < end - 1)
+    #####:  885:    x = subdiag[k];
+    #####:  886:    if (k < end - 1)
         -:  887:    {
     #####:  888:      z = -rot.s() * subdiag[k+1];
     #####:  889:      subdiag[k + 1] = rot.c() * subdiag[k+1];
     #####:  890:    }
         -:  891:    
         -:  892:    // apply the givens rotation to the unit matrix Q = Q * G
-     1192:  893:    if (matrixQ)
+    #####:  893:    if (matrixQ)
         -:  894:    {
         -:  895:      // FIXME if StorageOrder == RowMajor this operation is not very efficient
-     1192:  896:      Map<Matrix<Scalar,Dynamic,Dynamic,StorageOrder> > q(matrixQ,n,n);
-     1192:  897:      q.applyOnTheRight(k,k+1,rot);
-     1192:  898:    }
-     1192:  899:  }
-     1192:  900:}
+    #####:  896:      Map<Matrix<Scalar,Dynamic,Dynamic,StorageOrder> > q(matrixQ,n,n);
+    #####:  897:      q.applyOnTheRight(k,k+1,rot);
+    #####:  898:    }
+    #####:  899:  }
+    #####:  900:}
         -:  901:
         -:  902:} // end namespace internal
         -:  903:

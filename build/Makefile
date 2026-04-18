@@ -249,6 +249,19 @@ vecfields_test_mesh_io/fast:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vecfields_test_mesh_io.dir/build.make tests/CMakeFiles/vecfields_test_mesh_io.dir/build
 .PHONY : vecfields_test_mesh_io/fast
 
+#=============================================================================
+# Target rules for targets named vecfields_test_field_processing
+
+# Build rule for target.
+vecfields_test_field_processing: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vecfields_test_field_processing
+.PHONY : vecfields_test_field_processing
+
+# fast build rule for target.
+vecfields_test_field_processing/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vecfields_test_field_processing.dir/build.make tests/CMakeFiles/vecfields_test_field_processing.dir/build
+.PHONY : vecfields_test_field_processing/fast
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -267,6 +280,7 @@ help:
 	@echo "... gtest"
 	@echo "... gtest_main"
 	@echo "... vecfields_test_basic"
+	@echo "... vecfields_test_field_processing"
 	@echo "... vecfields_test_mesh_io"
 .PHONY : help
 

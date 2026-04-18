@@ -1,0 +1,217 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/googletest/googlemock/src/gmock.cc
+        -:    0:Graph:./external/googletest/googlemock/CMakeFiles/gmock.dir/src/gmock-all.cc.gcno
+        -:    0:Data:-
+        -:    0:Runs:0
+        -:    1:// Copyright 2008, Google Inc.
+        -:    2:// All rights reserved.
+        -:    3://
+        -:    4:// Redistribution and use in source and binary forms, with or without
+        -:    5:// modification, are permitted provided that the following conditions are
+        -:    6:// met:
+        -:    7://
+        -:    8://     * Redistributions of source code must retain the above copyright
+        -:    9:// notice, this list of conditions and the following disclaimer.
+        -:   10://     * Redistributions in binary form must reproduce the above
+        -:   11:// copyright notice, this list of conditions and the following disclaimer
+        -:   12:// in the documentation and/or other materials provided with the
+        -:   13:// distribution.
+        -:   14://     * Neither the name of Google Inc. nor the names of its
+        -:   15:// contributors may be used to endorse or promote products derived from
+        -:   16:// this software without specific prior written permission.
+        -:   17://
+        -:   18:// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+        -:   19:// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+        -:   20:// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+        -:   21:// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+        -:   22:// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+        -:   23:// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+        -:   24:// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+        -:   25:// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+        -:   26:// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+        -:   27:// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+        -:   28:// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+        -:   29:
+        -:   30:
+        -:   31:#include "gmock/gmock.h"
+        -:   32:#include "gmock/internal/gmock-port.h"
+        -:   33:
+        -:   34:namespace testing {
+        -:   35:
+        -:   36:GMOCK_DEFINE_bool_(catch_leaked_mocks, true,
+        -:   37:                   "true if and only if Google Mock should report leaked "
+        -:   38:                   "mock objects as failures.");
+        -:   39:
+    #####:   40:GMOCK_DEFINE_string_(verbose, internal::kWarningVerbosity,
+        -:   41:                     "Controls how verbose Google Mock's output is."
+        -:   42:                     "  Valid values:\n"
+        -:   43:                     "  info    - prints all messages.\n"
+        -:   44:                     "  warning - prints warnings and errors.\n"
+        -:   45:                     "  error   - prints errors only.");
+        -:   46:
+        -:   47:GMOCK_DEFINE_int32_(default_mock_behavior, 1,
+        -:   48:                    "Controls the default behavior of mocks."
+        -:   49:                    "  Valid values:\n"
+        -:   50:                    "  0 - by default, mocks act as NiceMocks.\n"
+        -:   51:                    "  1 - by default, mocks act as NaggyMocks.\n"
+        -:   52:                    "  2 - by default, mocks act as StrictMocks.");
+        -:   53:
+        -:   54:namespace internal {
+        -:   55:
+        -:   56:// Parses a string as a command line flag.  The string should have the
+        -:   57:// format "--gmock_flag=value".  When def_optional is true, the
+        -:   58:// "=value" part can be omitted.
+        -:   59://
+        -:   60:// Returns the value of the flag, or NULL if the parsing failed.
+    #####:   61:static const char* ParseGoogleMockFlagValue(const char* str,
+        -:   62:                                            const char* flag,
+        -:   63:                                            bool def_optional) {
+        -:   64:  // str and flag must not be NULL.
+    #####:   65:  if (str == nullptr || flag == nullptr) return nullptr;
+        -:   66:
+        -:   67:  // The flag must start with "--gmock_".
+    #####:   68:  const std::string flag_str = std::string("--gmock_") + flag;
+    #####:   69:  const size_t flag_len = flag_str.length();
+    #####:   70:  if (strncmp(str, flag_str.c_str(), flag_len) != 0) return nullptr;
+        -:   71:
+        -:   72:  // Skips the flag name.
+    #####:   73:  const char* flag_end = str + flag_len;
+        -:   74:
+        -:   75:  // When def_optional is true, it's OK to not have a "=value" part.
+    #####:   76:  if (def_optional && (flag_end[0] == '\0')) {
+    #####:   77:    return flag_end;
+        -:   78:  }
+        -:   79:
+        -:   80:  // If def_optional is true and there are more characters after the
+        -:   81:  // flag name, or if def_optional is false, there must be a '=' after
+        -:   82:  // the flag name.
+    #####:   83:  if (flag_end[0] != '=') return nullptr;
+        -:   84:
+        -:   85:  // Returns the string after "=".
+    #####:   86:  return flag_end + 1;
+    #####:   87:}
+        -:   88:
+        -:   89:// Parses a string for a Google Mock bool flag, in the form of
+        -:   90:// "--gmock_flag=value".
+        -:   91://
+        -:   92:// On success, stores the value of the flag in *value, and returns
+        -:   93:// true.  On failure, returns false without changing *value.
+    #####:   94:static bool ParseGoogleMockBoolFlag(const char* str, const char* flag,
+        -:   95:                                    bool* value) {
+        -:   96:  // Gets the value of the flag as a string.
+    #####:   97:  const char* const value_str = ParseGoogleMockFlagValue(str, flag, true);
+        -:   98:
+        -:   99:  // Aborts if the parsing failed.
+    #####:  100:  if (value_str == nullptr) return false;
+        -:  101:
+        -:  102:  // Converts the string value to a bool.
+    #####:  103:  *value = !(*value_str == '0' || *value_str == 'f' || *value_str == 'F');
+    #####:  104:  return true;
+    #####:  105:}
+        -:  106:
+        -:  107:// Parses a string for a Google Mock string flag, in the form of
+        -:  108:// "--gmock_flag=value".
+        -:  109://
+        -:  110:// On success, stores the value of the flag in *value, and returns
+        -:  111:// true.  On failure, returns false without changing *value.
+        -:  112:template <typename String>
+    #####:  113:static bool ParseGoogleMockStringFlag(const char* str, const char* flag,
+        -:  114:                                      String* value) {
+        -:  115:  // Gets the value of the flag as a string.
+    #####:  116:  const char* const value_str = ParseGoogleMockFlagValue(str, flag, false);
+        -:  117:
+        -:  118:  // Aborts if the parsing failed.
+    #####:  119:  if (value_str == nullptr) return false;
+        -:  120:
+        -:  121:  // Sets *value to the value of the flag.
+    #####:  122:  *value = value_str;
+    #####:  123:  return true;
+    #####:  124:}
+        -:  125:
+    #####:  126:static bool ParseGoogleMockIntFlag(const char* str, const char* flag,
+        -:  127:                                   int* value) {
+        -:  128:  // Gets the value of the flag as a string.
+    #####:  129:  const char* const value_str = ParseGoogleMockFlagValue(str, flag, true);
+        -:  130:
+        -:  131:  // Aborts if the parsing failed.
+    #####:  132:  if (value_str == nullptr) return false;
+        -:  133:
+        -:  134:  // Sets *value to the value of the flag.
+    #####:  135:  return ParseInt32(Message() << "The value of flag --" << flag,
+    #####:  136:                    value_str, value);
+    #####:  137:}
+        -:  138:
+        -:  139:// The internal implementation of InitGoogleMock().
+        -:  140://
+        -:  141:// The type parameter CharType can be instantiated to either char or
+        -:  142:// wchar_t.
+        -:  143:template <typename CharType>
+    #####:  144:void InitGoogleMockImpl(int* argc, CharType** argv) {
+        -:  145:  // Makes sure Google Test is initialized.  InitGoogleTest() is
+        -:  146:  // idempotent, so it's fine if the user has already called it.
+    #####:  147:  InitGoogleTest(argc, argv);
+    #####:  148:  if (*argc <= 0) return;
+        -:  149:
+    #####:  150:  for (int i = 1; i != *argc; i++) {
+    #####:  151:    const std::string arg_string = StreamableToString(argv[i]);
+    #####:  152:    const char* const arg = arg_string.c_str();
+        -:  153:
+        -:  154:    // Do we see a Google Mock flag?
+    #####:  155:    if (ParseGoogleMockBoolFlag(arg, "catch_leaked_mocks",
+    #####:  156:                                &GMOCK_FLAG(catch_leaked_mocks)) ||
+    #####:  157:        ParseGoogleMockStringFlag(arg, "verbose", &GMOCK_FLAG(verbose)) ||
+    #####:  158:        ParseGoogleMockIntFlag(arg, "default_mock_behavior",
+        -:  159:                               &GMOCK_FLAG(default_mock_behavior))) {
+        -:  160:      // Yes.  Shift the remainder of the argv list left by one.  Note
+        -:  161:      // that argv has (*argc + 1) elements, the last one always being
+        -:  162:      // NULL.  The following loop moves the trailing NULL element as
+        -:  163:      // well.
+    #####:  164:      for (int j = i; j != *argc; j++) {
+    #####:  165:        argv[j] = argv[j + 1];
+    #####:  166:      }
+        -:  167:
+        -:  168:      // Decrements the argument count.
+    #####:  169:      (*argc)--;
+        -:  170:
+        -:  171:      // We also need to decrement the iterator as we just removed
+        -:  172:      // an element.
+    #####:  173:      i--;
+    #####:  174:    }
+    #####:  175:  }
+    #####:  176:}
+        -:  177:
+        -:  178:}  // namespace internal
+        -:  179:
+        -:  180:// Initializes Google Mock.  This must be called before running the
+        -:  181:// tests.  In particular, it parses a command line for the flags that
+        -:  182:// Google Mock recognizes.  Whenever a Google Mock flag is seen, it is
+        -:  183:// removed from argv, and *argc is decremented.
+        -:  184://
+        -:  185:// No value is returned.  Instead, the Google Mock flag variables are
+        -:  186:// updated.
+        -:  187://
+        -:  188:// Since Google Test is needed for Google Mock to work, this function
+        -:  189:// also initializes Google Test and parses its flags, if that hasn't
+        -:  190:// been done.
+    #####:  191:GTEST_API_ void InitGoogleMock(int* argc, char** argv) {
+    #####:  192:  internal::InitGoogleMockImpl(argc, argv);
+    #####:  193:}
+        -:  194:
+        -:  195:// This overloaded version can be used in Windows programs compiled in
+        -:  196:// UNICODE mode.
+    #####:  197:GTEST_API_ void InitGoogleMock(int* argc, wchar_t** argv) {
+    #####:  198:  internal::InitGoogleMockImpl(argc, argv);
+    #####:  199:}
+        -:  200:
+        -:  201:// This overloaded version can be used on Arduino/embedded platforms where
+        -:  202:// there is no argc/argv.
+    #####:  203:GTEST_API_ void InitGoogleMock() {
+        -:  204:  // Since Arduino doesn't have a command line, fake out the argc/argv arguments
+    #####:  205:  int argc = 1;
+    #####:  206:  const auto arg0 = "dummy";
+    #####:  207:  char* argv0 = const_cast<char*>(arg0);
+    #####:  208:  char** argv = &argv0;
+        -:  209:
+    #####:  210:  internal::InitGoogleMockImpl(&argc, argv);
+    #####:  211:}
+        -:  212:
+        -:  213:}  // namespace testing

@@ -1,0 +1,1867 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/OrderingMethods/Eigen_Colamd.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// // This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2012 Desire Nuentsa Wakam <desire.nuentsa_wakam@inria.fr>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:// This file is modified from the colamd/symamd library. The copyright is below
+        -:   11:
+        -:   12://   The authors of the code itself are Stefan I. Larimore and Timothy A.
+        -:   13://   Davis (davis@cise.ufl.edu), University of Florida.  The algorithm was
+        -:   14://   developed in collaboration with John Gilbert, Xerox PARC, and Esmond
+        -:   15://   Ng, Oak Ridge National Laboratory.
+        -:   16://
+        -:   17://     Date:
+        -:   18://
+        -:   19://   September 8, 2003.  Version 2.3.
+        -:   20://
+        -:   21://     Acknowledgements:
+        -:   22://
+        -:   23://   This work was supported by the National Science Foundation, under
+        -:   24://   grants DMS-9504974 and DMS-9803599.
+        -:   25://
+        -:   26://     Notice:
+        -:   27://
+        -:   28://   Copyright (c) 1998-2003 by the University of Florida.
+        -:   29://   All Rights Reserved.
+        -:   30://
+        -:   31://   THIS MATERIAL IS PROVIDED AS IS, WITH ABSOLUTELY NO WARRANTY
+        -:   32://   EXPRESSED OR IMPLIED.  ANY USE IS AT YOUR OWN RISK.
+        -:   33://
+        -:   34://   Permission is hereby granted to use, copy, modify, and/or distribute
+        -:   35://   this program, provided that the Copyright, this License, and the
+        -:   36://   Availability of the original version is retained on all copies and made
+        -:   37://   accessible to the end-user of any code or package that includes COLAMD
+        -:   38://   or any modified version of COLAMD.
+        -:   39://
+        -:   40://     Availability:
+        -:   41://
+        -:   42://   The colamd/symamd library is available at
+        -:   43://
+        -:   44://       http://www.suitesparse.com
+        -:   45:
+        -:   46:
+        -:   47:#ifndef EIGEN_COLAMD_H
+        -:   48:#define EIGEN_COLAMD_H
+        -:   49:
+        -:   50:namespace internal {
+        -:   51:
+        -:   52:namespace Colamd {
+        -:   53:
+        -:   54:/* Ensure that debugging is turned off: */
+        -:   55:#ifndef COLAMD_NDEBUG
+        -:   56:#define COLAMD_NDEBUG
+        -:   57:#endif /* NDEBUG */
+        -:   58:
+        -:   59:
+        -:   60:/* ========================================================================== */
+        -:   61:/* === Knob and statistics definitions ====================================== */
+        -:   62:/* ========================================================================== */
+        -:   63:
+        -:   64:/* size of the knobs [ ] array.  Only knobs [0..1] are currently used. */
+        -:   65:const int NKnobs = 20;
+        -:   66:
+        -:   67:/* number of output statistics.  Only stats [0..6] are currently used. */
+        -:   68:const int NStats = 20;
+        -:   69:
+        -:   70:/* Indices into knobs and stats array. */
+        -:   71:enum KnobsStatsIndex {
+        -:   72:  /* knobs [0] and stats [0]: dense row knob and output statistic. */
+        -:   73:  DenseRow = 0,
+        -:   74:
+        -:   75:  /* knobs [1] and stats [1]: dense column knob and output statistic. */
+        -:   76:  DenseCol = 1,
+        -:   77:
+        -:   78:  /* stats [2]: memory defragmentation count output statistic */
+        -:   79:  DefragCount = 2,
+        -:   80:
+        -:   81:  /* stats [3]: colamd status:  zero OK, > 0 warning or notice, < 0 error */
+        -:   82:  Status = 3,
+        -:   83:
+        -:   84:  /* stats [4..6]: error info, or info on jumbled columns */
+        -:   85:  Info1 = 4,
+        -:   86:  Info2 = 5,
+        -:   87:  Info3 = 6
+        -:   88:};
+        -:   89:
+        -:   90:/* error codes returned in stats [3]: */
+        -:   91:enum Status {
+        -:   92:  Ok = 0,
+        -:   93:  OkButJumbled = 1,
+        -:   94:  ErrorANotPresent = -1,
+        -:   95:  ErrorPNotPresent = -2,
+        -:   96:  ErrorNrowNegative = -3,
+        -:   97:  ErrorNcolNegative = -4,
+        -:   98:  ErrorNnzNegative = -5,
+        -:   99:  ErrorP0Nonzero = -6,
+        -:  100:  ErrorATooSmall = -7,
+        -:  101:  ErrorColLengthNegative = -8,
+        -:  102:  ErrorRowIndexOutOfBounds = -9,
+        -:  103:  ErrorOutOfMemory = -10,
+        -:  104:  ErrorInternalError = -999
+        -:  105:};
+        -:  106:/* ========================================================================== */
+        -:  107:/* === Definitions ========================================================== */
+        -:  108:/* ========================================================================== */
+        -:  109:
+        -:  110:template <typename IndexType>
+    #####:  111:IndexType ones_complement(const IndexType r) {
+    #####:  112:  return (-(r)-1);
+        -:  113:}
+        -:  114:
+        -:  115:/* -------------------------------------------------------------------------- */
+        -:  116:const int Empty = -1;
+        -:  117:
+        -:  118:/* Row and column status */
+        -:  119:enum RowColumnStatus {
+        -:  120:  Alive = 0,
+        -:  121:  Dead = -1
+        -:  122:};
+        -:  123:
+        -:  124:/* Column status */
+        -:  125:enum ColumnStatus {
+        -:  126:  DeadPrincipal = -1,
+        -:  127:  DeadNonPrincipal = -2
+        -:  128:};
+        -:  129:
+        -:  130:/* ========================================================================== */
+        -:  131:/* === Colamd reporting mechanism =========================================== */
+        -:  132:/* ========================================================================== */
+        -:  133:
+        -:  134:// == Row and Column structures ==
+        -:  135:template <typename IndexType>
+        -:  136:struct ColStructure
+        -:  137:{
+        -:  138:  IndexType start ;   /* index for A of first row in this column, or Dead */
+        -:  139:  /* if column is dead */
+        -:  140:  IndexType length ;  /* number of rows in this column */
+        -:  141:  union
+        -:  142:  {
+        -:  143:    IndexType thickness ; /* number of original columns represented by this */
+        -:  144:    /* col, if the column is alive */
+        -:  145:    IndexType parent ;  /* parent in parent tree super-column structure, if */
+        -:  146:    /* the column is dead */
+        -:  147:  } shared1 ;
+        -:  148:  union
+        -:  149:  {
+        -:  150:    IndexType score ; /* the score used to maintain heap, if col is alive */
+        -:  151:    IndexType order ; /* pivot ordering of this column, if col is dead */
+        -:  152:  } shared2 ;
+        -:  153:  union
+        -:  154:  {
+        -:  155:    IndexType headhash ;  /* head of a hash bucket, if col is at the head of */
+        -:  156:    /* a degree list */
+        -:  157:    IndexType hash ;  /* hash value, if col is not in a degree list */
+        -:  158:    IndexType prev ;  /* previous column in degree list, if col is in a */
+        -:  159:    /* degree list (but not at the head of a degree list) */
+        -:  160:  } shared3 ;
+        -:  161:  union
+        -:  162:  {
+        -:  163:    IndexType degree_next ; /* next column, if col is in a degree list */
+        -:  164:    IndexType hash_next ;   /* next column, if col is in a hash list */
+        -:  165:  } shared4 ;
+        -:  166:
+    #####:  167:  inline bool is_dead() const { return start < Alive; }
+        -:  168:
+    #####:  169:  inline bool is_alive() const { return start >= Alive; }
+        -:  170:
+    #####:  171:  inline bool is_dead_principal() const { return start == DeadPrincipal; }
+        -:  172:
+    #####:  173:  inline void kill_principal() { start = DeadPrincipal; }
+        -:  174:
+    #####:  175:  inline void kill_non_principal() { start = DeadNonPrincipal; }
+        -:  176:
+        -:  177:};
+        -:  178:
+        -:  179:template <typename IndexType>
+        -:  180:struct RowStructure
+        -:  181:{
+        -:  182:  IndexType start ;   /* index for A of first col in this row */
+        -:  183:  IndexType length ;  /* number of principal columns in this row */
+        -:  184:  union
+        -:  185:  {
+        -:  186:    IndexType degree ;  /* number of principal & non-principal columns in row */
+        -:  187:    IndexType p ;   /* used as a row pointer in init_rows_cols () */
+        -:  188:  } shared1 ;
+        -:  189:  union
+        -:  190:  {
+        -:  191:    IndexType mark ;  /* for computing set differences and marking dead rows*/
+        -:  192:    IndexType first_column ;/* first column in row (used in garbage collection) */
+        -:  193:  } shared2 ;
+        -:  194:
+    #####:  195:  inline bool is_dead() const { return shared2.mark < Alive; }
+        -:  196:
+    #####:  197:  inline bool is_alive() const { return shared2.mark >= Alive; }
+        -:  198:
+    #####:  199:  inline void kill() { shared2.mark = Dead; }
+        -:  200:
+        -:  201:};
+        -:  202:
+        -:  203:/* ========================================================================== */
+        -:  204:/* === Colamd recommended memory size ======================================= */
+        -:  205:/* ========================================================================== */
+        -:  206:
+        -:  207:/*
+        -:  208:  The recommended length Alen of the array A passed to colamd is given by
+        -:  209:  the COLAMD_RECOMMENDED (nnz, n_row, n_col) macro.  It returns -1 if any
+        -:  210:  argument is negative.  2*nnz space is required for the row and column
+        -:  211:  indices of the matrix. colamd_c (n_col) + colamd_r (n_row) space is
+        -:  212:  required for the Col and Row arrays, respectively, which are internal to
+        -:  213:  colamd.  An additional n_col space is the minimal amount of "elbow room",
+        -:  214:  and nnz/5 more space is recommended for run time efficiency.
+        -:  215:
+        -:  216:  This macro is not needed when using symamd.
+        -:  217:
+        -:  218:  Explicit typecast to IndexType added Sept. 23, 2002, COLAMD version 2.2, to avoid
+        -:  219:  gcc -pedantic warning messages.
+        -:  220:*/
+        -:  221:template <typename IndexType>
+    #####:  222:inline IndexType colamd_c(IndexType n_col)
+    #####:  223:{ return IndexType( ((n_col) + 1) * sizeof (ColStructure<IndexType>) / sizeof (IndexType) ) ; }
+        -:  224:
+        -:  225:template <typename IndexType>
+    #####:  226:inline IndexType  colamd_r(IndexType n_row)
+    #####:  227:{ return IndexType(((n_row) + 1) * sizeof (RowStructure<IndexType>) / sizeof (IndexType)); }
+        -:  228:
+        -:  229:// Prototypes of non-user callable routines
+        -:  230:template <typename IndexType>
+        -:  231:static IndexType init_rows_cols (IndexType n_row, IndexType n_col, RowStructure<IndexType> Row [], ColStructure<IndexType> col [], IndexType A [], IndexType p [], IndexType stats[NStats] );
+        -:  232:
+        -:  233:template <typename IndexType>
+        -:  234:static void init_scoring (IndexType n_row, IndexType n_col, RowStructure<IndexType> Row [], ColStructure<IndexType> Col [], IndexType A [], IndexType head [], double knobs[NKnobs], IndexType *p_n_row2, IndexType *p_n_col2, IndexType *p_max_deg);
+        -:  235:
+        -:  236:template <typename IndexType>
+        -:  237:static IndexType find_ordering (IndexType n_row, IndexType n_col, IndexType Alen, RowStructure<IndexType> Row [], ColStructure<IndexType> Col [], IndexType A [], IndexType head [], IndexType n_col2, IndexType max_deg, IndexType pfree);
+        -:  238:
+        -:  239:template <typename IndexType>
+        -:  240:static void order_children (IndexType n_col, ColStructure<IndexType> Col [], IndexType p []);
+        -:  241:
+        -:  242:template <typename IndexType>
+        -:  243:static void detect_super_cols (ColStructure<IndexType> Col [], IndexType A [], IndexType head [], IndexType row_start, IndexType row_length ) ;
+        -:  244:
+        -:  245:template <typename IndexType>
+        -:  246:static IndexType garbage_collection (IndexType n_row, IndexType n_col, RowStructure<IndexType> Row [], ColStructure<IndexType> Col [], IndexType A [], IndexType *pfree) ;
+        -:  247:
+        -:  248:template <typename IndexType>
+        -:  249:static inline  IndexType clear_mark (IndexType n_row, RowStructure<IndexType> Row [] ) ;
+        -:  250:
+        -:  251:/* === No debugging ========================================================= */
+        -:  252:
+        -:  253:#define COLAMD_DEBUG0(params) ;
+        -:  254:#define COLAMD_DEBUG1(params) ;
+        -:  255:#define COLAMD_DEBUG2(params) ;
+        -:  256:#define COLAMD_DEBUG3(params) ;
+        -:  257:#define COLAMD_DEBUG4(params) ;
+        -:  258:
+        -:  259:#define COLAMD_ASSERT(expression) ((void) 0)
+        -:  260:
+        -:  261:
+        -:  262:/**
+        -:  263: * \brief Returns the recommended value of Alen
+        -:  264: *
+        -:  265: * Returns recommended value of Alen for use by colamd.
+        -:  266: * Returns -1 if any input argument is negative.
+        -:  267: * The use of this routine or macro is optional.
+        -:  268: * Note that the macro uses its arguments   more than once,
+        -:  269: * so be careful for side effects, if you pass expressions as arguments to COLAMD_RECOMMENDED.
+        -:  270: *
+        -:  271: * \param nnz nonzeros in A
+        -:  272: * \param n_row number of rows in A
+        -:  273: * \param n_col number of columns in A
+        -:  274: * \return recommended value of Alen for use by colamd
+        -:  275: */
+        -:  276:template <typename IndexType>
+    #####:  277:inline IndexType recommended ( IndexType nnz, IndexType n_row, IndexType n_col)
+        -:  278:{
+    #####:  279:  if ((nnz) < 0 || (n_row) < 0 || (n_col) < 0)
+    #####:  280:    return (-1);
+        -:  281:  else
+    #####:  282:    return (2 * (nnz) + colamd_c (n_col) + colamd_r (n_row) + (n_col) + ((nnz) / 5));
+    #####:  283:}
+        -:  284:
+        -:  285:/**
+        -:  286: * \brief set default parameters  The use of this routine is optional.
+        -:  287: *
+        -:  288: * Colamd: rows with more than (knobs [DenseRow] * n_col)
+        -:  289: * entries are removed prior to ordering.  Columns with more than
+        -:  290: * (knobs [DenseCol] * n_row) entries are removed prior to
+        -:  291: * ordering, and placed last in the output column ordering.
+        -:  292: *
+        -:  293: * DenseRow and DenseCol are defined as 0 and 1,
+        -:  294: * respectively, in colamd.h.  Default values of these two knobs
+        -:  295: * are both 0.5.  Currently, only knobs [0] and knobs [1] are
+        -:  296: * used, but future versions may use more knobs.  If so, they will
+        -:  297: * be properly set to their defaults by the future version of
+        -:  298: * colamd_set_defaults, so that the code that calls colamd will
+        -:  299: * not need to change, assuming that you either use
+        -:  300: * colamd_set_defaults, or pass a (double *) NULL pointer as the
+        -:  301: * knobs array to colamd or symamd.
+        -:  302: *
+        -:  303: * \param knobs parameter settings for colamd
+        -:  304: */
+        -:  305:
+    #####:  306:static inline void set_defaults(double knobs[NKnobs])
+        -:  307:{
+        -:  308:  /* === Local variables ================================================== */
+        -:  309:
+        -:  310:  int i ;
+        -:  311:
+    #####:  312:  if (!knobs)
+        -:  313:  {
+    #####:  314:    return ;      /* no knobs to initialize */
+        -:  315:  }
+    #####:  316:  for (i = 0 ; i < NKnobs ; i++)
+        -:  317:  {
+    #####:  318:    knobs [i] = 0 ;
+    #####:  319:  }
+    #####:  320:  knobs [Colamd::DenseRow] = 0.5 ;  /* ignore rows over 50% dense */
+    #####:  321:  knobs [Colamd::DenseCol] = 0.5 ;  /* ignore columns over 50% dense */
+    #####:  322:}
+        -:  323:
+        -:  324:/**
+        -:  325: * \brief  Computes a column ordering using the column approximate minimum degree ordering
+        -:  326: *
+        -:  327: * Computes a column ordering (Q) of A such that P(AQ)=LU or
+        -:  328: * (AQ)'AQ=LL' have less fill-in and require fewer floating point
+        -:  329: * operations than factorizing the unpermuted matrix A or A'A,
+        -:  330: * respectively.
+        -:  331: *
+        -:  332: *
+        -:  333: * \param n_row number of rows in A
+        -:  334: * \param n_col number of columns in A
+        -:  335: * \param Alen, size of the array A
+        -:  336: * \param A row indices of the matrix, of size ALen
+        -:  337: * \param p column pointers of A, of size n_col+1
+        -:  338: * \param knobs parameter settings for colamd
+        -:  339: * \param stats colamd output statistics and error codes
+        -:  340: */
+        -:  341:template <typename IndexType>
+    #####:  342:static bool compute_ordering(IndexType n_row, IndexType n_col, IndexType Alen, IndexType *A, IndexType *p, double knobs[NKnobs], IndexType stats[NStats])
+        -:  343:{
+        -:  344:  /* === Local variables ================================================== */
+        -:  345:
+        -:  346:  IndexType i ;     /* loop index */
+        -:  347:  IndexType nnz ;     /* nonzeros in A */
+        -:  348:  IndexType Row_size ;    /* size of Row [], in integers */
+        -:  349:  IndexType Col_size ;    /* size of Col [], in integers */
+        -:  350:  IndexType need ;      /* minimum required length of A */
+        -:  351:  Colamd::RowStructure<IndexType> *Row ;   /* pointer into A of Row [0..n_row] array */
+        -:  352:  Colamd::ColStructure<IndexType> *Col ;   /* pointer into A of Col [0..n_col] array */
+        -:  353:  IndexType n_col2 ;    /* number of non-dense, non-empty columns */
+        -:  354:  IndexType n_row2 ;    /* number of non-dense, non-empty rows */
+        -:  355:  IndexType ngarbage ;    /* number of garbage collections performed */
+        -:  356:  IndexType max_deg ;   /* maximum row degree */
+        -:  357:  double default_knobs [NKnobs] ; /* default knobs array */
+        -:  358:
+        -:  359:
+        -:  360:  /* === Check the input arguments ======================================== */
+        -:  361:
+    #####:  362:  if (!stats)
+        -:  363:  {
+        -:  364:    COLAMD_DEBUG0 (("colamd: stats not present\n")) ;
+    #####:  365:    return (false) ;
+        -:  366:  }
+    #####:  367:  for (i = 0 ; i < NStats ; i++)
+        -:  368:  {
+    #####:  369:    stats [i] = 0 ;
+    #####:  370:  }
+    #####:  371:  stats [Colamd::Status] = Colamd::Ok ;
+    #####:  372:  stats [Colamd::Info1] = -1 ;
+    #####:  373:  stats [Colamd::Info2] = -1 ;
+        -:  374:
+    #####:  375:  if (!A)   /* A is not present */
+        -:  376:  {
+    #####:  377:    stats [Colamd::Status] = Colamd::ErrorANotPresent ;
+        -:  378:    COLAMD_DEBUG0 (("colamd: A not present\n")) ;
+    #####:  379:    return (false) ;
+        -:  380:  }
+        -:  381:
+    #####:  382:  if (!p)   /* p is not present */
+        -:  383:  {
+    #####:  384:    stats [Colamd::Status] = Colamd::ErrorPNotPresent ;
+        -:  385:    COLAMD_DEBUG0 (("colamd: p not present\n")) ;
+    #####:  386:    return (false) ;
+        -:  387:  }
+        -:  388:
+    #####:  389:  if (n_row < 0)  /* n_row must be >= 0 */
+        -:  390:  {
+    #####:  391:    stats [Colamd::Status] = Colamd::ErrorNrowNegative ;
+    #####:  392:    stats [Colamd::Info1] = n_row ;
+        -:  393:    COLAMD_DEBUG0 (("colamd: nrow negative %d\n", n_row)) ;
+    #####:  394:    return (false) ;
+        -:  395:  }
+        -:  396:
+    #####:  397:  if (n_col < 0)  /* n_col must be >= 0 */
+        -:  398:  {
+    #####:  399:    stats [Colamd::Status] = Colamd::ErrorNcolNegative ;
+    #####:  400:    stats [Colamd::Info1] = n_col ;
+        -:  401:    COLAMD_DEBUG0 (("colamd: ncol negative %d\n", n_col)) ;
+    #####:  402:    return (false) ;
+        -:  403:  }
+        -:  404:
+    #####:  405:  nnz = p [n_col] ;
+    #####:  406:  if (nnz < 0)  /* nnz must be >= 0 */
+        -:  407:  {
+    #####:  408:    stats [Colamd::Status] = Colamd::ErrorNnzNegative ;
+    #####:  409:    stats [Colamd::Info1] = nnz ;
+        -:  410:    COLAMD_DEBUG0 (("colamd: number of entries negative %d\n", nnz)) ;
+    #####:  411:    return (false) ;
+        -:  412:  }
+        -:  413:
+    #####:  414:  if (p [0] != 0)
+        -:  415:  {
+    #####:  416:    stats [Colamd::Status] = Colamd::ErrorP0Nonzero ;
+    #####:  417:    stats [Colamd::Info1] = p [0] ;
+        -:  418:    COLAMD_DEBUG0 (("colamd: p[0] not zero %d\n", p [0])) ;
+    #####:  419:    return (false) ;
+        -:  420:  }
+        -:  421:
+        -:  422:  /* === If no knobs, set default knobs =================================== */
+        -:  423:
+    #####:  424:  if (!knobs)
+        -:  425:  {
+    #####:  426:    set_defaults (default_knobs) ;
+    #####:  427:    knobs = default_knobs ;
+    #####:  428:  }
+        -:  429:
+        -:  430:  /* === Allocate the Row and Col arrays from array A ===================== */
+        -:  431:
+    #####:  432:  Col_size = colamd_c (n_col) ;
+    #####:  433:  Row_size = colamd_r (n_row) ;
+    #####:  434:  need = 2*nnz + n_col + Col_size + Row_size ;
+        -:  435:
+    #####:  436:  if (need > Alen)
+        -:  437:  {
+        -:  438:    /* not enough space in array A to perform the ordering */
+    #####:  439:    stats [Colamd::Status] = Colamd::ErrorATooSmall ;
+    #####:  440:    stats [Colamd::Info1] = need ;
+    #####:  441:    stats [Colamd::Info2] = Alen ;
+        -:  442:    COLAMD_DEBUG0 (("colamd: Need Alen >= %d, given only Alen = %d\n", need,Alen));
+    #####:  443:    return (false) ;
+        -:  444:  }
+        -:  445:
+    #####:  446:  Alen -= Col_size + Row_size ;
+    #####:  447:  Col = (ColStructure<IndexType> *) &A [Alen] ;
+    #####:  448:  Row = (RowStructure<IndexType> *) &A [Alen + Col_size] ;
+        -:  449:
+        -:  450:  /* === Construct the row and column data structures ===================== */
+        -:  451:
+    #####:  452:  if (!Colamd::init_rows_cols (n_row, n_col, Row, Col, A, p, stats))
+        -:  453:  {
+        -:  454:    /* input matrix is invalid */
+        -:  455:    COLAMD_DEBUG0 (("colamd: Matrix invalid\n")) ;
+    #####:  456:    return (false) ;
+        -:  457:  }
+        -:  458:
+        -:  459:  /* === Initialize scores, kill dense rows/columns ======================= */
+        -:  460:
+    #####:  461:  Colamd::init_scoring (n_row, n_col, Row, Col, A, p, knobs,
+        -:  462:		&n_row2, &n_col2, &max_deg) ;
+        -:  463:
+        -:  464:  /* === Order the supercolumns =========================================== */
+        -:  465:
+    #####:  466:  ngarbage = Colamd::find_ordering (n_row, n_col, Alen, Row, Col, A, p,
+    #####:  467:			    n_col2, max_deg, 2*nnz) ;
+        -:  468:
+        -:  469:  /* === Order the non-principal columns ================================== */
+        -:  470:
+    #####:  471:  Colamd::order_children (n_col, Col, p) ;
+        -:  472:
+        -:  473:  /* === Return statistics in stats ======================================= */
+        -:  474:
+    #####:  475:  stats [Colamd::DenseRow] = n_row - n_row2 ;
+    #####:  476:  stats [Colamd::DenseCol] = n_col - n_col2 ;
+    #####:  477:  stats [Colamd::DefragCount] = ngarbage ;
+        -:  478:  COLAMD_DEBUG0 (("colamd: done.\n")) ;
+    #####:  479:  return (true) ;
+    #####:  480:}
+        -:  481:
+        -:  482:/* ========================================================================== */
+        -:  483:/* === NON-USER-CALLABLE ROUTINES: ========================================== */
+        -:  484:/* ========================================================================== */
+        -:  485:
+        -:  486:/* There are no user-callable routines beyond this point in the file */
+        -:  487:
+        -:  488:/* ========================================================================== */
+        -:  489:/* === init_rows_cols ======================================================= */
+        -:  490:/* ========================================================================== */
+        -:  491:
+        -:  492:/*
+        -:  493:  Takes the column form of the matrix in A and creates the row form of the
+        -:  494:  matrix.  Also, row and column attributes are stored in the Col and Row
+        -:  495:  structs.  If the columns are un-sorted or contain duplicate row indices,
+        -:  496:  this routine will also sort and remove duplicate row indices from the
+        -:  497:  column form of the matrix.  Returns false if the matrix is invalid,
+        -:  498:  true otherwise.  Not user-callable.
+        -:  499:*/
+        -:  500:template <typename IndexType>
+    #####:  501:static IndexType init_rows_cols  /* returns true if OK, or false otherwise */
+        -:  502:  (
+        -:  503:    /* === Parameters ======================================================= */
+        -:  504:
+        -:  505:    IndexType n_row,      /* number of rows of A */
+        -:  506:    IndexType n_col,      /* number of columns of A */
+        -:  507:    RowStructure<IndexType> Row [],    /* of size n_row+1 */
+        -:  508:    ColStructure<IndexType> Col [],    /* of size n_col+1 */
+        -:  509:    IndexType A [],     /* row indices of A, of size Alen */
+        -:  510:    IndexType p [],     /* pointers to columns in A, of size n_col+1 */
+        -:  511:    IndexType stats [NStats]  /* colamd statistics */
+        -:  512:    )
+        -:  513:{
+        -:  514:  /* === Local variables ================================================== */
+        -:  515:
+        -:  516:  IndexType col ;     /* a column index */
+        -:  517:  IndexType row ;     /* a row index */
+        -:  518:  IndexType *cp ;     /* a column pointer */
+        -:  519:  IndexType *cp_end ;   /* a pointer to the end of a column */
+        -:  520:  IndexType *rp ;     /* a row pointer */
+        -:  521:  IndexType *rp_end ;   /* a pointer to the end of a row */
+        -:  522:  IndexType last_row ;    /* previous row */
+        -:  523:
+        -:  524:  /* === Initialize columns, and check column pointers ==================== */
+        -:  525:
+    #####:  526:  for (col = 0 ; col < n_col ; col++)
+        -:  527:  {
+    #####:  528:    Col [col].start = p [col] ;
+    #####:  529:    Col [col].length = p [col+1] - p [col] ;
+        -:  530:
+    #####:  531:    if ((Col [col].length) < 0) // extra parentheses to work-around gcc bug 10200
+        -:  532:    {
+        -:  533:      /* column pointers must be non-decreasing */
+    #####:  534:      stats [Colamd::Status] = Colamd::ErrorColLengthNegative ;
+    #####:  535:      stats [Colamd::Info1] = col ;
+    #####:  536:      stats [Colamd::Info2] = Col [col].length ;
+        -:  537:      COLAMD_DEBUG0 (("colamd: col %d length %d < 0\n", col, Col [col].length)) ;
+    #####:  538:      return (false) ;
+        -:  539:    }
+        -:  540:
+    #####:  541:    Col [col].shared1.thickness = 1 ;
+    #####:  542:    Col [col].shared2.score = 0 ;
+    #####:  543:    Col [col].shared3.prev = Empty ;
+    #####:  544:    Col [col].shared4.degree_next = Empty ;
+    #####:  545:  }
+        -:  546:
+        -:  547:  /* p [0..n_col] no longer needed, used as "head" in subsequent routines */
+        -:  548:
+        -:  549:  /* === Scan columns, compute row degrees, and check row indices ========= */
+        -:  550:
+    #####:  551:  stats [Info3] = 0 ;  /* number of duplicate or unsorted row indices*/
+        -:  552:
+    #####:  553:  for (row = 0 ; row < n_row ; row++)
+        -:  554:  {
+    #####:  555:    Row [row].length = 0 ;
+    #####:  556:    Row [row].shared2.mark = -1 ;
+    #####:  557:  }
+        -:  558:
+    #####:  559:  for (col = 0 ; col < n_col ; col++)
+        -:  560:  {
+    #####:  561:    last_row = -1 ;
+        -:  562:
+    #####:  563:    cp = &A [p [col]] ;
+    #####:  564:    cp_end = &A [p [col+1]] ;
+        -:  565:
+    #####:  566:    while (cp < cp_end)
+        -:  567:    {
+    #####:  568:      row = *cp++ ;
+        -:  569:
+        -:  570:      /* make sure row indices within range */
+    #####:  571:      if (row < 0 || row >= n_row)
+        -:  572:      {
+    #####:  573:	stats [Colamd::Status] = Colamd::ErrorRowIndexOutOfBounds ;
+    #####:  574:	stats [Colamd::Info1] = col ;
+    #####:  575:	stats [Colamd::Info2] = row ;
+    #####:  576:	stats [Colamd::Info3] = n_row ;
+        -:  577:	COLAMD_DEBUG0 (("colamd: row %d col %d out of bounds\n", row, col)) ;
+    #####:  578:	return (false) ;
+        -:  579:      }
+        -:  580:
+    #####:  581:      if (row <= last_row || Row [row].shared2.mark == col)
+        -:  582:      {
+        -:  583:	/* row index are unsorted or repeated (or both), thus col */
+        -:  584:	/* is jumbled.  This is a notice, not an error condition. */
+    #####:  585:	stats [Colamd::Status] = Colamd::OkButJumbled ;
+    #####:  586:	stats [Colamd::Info1] = col ;
+    #####:  587:	stats [Colamd::Info2] = row ;
+    #####:  588:	(stats [Colamd::Info3]) ++ ;
+        -:  589:	COLAMD_DEBUG1 (("colamd: row %d col %d unsorted/duplicate\n",row,col));
+    #####:  590:      }
+        -:  591:
+    #####:  592:      if (Row [row].shared2.mark != col)
+        -:  593:      {
+    #####:  594:	Row [row].length++ ;
+    #####:  595:      }
+        -:  596:      else
+        -:  597:      {
+        -:  598:	/* this is a repeated entry in the column, */
+        -:  599:	/* it will be removed */
+    #####:  600:	Col [col].length-- ;
+        -:  601:      }
+        -:  602:
+        -:  603:      /* mark the row as having been seen in this column */
+    #####:  604:      Row [row].shared2.mark = col ;
+        -:  605:
+    #####:  606:      last_row = row ;
+        -:  607:    }
+    #####:  608:  }
+        -:  609:
+        -:  610:  /* === Compute row pointers ============================================= */
+        -:  611:
+        -:  612:  /* row form of the matrix starts directly after the column */
+        -:  613:  /* form of matrix in A */
+    #####:  614:  Row [0].start = p [n_col] ;
+    #####:  615:  Row [0].shared1.p = Row [0].start ;
+    #####:  616:  Row [0].shared2.mark = -1 ;
+    #####:  617:  for (row = 1 ; row < n_row ; row++)
+        -:  618:  {
+    #####:  619:    Row [row].start = Row [row-1].start + Row [row-1].length ;
+    #####:  620:    Row [row].shared1.p = Row [row].start ;
+    #####:  621:    Row [row].shared2.mark = -1 ;
+    #####:  622:  }
+        -:  623:
+        -:  624:  /* === Create row form ================================================== */
+        -:  625:
+    #####:  626:  if (stats [Status] == OkButJumbled)
+        -:  627:  {
+        -:  628:    /* if cols jumbled, watch for repeated row indices */
+    #####:  629:    for (col = 0 ; col < n_col ; col++)
+        -:  630:    {
+    #####:  631:      cp = &A [p [col]] ;
+    #####:  632:      cp_end = &A [p [col+1]] ;
+    #####:  633:      while (cp < cp_end)
+        -:  634:      {
+    #####:  635:	row = *cp++ ;
+    #####:  636:	if (Row [row].shared2.mark != col)
+        -:  637:	{
+    #####:  638:	  A [(Row [row].shared1.p)++] = col ;
+    #####:  639:	  Row [row].shared2.mark = col ;
+    #####:  640:	}
+        -:  641:      }
+    #####:  642:    }
+    #####:  643:  }
+        -:  644:  else
+        -:  645:  {
+        -:  646:    /* if cols not jumbled, we don't need the mark (this is faster) */
+    #####:  647:    for (col = 0 ; col < n_col ; col++)
+        -:  648:    {
+    #####:  649:      cp = &A [p [col]] ;
+    #####:  650:      cp_end = &A [p [col+1]] ;
+    #####:  651:      while (cp < cp_end)
+        -:  652:      {
+    #####:  653:	A [(Row [*cp++].shared1.p)++] = col ;
+        -:  654:      }
+    #####:  655:    }
+        -:  656:  }
+        -:  657:
+        -:  658:  /* === Clear the row marks and set row degrees ========================== */
+        -:  659:
+    #####:  660:  for (row = 0 ; row < n_row ; row++)
+        -:  661:  {
+    #####:  662:    Row [row].shared2.mark = 0 ;
+    #####:  663:    Row [row].shared1.degree = Row [row].length ;
+    #####:  664:  }
+        -:  665:
+        -:  666:  /* === See if we need to re-create columns ============================== */
+        -:  667:
+    #####:  668:  if (stats [Status] == OkButJumbled)
+        -:  669:  {
+        -:  670:    COLAMD_DEBUG0 (("colamd: reconstructing column form, matrix jumbled\n")) ;
+        -:  671:
+        -:  672:
+        -:  673:    /* === Compute col pointers ========================================= */
+        -:  674:
+        -:  675:    /* col form of the matrix starts at A [0]. */
+        -:  676:    /* Note, we may have a gap between the col form and the row */
+        -:  677:    /* form if there were duplicate entries, if so, it will be */
+        -:  678:    /* removed upon the first garbage collection */
+    #####:  679:    Col [0].start = 0 ;
+    #####:  680:    p [0] = Col [0].start ;
+    #####:  681:    for (col = 1 ; col < n_col ; col++)
+        -:  682:    {
+        -:  683:      /* note that the lengths here are for pruned columns, i.e. */
+        -:  684:      /* no duplicate row indices will exist for these columns */
+    #####:  685:      Col [col].start = Col [col-1].start + Col [col-1].length ;
+    #####:  686:      p [col] = Col [col].start ;
+    #####:  687:    }
+        -:  688:
+        -:  689:    /* === Re-create col form =========================================== */
+        -:  690:
+    #####:  691:    for (row = 0 ; row < n_row ; row++)
+        -:  692:    {
+    #####:  693:      rp = &A [Row [row].start] ;
+    #####:  694:      rp_end = rp + Row [row].length ;
+    #####:  695:      while (rp < rp_end)
+        -:  696:      {
+    #####:  697:	A [(p [*rp++])++] = row ;
+        -:  698:      }
+    #####:  699:    }
+    #####:  700:  }
+        -:  701:
+        -:  702:  /* === Done.  Matrix is not (or no longer) jumbled ====================== */
+        -:  703:
+    #####:  704:  return (true) ;
+    #####:  705:}
+        -:  706:
+        -:  707:
+        -:  708:/* ========================================================================== */
+        -:  709:/* === init_scoring ========================================================= */
+        -:  710:/* ========================================================================== */
+        -:  711:
+        -:  712:/*
+        -:  713:  Kills dense or empty columns and rows, calculates an initial score for
+        -:  714:  each column, and places all columns in the degree lists.  Not user-callable.
+        -:  715:*/
+        -:  716:template <typename IndexType>
+    #####:  717:static void init_scoring
+        -:  718:  (
+        -:  719:    /* === Parameters ======================================================= */
+        -:  720:
+        -:  721:    IndexType n_row,      /* number of rows of A */
+        -:  722:    IndexType n_col,      /* number of columns of A */
+        -:  723:    RowStructure<IndexType> Row [],    /* of size n_row+1 */
+        -:  724:    ColStructure<IndexType> Col [],    /* of size n_col+1 */
+        -:  725:    IndexType A [],     /* column form and row form of A */
+        -:  726:    IndexType head [],    /* of size n_col+1 */
+        -:  727:    double knobs [NKnobs],/* parameters */
+        -:  728:    IndexType *p_n_row2,    /* number of non-dense, non-empty rows */
+        -:  729:    IndexType *p_n_col2,    /* number of non-dense, non-empty columns */
+        -:  730:    IndexType *p_max_deg    /* maximum row degree */
+        -:  731:    )
+        -:  732:{
+        -:  733:  /* === Local variables ================================================== */
+        -:  734:
+        -:  735:  IndexType c ;     /* a column index */
+        -:  736:  IndexType r, row ;    /* a row index */
+        -:  737:  IndexType *cp ;     /* a column pointer */
+        -:  738:  IndexType deg ;     /* degree of a row or column */
+        -:  739:  IndexType *cp_end ;   /* a pointer to the end of a column */
+        -:  740:  IndexType *new_cp ;   /* new column pointer */
+        -:  741:  IndexType col_length ;    /* length of pruned column */
+        -:  742:  IndexType score ;     /* current column score */
+        -:  743:  IndexType n_col2 ;    /* number of non-dense, non-empty columns */
+        -:  744:  IndexType n_row2 ;    /* number of non-dense, non-empty rows */
+        -:  745:  IndexType dense_row_count ; /* remove rows with more entries than this */
+        -:  746:  IndexType dense_col_count ; /* remove cols with more entries than this */
+        -:  747:  IndexType min_score ;   /* smallest column score */
+        -:  748:  IndexType max_deg ;   /* maximum row degree */
+        -:  749:  IndexType next_col ;    /* Used to add to degree list.*/
+        -:  750:
+        -:  751:
+        -:  752:  /* === Extract knobs ==================================================== */
+        -:  753:
+    #####:  754:  dense_row_count = numext::maxi(IndexType(0), numext::mini(IndexType(knobs [Colamd::DenseRow] * n_col), n_col)) ;
+    #####:  755:  dense_col_count = numext::maxi(IndexType(0), numext::mini(IndexType(knobs [Colamd::DenseCol] * n_row), n_row)) ;
+        -:  756:  COLAMD_DEBUG1 (("colamd: densecount: %d %d\n", dense_row_count, dense_col_count)) ;
+    #####:  757:  max_deg = 0 ;
+    #####:  758:  n_col2 = n_col ;
+    #####:  759:  n_row2 = n_row ;
+        -:  760:
+        -:  761:  /* === Kill empty columns =============================================== */
+        -:  762:
+        -:  763:  /* Put the empty columns at the end in their natural order, so that LU */
+        -:  764:  /* factorization can proceed as far as possible. */
+    #####:  765:  for (c = n_col-1 ; c >= 0 ; c--)
+        -:  766:  {
+    #####:  767:    deg = Col [c].length ;
+    #####:  768:    if (deg == 0)
+        -:  769:    {
+        -:  770:      /* this is a empty column, kill and order it last */
+    #####:  771:      Col [c].shared2.order = --n_col2 ;
+    #####:  772:      Col[c].kill_principal() ;
+    #####:  773:    }
+    #####:  774:  }
+        -:  775:  COLAMD_DEBUG1 (("colamd: null columns killed: %d\n", n_col - n_col2)) ;
+        -:  776:
+        -:  777:  /* === Kill dense columns =============================================== */
+        -:  778:
+        -:  779:  /* Put the dense columns at the end, in their natural order */
+    #####:  780:  for (c = n_col-1 ; c >= 0 ; c--)
+        -:  781:  {
+        -:  782:    /* skip any dead columns */
+    #####:  783:    if (Col[c].is_dead())
+        -:  784:    {
+    #####:  785:      continue ;
+        -:  786:    }
+    #####:  787:    deg = Col [c].length ;
+    #####:  788:    if (deg > dense_col_count)
+        -:  789:    {
+        -:  790:      /* this is a dense column, kill and order it last */
+    #####:  791:      Col [c].shared2.order = --n_col2 ;
+        -:  792:      /* decrement the row degrees */
+    #####:  793:      cp = &A [Col [c].start] ;
+    #####:  794:      cp_end = cp + Col [c].length ;
+    #####:  795:      while (cp < cp_end)
+        -:  796:      {
+    #####:  797:	Row [*cp++].shared1.degree-- ;
+        -:  798:      }
+    #####:  799:      Col[c].kill_principal() ;
+    #####:  800:    }
+    #####:  801:  }
+        -:  802:  COLAMD_DEBUG1 (("colamd: Dense and null columns killed: %d\n", n_col - n_col2)) ;
+        -:  803:
+        -:  804:  /* === Kill dense and empty rows ======================================== */
+        -:  805:
+    #####:  806:  for (r = 0 ; r < n_row ; r++)
+        -:  807:  {
+    #####:  808:    deg = Row [r].shared1.degree ;
+        -:  809:    COLAMD_ASSERT (deg >= 0 && deg <= n_col) ;
+    #####:  810:    if (deg > dense_row_count || deg == 0)
+        -:  811:    {
+        -:  812:      /* kill a dense or empty row */
+    #####:  813:      Row[r].kill() ;
+    #####:  814:      --n_row2 ;
+    #####:  815:    }
+        -:  816:    else
+        -:  817:    {
+        -:  818:      /* keep track of max degree of remaining rows */
+    #####:  819:      max_deg = numext::maxi(max_deg, deg) ;
+        -:  820:    }
+    #####:  821:  }
+        -:  822:  COLAMD_DEBUG1 (("colamd: Dense and null rows killed: %d\n", n_row - n_row2)) ;
+        -:  823:
+        -:  824:  /* === Compute initial column scores ==================================== */
+        -:  825:
+        -:  826:  /* At this point the row degrees are accurate.  They reflect the number */
+        -:  827:  /* of "live" (non-dense) columns in each row.  No empty rows exist. */
+        -:  828:  /* Some "live" columns may contain only dead rows, however.  These are */
+        -:  829:  /* pruned in the code below. */
+        -:  830:
+        -:  831:  /* now find the initial matlab score for each column */
+    #####:  832:  for (c = n_col-1 ; c >= 0 ; c--)
+        -:  833:  {
+        -:  834:    /* skip dead column */
+    #####:  835:    if (Col[c].is_dead())
+        -:  836:    {
+    #####:  837:      continue ;
+        -:  838:    }
+    #####:  839:    score = 0 ;
+    #####:  840:    cp = &A [Col [c].start] ;
+    #####:  841:    new_cp = cp ;
+    #####:  842:    cp_end = cp + Col [c].length ;
+    #####:  843:    while (cp < cp_end)
+        -:  844:    {
+        -:  845:      /* get a row */
+    #####:  846:      row = *cp++ ;
+        -:  847:      /* skip if dead */
+    #####:  848:      if (Row[row].is_dead())
+        -:  849:      {
+    #####:  850:	continue ;
+        -:  851:      }
+        -:  852:      /* compact the column */
+    #####:  853:      *new_cp++ = row ;
+        -:  854:      /* add row's external degree */
+    #####:  855:      score += Row [row].shared1.degree - 1 ;
+        -:  856:      /* guard against integer overflow */
+    #####:  857:      score = numext::mini(score, n_col) ;
+        -:  858:    }
+        -:  859:    /* determine pruned column length */
+    #####:  860:    col_length = (IndexType) (new_cp - &A [Col [c].start]) ;
+    #####:  861:    if (col_length == 0)
+        -:  862:    {
+        -:  863:      /* a newly-made null column (all rows in this col are "dense" */
+        -:  864:      /* and have already been killed) */
+        -:  865:      COLAMD_DEBUG2 (("Newly null killed: %d\n", c)) ;
+    #####:  866:      Col [c].shared2.order = --n_col2 ;
+    #####:  867:      Col[c].kill_principal() ;
+    #####:  868:    }
+        -:  869:    else
+        -:  870:    {
+        -:  871:      /* set column length and set score */
+        -:  872:      COLAMD_ASSERT (score >= 0) ;
+        -:  873:      COLAMD_ASSERT (score <= n_col) ;
+    #####:  874:      Col [c].length = col_length ;
+    #####:  875:      Col [c].shared2.score = score ;
+        -:  876:    }
+    #####:  877:  }
+        -:  878:  COLAMD_DEBUG1 (("colamd: Dense, null, and newly-null columns killed: %d\n",
+        -:  879:		  n_col-n_col2)) ;
+        -:  880:
+        -:  881:  /* At this point, all empty rows and columns are dead.  All live columns */
+        -:  882:  /* are "clean" (containing no dead rows) and simplicial (no supercolumns */
+        -:  883:  /* yet).  Rows may contain dead columns, but all live rows contain at */
+        -:  884:  /* least one live column. */
+        -:  885:
+        -:  886:  /* === Initialize degree lists ========================================== */
+        -:  887:
+        -:  888:
+        -:  889:  /* clear the hash buckets */
+    #####:  890:  for (c = 0 ; c <= n_col ; c++)
+        -:  891:  {
+    #####:  892:    head [c] = Empty ;
+    #####:  893:  }
+    #####:  894:  min_score = n_col ;
+        -:  895:  /* place in reverse order, so low column indices are at the front */
+        -:  896:  /* of the lists.  This is to encourage natural tie-breaking */
+    #####:  897:  for (c = n_col-1 ; c >= 0 ; c--)
+        -:  898:  {
+        -:  899:    /* only add principal columns to degree lists */
+    #####:  900:    if (Col[c].is_alive())
+        -:  901:    {
+        -:  902:      COLAMD_DEBUG4 (("place %d score %d minscore %d ncol %d\n",
+        -:  903:		      c, Col [c].shared2.score, min_score, n_col)) ;
+        -:  904:
+        -:  905:      /* === Add columns score to DList =============================== */
+        -:  906:
+    #####:  907:      score = Col [c].shared2.score ;
+        -:  908:
+        -:  909:      COLAMD_ASSERT (min_score >= 0) ;
+        -:  910:      COLAMD_ASSERT (min_score <= n_col) ;
+        -:  911:      COLAMD_ASSERT (score >= 0) ;
+        -:  912:      COLAMD_ASSERT (score <= n_col) ;
+        -:  913:      COLAMD_ASSERT (head [score] >= Empty) ;
+        -:  914:
+        -:  915:      /* now add this column to dList at proper score location */
+    #####:  916:      next_col = head [score] ;
+    #####:  917:      Col [c].shared3.prev = Empty ;
+    #####:  918:      Col [c].shared4.degree_next = next_col ;
+        -:  919:
+        -:  920:      /* if there already was a column with the same score, set its */
+        -:  921:      /* previous pointer to this new column */
+    #####:  922:      if (next_col != Empty)
+        -:  923:      {
+    #####:  924:	Col [next_col].shared3.prev = c ;
+    #####:  925:      }
+    #####:  926:      head [score] = c ;
+        -:  927:
+        -:  928:      /* see if this score is less than current min */
+    #####:  929:      min_score = numext::mini(min_score, score) ;
+        -:  930:
+        -:  931:
+    #####:  932:    }
+    #####:  933:  }
+        -:  934:
+        -:  935:
+        -:  936:  /* === Return number of remaining columns, and max row degree =========== */
+        -:  937:
+    #####:  938:  *p_n_col2 = n_col2 ;
+    #####:  939:  *p_n_row2 = n_row2 ;
+    #####:  940:  *p_max_deg = max_deg ;
+    #####:  941:}
+        -:  942:
+        -:  943:
+        -:  944:/* ========================================================================== */
+        -:  945:/* === find_ordering ======================================================== */
+        -:  946:/* ========================================================================== */
+        -:  947:
+        -:  948:/*
+        -:  949:  Order the principal columns of the supercolumn form of the matrix
+        -:  950:  (no supercolumns on input).  Uses a minimum approximate column minimum
+        -:  951:  degree ordering method.  Not user-callable.
+        -:  952:*/
+        -:  953:template <typename IndexType>
+    #####:  954:static IndexType find_ordering /* return the number of garbage collections */
+        -:  955:  (
+        -:  956:    /* === Parameters ======================================================= */
+        -:  957:
+        -:  958:    IndexType n_row,      /* number of rows of A */
+        -:  959:    IndexType n_col,      /* number of columns of A */
+        -:  960:    IndexType Alen,     /* size of A, 2*nnz + n_col or larger */
+        -:  961:    RowStructure<IndexType> Row [],    /* of size n_row+1 */
+        -:  962:    ColStructure<IndexType> Col [],    /* of size n_col+1 */
+        -:  963:    IndexType A [],     /* column form and row form of A */
+        -:  964:    IndexType head [],    /* of size n_col+1 */
+        -:  965:    IndexType n_col2,     /* Remaining columns to order */
+        -:  966:    IndexType max_deg,    /* Maximum row degree */
+        -:  967:    IndexType pfree     /* index of first free slot (2*nnz on entry) */
+        -:  968:    )
+        -:  969:{
+        -:  970:  /* === Local variables ================================================== */
+        -:  971:
+        -:  972:  IndexType k ;     /* current pivot ordering step */
+        -:  973:  IndexType pivot_col ;   /* current pivot column */
+        -:  974:  IndexType *cp ;     /* a column pointer */
+        -:  975:  IndexType *rp ;     /* a row pointer */
+        -:  976:  IndexType pivot_row ;   /* current pivot row */
+        -:  977:  IndexType *new_cp ;   /* modified column pointer */
+        -:  978:  IndexType *new_rp ;   /* modified row pointer */
+        -:  979:  IndexType pivot_row_start ; /* pointer to start of pivot row */
+        -:  980:  IndexType pivot_row_degree ;  /* number of columns in pivot row */
+        -:  981:  IndexType pivot_row_length ;  /* number of supercolumns in pivot row */
+        -:  982:  IndexType pivot_col_score ; /* score of pivot column */
+        -:  983:  IndexType needed_memory ;   /* free space needed for pivot row */
+        -:  984:  IndexType *cp_end ;   /* pointer to the end of a column */
+        -:  985:  IndexType *rp_end ;   /* pointer to the end of a row */
+        -:  986:  IndexType row ;     /* a row index */
+        -:  987:  IndexType col ;     /* a column index */
+        -:  988:  IndexType max_score ;   /* maximum possible score */
+        -:  989:  IndexType cur_score ;   /* score of current column */
+        -:  990:  unsigned int hash ;   /* hash value for supernode detection */
+        -:  991:  IndexType head_column ;   /* head of hash bucket */
+        -:  992:  IndexType first_col ;   /* first column in hash bucket */
+        -:  993:  IndexType tag_mark ;    /* marker value for mark array */
+        -:  994:  IndexType row_mark ;    /* Row [row].shared2.mark */
+        -:  995:  IndexType set_difference ;  /* set difference size of row with pivot row */
+        -:  996:  IndexType min_score ;   /* smallest column score */
+        -:  997:  IndexType col_thickness ;   /* "thickness" (no. of columns in a supercol) */
+        -:  998:  IndexType max_mark ;    /* maximum value of tag_mark */
+        -:  999:  IndexType pivot_col_thickness ; /* number of columns represented by pivot col */
+        -: 1000:  IndexType prev_col ;    /* Used by Dlist operations. */
+        -: 1001:  IndexType next_col ;    /* Used by Dlist operations. */
+        -: 1002:  IndexType ngarbage ;    /* number of garbage collections performed */
+        -: 1003:
+        -: 1004:
+        -: 1005:  /* === Initialization and clear mark ==================================== */
+        -: 1006:
+    #####: 1007:  max_mark = INT_MAX - n_col ;  /* INT_MAX defined in <limits.h> */
+    #####: 1008:  tag_mark = Colamd::clear_mark (n_row, Row) ;
+    #####: 1009:  min_score = 0 ;
+    #####: 1010:  ngarbage = 0 ;
+        -: 1011:  COLAMD_DEBUG1 (("colamd: Ordering, n_col2=%d\n", n_col2)) ;
+        -: 1012:
+        -: 1013:  /* === Order the columns ================================================ */
+        -: 1014:
+    #####: 1015:  for (k = 0 ; k < n_col2 ; /* 'k' is incremented below */)
+        -: 1016:  {
+        -: 1017:
+        -: 1018:    /* === Select pivot column, and order it ============================ */
+        -: 1019:
+        -: 1020:    /* make sure degree list isn't empty */
+        -: 1021:    COLAMD_ASSERT (min_score >= 0) ;
+        -: 1022:    COLAMD_ASSERT (min_score <= n_col) ;
+        -: 1023:    COLAMD_ASSERT (head [min_score] >= Empty) ;
+        -: 1024:
+        -: 1025:    /* get pivot column from head of minimum degree list */
+    #####: 1026:    while (min_score < n_col && head [min_score] == Empty)
+        -: 1027:    {
+    #####: 1028:      min_score++ ;
+        -: 1029:    }
+    #####: 1030:    pivot_col = head [min_score] ;
+        -: 1031:    COLAMD_ASSERT (pivot_col >= 0 && pivot_col <= n_col) ;
+    #####: 1032:    next_col = Col [pivot_col].shared4.degree_next ;
+    #####: 1033:    head [min_score] = next_col ;
+    #####: 1034:    if (next_col != Empty)
+        -: 1035:    {
+    #####: 1036:      Col [next_col].shared3.prev = Empty ;
+    #####: 1037:    }
+        -: 1038:
+        -: 1039:    COLAMD_ASSERT (Col[pivot_col].is_alive()) ;
+        -: 1040:    COLAMD_DEBUG3 (("Pivot col: %d\n", pivot_col)) ;
+        -: 1041:
+        -: 1042:    /* remember score for defrag check */
+    #####: 1043:    pivot_col_score = Col [pivot_col].shared2.score ;
+        -: 1044:
+        -: 1045:    /* the pivot column is the kth column in the pivot order */
+    #####: 1046:    Col [pivot_col].shared2.order = k ;
+        -: 1047:
+        -: 1048:    /* increment order count by column thickness */
+    #####: 1049:    pivot_col_thickness = Col [pivot_col].shared1.thickness ;
+    #####: 1050:    k += pivot_col_thickness ;
+        -: 1051:    COLAMD_ASSERT (pivot_col_thickness > 0) ;
+        -: 1052:
+        -: 1053:    /* === Garbage_collection, if necessary ============================= */
+        -: 1054:
+    #####: 1055:    needed_memory = numext::mini(pivot_col_score, n_col - k) ;
+    #####: 1056:    if (pfree + needed_memory >= Alen)
+        -: 1057:    {
+    #####: 1058:      pfree = Colamd::garbage_collection (n_row, n_col, Row, Col, A, &A [pfree]) ;
+    #####: 1059:      ngarbage++ ;
+        -: 1060:      /* after garbage collection we will have enough */
+        -: 1061:      COLAMD_ASSERT (pfree + needed_memory < Alen) ;
+        -: 1062:      /* garbage collection has wiped out the Row[].shared2.mark array */
+    #####: 1063:      tag_mark = Colamd::clear_mark (n_row, Row) ;
+        -: 1064:
+    #####: 1065:    }
+        -: 1066:
+        -: 1067:    /* === Compute pivot row pattern ==================================== */
+        -: 1068:
+        -: 1069:    /* get starting location for this new merged row */
+    #####: 1070:    pivot_row_start = pfree ;
+        -: 1071:
+        -: 1072:    /* initialize new row counts to zero */
+    #####: 1073:    pivot_row_degree = 0 ;
+        -: 1074:
+        -: 1075:    /* tag pivot column as having been visited so it isn't included */
+        -: 1076:    /* in merged pivot row */
+    #####: 1077:    Col [pivot_col].shared1.thickness = -pivot_col_thickness ;
+        -: 1078:
+        -: 1079:    /* pivot row is the union of all rows in the pivot column pattern */
+    #####: 1080:    cp = &A [Col [pivot_col].start] ;
+    #####: 1081:    cp_end = cp + Col [pivot_col].length ;
+    #####: 1082:    while (cp < cp_end)
+        -: 1083:    {
+        -: 1084:      /* get a row */
+    #####: 1085:      row = *cp++ ;
+        -: 1086:      COLAMD_DEBUG4 (("Pivot col pattern %d %d\n", Row[row].is_alive(), row)) ;
+        -: 1087:      /* skip if row is dead */
+    #####: 1088:      if (Row[row].is_dead())
+        -: 1089:      {
+    #####: 1090:	continue ;
+        -: 1091:      }
+    #####: 1092:      rp = &A [Row [row].start] ;
+    #####: 1093:      rp_end = rp + Row [row].length ;
+    #####: 1094:      while (rp < rp_end)
+        -: 1095:      {
+        -: 1096:	/* get a column */
+    #####: 1097:	col = *rp++ ;
+        -: 1098:	/* add the column, if alive and untagged */
+    #####: 1099:	col_thickness = Col [col].shared1.thickness ;
+    #####: 1100:	if (col_thickness > 0 && Col[col].is_alive())
+        -: 1101:	{
+        -: 1102:	  /* tag column in pivot row */
+    #####: 1103:	  Col [col].shared1.thickness = -col_thickness ;
+        -: 1104:	  COLAMD_ASSERT (pfree < Alen) ;
+        -: 1105:	  /* place column in pivot row */
+    #####: 1106:	  A [pfree++] = col ;
+    #####: 1107:	  pivot_row_degree += col_thickness ;
+    #####: 1108:	}
+        -: 1109:      }
+        -: 1110:    }
+        -: 1111:
+        -: 1112:    /* clear tag on pivot column */
+    #####: 1113:    Col [pivot_col].shared1.thickness = pivot_col_thickness ;
+    #####: 1114:    max_deg = numext::maxi(max_deg, pivot_row_degree) ;
+        -: 1115:
+        -: 1116:
+        -: 1117:    /* === Kill all rows used to construct pivot row ==================== */
+        -: 1118:
+        -: 1119:    /* also kill pivot row, temporarily */
+    #####: 1120:    cp = &A [Col [pivot_col].start] ;
+    #####: 1121:    cp_end = cp + Col [pivot_col].length ;
+    #####: 1122:    while (cp < cp_end)
+        -: 1123:    {
+        -: 1124:      /* may be killing an already dead row */
+    #####: 1125:      row = *cp++ ;
+        -: 1126:      COLAMD_DEBUG3 (("Kill row in pivot col: %d\n", row)) ;
+    #####: 1127:      Row[row].kill() ;
+        -: 1128:    }
+        -: 1129:
+        -: 1130:    /* === Select a row index to use as the new pivot row =============== */
+        -: 1131:
+    #####: 1132:    pivot_row_length = pfree - pivot_row_start ;
+    #####: 1133:    if (pivot_row_length > 0)
+        -: 1134:    {
+        -: 1135:      /* pick the "pivot" row arbitrarily (first row in col) */
+    #####: 1136:      pivot_row = A [Col [pivot_col].start] ;
+        -: 1137:      COLAMD_DEBUG3 (("Pivotal row is %d\n", pivot_row)) ;
+    #####: 1138:    }
+        -: 1139:    else
+        -: 1140:    {
+        -: 1141:      /* there is no pivot row, since it is of zero length */
+    #####: 1142:      pivot_row = Empty ;
+        -: 1143:      COLAMD_ASSERT (pivot_row_length == 0) ;
+        -: 1144:    }
+        -: 1145:    COLAMD_ASSERT (Col [pivot_col].length > 0 || pivot_row_length == 0) ;
+        -: 1146:
+        -: 1147:    /* === Approximate degree computation =============================== */
+        -: 1148:
+        -: 1149:    /* Here begins the computation of the approximate degree.  The column */
+        -: 1150:    /* score is the sum of the pivot row "length", plus the size of the */
+        -: 1151:    /* set differences of each row in the column minus the pattern of the */
+        -: 1152:    /* pivot row itself.  The column ("thickness") itself is also */
+        -: 1153:    /* excluded from the column score (we thus use an approximate */
+        -: 1154:    /* external degree). */
+        -: 1155:
+        -: 1156:    /* The time taken by the following code (compute set differences, and */
+        -: 1157:    /* add them up) is proportional to the size of the data structure */
+        -: 1158:    /* being scanned - that is, the sum of the sizes of each column in */
+        -: 1159:    /* the pivot row.  Thus, the amortized time to compute a column score */
+        -: 1160:    /* is proportional to the size of that column (where size, in this */
+        -: 1161:    /* context, is the column "length", or the number of row indices */
+        -: 1162:    /* in that column).  The number of row indices in a column is */
+        -: 1163:    /* monotonically non-decreasing, from the length of the original */
+        -: 1164:    /* column on input to colamd. */
+        -: 1165:
+        -: 1166:    /* === Compute set differences ====================================== */
+        -: 1167:
+        -: 1168:    COLAMD_DEBUG3 (("** Computing set differences phase. **\n")) ;
+        -: 1169:
+        -: 1170:    /* pivot row is currently dead - it will be revived later. */
+        -: 1171:
+        -: 1172:    COLAMD_DEBUG3 (("Pivot row: ")) ;
+        -: 1173:    /* for each column in pivot row */
+    #####: 1174:    rp = &A [pivot_row_start] ;
+    #####: 1175:    rp_end = rp + pivot_row_length ;
+    #####: 1176:    while (rp < rp_end)
+        -: 1177:    {
+    #####: 1178:      col = *rp++ ;
+        -: 1179:      COLAMD_ASSERT (Col[col].is_alive() && col != pivot_col) ;
+        -: 1180:      COLAMD_DEBUG3 (("Col: %d\n", col)) ;
+        -: 1181:
+        -: 1182:      /* clear tags used to construct pivot row pattern */
+    #####: 1183:      col_thickness = -Col [col].shared1.thickness ;
+        -: 1184:      COLAMD_ASSERT (col_thickness > 0) ;
+    #####: 1185:      Col [col].shared1.thickness = col_thickness ;
+        -: 1186:
+        -: 1187:      /* === Remove column from degree list =========================== */
+        -: 1188:
+    #####: 1189:      cur_score = Col [col].shared2.score ;
+    #####: 1190:      prev_col = Col [col].shared3.prev ;
+    #####: 1191:      next_col = Col [col].shared4.degree_next ;
+        -: 1192:      COLAMD_ASSERT (cur_score >= 0) ;
+        -: 1193:      COLAMD_ASSERT (cur_score <= n_col) ;
+        -: 1194:      COLAMD_ASSERT (cur_score >= Empty) ;
+    #####: 1195:      if (prev_col == Empty)
+        -: 1196:      {
+    #####: 1197:	head [cur_score] = next_col ;
+    #####: 1198:      }
+        -: 1199:      else
+        -: 1200:      {
+    #####: 1201:	Col [prev_col].shared4.degree_next = next_col ;
+        -: 1202:      }
+    #####: 1203:      if (next_col != Empty)
+        -: 1204:      {
+    #####: 1205:	Col [next_col].shared3.prev = prev_col ;
+    #####: 1206:      }
+        -: 1207:
+        -: 1208:      /* === Scan the column ========================================== */
+        -: 1209:
+    #####: 1210:      cp = &A [Col [col].start] ;
+    #####: 1211:      cp_end = cp + Col [col].length ;
+    #####: 1212:      while (cp < cp_end)
+        -: 1213:      {
+        -: 1214:	/* get a row */
+    #####: 1215:	row = *cp++ ;
+        -: 1216:	/* skip if dead */
+    #####: 1217:	if (Row[row].is_dead())
+        -: 1218:	{
+    #####: 1219:	  continue ;
+        -: 1220:	}
+    #####: 1221:  row_mark = Row [row].shared2.mark ;
+        -: 1222:	COLAMD_ASSERT (row != pivot_row) ;
+    #####: 1223:	set_difference = row_mark - tag_mark ;
+        -: 1224:	/* check if the row has been seen yet */
+    #####: 1225:	if (set_difference < 0)
+        -: 1226:	{
+        -: 1227:	  COLAMD_ASSERT (Row [row].shared1.degree <= max_deg) ;
+    #####: 1228:	  set_difference = Row [row].shared1.degree ;
+    #####: 1229:	}
+        -: 1230:	/* subtract column thickness from this row's set difference */
+    #####: 1231:	set_difference -= col_thickness ;
+        -: 1232:	COLAMD_ASSERT (set_difference >= 0) ;
+        -: 1233:	/* absorb this row if the set difference becomes zero */
+    #####: 1234:	if (set_difference == 0)
+        -: 1235:	{
+        -: 1236:	  COLAMD_DEBUG3 (("aggressive absorption. Row: %d\n", row)) ;
+    #####: 1237:	  Row[row].kill() ;
+    #####: 1238:	}
+        -: 1239:	else
+        -: 1240:	{
+        -: 1241:	  /* save the new mark */
+    #####: 1242:	  Row [row].shared2.mark = set_difference + tag_mark ;
+        -: 1243:	}
+        -: 1244:      }
+        -: 1245:    }
+        -: 1246:
+        -: 1247:
+        -: 1248:    /* === Add up set differences for each column ======================= */
+        -: 1249:
+        -: 1250:    COLAMD_DEBUG3 (("** Adding set differences phase. **\n")) ;
+        -: 1251:
+        -: 1252:    /* for each column in pivot row */
+    #####: 1253:    rp = &A [pivot_row_start] ;
+    #####: 1254:    rp_end = rp + pivot_row_length ;
+    #####: 1255:    while (rp < rp_end)
+        -: 1256:    {
+        -: 1257:      /* get a column */
+    #####: 1258:      col = *rp++ ;
+        -: 1259:      COLAMD_ASSERT (Col[col].is_alive() && col != pivot_col) ;
+    #####: 1260:      hash = 0 ;
+    #####: 1261:      cur_score = 0 ;
+    #####: 1262:      cp = &A [Col [col].start] ;
+        -: 1263:      /* compact the column */
+    #####: 1264:      new_cp = cp ;
+    #####: 1265:      cp_end = cp + Col [col].length ;
+        -: 1266:
+        -: 1267:      COLAMD_DEBUG4 (("Adding set diffs for Col: %d.\n", col)) ;
+        -: 1268:
+    #####: 1269:      while (cp < cp_end)
+        -: 1270:      {
+        -: 1271:	/* get a row */
+    #####: 1272:	row = *cp++ ;
+        -: 1273:	COLAMD_ASSERT(row >= 0 && row < n_row) ;
+        -: 1274:	/* skip if dead */
+    #####: 1275:	if (Row [row].is_dead())
+        -: 1276:	{
+    #####: 1277:	  continue ;
+        -: 1278:	}
+    #####: 1279:  row_mark = Row [row].shared2.mark ;
+        -: 1280:	COLAMD_ASSERT (row_mark > tag_mark) ;
+        -: 1281:	/* compact the column */
+    #####: 1282:	*new_cp++ = row ;
+        -: 1283:	/* compute hash function */
+    #####: 1284:	hash += row ;
+        -: 1285:	/* add set difference */
+    #####: 1286:	cur_score += row_mark - tag_mark ;
+        -: 1287:	/* integer overflow... */
+    #####: 1288:	cur_score = numext::mini(cur_score, n_col) ;
+        -: 1289:      }
+        -: 1290:
+        -: 1291:      /* recompute the column's length */
+    #####: 1292:      Col [col].length = (IndexType) (new_cp - &A [Col [col].start]) ;
+        -: 1293:
+        -: 1294:      /* === Further mass elimination ================================= */
+        -: 1295:
+    #####: 1296:      if (Col [col].length == 0)
+        -: 1297:      {
+        -: 1298:	COLAMD_DEBUG4 (("further mass elimination. Col: %d\n", col)) ;
+        -: 1299:	/* nothing left but the pivot row in this column */
+    #####: 1300:	Col[col].kill_principal() ;
+    #####: 1301:	pivot_row_degree -= Col [col].shared1.thickness ;
+        -: 1302:	COLAMD_ASSERT (pivot_row_degree >= 0) ;
+        -: 1303:	/* order it */
+    #####: 1304:	Col [col].shared2.order = k ;
+        -: 1305:	/* increment order count by column thickness */
+    #####: 1306:	k += Col [col].shared1.thickness ;
+    #####: 1307:      }
+        -: 1308:      else
+        -: 1309:      {
+        -: 1310:	/* === Prepare for supercolumn detection ==================== */
+        -: 1311:
+        -: 1312:	COLAMD_DEBUG4 (("Preparing supercol detection for Col: %d.\n", col)) ;
+        -: 1313:
+        -: 1314:	/* save score so far */
+    #####: 1315:	Col [col].shared2.score = cur_score ;
+        -: 1316:
+        -: 1317:	/* add column to hash table, for supercolumn detection */
+    #####: 1318:	hash %= n_col + 1 ;
+        -: 1319:
+        -: 1320:	COLAMD_DEBUG4 ((" Hash = %d, n_col = %d.\n", hash, n_col)) ;
+        -: 1321:	COLAMD_ASSERT (hash <= n_col) ;
+        -: 1322:
+    #####: 1323:	head_column = head [hash] ;
+    #####: 1324:	if (head_column > Empty)
+        -: 1325:	{
+        -: 1326:	  /* degree list "hash" is non-empty, use prev (shared3) of */
+        -: 1327:	  /* first column in degree list as head of hash bucket */
+    #####: 1328:	  first_col = Col [head_column].shared3.headhash ;
+    #####: 1329:	  Col [head_column].shared3.headhash = col ;
+    #####: 1330:	}
+        -: 1331:	else
+        -: 1332:	{
+        -: 1333:	  /* degree list "hash" is empty, use head as hash bucket */
+    #####: 1334:	  first_col = - (head_column + 2) ;
+    #####: 1335:	  head [hash] = - (col + 2) ;
+        -: 1336:	}
+    #####: 1337:	Col [col].shared4.hash_next = first_col ;
+        -: 1338:
+        -: 1339:	/* save hash function in Col [col].shared3.hash */
+    #####: 1340:	Col [col].shared3.hash = (IndexType) hash ;
+        -: 1341:	COLAMD_ASSERT (Col[col].is_alive()) ;
+        -: 1342:      }
+        -: 1343:    }
+        -: 1344:
+        -: 1345:    /* The approximate external column degree is now computed.  */
+        -: 1346:
+        -: 1347:    /* === Supercolumn detection ======================================== */
+        -: 1348:
+        -: 1349:    COLAMD_DEBUG3 (("** Supercolumn detection phase. **\n")) ;
+        -: 1350:
+    #####: 1351:    Colamd::detect_super_cols (Col, A, head, pivot_row_start, pivot_row_length) ;
+        -: 1352:
+        -: 1353:    /* === Kill the pivotal column ====================================== */
+        -: 1354:
+    #####: 1355:    Col[pivot_col].kill_principal() ;
+        -: 1356:
+        -: 1357:    /* === Clear mark =================================================== */
+        -: 1358:
+    #####: 1359:    tag_mark += (max_deg + 1) ;
+    #####: 1360:    if (tag_mark >= max_mark)
+        -: 1361:    {
+        -: 1362:      COLAMD_DEBUG2 (("clearing tag_mark\n")) ;
+    #####: 1363:      tag_mark = Colamd::clear_mark (n_row, Row) ;
+    #####: 1364:    }
+        -: 1365:
+        -: 1366:    /* === Finalize the new pivot row, and column scores ================ */
+        -: 1367:
+        -: 1368:    COLAMD_DEBUG3 (("** Finalize scores phase. **\n")) ;
+        -: 1369:
+        -: 1370:    /* for each column in pivot row */
+    #####: 1371:    rp = &A [pivot_row_start] ;
+        -: 1372:    /* compact the pivot row */
+    #####: 1373:    new_rp = rp ;
+    #####: 1374:    rp_end = rp + pivot_row_length ;
+    #####: 1375:    while (rp < rp_end)
+        -: 1376:    {
+    #####: 1377:      col = *rp++ ;
+        -: 1378:      /* skip dead columns */
+    #####: 1379:      if (Col[col].is_dead())
+        -: 1380:      {
+    #####: 1381:	continue ;
+        -: 1382:      }
+    #####: 1383:      *new_rp++ = col ;
+        -: 1384:      /* add new pivot row to column */
+    #####: 1385:      A [Col [col].start + (Col [col].length++)] = pivot_row ;
+        -: 1386:
+        -: 1387:      /* retrieve score so far and add on pivot row's degree. */
+        -: 1388:      /* (we wait until here for this in case the pivot */
+        -: 1389:      /* row's degree was reduced due to mass elimination). */
+    #####: 1390:      cur_score = Col [col].shared2.score + pivot_row_degree ;
+        -: 1391:
+        -: 1392:      /* calculate the max possible score as the number of */
+        -: 1393:      /* external columns minus the 'k' value minus the */
+        -: 1394:      /* columns thickness */
+    #####: 1395:      max_score = n_col - k - Col [col].shared1.thickness ;
+        -: 1396:
+        -: 1397:      /* make the score the external degree of the union-of-rows */
+    #####: 1398:      cur_score -= Col [col].shared1.thickness ;
+        -: 1399:
+        -: 1400:      /* make sure score is less or equal than the max score */
+    #####: 1401:      cur_score = numext::mini(cur_score, max_score) ;
+        -: 1402:      COLAMD_ASSERT (cur_score >= 0) ;
+        -: 1403:
+        -: 1404:      /* store updated score */
+    #####: 1405:      Col [col].shared2.score = cur_score ;
+        -: 1406:
+        -: 1407:      /* === Place column back in degree list ========================= */
+        -: 1408:
+        -: 1409:      COLAMD_ASSERT (min_score >= 0) ;
+        -: 1410:      COLAMD_ASSERT (min_score <= n_col) ;
+        -: 1411:      COLAMD_ASSERT (cur_score >= 0) ;
+        -: 1412:      COLAMD_ASSERT (cur_score <= n_col) ;
+        -: 1413:      COLAMD_ASSERT (head [cur_score] >= Empty) ;
+    #####: 1414:      next_col = head [cur_score] ;
+    #####: 1415:      Col [col].shared4.degree_next = next_col ;
+    #####: 1416:      Col [col].shared3.prev = Empty ;
+    #####: 1417:      if (next_col != Empty)
+        -: 1418:      {
+    #####: 1419:	Col [next_col].shared3.prev = col ;
+    #####: 1420:      }
+    #####: 1421:      head [cur_score] = col ;
+        -: 1422:
+        -: 1423:      /* see if this score is less than current min */
+    #####: 1424:      min_score = numext::mini(min_score, cur_score) ;
+        -: 1425:
+        -: 1426:    }
+        -: 1427:
+        -: 1428:    /* === Resurrect the new pivot row ================================== */
+        -: 1429:
+    #####: 1430:    if (pivot_row_degree > 0)
+        -: 1431:    {
+        -: 1432:      /* update pivot row length to reflect any cols that were killed */
+        -: 1433:      /* during super-col detection and mass elimination */
+    #####: 1434:      Row [pivot_row].start  = pivot_row_start ;
+    #####: 1435:      Row [pivot_row].length = (IndexType) (new_rp - &A[pivot_row_start]) ;
+    #####: 1436:      Row [pivot_row].shared1.degree = pivot_row_degree ;
+    #####: 1437:      Row [pivot_row].shared2.mark = 0 ;
+        -: 1438:      /* pivot row is no longer dead */
+    #####: 1439:    }
+        -: 1440:  }
+        -: 1441:
+        -: 1442:  /* === All principal columns have now been ordered ====================== */
+        -: 1443:
+    #####: 1444:  return (ngarbage) ;
+        -: 1445:}
+        -: 1446:
+        -: 1447:
+        -: 1448:/* ========================================================================== */
+        -: 1449:/* === order_children ======================================================= */
+        -: 1450:/* ========================================================================== */
+        -: 1451:
+        -: 1452:/*
+        -: 1453:  The find_ordering routine has ordered all of the principal columns (the
+        -: 1454:  representatives of the supercolumns).  The non-principal columns have not
+        -: 1455:  yet been ordered.  This routine orders those columns by walking up the
+        -: 1456:  parent tree (a column is a child of the column which absorbed it).  The
+        -: 1457:  final permutation vector is then placed in p [0 ... n_col-1], with p [0]
+        -: 1458:  being the first column, and p [n_col-1] being the last.  It doesn't look
+        -: 1459:  like it at first glance, but be assured that this routine takes time linear
+        -: 1460:  in the number of columns.  Although not immediately obvious, the time
+        -: 1461:  taken by this routine is O (n_col), that is, linear in the number of
+        -: 1462:  columns.  Not user-callable.
+        -: 1463:*/
+        -: 1464:template <typename IndexType>
+    #####: 1465:static inline  void order_children
+        -: 1466:(
+        -: 1467:  /* === Parameters ======================================================= */
+        -: 1468:
+        -: 1469:  IndexType n_col,      /* number of columns of A */
+        -: 1470:  ColStructure<IndexType> Col [],    /* of size n_col+1 */
+        -: 1471:  IndexType p []      /* p [0 ... n_col-1] is the column permutation*/
+        -: 1472:  )
+        -: 1473:{
+        -: 1474:  /* === Local variables ================================================== */
+        -: 1475:
+        -: 1476:  IndexType i ;     /* loop counter for all columns */
+        -: 1477:  IndexType c ;     /* column index */
+        -: 1478:  IndexType parent ;    /* index of column's parent */
+        -: 1479:  IndexType order ;     /* column's order */
+        -: 1480:
+        -: 1481:  /* === Order each non-principal column ================================== */
+        -: 1482:
+    #####: 1483:  for (i = 0 ; i < n_col ; i++)
+        -: 1484:  {
+        -: 1485:    /* find an un-ordered non-principal column */
+        -: 1486:    COLAMD_ASSERT (col_is_dead(Col, i)) ;
+    #####: 1487:    if (!Col[i].is_dead_principal() && Col [i].shared2.order == Empty)
+        -: 1488:    {
+    #####: 1489:      parent = i ;
+        -: 1490:      /* once found, find its principal parent */
+    #####: 1491:      do
+        -: 1492:      {
+    #####: 1493:	parent = Col [parent].shared1.parent ;
+    #####: 1494:      } while (!Col[parent].is_dead_principal()) ;
+        -: 1495:
+        -: 1496:      /* now, order all un-ordered non-principal columns along path */
+        -: 1497:      /* to this parent.  collapse tree at the same time */
+    #####: 1498:      c = i ;
+        -: 1499:      /* get order of parent */
+    #####: 1500:      order = Col [parent].shared2.order ;
+        -: 1501:
+    #####: 1502:      do
+        -: 1503:      {
+        -: 1504:	COLAMD_ASSERT (Col [c].shared2.order == Empty) ;
+        -: 1505:
+        -: 1506:	/* order this column */
+    #####: 1507:	Col [c].shared2.order = order++ ;
+        -: 1508:	/* collaps tree */
+    #####: 1509:	Col [c].shared1.parent = parent ;
+        -: 1510:
+        -: 1511:	/* get immediate parent of this column */
+    #####: 1512:	c = Col [c].shared1.parent ;
+        -: 1513:
+        -: 1514:	/* continue until we hit an ordered column.  There are */
+        -: 1515:	/* guaranteed not to be anymore unordered columns */
+        -: 1516:	/* above an ordered column */
+    #####: 1517:      } while (Col [c].shared2.order == Empty) ;
+        -: 1518:
+        -: 1519:      /* re-order the super_col parent to largest order for this group */
+    #####: 1520:      Col [parent].shared2.order = order ;
+    #####: 1521:    }
+    #####: 1522:  }
+        -: 1523:
+        -: 1524:  /* === Generate the permutation ========================================= */
+        -: 1525:
+    #####: 1526:  for (c = 0 ; c < n_col ; c++)
+        -: 1527:  {
+    #####: 1528:    p [Col [c].shared2.order] = c ;
+    #####: 1529:  }
+    #####: 1530:}
+        -: 1531:
+        -: 1532:
+        -: 1533:/* ========================================================================== */
+        -: 1534:/* === detect_super_cols ==================================================== */
+        -: 1535:/* ========================================================================== */
+        -: 1536:
+        -: 1537:/*
+        -: 1538:  Detects supercolumns by finding matches between columns in the hash buckets.
+        -: 1539:  Check amongst columns in the set A [row_start ... row_start + row_length-1].
+        -: 1540:  The columns under consideration are currently *not* in the degree lists,
+        -: 1541:  and have already been placed in the hash buckets.
+        -: 1542:
+        -: 1543:  The hash bucket for columns whose hash function is equal to h is stored
+        -: 1544:  as follows:
+        -: 1545:
+        -: 1546:  if head [h] is >= 0, then head [h] contains a degree list, so:
+        -: 1547:
+        -: 1548:  head [h] is the first column in degree bucket h.
+        -: 1549:  Col [head [h]].headhash gives the first column in hash bucket h.
+        -: 1550:
+        -: 1551:  otherwise, the degree list is empty, and:
+        -: 1552:
+        -: 1553:  -(head [h] + 2) is the first column in hash bucket h.
+        -: 1554:
+        -: 1555:  For a column c in a hash bucket, Col [c].shared3.prev is NOT a "previous
+        -: 1556:  column" pointer.  Col [c].shared3.hash is used instead as the hash number
+        -: 1557:  for that column.  The value of Col [c].shared4.hash_next is the next column
+        -: 1558:  in the same hash bucket.
+        -: 1559:
+        -: 1560:  Assuming no, or "few" hash collisions, the time taken by this routine is
+        -: 1561:  linear in the sum of the sizes (lengths) of each column whose score has
+        -: 1562:  just been computed in the approximate degree computation.
+        -: 1563:  Not user-callable.
+        -: 1564:*/
+        -: 1565:template <typename IndexType>
+    #####: 1566:static void detect_super_cols
+        -: 1567:(
+        -: 1568:  /* === Parameters ======================================================= */
+        -: 1569:
+        -: 1570:  ColStructure<IndexType> Col [],    /* of size n_col+1 */
+        -: 1571:  IndexType A [],     /* row indices of A */
+        -: 1572:  IndexType head [],    /* head of degree lists and hash buckets */
+        -: 1573:  IndexType row_start,    /* pointer to set of columns to check */
+        -: 1574:  IndexType row_length    /* number of columns to check */
+        -: 1575:)
+        -: 1576:{
+        -: 1577:  /* === Local variables ================================================== */
+        -: 1578:
+        -: 1579:  IndexType hash ;      /* hash value for a column */
+        -: 1580:  IndexType *rp ;     /* pointer to a row */
+        -: 1581:  IndexType c ;     /* a column index */
+        -: 1582:  IndexType super_c ;   /* column index of the column to absorb into */
+        -: 1583:  IndexType *cp1 ;      /* column pointer for column super_c */
+        -: 1584:  IndexType *cp2 ;      /* column pointer for column c */
+        -: 1585:  IndexType length ;    /* length of column super_c */
+        -: 1586:  IndexType prev_c ;    /* column preceding c in hash bucket */
+        -: 1587:  IndexType i ;     /* loop counter */
+        -: 1588:  IndexType *rp_end ;   /* pointer to the end of the row */
+        -: 1589:  IndexType col ;     /* a column index in the row to check */
+        -: 1590:  IndexType head_column ;   /* first column in hash bucket or degree list */
+        -: 1591:  IndexType first_col ;   /* first column in hash bucket */
+        -: 1592:
+        -: 1593:  /* === Consider each column in the row ================================== */
+        -: 1594:
+    #####: 1595:  rp = &A [row_start] ;
+    #####: 1596:  rp_end = rp + row_length ;
+    #####: 1597:  while (rp < rp_end)
+        -: 1598:  {
+    #####: 1599:    col = *rp++ ;
+    #####: 1600:    if (Col[col].is_dead())
+        -: 1601:    {
+    #####: 1602:      continue ;
+        -: 1603:    }
+        -: 1604:
+        -: 1605:    /* get hash number for this column */
+    #####: 1606:    hash = Col [col].shared3.hash ;
+        -: 1607:    COLAMD_ASSERT (hash <= n_col) ;
+        -: 1608:
+        -: 1609:    /* === Get the first column in this hash bucket ===================== */
+        -: 1610:
+    #####: 1611:    head_column = head [hash] ;
+    #####: 1612:    if (head_column > Empty)
+        -: 1613:    {
+    #####: 1614:      first_col = Col [head_column].shared3.headhash ;
+    #####: 1615:    }
+        -: 1616:    else
+        -: 1617:    {
+    #####: 1618:      first_col = - (head_column + 2) ;
+        -: 1619:    }
+        -: 1620:
+        -: 1621:    /* === Consider each column in the hash bucket ====================== */
+        -: 1622:
+    #####: 1623:    for (super_c = first_col ; super_c != Empty ;
+    #####: 1624:	 super_c = Col [super_c].shared4.hash_next)
+        -: 1625:    {
+        -: 1626:      COLAMD_ASSERT (Col [super_c].is_alive()) ;
+        -: 1627:      COLAMD_ASSERT (Col [super_c].shared3.hash == hash) ;
+    #####: 1628:      length = Col [super_c].length ;
+        -: 1629:
+        -: 1630:      /* prev_c is the column preceding column c in the hash bucket */
+    #####: 1631:      prev_c = super_c ;
+        -: 1632:
+        -: 1633:      /* === Compare super_c with all columns after it ================ */
+        -: 1634:
+    #####: 1635:      for (c = Col [super_c].shared4.hash_next ;
+    #####: 1636:	   c != Empty ; c = Col [c].shared4.hash_next)
+        -: 1637:      {
+        -: 1638:	COLAMD_ASSERT (c != super_c) ;
+        -: 1639:	COLAMD_ASSERT (Col[c].is_alive()) ;
+        -: 1640:	COLAMD_ASSERT (Col [c].shared3.hash == hash) ;
+        -: 1641:
+        -: 1642:	/* not identical if lengths or scores are different */
+    #####: 1643:	if (Col [c].length != length ||
+    #####: 1644:	    Col [c].shared2.score != Col [super_c].shared2.score)
+        -: 1645:	{
+    #####: 1646:	  prev_c = c ;
+    #####: 1647:	  continue ;
+        -: 1648:	}
+        -: 1649:
+        -: 1650:	/* compare the two columns */
+    #####: 1651:	cp1 = &A [Col [super_c].start] ;
+    #####: 1652:	cp2 = &A [Col [c].start] ;
+        -: 1653:
+    #####: 1654:	for (i = 0 ; i < length ; i++)
+        -: 1655:	{
+        -: 1656:	  /* the columns are "clean" (no dead rows) */
+        -: 1657:	  COLAMD_ASSERT ( cp1->is_alive() );
+        -: 1658:	  COLAMD_ASSERT ( cp2->is_alive() );
+        -: 1659:	  /* row indices will same order for both supercols, */
+        -: 1660:	  /* no gather scatter necessary */
+    #####: 1661:	  if (*cp1++ != *cp2++)
+        -: 1662:	  {
+    #####: 1663:	    break ;
+        -: 1664:	  }
+    #####: 1665:	}
+        -: 1666:
+        -: 1667:	/* the two columns are different if the for-loop "broke" */
+    #####: 1668:	if (i != length)
+        -: 1669:	{
+    #####: 1670:	  prev_c = c ;
+    #####: 1671:	  continue ;
+        -: 1672:	}
+        -: 1673:
+        -: 1674:	/* === Got it!  two columns are identical =================== */
+        -: 1675:
+        -: 1676:	COLAMD_ASSERT (Col [c].shared2.score == Col [super_c].shared2.score) ;
+        -: 1677:
+    #####: 1678:	Col [super_c].shared1.thickness += Col [c].shared1.thickness ;
+    #####: 1679:	Col [c].shared1.parent = super_c ;
+    #####: 1680:	Col[c].kill_non_principal() ;
+        -: 1681:	/* order c later, in order_children() */
+    #####: 1682:	Col [c].shared2.order = Empty ;
+        -: 1683:	/* remove c from hash bucket */
+    #####: 1684:	Col [prev_c].shared4.hash_next = Col [c].shared4.hash_next ;
+    #####: 1685:      }
+    #####: 1686:    }
+        -: 1687:
+        -: 1688:    /* === Empty this hash bucket ======================================= */
+        -: 1689:
+    #####: 1690:    if (head_column > Empty)
+        -: 1691:    {
+        -: 1692:      /* corresponding degree list "hash" is not empty */
+    #####: 1693:      Col [head_column].shared3.headhash = Empty ;
+    #####: 1694:    }
+        -: 1695:    else
+        -: 1696:    {
+        -: 1697:      /* corresponding degree list "hash" is empty */
+    #####: 1698:      head [hash] = Empty ;
+        -: 1699:    }
+        -: 1700:  }
+    #####: 1701:}
+        -: 1702:
+        -: 1703:
+        -: 1704:/* ========================================================================== */
+        -: 1705:/* === garbage_collection =================================================== */
+        -: 1706:/* ========================================================================== */
+        -: 1707:
+        -: 1708:/*
+        -: 1709:  Defragments and compacts columns and rows in the workspace A.  Used when
+        -: 1710:  all available memory has been used while performing row merging.  Returns
+        -: 1711:  the index of the first free position in A, after garbage collection.  The
+        -: 1712:  time taken by this routine is linear is the size of the array A, which is
+        -: 1713:  itself linear in the number of nonzeros in the input matrix.
+        -: 1714:  Not user-callable.
+        -: 1715:*/
+        -: 1716:template <typename IndexType>
+    #####: 1717:static IndexType garbage_collection  /* returns the new value of pfree */
+        -: 1718:  (
+        -: 1719:    /* === Parameters ======================================================= */
+        -: 1720:
+        -: 1721:    IndexType n_row,      /* number of rows */
+        -: 1722:    IndexType n_col,      /* number of columns */
+        -: 1723:    RowStructure<IndexType> Row [],    /* row info */
+        -: 1724:    ColStructure<IndexType> Col [],    /* column info */
+        -: 1725:    IndexType A [],     /* A [0 ... Alen-1] holds the matrix */
+        -: 1726:    IndexType *pfree      /* &A [0] ... pfree is in use */
+        -: 1727:    )
+        -: 1728:{
+        -: 1729:  /* === Local variables ================================================== */
+        -: 1730:
+        -: 1731:  IndexType *psrc ;     /* source pointer */
+        -: 1732:  IndexType *pdest ;    /* destination pointer */
+        -: 1733:  IndexType j ;     /* counter */
+        -: 1734:  IndexType r ;     /* a row index */
+        -: 1735:  IndexType c ;     /* a column index */
+        -: 1736:  IndexType length ;    /* length of a row or column */
+        -: 1737:
+        -: 1738:  /* === Defragment the columns =========================================== */
+        -: 1739:
+    #####: 1740:  pdest = &A[0] ;
+    #####: 1741:  for (c = 0 ; c < n_col ; c++)
+        -: 1742:  {
+    #####: 1743:    if (Col[c].is_alive())
+        -: 1744:    {
+    #####: 1745:      psrc = &A [Col [c].start] ;
+        -: 1746:
+        -: 1747:      /* move and compact the column */
+        -: 1748:      COLAMD_ASSERT (pdest <= psrc) ;
+    #####: 1749:      Col [c].start = (IndexType) (pdest - &A [0]) ;
+    #####: 1750:      length = Col [c].length ;
+    #####: 1751:      for (j = 0 ; j < length ; j++)
+        -: 1752:      {
+    #####: 1753:	r = *psrc++ ;
+    #####: 1754:	if (Row[r].is_alive())
+        -: 1755:	{
+    #####: 1756:	  *pdest++ = r ;
+    #####: 1757:	}
+    #####: 1758:      }
+    #####: 1759:      Col [c].length = (IndexType) (pdest - &A [Col [c].start]) ;
+    #####: 1760:    }
+    #####: 1761:  }
+        -: 1762:
+        -: 1763:  /* === Prepare to defragment the rows =================================== */
+        -: 1764:
+    #####: 1765:  for (r = 0 ; r < n_row ; r++)
+        -: 1766:  {
+    #####: 1767:    if (Row[r].is_alive())
+        -: 1768:    {
+    #####: 1769:      if (Row [r].length == 0)
+        -: 1770:      {
+        -: 1771:        /* this row is of zero length.  cannot compact it, so kill it */
+        -: 1772:        COLAMD_DEBUG3 (("Defrag row kill\n")) ;
+    #####: 1773:        Row[r].kill() ;
+    #####: 1774:      }
+        -: 1775:      else
+        -: 1776:      {
+        -: 1777:        /* save first column index in Row [r].shared2.first_column */
+    #####: 1778:        psrc = &A [Row [r].start] ;
+    #####: 1779:        Row [r].shared2.first_column = *psrc ;
+        -: 1780:        COLAMD_ASSERT (Row[r].is_alive()) ;
+        -: 1781:        /* flag the start of the row with the one's complement of row */
+    #####: 1782:        *psrc = ones_complement(r) ;
+        -: 1783:
+        -: 1784:      }
+    #####: 1785:    }
+    #####: 1786:  }
+        -: 1787:
+        -: 1788:  /* === Defragment the rows ============================================== */
+        -: 1789:
+    #####: 1790:  psrc = pdest ;
+    #####: 1791:  while (psrc < pfree)
+        -: 1792:  {
+        -: 1793:    /* find a negative number ... the start of a row */
+    #####: 1794:    if (*psrc++ < 0)
+        -: 1795:    {
+    #####: 1796:      psrc-- ;
+        -: 1797:      /* get the row index */
+    #####: 1798:      r = ones_complement(*psrc) ;
+        -: 1799:      COLAMD_ASSERT (r >= 0 && r < n_row) ;
+        -: 1800:      /* restore first column index */
+    #####: 1801:      *psrc = Row [r].shared2.first_column ;
+        -: 1802:      COLAMD_ASSERT (Row[r].is_alive()) ;
+        -: 1803:
+        -: 1804:      /* move and compact the row */
+        -: 1805:      COLAMD_ASSERT (pdest <= psrc) ;
+    #####: 1806:      Row [r].start = (IndexType) (pdest - &A [0]) ;
+    #####: 1807:      length = Row [r].length ;
+    #####: 1808:      for (j = 0 ; j < length ; j++)
+        -: 1809:      {
+    #####: 1810:	c = *psrc++ ;
+    #####: 1811:	if (Col[c].is_alive())
+        -: 1812:	{
+    #####: 1813:	  *pdest++ = c ;
+    #####: 1814:	}
+    #####: 1815:      }
+    #####: 1816:      Row [r].length = (IndexType) (pdest - &A [Row [r].start]) ;
+        -: 1817:
+    #####: 1818:    }
+        -: 1819:  }
+        -: 1820:  /* ensure we found all the rows */
+        -: 1821:  COLAMD_ASSERT (debug_rows == 0) ;
+        -: 1822:
+        -: 1823:  /* === Return the new value of pfree ==================================== */
+        -: 1824:
+    #####: 1825:  return ((IndexType) (pdest - &A [0])) ;
+        -: 1826:}
+        -: 1827:
+        -: 1828:
+        -: 1829:/* ========================================================================== */
+        -: 1830:/* === clear_mark =========================================================== */
+        -: 1831:/* ========================================================================== */
+        -: 1832:
+        -: 1833:/*
+        -: 1834:  Clears the Row [].shared2.mark array, and returns the new tag_mark.
+        -: 1835:  Return value is the new tag_mark.  Not user-callable.
+        -: 1836:*/
+        -: 1837:template <typename IndexType>
+    #####: 1838:static inline  IndexType clear_mark  /* return the new value for tag_mark */
+        -: 1839:  (
+        -: 1840:      /* === Parameters ======================================================= */
+        -: 1841:
+        -: 1842:    IndexType n_row,    /* number of rows in A */
+        -: 1843:    RowStructure<IndexType> Row [] /* Row [0 ... n_row-1].shared2.mark is set to zero */
+        -: 1844:    )
+        -: 1845:{
+        -: 1846:  /* === Local variables ================================================== */
+        -: 1847:
+        -: 1848:  IndexType r ;
+        -: 1849:
+    #####: 1850:  for (r = 0 ; r < n_row ; r++)
+        -: 1851:  {
+    #####: 1852:    if (Row[r].is_alive())
+        -: 1853:    {
+    #####: 1854:      Row [r].shared2.mark = 0 ;
+    #####: 1855:    }
+    #####: 1856:  }
+    #####: 1857:  return (1) ;
+        -: 1858:}
+        -: 1859:
+        -: 1860:} // namespace Colamd
+        -: 1861:
+        -: 1862:} // namespace internal
+        -: 1863:#endif

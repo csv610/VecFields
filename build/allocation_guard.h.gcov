@@ -1,0 +1,113 @@
+        -:    0:Source:/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__memory/allocation_guard.h
+        -:    0:Graph:./external/googletest/googletest/CMakeFiles/gtest.dir/src/gtest-all.cc.gcno
+        -:    0:Data:./external/googletest/googletest/CMakeFiles/gtest.dir/src/gtest-all.cc.gcda
+        -:    0:Runs:1
+        -:    1:// -*- C++ -*-
+        -:    2://===----------------------------------------------------------------------===//
+        -:    3://
+        -:    4:// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+        -:    5:// See https://llvm.org/LICENSE.txt for license information.
+        -:    6:// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+        -:    7://
+        -:    8://===----------------------------------------------------------------------===//
+        -:    9:
+        -:   10:#ifndef _LIBCPP___MEMORY_ALLOCATION_GUARD_H
+        -:   11:#define _LIBCPP___MEMORY_ALLOCATION_GUARD_H
+        -:   12:
+        -:   13:#include <__config>
+        -:   14:#include <__memory/addressof.h>
+        -:   15:#include <__memory/allocator_traits.h>
+        -:   16:#include <__utility/move.h>
+        -:   17:
+        -:   18:#if !defined(_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER)
+        -:   19:#  pragma GCC system_header
+        -:   20:#endif
+        -:   21:
+        -:   22:_LIBCPP_PUSH_MACROS
+        -:   23:#include <__undef_macros>
+        -:   24:
+        -:   25:_LIBCPP_BEGIN_NAMESPACE_STD
+        -:   26:
+        -:   27:// Helper class to allocate memory using an Allocator in an exception safe
+        -:   28:// manner.
+        -:   29://
+        -:   30:// The intended usage of this class is as follows:
+        -:   31://
+        -:   32:// 0
+        -:   33:// 1     __allocation_guard<SomeAllocator> guard(alloc, 10);
+        -:   34:// 2     do_some_initialization_that_may_throw(guard.__get());
+        -:   35:// 3     save_allocated_pointer_in_a_noexcept_operation(guard.__release_ptr());
+        -:   36:// 4
+        -:   37://
+        -:   38:// If line (2) throws an exception during initialization of the memory, the
+        -:   39:// guard's destructor will be called, and the memory will be released using
+        -:   40:// Allocator deallocation. Otherwise, we release the memory from the guard on
+        -:   41:// line (3) in an operation that can't throw -- after that, the guard is not
+        -:   42:// responsible for the memory anymore.
+        -:   43://
+        -:   44:// This is similar to a unique_ptr, except it's easier to use with a
+        -:   45:// custom allocator.
+        -:   46:template <class _Alloc>
+        -:   47:struct __allocation_guard {
+        -:   48:  using _Pointer _LIBCPP_NODEBUG = typename allocator_traits<_Alloc>::pointer;
+        -:   49:  using _Size _LIBCPP_NODEBUG    = typename allocator_traits<_Alloc>::size_type;
+        -:   50:
+        -:   51:  template <class _AllocT> // we perform the allocator conversion inside the constructor
+    #####:   52:  _LIBCPP_CONSTEXPR_SINCE_CXX26 _LIBCPP_HIDE_FROM_ABI explicit __allocation_guard(_AllocT __alloc, _Size __n)
+        -:   53:      : __alloc_(std::move(__alloc)),
+    #####:   54:        __n_(__n),
+    #####:   55:        __ptr_(allocator_traits<_Alloc>::allocate(__alloc_, __n_)) // initialization order is important
+    #####:   56:  {}
+        -:   57:
+    #####:   58:  _LIBCPP_CONSTEXPR_SINCE_CXX26 _LIBCPP_HIDE_FROM_ABI ~__allocation_guard() _NOEXCEPT { __destroy(); }
+        -:   59:
+        -:   60:  __allocation_guard(const __allocation_guard&)                    = delete;
+        -:   61:  __allocation_guard& operator=(const __allocation_guard& __other) = delete;
+        -:   62:
+        -:   63:  _LIBCPP_CONSTEXPR_SINCE_CXX26 _LIBCPP_HIDE_FROM_ABI __allocation_guard(__allocation_guard&& __other) _NOEXCEPT
+        -:   64:      : __alloc_(std::move(__other.__alloc_)),
+        -:   65:        __n_(__other.__n_),
+        -:   66:        __ptr_(__other.__ptr_) {
+        -:   67:    __other.__ptr_ = nullptr;
+        -:   68:  }
+        -:   69:
+        -:   70:  _LIBCPP_CONSTEXPR_SINCE_CXX26 _LIBCPP_HIDE_FROM_ABI __allocation_guard&
+        -:   71:  operator=(__allocation_guard&& __other) _NOEXCEPT {
+        -:   72:    if (std::addressof(__other) != this) {
+        -:   73:      __destroy();
+        -:   74:
+        -:   75:      __alloc_       = std::move(__other.__alloc_);
+        -:   76:      __n_           = __other.__n_;
+        -:   77:      __ptr_         = __other.__ptr_;
+        -:   78:      __other.__ptr_ = nullptr;
+        -:   79:    }
+        -:   80:
+        -:   81:    return *this;
+        -:   82:  }
+        -:   83:
+        -:   84:  _LIBCPP_CONSTEXPR_SINCE_CXX26 _LIBCPP_HIDE_FROM_ABI _Pointer
+    #####:   85:  __release_ptr() _NOEXCEPT { // not called __release() because it's a keyword in objective-c++
+    #####:   86:    _Pointer __tmp = __ptr_;
+    #####:   87:    __ptr_         = nullptr;
+    #####:   88:    return __tmp;
+        -:   89:  }
+        -:   90:
+    #####:   91:  _LIBCPP_CONSTEXPR_SINCE_CXX26 _LIBCPP_HIDE_FROM_ABI _Pointer __get() const _NOEXCEPT { return __ptr_; }
+        -:   92:
+        -:   93:private:
+    #####:   94:  _LIBCPP_CONSTEXPR_SINCE_CXX26 _LIBCPP_HIDE_FROM_ABI void __destroy() _NOEXCEPT {
+    #####:   95:    if (__ptr_ != nullptr) {
+    #####:   96:      allocator_traits<_Alloc>::deallocate(__alloc_, __ptr_, __n_);
+    #####:   97:    }
+    #####:   98:  }
+        -:   99:
+        -:  100:  _Alloc __alloc_;
+        -:  101:  _Size __n_;
+        -:  102:  _Pointer __ptr_;
+        -:  103:};
+        -:  104:
+        -:  105:_LIBCPP_END_NAMESPACE_STD
+        -:  106:
+        -:  107:_LIBCPP_POP_MACROS
+        -:  108:
+        -:  109:#endif // _LIBCPP___MEMORY_ALLOCATION_GUARD_H

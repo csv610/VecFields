@@ -1,7 +1,7 @@
         -:    0:Source:/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__string/constexpr_c_functions.h
-        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
-        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
-        -:    0:Runs:4
+        -:    0:Graph:./external/googletest/googlemock/CMakeFiles/gmock_main.dir/src/gmock_main.cc.gcno
+        -:    0:Data:-
+        -:    0:Runs:0
         -:    1://===----------------------------------------------------------------------===//
         -:    2://
         -:    3:// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -50,7 +50,7 @@
         -:   46:#endif
         -:   47:
         -:   48:template <class _Tp>
-     1236:   49:inline _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 size_t __constexpr_strlen(const _Tp* __str) _NOEXCEPT {
+    #####:   49:inline _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 size_t __constexpr_strlen(const _Tp* __str) _NOEXCEPT {
         -:   50:  static_assert(__is_char_type<_Tp>, "__constexpr_strlen only works with char and char8_t");
         -:   51:  // GCC currently doesn't support __builtin_strlen for heap-allocated memory during constant evaluation.
         -:   52:  // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=70816
@@ -64,7 +64,7 @@
         -:   60:      ;
         -:   61:    return __i;
         -:   62:  }
-     1236:   63:  return __builtin_strlen(reinterpret_cast<const char*>(__str));
+    #####:   63:  return __builtin_strlen(reinterpret_cast<const char*>(__str));
         -:   64:}
         -:   65:
         -:   66:// Because of __is_trivially_lexicographically_comparable_v we know that comparing the object representations is
@@ -131,7 +131,7 @@
         -:  127:}
         -:  128:
         -:  129:template <class _Tp, class _Up>
-     1216:  130:_LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 _Tp* __constexpr_memchr(_Tp* __str, _Up __value, size_t __count) {
+        -:  130:_LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 _Tp* __constexpr_memchr(_Tp* __str, _Up __value, size_t __count) {
         -:  131:  static_assert(sizeof(_Tp) == 1 && __libcpp_is_trivially_equality_comparable<_Tp, _Up>::value,
         -:  132:                "Calling memchr on non-trivially equality comparable types is unsafe.");
         -:  133:
@@ -149,9 +149,9 @@
         -:  145:    }
         -:  146:    return nullptr;
         -:  147:  } else {
-     1216:  148:    char __value_buffer = 0;
-     1216:  149:    __builtin_memcpy(&__value_buffer, std::addressof(__value), sizeof(char));
-     1216:  150:    return static_cast<_Tp*>(__builtin_memchr(__str, __value_buffer, __count));
+        -:  148:    char __value_buffer = 0;
+        -:  149:    __builtin_memcpy(&__value_buffer, std::addressof(__value), sizeof(char));
+        -:  150:    return static_cast<_Tp*>(__builtin_memchr(__str, __value_buffer, __count));
         -:  151:  }
         -:  152:}
         -:  153:
@@ -210,9 +210,9 @@
         -:  206:
         -:  207:template <class _Tp, class _Up>
         -:  208:_LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 _Tp*
-     1260:  209:__constexpr_memmove(_Tp* __dest, _Up* __src, __element_count __n) {
+        -:  209:__constexpr_memmove(_Tp* __dest, _Up* __src, __element_count __n) {
         -:  210:  static_assert(__is_always_bitcastable<_Up, _Tp>::value);
-     1260:  211:  size_t __count = static_cast<size_t>(__n);
+        -:  211:  size_t __count = static_cast<size_t>(__n);
         -:  212:  if (__libcpp_is_constant_evaluated()) {
         -:  213:#ifdef _LIBCPP_COMPILER_CLANG_BASED
         -:  214:    if _LIBCPP_CONSTEXPR (is_same<__remove_cv_t<_Tp>, __remove_cv_t<_Up> >::value) {
@@ -229,10 +229,10 @@
         -:  225:          std::__assign_trivially_copyable(__dest[__i], __src[__i]);
         -:  226:      }
         -:  227:    }
-     1260:  228:  } else if (__count > 0) {
-     1260:  229:    ::__builtin_memmove(__dest, __src, (__count - 1) * sizeof(_Tp) + __datasizeof_v<_Tp>);
-     1260:  230:  }
-     1260:  231:  return __dest;
+        -:  228:  } else if (__count > 0) {
+        -:  229:    ::__builtin_memmove(__dest, __src, (__count - 1) * sizeof(_Tp) + __datasizeof_v<_Tp>);
+        -:  230:  }
+        -:  231:  return __dest;
         -:  232:}
         -:  233:
         -:  234:_LIBCPP_END_NAMESPACE_STD

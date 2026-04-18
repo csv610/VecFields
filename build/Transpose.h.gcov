@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/Transpose.h
-        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
-        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
-        -:    0:Runs:4
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -68,24 +68,24 @@
         -:   64:    typedef internal::remove_all_t<MatrixType> NestedExpression;
         -:   65:
         -:   66:    EIGEN_DEVICE_FUNC
-   124116:   67:    explicit EIGEN_STRONG_INLINE Transpose(MatrixType& matrix) : m_matrix(matrix) {}
+     7414:   67:    explicit EIGEN_STRONG_INLINE Transpose(MatrixType& matrix) : m_matrix(matrix) {}
         -:   68:
-    23916:   69:    EIGEN_INHERIT_ASSIGNMENT_OPERATORS(Transpose)
+     1208:   69:    EIGEN_INHERIT_ASSIGNMENT_OPERATORS(Transpose)
         -:   70:
         -:   71:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE EIGEN_CONSTEXPR
-   128522:   72:    Index rows() const EIGEN_NOEXCEPT { return m_matrix.cols(); }
+     7692:   72:    Index rows() const EIGEN_NOEXCEPT { return m_matrix.cols(); }
         -:   73:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE EIGEN_CONSTEXPR
-   122622:   74:    Index cols() const EIGEN_NOEXCEPT { return m_matrix.rows(); }
+     6855:   74:    Index cols() const EIGEN_NOEXCEPT { return m_matrix.rows(); }
         -:   75:
         -:   76:    /** \returns the nested expression */
         -:   77:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
         -:   78:    const internal::remove_all_t<MatrixTypeNested>&
-   119770:   79:    nestedExpression() const { return m_matrix; }
+     7273:   79:    nestedExpression() const { return m_matrix; }
         -:   80:
         -:   81:    /** \returns the nested expression */
         -:   82:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
         -:   83:    std::remove_reference_t<MatrixTypeNested>&
-    10592:   84:    nestedExpression() { return m_matrix; }
+      710:   84:    nestedExpression() { return m_matrix; }
         -:   85:
         -:   86:    /** \internal */
         -:   87:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
@@ -133,9 +133,9 @@
         -:  129:    EIGEN_INHERIT_ASSIGNMENT_OPERATORS(TransposeImpl)
         -:  130:
         -:  131:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-     6484:  132:    Index innerStride() const { return derived().nestedExpression().innerStride(); }
+      359:  132:    Index innerStride() const { return derived().nestedExpression().innerStride(); }
         -:  133:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-    19452:  134:    Index outerStride() const { return derived().nestedExpression().outerStride(); }
+     1077:  134:    Index outerStride() const { return derived().nestedExpression().outerStride(); }
         -:  135:
         -:  136:    typedef std::conditional_t<
         -:  137:              internal::is_lvalue<MatrixType>::value,
@@ -144,9 +144,9 @@
         -:  140:            > ScalarWithConstIfNotLvalue;
         -:  141:
         -:  142:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-    10592:  143:    ScalarWithConstIfNotLvalue* data() { return derived().nestedExpression().data(); }
+      710:  143:    ScalarWithConstIfNotLvalue* data() { return derived().nestedExpression().data(); }
         -:  144:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-    38260:  145:    const Scalar* data() const { return derived().nestedExpression().data(); }
+     2489:  145:    const Scalar* data() const { return derived().nestedExpression().data(); }
         -:  146:
         -:  147:    // FIXME: shall we keep the const version of coeffRef?
         -:  148:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
@@ -161,7 +161,7 @@
         -:  157:      return derived().nestedExpression().coeffRef(index);
         -:  158:    }
         -:  159:  protected:
-    62058:  160:    EIGEN_DEFAULT_EMPTY_CONSTRUCTOR_AND_DESTRUCTOR(TransposeImpl)
+     3701:  160:    EIGEN_DEFAULT_EMPTY_CONSTRUCTOR_AND_DESTRUCTOR(TransposeImpl)
         -:  161:};
         -:  162:
         -:  163:/** \returns an expression of the transpose of *this.
@@ -186,9 +186,9 @@
         -:  182:template<typename Derived>
         -:  183:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
         -:  184:typename DenseBase<Derived>::TransposeReturnType
-        -:  185:DenseBase<Derived>::transpose()
+    #####:  185:DenseBase<Derived>::transpose()
         -:  186:{
-        -:  187:  return TransposeReturnType(derived());
+    #####:  187:  return TransposeReturnType(derived());
         -:  188:}
         -:  189:
         -:  190:/** This is the const version of transpose().
@@ -199,9 +199,9 @@
         -:  195:template<typename Derived>
         -:  196:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
         -:  197:const typename DenseBase<Derived>::ConstTransposeReturnType
-    40874:  198:DenseBase<Derived>::transpose() const
+     2281:  198:DenseBase<Derived>::transpose() const
         -:  199:{
-    40874:  200:  return ConstTransposeReturnType(derived());
+     2281:  200:  return ConstTransposeReturnType(derived());
         -:  201:}
         -:  202:
         -:  203:/** \returns an expression of the adjoint (i.e. conjugate transpose) of *this.
@@ -225,9 +225,9 @@
         -:  221:  * \sa adjointInPlace(), transpose(), conjugate(), class Transpose, class internal::scalar_conjugate_op */
         -:  222:template<typename Derived>
         -:  223:EIGEN_DEVICE_FUNC inline const typename MatrixBase<Derived>::AdjointReturnType
-    12968:  224:MatrixBase<Derived>::adjoint() const
+      718:  224:MatrixBase<Derived>::adjoint() const
         -:  225:{
-    12968:  226:  return AdjointReturnType(this->transpose());
+      718:  226:  return AdjointReturnType(this->transpose());
         -:  227:}
         -:  228:
         -:  229:/***************************************************************************
@@ -450,17 +450,17 @@
         -:  446:template<typename Derived, typename OtherDerived>
         -:  447:struct checkTransposeAliasing_impl<Derived, OtherDerived, false>
         -:  448:{
-     2990:  449:    EIGEN_DEVICE_FUNC static void run(const Derived&, const OtherDerived&)
+      245:  449:    EIGEN_DEVICE_FUNC static void run(const Derived&, const OtherDerived&)
         -:  450:    {
-     2990:  451:    }
+      245:  451:    }
         -:  452:};
         -:  453:
         -:  454:template<typename Dst, typename Src>
-   194962:  455:EIGEN_DEVICE_FUNC inline void check_for_aliasing(const Dst &dst, const Src &src)
+    17474:  455:EIGEN_DEVICE_FUNC inline void check_for_aliasing(const Dst &dst, const Src &src)
         -:  456:{
-     5146:  457:  if((!Dst::IsVectorAtCompileTime) && dst.rows()>1 && dst.cols()>1)
-     2990:  458:    internal::checkTransposeAliasing_impl<Dst, Src>::run(dst, src);
-   194962:  459:}
+     1577:  457:  if((!Dst::IsVectorAtCompileTime) && dst.rows()>1 && dst.cols()>1)
+      245:  458:    internal::checkTransposeAliasing_impl<Dst, Src>::run(dst, src);
+    17474:  459:}
         -:  460:
         -:  461:} // end namespace internal
         -:  462:

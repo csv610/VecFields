@@ -1,0 +1,86 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/include/directional/effort_to_indices.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1://This file is part of Directional, a library for directional field processing.
+        -:    2:// Copyright (C) 2017 Amir Vaxman <avaxman@gmail.com>
+        -:    3://
+        -:    4:// This Source Code Form is subject to the terms of the Mozilla Public License
+        -:    5:// v. 2.0. If a copy of the MPL was not distributed with this file, You can
+        -:    6:// obtain one at http://mozilla.org/MPL/2.0/.
+        -:    7:
+        -:    8:#ifndef DIRECTIONAL_EFFORT_TO_INDICES_H
+        -:    9:#define DIRECTIONAL_EFFORT_TO_INDICES_H
+        -:   10:
+        -:   11:#include <vector>
+        -:   12:#include <cmath>
+        -:   13:#include <numbers>
+        -:   14:#include <Eigen/Core>
+        -:   15:#include <directional/dual_cycles.h>
+        -:   16:#include <directional/CartesianField.h>
+        -:   17:
+        -:   18:
+        -:   19:namespace directional
+        -:   20:{
+        -:   21:// Computes cycle-based indices from adjaced-space efforts of a directional field.
+        -:   22:// Note: input is effort (sum of rotation angles), and not individual rotation angles
+        -:   23:// Input:
+        -:   24://  basisCycles:    #c by #iE (inner edges of the mesh) the oriented basis cycles around which the indices are measured
+        -:   25://  effort:         #iE the effort (sum of rotation angles) of matched vectors across the dual edge. Equal to N*rotation angles for N-RoSy fields.
+        -:   26://  cycleCurvature: #c the cycle curvature (for instance, from directional::dual_cycles)
+        -:   27://  N:              The degree of the field
+        -:   28:// Output:
+        -:   29://  indices:     #c the index of the cycle x N (always an integer).
+        1:   30:inline void effort_to_indices(const Eigen::SparseMatrix<double>& basisCycles,
+        -:   31:                              const Eigen::VectorXd& effort,
+        -:   32:                              const Eigen::VectorXd& cycleCurvature,
+        -:   33:                              const int N,
+        -:   34:                              Eigen::VectorXi& indices)
+        -:   35:{
+        -:   36:    using namespace std;
+        1:   37:    Eigen::VectorXd dIndices = ((basisCycles * effort + (double)N*cycleCurvature).array() / (2.0*std::numbers::pi));  //this should already be an integer up to numerical precision
+        -:   38:    
+        1:   39:    indices.conservativeResize(dIndices.size());
+        3:   40:    for (int i=0;i<indices.size();i++) {
+        4:   41:        assert(fabs(std::round(dIndices(i))-dIndices(i))<1e-6 && "Indices are not naturally integer!");
+        2:   42:        indices(i) = std::round(dIndices(i));
+        2:   43:    }
+        -:   44:    
+        1:   45:}
+        -:   46:
+        -:   47:
+        -:   48:// version that accepts a cartesian field object and operates on it as input and output.
+        1:   49:inline void effort_to_indices(directional::CartesianField& field)
+        -:   50:{
+        -:   51:    //field.effort = Eigen::VectorXd::Zero(field.adjSpaces.rows());
+        1:   52:    Eigen::VectorXd effortInner(field.tb->innerAdjacencies.size());
+      121:   53:    for (int i=0;i<field.tb->innerAdjacencies.size();i++)
+      120:   54:        effortInner(i)=field.effort(field.tb->innerAdjacencies(i));
+        1:   55:    Eigen::VectorXi fullIndices;
+        1:   56:    directional::effort_to_indices(field.tb->cycles, effortInner, field.tb->cycleCurvatures, field.N, fullIndices);
+        -:   57:    
+        1:   58:    Eigen::VectorXi indices(field.tb->local2Cycle.size());
+      121:   59:    for (int i=0;i<field.tb->local2Cycle.size();i++)
+      120:   60:        indices(i)=fullIndices(field.tb->local2Cycle(i));
+        -:   61:    
+        1:   62:    std::vector<int> singCyclesList;
+        1:   63:    std::vector<int> singIndicesList;
+      121:   64:    for (int i=0;i<field.tb->local2Cycle.size();i++)
+      240:   65:        if (indices(i)!=0){
+      120:   66:            singCyclesList.push_back(i);
+      120:   67:            singIndicesList.push_back(indices(i));
+      120:   68:        }
+        -:   69:    
+        1:   70:    Eigen::VectorXi singCycles(singCyclesList.size());
+        1:   71:    Eigen::VectorXi singIndices(singIndicesList.size());
+      121:   72:    for (int i=0;i<singCyclesList.size();i++){
+      120:   73:        singCycles(i)=singCyclesList[i];
+      120:   74:        singIndices(i)=singIndicesList[i];
+      120:   75:    }
+        1:   76:    field.set_singularities(singCycles, singIndices);
+        1:   77:}
+        -:   78:}
+        -:   79:
+        -:   80:#endif
+        -:   81:
+        -:   82:

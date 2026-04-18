@@ -199,6 +199,20 @@ vecfields_test_mesh_io/fast:
 	cd /Users/csv610/Projects/Mesh/Directional/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vecfields_test_mesh_io.dir/build.make tests/CMakeFiles/vecfields_test_mesh_io.dir/build
 .PHONY : vecfields_test_mesh_io/fast
 
+# Convenience name for target.
+tests/CMakeFiles/vecfields_test_field_processing.dir/rule:
+	cd /Users/csv610/Projects/Mesh/Directional/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vecfields_test_field_processing.dir/rule
+.PHONY : tests/CMakeFiles/vecfields_test_field_processing.dir/rule
+
+# Convenience name for target.
+vecfields_test_field_processing: tests/CMakeFiles/vecfields_test_field_processing.dir/rule
+.PHONY : vecfields_test_field_processing
+
+# fast build rule for target.
+vecfields_test_field_processing/fast:
+	cd /Users/csv610/Projects/Mesh/Directional/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vecfields_test_field_processing.dir/build.make tests/CMakeFiles/vecfields_test_field_processing.dir/build
+.PHONY : vecfields_test_field_processing/fast
+
 test_basic.o: test_basic.cpp.o
 .PHONY : test_basic.o
 
@@ -222,6 +236,30 @@ test_basic.s: test_basic.cpp.s
 test_basic.cpp.s:
 	cd /Users/csv610/Projects/Mesh/Directional/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vecfields_test_basic.dir/build.make tests/CMakeFiles/vecfields_test_basic.dir/test_basic.cpp.s
 .PHONY : test_basic.cpp.s
+
+test_field_processing.o: test_field_processing.cpp.o
+.PHONY : test_field_processing.o
+
+# target to build an object file
+test_field_processing.cpp.o:
+	cd /Users/csv610/Projects/Mesh/Directional/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vecfields_test_field_processing.dir/build.make tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.o
+.PHONY : test_field_processing.cpp.o
+
+test_field_processing.i: test_field_processing.cpp.i
+.PHONY : test_field_processing.i
+
+# target to preprocess a source file
+test_field_processing.cpp.i:
+	cd /Users/csv610/Projects/Mesh/Directional/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vecfields_test_field_processing.dir/build.make tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.i
+.PHONY : test_field_processing.cpp.i
+
+test_field_processing.s: test_field_processing.cpp.s
+.PHONY : test_field_processing.s
+
+# target to generate assembly for a file
+test_field_processing.cpp.s:
+	cd /Users/csv610/Projects/Mesh/Directional/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vecfields_test_field_processing.dir/build.make tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.s
+.PHONY : test_field_processing.cpp.s
 
 test_mesh_io.o: test_mesh_io.cpp.o
 .PHONY : test_mesh_io.o
@@ -261,10 +299,14 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... test"
 	@echo "... vecfields_test_basic"
+	@echo "... vecfields_test_field_processing"
 	@echo "... vecfields_test_mesh_io"
 	@echo "... test_basic.o"
 	@echo "... test_basic.i"
 	@echo "... test_basic.s"
+	@echo "... test_field_processing.o"
+	@echo "... test_field_processing.i"
+	@echo "... test_field_processing.s"
 	@echo "... test_mesh_io.o"
 	@echo "... test_mesh_io.i"
 	@echo "... test_mesh_io.s"

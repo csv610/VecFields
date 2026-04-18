@@ -1,0 +1,587 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/SparseCore/SparseCompressedBase.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2015 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:#ifndef EIGEN_SPARSE_COMPRESSED_BASE_H
+        -:   11:#define EIGEN_SPARSE_COMPRESSED_BASE_H
+        -:   12:
+        -:   13:// IWYU pragma: private
+        -:   14:#include "./InternalHeaderCheck.h"
+        -:   15:
+        -:   16:namespace Eigen { 
+        -:   17:
+        -:   18:template<typename Derived> class SparseCompressedBase;
+        -:   19:  
+        -:   20:namespace internal {
+        -:   21:
+        -:   22:template<typename Derived>
+        -:   23:struct traits<SparseCompressedBase<Derived> > : traits<Derived>
+        -:   24:{};
+        -:   25:
+        -:   26:template <typename Derived, class Comp, bool IsVector>
+        -:   27:struct inner_sort_impl;
+        -:   28:
+        -:   29:} // end namespace internal
+        -:   30:
+        -:   31:/** \ingroup SparseCore_Module
+        -:   32:  * \class SparseCompressedBase
+        -:   33:  * \brief Common base class for sparse [compressed]-{row|column}-storage format.
+        -:   34:  *
+        -:   35:  * This class defines the common interface for all derived classes implementing the compressed sparse storage format, such as:
+        -:   36:  *  - SparseMatrix
+        -:   37:  *  - Ref<SparseMatrixType,Options>
+        -:   38:  *  - Map<SparseMatrixType>
+        -:   39:  *
+        -:   40:  */
+        -:   41:template<typename Derived>
+        -:   42:class SparseCompressedBase
+        -:   43:  : public SparseMatrixBase<Derived>
+        -:   44:{
+        -:   45:  public:
+        -:   46:    typedef SparseMatrixBase<Derived> Base;
+        -:   47:    EIGEN_SPARSE_PUBLIC_INTERFACE(SparseCompressedBase)
+        -:   48:    using Base::operator=;
+        -:   49:    using Base::IsRowMajor;
+        -:   50:    
+        -:   51:    class InnerIterator;
+        -:   52:    class ReverseInnerIterator;
+        -:   53:    
+        -:   54:  protected:
+        -:   55:    typedef typename Base::IndexVector IndexVector;
+        -:   56:    Eigen::Map<IndexVector> innerNonZeros() { return Eigen::Map<IndexVector>(innerNonZeroPtr(), isCompressed()?0:derived().outerSize()); }
+    #####:   57:    const  Eigen::Map<const IndexVector> innerNonZeros() const { return Eigen::Map<const IndexVector>(innerNonZeroPtr(), isCompressed()?0:derived().outerSize()); }
+        -:   58:        
+        -:   59:  public:
+        -:   60:    
+        -:   61:    /** \returns the number of non zero coefficients */
+       19:   62:    inline Index nonZeros() const
+        -:   63:    {
+        -:   64:     if (Derived::IsVectorAtCompileTime && outerIndexPtr() == 0)
+        -:   65:       return derived().nonZeros();
+       19:   66:     else if (derived().outerSize() == 0)
+        1:   67:       return 0;
+       18:   68:     else if (isCompressed())
+       18:   69:       return outerIndexPtr()[derived().outerSize()] - outerIndexPtr()[0];
+        -:   70:     else
+    #####:   71:       return innerNonZeros().sum();
+       19:   72:    }
+        -:   73:    
+        -:   74:    /** \returns a const pointer to the array of values.
+        -:   75:      * This function is aimed at interoperability with other libraries.
+        -:   76:      * \sa innerIndexPtr(), outerIndexPtr() */
+    28309:   77:    inline const Scalar* valuePtr() const { return derived().valuePtr(); }
+        -:   78:    /** \returns a non-const pointer to the array of values.
+        -:   79:      * This function is aimed at interoperability with other libraries.
+        -:   80:      * \sa innerIndexPtr(), outerIndexPtr() */
+        -:   81:    inline Scalar* valuePtr() { return derived().valuePtr(); }
+        -:   82:
+        -:   83:    /** \returns a const pointer to the array of inner indices.
+        -:   84:      * This function is aimed at interoperability with other libraries.
+        -:   85:      * \sa valuePtr(), outerIndexPtr() */
+    28309:   86:    inline const StorageIndex* innerIndexPtr() const { return derived().innerIndexPtr(); }
+        -:   87:    /** \returns a non-const pointer to the array of inner indices.
+        -:   88:      * This function is aimed at interoperability with other libraries.
+        -:   89:      * \sa valuePtr(), outerIndexPtr() */
+        -:   90:    inline StorageIndex* innerIndexPtr() { return derived().innerIndexPtr(); }
+        -:   91:
+        -:   92:    /** \returns a const pointer to the array of the starting positions of the inner vectors.
+        -:   93:      * This function is aimed at interoperability with other libraries.
+        -:   94:      * \warning it returns the null pointer 0 for SparseVector
+        -:   95:      * \sa valuePtr(), innerIndexPtr() */
+    56654:   96:    inline const StorageIndex* outerIndexPtr() const { return derived().outerIndexPtr(); }
+        -:   97:    /** \returns a non-const pointer to the array of the starting positions of the inner vectors.
+        -:   98:      * This function is aimed at interoperability with other libraries.
+        -:   99:      * \warning it returns the null pointer 0 for SparseVector
+        -:  100:      * \sa valuePtr(), innerIndexPtr() */
+        -:  101:    inline StorageIndex* outerIndexPtr() { return derived().outerIndexPtr(); }
+        -:  102:
+        -:  103:    /** \returns a const pointer to the array of the number of non zeros of the inner vectors.
+        -:  104:      * This function is aimed at interoperability with other libraries.
+        -:  105:      * \warning it returns the null pointer 0 in compressed mode */
+    28386:  106:    inline const StorageIndex* innerNonZeroPtr() const { return derived().innerNonZeroPtr(); }
+        -:  107:    /** \returns a non-const pointer to the array of the number of non zeros of the inner vectors.
+        -:  108:      * This function is aimed at interoperability with other libraries.
+        -:  109:      * \warning it returns the null pointer 0 in compressed mode */
+        -:  110:    inline StorageIndex* innerNonZeroPtr() { return derived().innerNonZeroPtr(); }
+        -:  111:    
+        -:  112:    /** \returns whether \c *this is in compressed form. */
+    28386:  113:    inline bool isCompressed() const { return innerNonZeroPtr()==0; }
+        -:  114:
+        -:  115:    /** \returns a read-only view of the stored coefficients as a 1D array expression.
+        -:  116:      *
+        -:  117:      * \warning this method is for \b compressed \b storage \b only, and it will trigger an assertion otherwise.
+        -:  118:      *
+        -:  119:      * \sa valuePtr(), isCompressed() */
+        -:  120:    const Map<const Array<Scalar,Dynamic,1> > coeffs() const { eigen_assert(isCompressed()); return Array<Scalar,Dynamic,1>::Map(valuePtr(),nonZeros()); }
+        -:  121:
+        -:  122:    /** \returns a read-write view of the stored coefficients as a 1D array expression
+        -:  123:      *
+        -:  124:      * \warning this method is for \b compressed \b storage \b only, and it will trigger an assertion otherwise.
+        -:  125:      *
+        -:  126:      * Here is an example:
+        -:  127:      * \include SparseMatrix_coeffs.cpp
+        -:  128:      * and the output is:
+        -:  129:      * \include SparseMatrix_coeffs.out
+        -:  130:      *
+        -:  131:      * \sa valuePtr(), isCompressed() */
+        -:  132:    Map<Array<Scalar,Dynamic,1> > coeffs() { eigen_assert(isCompressed()); return Array<Scalar,Dynamic,1>::Map(valuePtr(),nonZeros()); }
+        -:  133:    
+        -:  134:    /** sorts the inner vectors in the range [begin,end) with respect to `Comp`  
+        -:  135:      * \sa innerIndicesAreSorted() */
+        -:  136:    template <class Comp = std::less<>>
+        -:  137:    inline void sortInnerIndices(Index begin, Index end) {
+        -:  138:      eigen_assert(begin >= 0 && end <= derived().outerSize() && end >= begin);
+        -:  139:      internal::inner_sort_impl<Derived, Comp, IsVectorAtCompileTime>::run(*this, begin, end);
+        -:  140:    }
+        -:  141:    
+        -:  142:    /** \returns the index of the first inner vector in the range [begin,end) that is not sorted with respect to `Comp`, or `end` if the range is fully sorted
+        -:  143:      * \sa sortInnerIndices() */
+        -:  144:    template <class Comp = std::less<>>
+        -:  145:    inline Index innerIndicesAreSorted(Index begin, Index end) const {
+        -:  146:      eigen_assert(begin >= 0 && end <= derived().outerSize() && end >= begin);
+        -:  147:      return internal::inner_sort_impl<Derived, Comp, IsVectorAtCompileTime>::check(*this, begin, end);
+        -:  148:    }
+        -:  149:
+        -:  150:    /** sorts the inner vectors in the range [0,outerSize) with respect to `Comp`
+        -:  151:      * \sa innerIndicesAreSorted() */
+        -:  152:    template <class Comp = std::less<>>
+        -:  153:    inline void sortInnerIndices() {
+        -:  154:      Index begin = 0;
+        -:  155:      Index end = derived().outerSize();
+        -:  156:      internal::inner_sort_impl<Derived, Comp, IsVectorAtCompileTime>::run(*this, begin, end);
+        -:  157:    }
+        -:  158:
+        -:  159:    /** \returns the index of the first inner vector in the range [0,outerSize) that is not sorted with respect to `Comp`, or `outerSize` if the range is fully sorted
+        -:  160:      * \sa sortInnerIndices() */
+        -:  161:    template<class Comp = std::less<>>
+        -:  162:    inline Index innerIndicesAreSorted() const {
+        -:  163:      Index begin = 0;
+        -:  164:      Index end = derived().outerSize();
+        -:  165:      return internal::inner_sort_impl<Derived, Comp, IsVectorAtCompileTime>::check(*this, begin, end);
+        -:  166:    }
+        -:  167:
+        -:  168:  protected:
+        -:  169:    /** Default constructor. Do nothing. */
+      126:  170:    SparseCompressedBase() {}
+        -:  171:
+        -:  172:    /** \internal return the index of the coeff at (row,col) or just before if it does not exist.
+        -:  173:      * This is an analogue of std::lower_bound.
+        -:  174:      */
+        -:  175:    internal::LowerBoundIndex lower_bound(Index row, Index col) const
+        -:  176:    {
+        -:  177:      eigen_internal_assert(row>=0 && row<this->rows() && col>=0 && col<this->cols());
+        -:  178:
+        -:  179:      const Index outer = Derived::IsRowMajor ? row : col;
+        -:  180:      const Index inner = Derived::IsRowMajor ? col : row;
+        -:  181:
+        -:  182:      Index start = this->outerIndexPtr()[outer];
+        -:  183:      Index end = this->isCompressed() ? this->outerIndexPtr()[outer+1] : this->outerIndexPtr()[outer] + this->innerNonZeroPtr()[outer];
+        -:  184:      eigen_assert(end>=start && "you are using a non finalized sparse matrix or written coefficient does not exist");
+        -:  185:      internal::LowerBoundIndex p;
+        -:  186:      p.value = std::lower_bound(this->innerIndexPtr()+start, this->innerIndexPtr()+end,inner) - this->innerIndexPtr();
+        -:  187:      p.found = (p.value<end) && (this->innerIndexPtr()[p.value]==inner);
+        -:  188:      return p;
+        -:  189:    }
+        -:  190:
+        -:  191:    friend struct internal::evaluator<SparseCompressedBase<Derived> >;
+        -:  192:
+        -:  193:  private:
+        -:  194:    template<typename OtherDerived> explicit SparseCompressedBase(const SparseCompressedBase<OtherDerived>&);
+        -:  195:};
+        -:  196:
+        -:  197:template<typename Derived>
+        -:  198:class SparseCompressedBase<Derived>::InnerIterator
+        -:  199:{
+        -:  200:  public:
+        -:  201:    InnerIterator()
+        -:  202:      : m_values(0), m_indices(0), m_outer(0), m_id(0), m_end(0)
+        -:  203:    {}
+        -:  204:
+        -:  205:    InnerIterator(const InnerIterator& other)
+        -:  206:      : m_values(other.m_values), m_indices(other.m_indices), m_outer(other.m_outer), m_id(other.m_id), m_end(other.m_end)
+        -:  207:    {}
+        -:  208:
+        -:  209:    InnerIterator& operator=(const InnerIterator& other)
+        -:  210:    {
+        -:  211:      m_values = other.m_values;
+        -:  212:      m_indices = other.m_indices;
+        -:  213:      const_cast<OuterType&>(m_outer).setValue(other.m_outer.value());
+        -:  214:      m_id = other.m_id;
+        -:  215:      m_end = other.m_end;
+        -:  216:      return *this;
+        -:  217:    }
+        -:  218:
+    53143:  219:    InnerIterator(const SparseCompressedBase& mat, Index outer)
+    28309:  220:      : m_values(mat.valuePtr()), m_indices(mat.innerIndexPtr()), m_outer(outer)
+    24834:  221:    {
+        -:  222:      if(Derived::IsVectorAtCompileTime && mat.outerIndexPtr()==0)
+        -:  223:      {
+        -:  224:        m_id = 0;
+        -:  225:        m_end = mat.nonZeros();
+        -:  226:      }
+        -:  227:      else
+        -:  228:      {
+    28309:  229:        m_id = mat.outerIndexPtr()[outer];
+    28309:  230:        if(mat.isCompressed())
+    28309:  231:          m_end = mat.outerIndexPtr()[outer+1];
+        -:  232:        else
+    #####:  233:          m_end = m_id + mat.innerNonZeroPtr()[outer];
+        -:  234:      }
+    53143:  235:    }
+        -:  236:
+        -:  237:    explicit InnerIterator(const SparseCompressedBase& mat) : InnerIterator(mat, Index(0))
+        -:  238:    {
+        -:  239:      EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived);
+        -:  240:    }
+        -:  241:
+        -:  242:    explicit InnerIterator(const internal::CompressedStorage<Scalar,StorageIndex>& data)
+        -:  243:      : m_values(data.valuePtr()), m_indices(data.indexPtr()), m_outer(0), m_id(0), m_end(data.size())
+        -:  244:    {
+        -:  245:      EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived);
+        -:  246:    }
+        -:  247:
+    50612:  248:    inline InnerIterator& operator++() { m_id++; return *this; }
+        -:  249:    inline InnerIterator& operator+=(Index i) { m_id += i ; return *this; }
+        -:  250:
+        -:  251:    inline InnerIterator operator+(Index i) 
+        -:  252:    { 
+        -:  253:        InnerIterator result = *this;
+        -:  254:        result += i;
+        -:  255:        return result;
+        -:  256:    }
+        -:  257:
+    32183:  258:    inline const Scalar& value() const { return m_values[m_id]; }
+      355:  259:    inline Scalar& valueRef() { return const_cast<Scalar&>(m_values[m_id]); }
+        -:  260:
+    49867:  261:    inline StorageIndex index() const { return m_indices[m_id]; }
+        -:  262:    inline Index outer() const { return m_outer.value(); }
+     2384:  263:    inline Index row() const { return IsRowMajor ? m_outer.value() : index(); }
+     2384:  264:    inline Index col() const { return IsRowMajor ? index() : m_outer.value(); }
+        -:  265:
+    79631:  266:    inline operator bool() const { return (m_id < m_end); }
+        -:  267:
+        -:  268:  protected:
+        -:  269:    const Scalar* m_values;
+        -:  270:    const StorageIndex* m_indices;
+        -:  271:    typedef internal::variable_if_dynamic<Index,Derived::IsVectorAtCompileTime?0:Dynamic> OuterType;
+        -:  272:    const OuterType m_outer;
+        -:  273:    Index m_id;
+        -:  274:    Index m_end;
+        -:  275:  private:
+        -:  276:    // If you get here, then you're not using the right InnerIterator type, e.g.:
+        -:  277:    //   SparseMatrix<double,RowMajor> A;
+        -:  278:    //   SparseMatrix<double>::InnerIterator it(A,0);
+        -:  279:    template<typename T> InnerIterator(const SparseMatrixBase<T>&, Index outer);
+        -:  280:};
+        -:  281:
+        -:  282:template<typename Derived>
+        -:  283:class SparseCompressedBase<Derived>::ReverseInnerIterator
+        -:  284:{
+        -:  285:  public:
+        -:  286:    ReverseInnerIterator(const SparseCompressedBase& mat, Index outer)
+        -:  287:      : m_values(mat.valuePtr()), m_indices(mat.innerIndexPtr()), m_outer(outer)
+        -:  288:    {
+        -:  289:      if(Derived::IsVectorAtCompileTime && mat.outerIndexPtr()==0)
+        -:  290:      {
+        -:  291:        m_start = 0;
+        -:  292:        m_id = mat.nonZeros();
+        -:  293:      }
+        -:  294:      else
+        -:  295:      {
+        -:  296:        m_start = mat.outerIndexPtr()[outer];
+        -:  297:        if(mat.isCompressed())
+        -:  298:          m_id = mat.outerIndexPtr()[outer+1];
+        -:  299:        else
+        -:  300:          m_id = m_start + mat.innerNonZeroPtr()[outer];
+        -:  301:      }
+        -:  302:    }
+        -:  303:
+        -:  304:    explicit ReverseInnerIterator(const SparseCompressedBase& mat)
+        -:  305:      : m_values(mat.valuePtr()), m_indices(mat.innerIndexPtr()), m_outer(0), m_start(0), m_id(mat.nonZeros())
+        -:  306:    {
+        -:  307:      EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived);
+        -:  308:    }
+        -:  309:
+        -:  310:    explicit ReverseInnerIterator(const internal::CompressedStorage<Scalar,StorageIndex>& data)
+        -:  311:      : m_values(data.valuePtr()), m_indices(data.indexPtr()), m_outer(0), m_start(0), m_id(data.size())
+        -:  312:    {
+        -:  313:      EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived);
+        -:  314:    }
+        -:  315:
+        -:  316:    inline ReverseInnerIterator& operator--() { --m_id; return *this; }
+        -:  317:    inline ReverseInnerIterator& operator-=(Index i) { m_id -= i; return *this; }
+        -:  318:
+        -:  319:    inline ReverseInnerIterator operator-(Index i) 
+        -:  320:    {
+        -:  321:        ReverseInnerIterator result = *this;
+        -:  322:        result -= i;
+        -:  323:        return result;
+        -:  324:    }
+        -:  325:
+        -:  326:    inline const Scalar& value() const { return m_values[m_id-1]; }
+        -:  327:    inline Scalar& valueRef() { return const_cast<Scalar&>(m_values[m_id-1]); }
+        -:  328:
+        -:  329:    inline StorageIndex index() const { return m_indices[m_id-1]; }
+        -:  330:    inline Index outer() const { return m_outer.value(); }
+        -:  331:    inline Index row() const { return IsRowMajor ? m_outer.value() : index(); }
+        -:  332:    inline Index col() const { return IsRowMajor ? index() : m_outer.value(); }
+        -:  333:
+        -:  334:    inline operator bool() const { return (m_id > m_start); }
+        -:  335:
+        -:  336:  protected:
+        -:  337:    const Scalar* m_values;
+        -:  338:    const StorageIndex* m_indices;
+        -:  339:    typedef internal::variable_if_dynamic<Index,Derived::IsVectorAtCompileTime?0:Dynamic> OuterType;
+        -:  340:    const OuterType m_outer;
+        -:  341:    Index m_start;
+        -:  342:    Index m_id;
+        -:  343:};
+        -:  344:
+        -:  345:namespace internal {
+        -:  346:
+        -:  347:// modified from https://artificial-mind.net/blog/2020/11/28/std-sort-multiple-ranges
+        -:  348:
+        -:  349:template <typename Scalar, typename StorageIndex>
+        -:  350:class StorageVal;
+        -:  351:template <typename Scalar, typename StorageIndex>
+        -:  352:class StorageRef;
+        -:  353:template <typename Scalar, typename StorageIndex>
+        -:  354:class CompressedStorageIterator;
+        -:  355:
+        -:  356:// class to hold an index/value pair
+        -:  357:template <typename Scalar, typename StorageIndex>
+        -:  358:class StorageVal
+        -:  359:{
+        -:  360:public:
+        -:  361:    
+        -:  362:  StorageVal(const StorageIndex& innerIndex, const Scalar& value) : m_innerIndex(innerIndex), m_value(value) {}
+        -:  363:  StorageVal(const StorageVal& other) : m_innerIndex(other.m_innerIndex), m_value(other.m_value) {}
+        -:  364:  StorageVal(StorageVal&& other) = default;
+        -:  365:
+        -:  366:  inline const StorageIndex& key() const { return m_innerIndex; }
+        -:  367:  inline StorageIndex& key() { return m_innerIndex; }
+        -:  368:  inline const Scalar& value() const { return m_value; }
+        -:  369:  inline Scalar& value() { return m_value; }
+        -:  370:
+        -:  371:  // enables StorageVal to be compared with respect to any type that is convertible to StorageIndex
+        -:  372:  inline operator StorageIndex() const { return m_innerIndex; }
+        -:  373:
+        -:  374:protected:
+        -:  375:  StorageIndex m_innerIndex;
+        -:  376:  Scalar m_value;
+        -:  377:private:
+        -:  378:  StorageVal() = delete;
+        -:  379:};
+        -:  380:// class to hold an index/value iterator pair
+        -:  381:// used to define assignment, swap, and comparison operators for CompressedStorageIterator
+        -:  382:template <typename Scalar, typename StorageIndex>
+        -:  383:class StorageRef 
+        -:  384:{
+        -:  385:public:
+        -:  386:  using value_type = StorageVal<Scalar, StorageIndex>;
+        -:  387:  
+        -:  388:  // StorageRef Needs to be move-able for sort on macos.
+        -:  389:  StorageRef(StorageRef&& other) = default;
+        -:  390:
+        -:  391:  inline StorageRef& operator=(const StorageRef& other) {
+        -:  392:    key() = other.key();
+        -:  393:    value() = other.value();
+        -:  394:    return *this;
+        -:  395:  }
+        -:  396:  inline StorageRef& operator=(const value_type& other) {
+        -:  397:    key() = other.key();
+        -:  398:    value() = other.value();
+        -:  399:    return *this;
+        -:  400:  }
+        -:  401:  inline operator value_type() const { return value_type(key(), value()); }
+        -:  402:  inline friend void swap(const StorageRef& a, const StorageRef& b) {
+        -:  403:    std::iter_swap(a.keyPtr(), b.keyPtr());
+        -:  404:    std::iter_swap(a.valuePtr(), b.valuePtr());
+        -:  405:  }
+        -:  406:
+        -:  407:  inline const StorageIndex& key() const { return *m_innerIndexIterator; }
+        -:  408:  inline StorageIndex& key() { return *m_innerIndexIterator; }
+        -:  409:  inline const Scalar& value() const { return *m_valueIterator; }
+        -:  410:  inline Scalar& value() { return *m_valueIterator; }
+        -:  411:  inline StorageIndex* keyPtr() const { return m_innerIndexIterator; }
+        -:  412:  inline Scalar* valuePtr() const { return m_valueIterator; }
+        -:  413:
+        -:  414:  // enables StorageRef to be compared with respect to any type that is convertible to StorageIndex
+        -:  415:  inline operator StorageIndex() const { return *m_innerIndexIterator; }
+        -:  416:
+        -:  417:protected:
+        -:  418:  StorageIndex* m_innerIndexIterator;
+        -:  419:  Scalar* m_valueIterator;
+        -:  420:private:
+        -:  421:  StorageRef() = delete;
+        -:  422:  // these constructors are called by the CompressedStorageIterator constructors for convenience only
+        -:  423:  StorageRef(StorageIndex* innerIndexIterator, Scalar* valueIterator) : m_innerIndexIterator(innerIndexIterator), m_valueIterator(valueIterator) {}
+        -:  424:  StorageRef(const StorageRef& other) : m_innerIndexIterator(other.m_innerIndexIterator), m_valueIterator(other.m_valueIterator) {}
+        -:  425:
+        -:  426:  friend class CompressedStorageIterator<Scalar, StorageIndex>;
+        -:  427:};
+        -:  428:
+        -:  429:// STL-compatible iterator class that operates on inner indices and values
+        -:  430:template<typename Scalar, typename StorageIndex>
+        -:  431:class CompressedStorageIterator
+        -:  432:{
+        -:  433:public:
+        -:  434:  using iterator_category = std::random_access_iterator_tag;
+        -:  435:  using reference = StorageRef<Scalar, StorageIndex>;
+        -:  436:  using difference_type = Index;
+        -:  437:  using value_type = typename reference::value_type;
+        -:  438:  using pointer = value_type*;
+        -:  439:
+        -:  440:  CompressedStorageIterator() = delete;
+        -:  441:  CompressedStorageIterator(difference_type index, StorageIndex* innerIndexPtr, Scalar* valuePtr) : m_index(index), m_data(innerIndexPtr, valuePtr) {}
+        -:  442:  CompressedStorageIterator(difference_type index, reference data) : m_index(index), m_data(data) {}
+        -:  443:  CompressedStorageIterator(const CompressedStorageIterator& other) : m_index(other.m_index), m_data(other.m_data) {}
+        -:  444:  CompressedStorageIterator(CompressedStorageIterator&& other) = default;
+        -:  445:  inline CompressedStorageIterator& operator=(const CompressedStorageIterator& other) {
+        -:  446:    m_index = other.m_index;
+        -:  447:    m_data = other.m_data;
+        -:  448:    return *this;
+        -:  449:  }
+        -:  450:
+        -:  451:  inline CompressedStorageIterator operator+(difference_type offset) const { return CompressedStorageIterator(m_index + offset, m_data); }
+        -:  452:  inline CompressedStorageIterator operator-(difference_type offset) const { return CompressedStorageIterator(m_index - offset, m_data); }
+        -:  453:  inline difference_type operator-(const CompressedStorageIterator& other) const { return m_index - other.m_index; }
+        -:  454:  inline CompressedStorageIterator& operator++() { ++m_index; return *this; }
+        -:  455:  inline CompressedStorageIterator& operator--() { --m_index; return *this; }
+        -:  456:  inline CompressedStorageIterator& operator+=(difference_type offset) { m_index += offset; return *this; }
+        -:  457:  inline CompressedStorageIterator& operator-=(difference_type offset) { m_index -= offset; return *this; }
+        -:  458:  inline reference operator*() const { return reference(m_data.keyPtr() + m_index, m_data.valuePtr() + m_index); }
+        -:  459:
+        -:  460:  #define MAKE_COMP(OP) inline bool operator OP(const CompressedStorageIterator& other) const { return m_index OP other.m_index; }
+        -:  461:  MAKE_COMP(<)
+        -:  462:  MAKE_COMP(>)
+        -:  463:  MAKE_COMP(>=)
+        -:  464:  MAKE_COMP(<=)
+        -:  465:  MAKE_COMP(!=)
+        -:  466:  MAKE_COMP(==)
+        -:  467:  #undef MAKE_COMP
+        -:  468:
+        -:  469:protected:
+        -:  470:  difference_type m_index;
+        -:  471:  reference m_data;
+        -:  472:};
+        -:  473:
+        -:  474:template <typename Derived, class Comp, bool IsVector>
+        -:  475:struct inner_sort_impl {
+        -:  476:  typedef typename Derived::Scalar Scalar;
+        -:  477:  typedef typename Derived::StorageIndex StorageIndex;
+        -:  478:  static inline void run(SparseCompressedBase<Derived>& obj, Index begin, Index end) {
+        -:  479:    const bool is_compressed = obj.isCompressed();
+        -:  480:    for (Index outer = begin; outer < end; outer++) {
+        -:  481:      Index begin_offset = obj.outerIndexPtr()[outer];
+        -:  482:      Index end_offset = is_compressed ? obj.outerIndexPtr()[outer + 1] : (begin_offset + obj.innerNonZeroPtr()[outer]);
+        -:  483:      CompressedStorageIterator<Scalar, StorageIndex> begin_it(begin_offset, obj.innerIndexPtr(), obj.valuePtr());
+        -:  484:      CompressedStorageIterator<Scalar, StorageIndex> end_it(end_offset, obj.innerIndexPtr(), obj.valuePtr());
+        -:  485:      std::sort(begin_it, end_it, Comp());
+        -:  486:    }
+        -:  487:  }
+        -:  488:  static inline Index check(const SparseCompressedBase<Derived>& obj, Index begin, Index end) {
+        -:  489:    const bool is_compressed = obj.isCompressed();
+        -:  490:    for (Index outer = begin; outer < end; outer++) {
+        -:  491:      Index begin_offset = obj.outerIndexPtr()[outer];
+        -:  492:      Index end_offset = is_compressed ? obj.outerIndexPtr()[outer + 1] : (begin_offset + obj.innerNonZeroPtr()[outer]);
+        -:  493:      const StorageIndex* begin_it = obj.innerIndexPtr() + begin_offset;
+        -:  494:      const StorageIndex* end_it = obj.innerIndexPtr() + end_offset;
+        -:  495:      bool is_sorted = std::is_sorted(begin_it, end_it, Comp());
+        -:  496:      if (!is_sorted) return outer;
+        -:  497:    }
+        -:  498:    return end;
+        -:  499:  }
+        -:  500:};
+        -:  501:template <typename Derived, class Comp>
+        -:  502:struct inner_sort_impl<Derived, Comp, true> {
+        -:  503:  typedef typename Derived::Scalar Scalar;
+        -:  504:  typedef typename Derived::StorageIndex StorageIndex;
+        -:  505:  static inline void run(SparseCompressedBase<Derived>& obj, Index, Index) {
+        -:  506:    Index begin_offset = 0;
+        -:  507:    Index end_offset = obj.nonZeros();
+        -:  508:    CompressedStorageIterator<Scalar, StorageIndex> begin_it(begin_offset, obj.innerIndexPtr(), obj.valuePtr());
+        -:  509:    CompressedStorageIterator<Scalar, StorageIndex> end_it(end_offset, obj.innerIndexPtr(), obj.valuePtr());
+        -:  510:    std::sort(begin_it, end_it, Comp());
+        -:  511:  }
+        -:  512:  static inline Index check(const SparseCompressedBase<Derived>& obj, Index, Index) {
+        -:  513:    Index begin_offset = 0;
+        -:  514:    Index end_offset = obj.nonZeros();
+        -:  515:    const StorageIndex* begin_it = obj.innerIndexPtr() + begin_offset;
+        -:  516:    const StorageIndex* end_it = obj.innerIndexPtr() + end_offset;
+        -:  517:    return std::is_sorted(begin_it, end_it, Comp()) ? 1 : 0;
+        -:  518:  }
+        -:  519:};
+        -:  520:
+        -:  521:template<typename Derived>
+        -:  522:struct evaluator<SparseCompressedBase<Derived> >
+        -:  523:  : evaluator_base<Derived>
+        -:  524:{
+        -:  525:  typedef typename Derived::Scalar Scalar;
+        -:  526:  typedef typename Derived::InnerIterator InnerIterator;
+        -:  527:  
+        -:  528:  enum {
+        -:  529:    CoeffReadCost = NumTraits<Scalar>::ReadCost,
+        -:  530:    Flags = Derived::Flags
+        -:  531:  };
+        -:  532:  
+        5:  533:  evaluator() : m_matrix(0), m_zero(0)
+        -:  534:  {
+        -:  535:    EIGEN_INTERNAL_CHECK_COST_VALUE(CoeffReadCost);
+        5:  536:  }
+       62:  537:  explicit evaluator(const Derived &mat) : m_matrix(&mat), m_zero(0)
+        -:  538:  {
+        -:  539:    EIGEN_INTERNAL_CHECK_COST_VALUE(CoeffReadCost);
+       62:  540:  }
+        -:  541:  
+       16:  542:  inline Index nonZerosEstimate() const {
+       16:  543:    return m_matrix->nonZeros();
+        -:  544:  }
+        -:  545:  
+    21961:  546:  operator Derived&() { return m_matrix->const_cast_derived(); }
+     4911:  547:  operator const Derived&() const { return *m_matrix; }
+        -:  548:  
+        -:  549:  typedef typename DenseCoeffsBase<Derived,ReadOnlyAccessors>::CoeffReturnType CoeffReturnType;
+        -:  550:  const Scalar& coeff(Index row, Index col) const
+        -:  551:  {
+        -:  552:    Index p = find(row,col);
+        -:  553:
+        -:  554:    if(p==Dynamic)
+        -:  555:      return m_zero;
+        -:  556:    else
+        -:  557:      return m_matrix->const_cast_derived().valuePtr()[p];
+        -:  558:  }
+        -:  559:
+        -:  560:  Scalar& coeffRef(Index row, Index col)
+        -:  561:  {
+        -:  562:    Index p = find(row,col);
+        -:  563:    eigen_assert(p!=Dynamic && "written coefficient does not exist");
+        -:  564:    return m_matrix->const_cast_derived().valuePtr()[p];
+        -:  565:  }
+        -:  566:
+        -:  567:protected:
+        -:  568:
+        -:  569:  Index find(Index row, Index col) const
+        -:  570:  {
+        -:  571:    internal::LowerBoundIndex p = m_matrix->lower_bound(row,col);
+        -:  572:    return p.found ? p.value : Dynamic;
+        -:  573:  }
+        -:  574:
+        -:  575:  const Derived *m_matrix;
+        -:  576:  const Scalar m_zero;
+        -:  577:};
+        -:  578:
+        -:  579:}
+        -:  580:
+        -:  581:} // end namespace Eigen
+        -:  582:
+        -:  583:#endif // EIGEN_SPARSE_COMPRESSED_BASE_H

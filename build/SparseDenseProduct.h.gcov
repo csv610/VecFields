@@ -1,0 +1,357 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/SparseCore/SparseDenseProduct.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2008-2015 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:#ifndef EIGEN_SPARSEDENSEPRODUCT_H
+        -:   11:#define EIGEN_SPARSEDENSEPRODUCT_H
+        -:   12:
+        -:   13:// IWYU pragma: private
+        -:   14:#include "./InternalHeaderCheck.h"
+        -:   15:
+        -:   16:namespace Eigen { 
+        -:   17:
+        -:   18:namespace internal {
+        -:   19:
+        -:   20:template <> struct product_promote_storage_type<Sparse,Dense, OuterProduct> { typedef Sparse ret; };
+        -:   21:template <> struct product_promote_storage_type<Dense,Sparse, OuterProduct> { typedef Sparse ret; };
+        -:   22:
+        -:   23:template<typename SparseLhsType, typename DenseRhsType, typename DenseResType,
+        -:   24:         typename AlphaType,
+        -:   25:         int LhsStorageOrder = ((SparseLhsType::Flags&RowMajorBit)==RowMajorBit) ? RowMajor : ColMajor,
+        -:   26:         bool ColPerCol = ((DenseRhsType::Flags&RowMajorBit)==0) || DenseRhsType::ColsAtCompileTime==1>
+        -:   27:struct sparse_time_dense_product_impl;
+        -:   28:
+        -:   29:template<typename SparseLhsType, typename DenseRhsType, typename DenseResType>
+        -:   30:struct sparse_time_dense_product_impl<SparseLhsType,DenseRhsType,DenseResType, typename DenseResType::Scalar, RowMajor, true>
+        -:   31:{
+        -:   32:  typedef internal::remove_all_t<SparseLhsType> Lhs;
+        -:   33:  typedef internal::remove_all_t<DenseRhsType> Rhs;
+        -:   34:  typedef internal::remove_all_t<DenseResType> Res;
+        -:   35:  typedef typename evaluator<Lhs>::InnerIterator LhsInnerIterator;
+        -:   36:  typedef evaluator<Lhs> LhsEval;
+        1:   37:  static void run(const SparseLhsType& lhs, const DenseRhsType& rhs, DenseResType& res, const typename Res::Scalar& alpha)
+        -:   38:  {
+        1:   39:    LhsEval lhsEval(lhs);
+        -:   40:    
+        1:   41:    Index n = lhs.outerSize();
+        -:   42:#ifdef EIGEN_HAS_OPENMP
+        -:   43:    Eigen::initParallel();
+        -:   44:    Index threads = Eigen::nbThreads();
+        -:   45:#endif
+        -:   46:    
+        2:   47:    for(Index c=0; c<rhs.cols(); ++c)
+        -:   48:    {
+        -:   49:#ifdef EIGEN_HAS_OPENMP
+        -:   50:      // This 20000 threshold has been found experimentally on 2D and 3D Poisson problems.
+        -:   51:      // It basically represents the minimal amount of work to be done to be worth it.
+        -:   52:      if(threads>1 && lhsEval.nonZerosEstimate() > 20000)
+        -:   53:      {
+        -:   54:        #pragma omp parallel for schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)
+        -:   55:        for(Index i=0; i<n; ++i)
+        -:   56:          processRow(lhsEval,rhs,res,alpha,i,c);
+        -:   57:      }
+        -:   58:      else
+        -:   59:#endif
+        -:   60:      {
+      120:   61:        for(Index i=0; i<n; ++i)
+      119:   62:          processRow(lhsEval,rhs,res,alpha,i,c);
+        -:   63:      }
+        1:   64:    }
+        1:   65:  }
+        -:   66:  
+      119:   67:  static void processRow(const LhsEval& lhsEval, const DenseRhsType& rhs, DenseResType& res, const typename Res::Scalar& alpha, Index i, Index col)
+        -:   68:  {
+        -:   69:    // Two accumulators, which breaks the dependency chain on the accumulator
+        -:   70:    // and allows more instruction-level parallelism in the following loop
+      119:   71:    typename Res::Scalar tmp_a(0);
+      119:   72:    typename Res::Scalar tmp_b(0);
+      238:   73:    for(LhsInnerIterator it(lhsEval,i); it ;++it) {
+      119:   74:      tmp_a += it.value() * rhs.coeff(it.index(), col);
+      119:   75:      ++it;
+      119:   76:      if(it) {
+    #####:   77:        tmp_b += it.value() * rhs.coeff(it.index(), col);
+    #####:   78:      }
+      119:   79:    }
+      119:   80:    res.coeffRef(i, col) += alpha * (tmp_a + tmp_b);
+      119:   81:  }
+        -:   82:  
+        -:   83:};
+        -:   84:
+        -:   85:// FIXME: what is the purpose of the following specialization? Is it for the BlockedSparse format?
+        -:   86:// -> let's disable it for now as it is conflicting with generic scalar*matrix and matrix*scalar operators
+        -:   87:// template<typename T1, typename T2/*, int Options_, typename StrideType_*/>
+        -:   88:// struct ScalarBinaryOpTraits<T1, Ref<T2/*, Options_, StrideType_*/> >
+        -:   89:// {
+        -:   90://   enum {
+        -:   91://     Defined = 1
+        -:   92://   };
+        -:   93://   typedef typename CwiseUnaryOp<scalar_multiple2_op<T1, typename T2::Scalar>, T2>::PlainObject ReturnType;
+        -:   94:// };
+        -:   95:
+        -:   96:template<typename SparseLhsType, typename DenseRhsType, typename DenseResType, typename AlphaType>
+        -:   97:struct sparse_time_dense_product_impl<SparseLhsType,DenseRhsType,DenseResType, AlphaType, ColMajor, true>
+        -:   98:{
+        -:   99:  typedef internal::remove_all_t<SparseLhsType> Lhs;
+        -:  100:  typedef internal::remove_all_t<DenseRhsType> Rhs;
+        -:  101:  typedef internal::remove_all_t<DenseResType> Res;
+        -:  102:  typedef evaluator<Lhs> LhsEval;
+        -:  103:  typedef typename LhsEval::InnerIterator LhsInnerIterator;
+        4:  104:  static void run(const SparseLhsType& lhs, const DenseRhsType& rhs, DenseResType& res, const AlphaType& alpha)
+        -:  105:  {
+        4:  106:    LhsEval lhsEval(lhs);
+        8:  107:    for(Index c=0; c<rhs.cols(); ++c)
+        -:  108:    {
+      723:  109:      for(Index j=0; j<lhs.outerSize(); ++j)
+        -:  110:      {
+        -:  111://        typename Res::Scalar rhs_j = alpha * rhs.coeff(j,c);
+      719:  112:        typename ScalarBinaryOpTraits<AlphaType, typename Rhs::Scalar>::ReturnType rhs_j(alpha * rhs.coeff(j,c));
+     2516:  113:        for(LhsInnerIterator it(lhsEval,j); it ;++it)
+     1797:  114:          res.coeffRef(it.index(),c) += it.value() * rhs_j;
+      719:  115:      }
+        4:  116:    }
+        4:  117:  }
+        -:  118:};
+        -:  119:
+        -:  120:template<typename SparseLhsType, typename DenseRhsType, typename DenseResType>
+        -:  121:struct sparse_time_dense_product_impl<SparseLhsType,DenseRhsType,DenseResType, typename DenseResType::Scalar, RowMajor, false>
+        -:  122:{
+        -:  123:  typedef internal::remove_all_t<SparseLhsType> Lhs;
+        -:  124:  typedef internal::remove_all_t<DenseRhsType> Rhs;
+        -:  125:  typedef internal::remove_all_t<DenseResType> Res;
+        -:  126:  typedef evaluator<Lhs> LhsEval;
+        -:  127:  typedef typename LhsEval::InnerIterator LhsInnerIterator;
+        -:  128:  static void run(const SparseLhsType& lhs, const DenseRhsType& rhs, DenseResType& res, const typename Res::Scalar& alpha)
+        -:  129:  {
+        -:  130:    Index n = lhs.rows();
+        -:  131:    LhsEval lhsEval(lhs);
+        -:  132:
+        -:  133:#ifdef EIGEN_HAS_OPENMP
+        -:  134:    Eigen::initParallel();
+        -:  135:    Index threads = Eigen::nbThreads();
+        -:  136:    // This 20000 threshold has been found experimentally on 2D and 3D Poisson problems.
+        -:  137:    // It basically represents the minimal amount of work to be done to be worth it.
+        -:  138:    if(threads>1 && lhsEval.nonZerosEstimate()*rhs.cols() > 20000)
+        -:  139:    {
+        -:  140:      #pragma omp parallel for schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)
+        -:  141:      for(Index i=0; i<n; ++i)
+        -:  142:        processRow(lhsEval,rhs,res,alpha,i);
+        -:  143:    }
+        -:  144:    else
+        -:  145:#endif
+        -:  146:    {
+        -:  147:      for(Index i=0; i<n; ++i)
+        -:  148:        processRow(lhsEval, rhs, res, alpha, i);
+        -:  149:    }
+        -:  150:  }
+        -:  151:
+        -:  152:  static void processRow(const LhsEval& lhsEval, const DenseRhsType& rhs, Res& res, const typename Res::Scalar& alpha, Index i)
+        -:  153:  {
+        -:  154:    typename Res::RowXpr res_i(res.row(i));
+        -:  155:    for(LhsInnerIterator it(lhsEval,i); it ;++it)
+        -:  156:      res_i += (alpha*it.value()) * rhs.row(it.index());
+        -:  157:  }
+        -:  158:};
+        -:  159:
+        -:  160:template<typename SparseLhsType, typename DenseRhsType, typename DenseResType>
+        -:  161:struct sparse_time_dense_product_impl<SparseLhsType,DenseRhsType,DenseResType, typename DenseResType::Scalar, ColMajor, false>
+        -:  162:{
+        -:  163:  typedef internal::remove_all_t<SparseLhsType> Lhs;
+        -:  164:  typedef internal::remove_all_t<DenseRhsType> Rhs;
+        -:  165:  typedef internal::remove_all_t<DenseResType> Res;
+        -:  166:  typedef typename evaluator<Lhs>::InnerIterator LhsInnerIterator;
+        -:  167:  static void run(const SparseLhsType& lhs, const DenseRhsType& rhs, DenseResType& res, const typename Res::Scalar& alpha)
+        -:  168:  {
+        -:  169:    evaluator<Lhs> lhsEval(lhs);
+        -:  170:    for(Index j=0; j<lhs.outerSize(); ++j)
+        -:  171:    {
+        -:  172:      typename Rhs::ConstRowXpr rhs_j(rhs.row(j));
+        -:  173:      for(LhsInnerIterator it(lhsEval,j); it ;++it)
+        -:  174:        res.row(it.index()) += (alpha*it.value()) * rhs_j;
+        -:  175:    }
+        -:  176:  }
+        -:  177:};
+        -:  178:
+        -:  179:template<typename SparseLhsType, typename DenseRhsType, typename DenseResType,typename AlphaType>
+        5:  180:inline void sparse_time_dense_product(const SparseLhsType& lhs, const DenseRhsType& rhs, DenseResType& res, const AlphaType& alpha)
+        -:  181:{
+        5:  182:  sparse_time_dense_product_impl<SparseLhsType,DenseRhsType,DenseResType, AlphaType>::run(lhs, rhs, res, alpha);
+        5:  183:}
+        -:  184:
+        -:  185:} // end namespace internal
+        -:  186:
+        -:  187:namespace internal {
+        -:  188:
+        -:  189:template<typename Lhs, typename Rhs, int ProductType>
+        -:  190:struct generic_product_impl<Lhs, Rhs, SparseShape, DenseShape, ProductType>
+        -:  191: : generic_product_impl_base<Lhs,Rhs,generic_product_impl<Lhs,Rhs,SparseShape,DenseShape,ProductType> >
+        -:  192:{
+        -:  193:  typedef typename Product<Lhs,Rhs>::Scalar Scalar;
+        -:  194:  
+        -:  195:  template<typename Dest>
+        5:  196:  static void scaleAndAddTo(Dest& dst, const Lhs& lhs, const Rhs& rhs, const Scalar& alpha)
+        -:  197:  {
+        -:  198:    typedef typename nested_eval<Lhs,((Rhs::Flags&RowMajorBit)==0) ? 1 : Rhs::ColsAtCompileTime>::type LhsNested;
+        -:  199:    typedef typename nested_eval<Rhs,((Lhs::Flags&RowMajorBit)==0) ? 1 : Dynamic>::type RhsNested;
+        5:  200:    LhsNested lhsNested(lhs);
+        5:  201:    RhsNested rhsNested(rhs);
+        5:  202:    internal::sparse_time_dense_product(lhsNested, rhsNested, dst, alpha);
+        5:  203:  }
+        -:  204:};
+        -:  205:
+        -:  206:template<typename Lhs, typename Rhs, int ProductType>
+        -:  207:struct generic_product_impl<Lhs, Rhs, SparseTriangularShape, DenseShape, ProductType>
+        -:  208:  : generic_product_impl<Lhs, Rhs, SparseShape, DenseShape, ProductType>
+        -:  209:{};
+        -:  210:
+        -:  211:template<typename Lhs, typename Rhs, int ProductType>
+        -:  212:struct generic_product_impl<Lhs, Rhs, DenseShape, SparseShape, ProductType>
+        -:  213:  : generic_product_impl_base<Lhs,Rhs,generic_product_impl<Lhs,Rhs,DenseShape,SparseShape,ProductType> >
+        -:  214:{
+        -:  215:  typedef typename Product<Lhs,Rhs>::Scalar Scalar;
+        -:  216:  
+        -:  217:  template<typename Dst>
+    #####:  218:  static void scaleAndAddTo(Dst& dst, const Lhs& lhs, const Rhs& rhs, const Scalar& alpha)
+        -:  219:  {
+        -:  220:    typedef typename nested_eval<Lhs,((Rhs::Flags&RowMajorBit)==0) ? Dynamic : 1>::type LhsNested;
+        -:  221:    typedef typename nested_eval<Rhs,((Lhs::Flags&RowMajorBit)==RowMajorBit) ? 1 : Lhs::RowsAtCompileTime>::type RhsNested;
+    #####:  222:    LhsNested lhsNested(lhs);
+    #####:  223:    RhsNested rhsNested(rhs);
+        -:  224:    
+        -:  225:    // transpose everything
+    #####:  226:    Transpose<Dst> dstT(dst);
+    #####:  227:    internal::sparse_time_dense_product(rhsNested.transpose(), lhsNested.transpose(), dstT, alpha);
+    #####:  228:  }
+        -:  229:};
+        -:  230:
+        -:  231:template<typename Lhs, typename Rhs, int ProductType>
+        -:  232:struct generic_product_impl<Lhs, Rhs, DenseShape, SparseTriangularShape, ProductType>
+        -:  233:  : generic_product_impl<Lhs, Rhs, DenseShape, SparseShape, ProductType>
+        -:  234:{};
+        -:  235:
+        -:  236:template<typename LhsT, typename RhsT, bool NeedToTranspose>
+        -:  237:struct sparse_dense_outer_product_evaluator
+        -:  238:{
+        -:  239:protected:
+        -:  240:  typedef std::conditional_t<NeedToTranspose,RhsT,LhsT> Lhs1;
+        -:  241:  typedef std::conditional_t<NeedToTranspose,LhsT,RhsT> ActualRhs;
+        -:  242:  typedef Product<LhsT,RhsT,DefaultProduct> ProdXprType;
+        -:  243:  
+        -:  244:  // if the actual left-hand side is a dense vector,
+        -:  245:  // then build a sparse-view so that we can seamlessly iterate over it.
+        -:  246:  typedef std::conditional_t<is_same<typename internal::traits<Lhs1>::StorageKind,Sparse>::value,
+        -:  247:            Lhs1, SparseView<Lhs1> > ActualLhs;
+        -:  248:  typedef std::conditional_t<is_same<typename internal::traits<Lhs1>::StorageKind,Sparse>::value,
+        -:  249:            Lhs1 const&, SparseView<Lhs1> > LhsArg;
+        -:  250:            
+        -:  251:  typedef evaluator<ActualLhs> LhsEval;
+        -:  252:  typedef evaluator<ActualRhs> RhsEval;
+        -:  253:  typedef typename evaluator<ActualLhs>::InnerIterator LhsIterator;
+        -:  254:  typedef typename ProdXprType::Scalar Scalar;
+        -:  255:  
+        -:  256:public:
+        -:  257:  enum {
+        -:  258:    Flags = NeedToTranspose ? RowMajorBit : 0,
+        -:  259:    CoeffReadCost = HugeCost
+        -:  260:  };
+        -:  261:  
+        -:  262:  class InnerIterator : public LhsIterator
+        -:  263:  {
+        -:  264:  public:
+        -:  265:    InnerIterator(const sparse_dense_outer_product_evaluator &xprEval, Index outer)
+        -:  266:      : LhsIterator(xprEval.m_lhsXprImpl, 0),
+        -:  267:        m_outer(outer),
+        -:  268:        m_empty(false),
+        -:  269:        m_factor(get(xprEval.m_rhsXprImpl, outer, typename internal::traits<ActualRhs>::StorageKind() ))
+        -:  270:    {}
+        -:  271:    
+        -:  272:    EIGEN_STRONG_INLINE Index outer() const { return m_outer; }
+        -:  273:    EIGEN_STRONG_INLINE Index row()   const { return NeedToTranspose ? m_outer : LhsIterator::index(); }
+        -:  274:    EIGEN_STRONG_INLINE Index col()   const { return NeedToTranspose ? LhsIterator::index() : m_outer; }
+        -:  275:
+        -:  276:    EIGEN_STRONG_INLINE Scalar value() const { return LhsIterator::value() * m_factor; }
+        -:  277:    EIGEN_STRONG_INLINE operator bool() const { return LhsIterator::operator bool() && (!m_empty); }
+        -:  278:    
+        -:  279:  protected:
+        -:  280:    Scalar get(const RhsEval &rhs, Index outer, Dense = Dense()) const
+        -:  281:    {
+        -:  282:      return rhs.coeff(outer);
+        -:  283:    }
+        -:  284:    
+        -:  285:    Scalar get(const RhsEval &rhs, Index outer, Sparse = Sparse())
+        -:  286:    {
+        -:  287:      typename RhsEval::InnerIterator it(rhs, outer);
+        -:  288:      if (it && it.index()==0 && it.value()!=Scalar(0))
+        -:  289:        return it.value();
+        -:  290:      m_empty = true;
+        -:  291:      return Scalar(0);
+        -:  292:    }
+        -:  293:    
+        -:  294:    Index m_outer;
+        -:  295:    bool m_empty;
+        -:  296:    Scalar m_factor;
+        -:  297:  };
+        -:  298:  
+        -:  299:  sparse_dense_outer_product_evaluator(const Lhs1 &lhs, const ActualRhs &rhs)
+        -:  300:     : m_lhs(lhs), m_lhsXprImpl(m_lhs), m_rhsXprImpl(rhs)
+        -:  301:  {
+        -:  302:    EIGEN_INTERNAL_CHECK_COST_VALUE(CoeffReadCost);
+        -:  303:  }
+        -:  304:  
+        -:  305:  // transpose case
+        -:  306:  sparse_dense_outer_product_evaluator(const ActualRhs &rhs, const Lhs1 &lhs)
+        -:  307:     : m_lhs(lhs), m_lhsXprImpl(m_lhs), m_rhsXprImpl(rhs)
+        -:  308:  {
+        -:  309:    EIGEN_INTERNAL_CHECK_COST_VALUE(CoeffReadCost);
+        -:  310:  }
+        -:  311:    
+        -:  312:protected:
+        -:  313:  const LhsArg m_lhs;
+        -:  314:  evaluator<ActualLhs> m_lhsXprImpl;
+        -:  315:  evaluator<ActualRhs> m_rhsXprImpl;
+        -:  316:};
+        -:  317:
+        -:  318:// sparse * dense outer product
+        -:  319:template<typename Lhs, typename Rhs>
+        -:  320:struct product_evaluator<Product<Lhs, Rhs, DefaultProduct>, OuterProduct, SparseShape, DenseShape>
+        -:  321:  : sparse_dense_outer_product_evaluator<Lhs,Rhs, Lhs::IsRowMajor>
+        -:  322:{
+        -:  323:  typedef sparse_dense_outer_product_evaluator<Lhs,Rhs, Lhs::IsRowMajor> Base;
+        -:  324:  
+        -:  325:  typedef Product<Lhs, Rhs> XprType;
+        -:  326:  typedef typename XprType::PlainObject PlainObject;
+        -:  327:
+        -:  328:  explicit product_evaluator(const XprType& xpr)
+        -:  329:    : Base(xpr.lhs(), xpr.rhs())
+        -:  330:  {}
+        -:  331:  
+        -:  332:};
+        -:  333:
+        -:  334:template<typename Lhs, typename Rhs>
+        -:  335:struct product_evaluator<Product<Lhs, Rhs, DefaultProduct>, OuterProduct, DenseShape, SparseShape>
+        -:  336:  : sparse_dense_outer_product_evaluator<Lhs,Rhs, Rhs::IsRowMajor>
+        -:  337:{
+        -:  338:  typedef sparse_dense_outer_product_evaluator<Lhs,Rhs, Rhs::IsRowMajor> Base;
+        -:  339:  
+        -:  340:  typedef Product<Lhs, Rhs> XprType;
+        -:  341:  typedef typename XprType::PlainObject PlainObject;
+        -:  342:
+        -:  343:  explicit product_evaluator(const XprType& xpr)
+        -:  344:    : Base(xpr.lhs(), xpr.rhs())
+        -:  345:  {}
+        -:  346:  
+        -:  347:};
+        -:  348:
+        -:  349:} // end namespace internal
+        -:  350:
+        -:  351:} // end namespace Eigen
+        -:  352:
+        -:  353:#endif // EIGEN_SPARSEDENSEPRODUCT_H

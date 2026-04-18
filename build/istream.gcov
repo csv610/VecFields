@@ -1,7 +1,7 @@
         -:    0:Source:/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/istream
-        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
-        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
-        -:    0:Runs:4
+        -:    0:Graph:./external/googletest/googlemock/CMakeFiles/gmock.dir/src/gmock-all.cc.gcno
+        -:    0:Data:-
+        -:    0:Runs:0
         -:    1:// -*- C++ -*-
         -:    2://===----------------------------------------------------------------------===//
         -:    3://
@@ -211,10 +211,10 @@
         -:  207:  typedef typename traits_type::off_type off_type;
         -:  208:
         -:  209:  // 27.7.1.1.1 Constructor/destructor:
-     1562:  210:  inline _LIBCPP_HIDE_FROM_ABI_AFTER_V1 explicit basic_istream(basic_streambuf<char_type, traits_type>* __sb)
-     1562:  211:      : __gc_(0) {
-     1562:  212:    this->init(__sb);
-     1562:  213:  }
+    #####:  210:  inline _LIBCPP_HIDE_FROM_ABI_AFTER_V1 explicit basic_istream(basic_streambuf<char_type, traits_type>* __sb)
+    #####:  211:      : __gc_(0) {
+    #####:  212:    this->init(__sb);
+    #####:  213:  }
         -:  214:  ~basic_istream() override;
         -:  215:
         -:  216:protected:
@@ -317,7 +317,7 @@
         -:  313:  explicit sentry(basic_istream<_CharT, _Traits>& __is, bool __noskipws = false);
         -:  314:  //    ~sentry() = default;
         -:  315:
-     2430:  316:  _LIBCPP_HIDE_FROM_ABI explicit operator bool() const { return __ok_; }
+        -:  316:  _LIBCPP_HIDE_FROM_ABI explicit operator bool() const { return __ok_; }
         -:  317:
         -:  318:  sentry(const sentry&)            = delete;
         -:  319:  sentry& operator=(const sentry&) = delete;
@@ -1182,8 +1182,8 @@
         -: 1178:  typedef typename traits_type::off_type off_type;
         -: 1179:
         -: 1180:  // constructor/destructor
-     3108: 1181:  inline _LIBCPP_HIDE_FROM_ABI_AFTER_V1 explicit basic_iostream(basic_streambuf<char_type, traits_type>* __sb)
-     1554: 1182:      : basic_istream<_CharT, _Traits>(__sb) {}
+    #####: 1181:  inline _LIBCPP_HIDE_FROM_ABI_AFTER_V1 explicit basic_iostream(basic_streambuf<char_type, traits_type>* __sb)
+    #####: 1182:      : basic_istream<_CharT, _Traits>(__sb) {}
         -: 1183:
         -: 1184:  ~basic_iostream() override;
         -: 1185:
@@ -1213,132 +1213,132 @@
         -: 1209:
         -: 1210:template <class _CharT, class _Traits, class _Allocator>
         -: 1211:_LIBCPP_HIDE_FROM_ABI basic_istream<_CharT, _Traits>&
-     1214: 1212:operator>>(basic_istream<_CharT, _Traits>& __is, basic_string<_CharT, _Traits, _Allocator>& __str) {
-     1214: 1213:  ios_base::iostate __state = ios_base::goodbit;
-     1214: 1214:  typename basic_istream<_CharT, _Traits>::sentry __sen(__is);
-     1214: 1215:  if (__sen) {
+        -: 1212:operator>>(basic_istream<_CharT, _Traits>& __is, basic_string<_CharT, _Traits, _Allocator>& __str) {
+        -: 1213:  ios_base::iostate __state = ios_base::goodbit;
+        -: 1214:  typename basic_istream<_CharT, _Traits>::sentry __sen(__is);
+        -: 1215:  if (__sen) {
         -: 1216:#    if _LIBCPP_HAS_EXCEPTIONS
         -: 1217:    try {
         -: 1218:#    endif
-     1214: 1219:      __str.clear();
+        -: 1219:      __str.clear();
         -: 1220:      using _Size              = typename basic_string<_CharT, _Traits, _Allocator>::size_type;
-     1214: 1221:      streamsize const __width = __is.width();
-     1214: 1222:      _Size const __max_size   = __str.max_size();
+        -: 1221:      streamsize const __width = __is.width();
+        -: 1222:      _Size const __max_size   = __str.max_size();
         -: 1223:      _Size __n;
-     1214: 1224:      if (__width <= 0) {
-     1214: 1225:        __n = __max_size;
-     1214: 1226:      } else {
-    #####: 1227:        __n = std::__to_unsigned_like(__width) < __max_size ? static_cast<_Size>(__width) : __max_size;
+        -: 1224:      if (__width <= 0) {
+        -: 1225:        __n = __max_size;
+        -: 1226:      } else {
+        -: 1227:        __n = std::__to_unsigned_like(__width) < __max_size ? static_cast<_Size>(__width) : __max_size;
         -: 1228:      }
         -: 1229:
-     1214: 1230:      _Size __c                 = 0;
-     1214: 1231:      const ctype<_CharT>& __ct = std::use_facet<ctype<_CharT> >(__is.getloc());
-     5426: 1232:      while (__c < __n) {
-     5426: 1233:        typename _Traits::int_type __i = __is.rdbuf()->sgetc();
-     5426: 1234:        if (_Traits::eq_int_type(__i, _Traits::eof())) {
-      240: 1235:          __state |= ios_base::eofbit;
-      240: 1236:          break;
+        -: 1230:      _Size __c                 = 0;
+        -: 1231:      const ctype<_CharT>& __ct = std::use_facet<ctype<_CharT> >(__is.getloc());
+        -: 1232:      while (__c < __n) {
+        -: 1233:        typename _Traits::int_type __i = __is.rdbuf()->sgetc();
+        -: 1234:        if (_Traits::eq_int_type(__i, _Traits::eof())) {
+        -: 1235:          __state |= ios_base::eofbit;
+        -: 1236:          break;
         -: 1237:        }
-     5186: 1238:        _CharT __ch = _Traits::to_char_type(__i);
-     5186: 1239:        if (__ct.is(__ct.space, __ch))
-      974: 1240:          break;
-     4212: 1241:        __str.push_back(__ch);
-     4212: 1242:        ++__c;
-     4212: 1243:        __is.rdbuf()->sbumpc();
+        -: 1238:        _CharT __ch = _Traits::to_char_type(__i);
+        -: 1239:        if (__ct.is(__ct.space, __ch))
+        -: 1240:          break;
+        -: 1241:        __str.push_back(__ch);
+        -: 1242:        ++__c;
+        -: 1243:        __is.rdbuf()->sbumpc();
         -: 1244:      }
-     1214: 1245:      __is.width(0);
-     1214: 1246:      if (__c == 0)
-    #####: 1247:        __state |= ios_base::failbit;
+        -: 1245:      __is.width(0);
+        -: 1246:      if (__c == 0)
+        -: 1247:        __state |= ios_base::failbit;
         -: 1248:#    if _LIBCPP_HAS_EXCEPTIONS
-     1214: 1249:    } catch (...) {
-    #####: 1250:      __state |= ios_base::badbit;
-    #####: 1251:      __is.__setstate_nothrow(__state);
-    #####: 1252:      if (__is.exceptions() & ios_base::badbit) {
-    #####: 1253:        throw;
+        -: 1249:    } catch (...) {
+        -: 1250:      __state |= ios_base::badbit;
+        -: 1251:      __is.__setstate_nothrow(__state);
+        -: 1252:      if (__is.exceptions() & ios_base::badbit) {
+        -: 1253:        throw;
         -: 1254:      }
-    #####: 1255:    }
+        -: 1255:    }
         -: 1256:#    endif
-     1214: 1257:    __is.setstate(__state);
-     1214: 1258:  }
-     1214: 1259:  return __is;
-    #####: 1260:}
+        -: 1257:    __is.setstate(__state);
+        -: 1258:  }
+        -: 1259:  return __is;
+        -: 1260:}
         -: 1261:
         -: 1262:template <class _CharT, class _Traits, class _Allocator>
         -: 1263:_LIBCPP_HIDE_FROM_ABI basic_istream<_CharT, _Traits>&
-     1216: 1264:getline(basic_istream<_CharT, _Traits>& __is, basic_string<_CharT, _Traits, _Allocator>& __str, _CharT __dlm) {
-     1216: 1265:  ios_base::iostate __state = ios_base::goodbit;
-     1216: 1266:  typename basic_istream<_CharT, _Traits>::sentry __sen(__is, true);
-     1216: 1267:  if (!__sen)
-    #####: 1268:    return __is;
+        -: 1264:getline(basic_istream<_CharT, _Traits>& __is, basic_string<_CharT, _Traits, _Allocator>& __str, _CharT __dlm) {
+        -: 1265:  ios_base::iostate __state = ios_base::goodbit;
+        -: 1266:  typename basic_istream<_CharT, _Traits>::sentry __sen(__is, true);
+        -: 1267:  if (!__sen)
+        -: 1268:    return __is;
         -: 1269:#    if _LIBCPP_HAS_EXCEPTIONS
         -: 1270:  try {
         -: 1271:#    endif
-     1216: 1272:    __str.clear();
+        -: 1272:    __str.clear();
         -: 1273:
-     1216: 1274:    auto& __buffer = *__is.rdbuf();
+        -: 1274:    auto& __buffer = *__is.rdbuf();
         -: 1275:
-     1216: 1276:    auto __next = __buffer.sgetc();
-     1218: 1277:    for (; !_Traits::eq_int_type(__next, _Traits::eof()); __next = __buffer.sgetc()) {
-     1216: 1278:      const auto* __first = __buffer.gptr();
-     1216: 1279:      const auto* __last  = __buffer.egptr();
+        -: 1276:    auto __next = __buffer.sgetc();
+        -: 1277:    for (; !_Traits::eq_int_type(__next, _Traits::eof()); __next = __buffer.sgetc()) {
+        -: 1278:      const auto* __first = __buffer.gptr();
+        -: 1279:      const auto* __last  = __buffer.egptr();
         -: 1280:      _CharT __1buf;
         -: 1281:
-     1216: 1282:      if (__first == __last) {
-    #####: 1283:        __1buf  = __next;
-    #####: 1284:        __first = std::addressof(__1buf);
-    #####: 1285:        __last  = std::addressof(__1buf) + 1;
-    #####: 1286:      }
+        -: 1282:      if (__first == __last) {
+        -: 1283:        __1buf  = __next;
+        -: 1284:        __first = std::addressof(__1buf);
+        -: 1285:        __last  = std::addressof(__1buf) + 1;
+        -: 1286:      }
         -: 1287:
-     3646: 1288:      auto __bump_stream = [&](ptrdiff_t __diff) {
-     2430: 1289:        if (__first == std::addressof(__1buf)) {
+        -: 1288:      auto __bump_stream = [&](ptrdiff_t __diff) {
+        -: 1289:        if (__first == std::addressof(__1buf)) {
         -: 1290:          _LIBCPP_ASSERT_INTERNAL(__diff == 0 || __diff == 1, "trying to bump stream further than buffer size");
-    #####: 1291:          if (__diff != 0)
-    #####: 1292:            __buffer.sbumpc();
-    #####: 1293:        } else {
-     2430: 1294:          __buffer.__gbump_ptrdiff(__diff);
+        -: 1291:          if (__diff != 0)
+        -: 1292:            __buffer.sbumpc();
+        -: 1293:        } else {
+        -: 1294:          __buffer.__gbump_ptrdiff(__diff);
         -: 1295:        }
-     2430: 1296:      };
+        -: 1296:      };
         -: 1297:
-     1216: 1298:      const auto* const __match = _Traits::find(__first, __last - __first, __dlm);
-     1216: 1299:      if (__match)
-     1214: 1300:        __last = __match;
+        -: 1298:      const auto* const __match = _Traits::find(__first, __last - __first, __dlm);
+        -: 1299:      if (__match)
+        -: 1300:        __last = __match;
         -: 1301:
-     1216: 1302:      if (auto __cap = __str.max_size() - __str.size(); __cap > static_cast<size_t>(__last - __first)) {
-     1216: 1303:        __str.append(__first, __last);
-     1216: 1304:        __bump_stream(__last - __first);
+        -: 1302:      if (auto __cap = __str.max_size() - __str.size(); __cap > static_cast<size_t>(__last - __first)) {
+        -: 1303:        __str.append(__first, __last);
+        -: 1304:        __bump_stream(__last - __first);
         -: 1305:
-     1216: 1306:        if (__match) {
-     1214: 1307:          __bump_stream(1); // Remove the matched character
-     1214: 1308:          break;
+        -: 1306:        if (__match) {
+        -: 1307:          __bump_stream(1); // Remove the matched character
+        -: 1308:          break;
         -: 1309:        }
-        2: 1310:      } else {
-    #####: 1311:        __str.append(__first, __cap);
-    #####: 1312:        __bump_stream(__cap);
-    #####: 1313:        __state |= ios_base::failbit;
-    #####: 1314:        break;
+        -: 1310:      } else {
+        -: 1311:        __str.append(__first, __cap);
+        -: 1312:        __bump_stream(__cap);
+        -: 1313:        __state |= ios_base::failbit;
+        -: 1314:        break;
         -: 1315:      }
-        2: 1316:    }
+        -: 1316:    }
         -: 1317:
-     1216: 1318:    if (_Traits::eq_int_type(__next, _Traits::eof()))
-        2: 1319:      __state |= ios_base::eofbit | (__str.empty() ? ios_base::failbit : ios_base::goodbit);
+        -: 1318:    if (_Traits::eq_int_type(__next, _Traits::eof()))
+        -: 1319:      __state |= ios_base::eofbit | (__str.empty() ? ios_base::failbit : ios_base::goodbit);
         -: 1320:
         -: 1321:#    if _LIBCPP_HAS_EXCEPTIONS
-     1216: 1322:  } catch (...) {
-    #####: 1323:    __state |= ios_base::badbit;
-    #####: 1324:    __is.__setstate_nothrow(__state);
-    #####: 1325:    if (__is.exceptions() & ios_base::badbit) {
-    #####: 1326:      throw;
+        -: 1322:  } catch (...) {
+        -: 1323:    __state |= ios_base::badbit;
+        -: 1324:    __is.__setstate_nothrow(__state);
+        -: 1325:    if (__is.exceptions() & ios_base::badbit) {
+        -: 1326:      throw;
         -: 1327:    }
-    #####: 1328:  }
+        -: 1328:  }
         -: 1329:#    endif
-     1216: 1330:  __is.setstate(__state);
-     1216: 1331:  return __is;
-     1216: 1332:}
+        -: 1330:  __is.setstate(__state);
+        -: 1331:  return __is;
+        -: 1332:}
         -: 1333:
         -: 1334:template <class _CharT, class _Traits, class _Allocator>
         -: 1335:inline _LIBCPP_HIDE_FROM_ABI basic_istream<_CharT, _Traits>&
-      496: 1336:getline(basic_istream<_CharT, _Traits>& __is, basic_string<_CharT, _Traits, _Allocator>& __str) {
-      496: 1337:  return std::getline(__is, __str, __is.widen('\n'));
+        -: 1336:getline(basic_istream<_CharT, _Traits>& __is, basic_string<_CharT, _Traits, _Allocator>& __str) {
+        -: 1337:  return std::getline(__is, __str, __is.widen('\n'));
         -: 1338:}
         -: 1339:
         -: 1340:template <class _CharT, class _Traits, class _Allocator>

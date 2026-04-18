@@ -1,0 +1,136 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/SparseLU/SparseLU_kernel_bmod.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2012 Désiré Nuentsa-Wakam <desire.nuentsa_wakam@inria.fr>
+        -:    5:// Copyright (C) 2012 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    6://
+        -:    7:// This Source Code Form is subject to the terms of the Mozilla
+        -:    8:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    9:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:   10:
+        -:   11:#ifndef SPARSELU_KERNEL_BMOD_H
+        -:   12:#define SPARSELU_KERNEL_BMOD_H
+        -:   13:
+        -:   14:// IWYU pragma: private
+        -:   15:#include "./InternalHeaderCheck.h"
+        -:   16:
+        -:   17:namespace Eigen {
+        -:   18:namespace internal {
+        -:   19:  
+        -:   20:template <int SegSizeAtCompileTime> struct LU_kernel_bmod
+        -:   21:{
+        -:   22:  /** \internal
+        -:   23:    * \brief Performs numeric block updates from a given supernode to a single column
+        -:   24:    *
+        -:   25:    * \param segsize Size of the segment (and blocks ) to use for updates
+        -:   26:    * \param[in,out] dense Packed values of the original matrix
+        -:   27:    * \param tempv temporary vector to use for updates
+        -:   28:    * \param lusup array containing the supernodes
+        -:   29:    * \param lda Leading dimension in the supernode
+        -:   30:    * \param nrow Number of rows in the rectangular part of the supernode
+        -:   31:    * \param lsub compressed row subscripts of supernodes
+        -:   32:    * \param lptr pointer to the first column of the current supernode in lsub
+        -:   33:    * \param no_zeros Number of nonzeros elements before the diagonal part of the supernode
+        -:   34:    */
+        -:   35:  template <typename BlockScalarVector, typename ScalarVector, typename IndexVector>
+        -:   36:  static EIGEN_DONT_INLINE void run(const Index segsize, BlockScalarVector& dense, ScalarVector& tempv, ScalarVector& lusup, Index& luptr, const Index lda,
+        -:   37:                                    const Index nrow, IndexVector& lsub, const Index lptr, const Index no_zeros);
+        -:   38:};
+        -:   39:
+        -:   40:template <int SegSizeAtCompileTime>
+        -:   41:template <typename BlockScalarVector, typename ScalarVector, typename IndexVector>
+    #####:   42:EIGEN_DONT_INLINE void LU_kernel_bmod<SegSizeAtCompileTime>::run(const Index segsize, BlockScalarVector& dense, ScalarVector& tempv, ScalarVector& lusup, Index& luptr, const Index lda,
+        -:   43:                                                                  const Index nrow, IndexVector& lsub, const Index lptr, const Index no_zeros)
+        -:   44:{
+        -:   45:  typedef typename ScalarVector::Scalar Scalar;
+        -:   46:  // First, copy U[*,j] segment from dense(*) to tempv(*)
+        -:   47:  // The result of triangular solve is in tempv[*]; 
+        -:   48:    // The result of matric-vector update is in dense[*]
+    #####:   49:  Index isub = lptr + no_zeros; 
+        -:   50:  Index i;
+        -:   51:  Index irow;
+    #####:   52:  for (i = 0; i < ((SegSizeAtCompileTime==Dynamic)?segsize:SegSizeAtCompileTime); i++)
+        -:   53:  {
+    #####:   54:    irow = lsub(isub); 
+    #####:   55:    tempv(i) = dense(irow); 
+    #####:   56:    ++isub; 
+    #####:   57:  }
+        -:   58:  // Dense triangular solve -- start effective triangle
+    #####:   59:  luptr += lda * no_zeros + no_zeros; 
+        -:   60:  // Form Eigen matrix and vector 
+    #####:   61:  Map<Matrix<Scalar,SegSizeAtCompileTime,SegSizeAtCompileTime, ColMajor>, 0, OuterStride<> > A( &(lusup.data()[luptr]), segsize, segsize, OuterStride<>(lda) );
+    #####:   62:  Map<Matrix<Scalar,SegSizeAtCompileTime,1> > u(tempv.data(), segsize);
+        -:   63:  
+    #####:   64:  u = A.template triangularView<UnitLower>().solve(u); 
+        -:   65:  
+        -:   66:  // Dense matrix-vector product y <-- B*x 
+    #####:   67:  luptr += segsize;
+    #####:   68:  const Index PacketSize = internal::packet_traits<Scalar>::size;
+    #####:   69:  Index ldl = internal::first_multiple(nrow, PacketSize);
+    #####:   70:  Map<Matrix<Scalar,Dynamic,SegSizeAtCompileTime, ColMajor>, 0, OuterStride<> > B( &(lusup.data()[luptr]), nrow, segsize, OuterStride<>(lda) );
+    #####:   71:  Index aligned_offset = internal::first_default_aligned(tempv.data()+segsize, PacketSize);
+    #####:   72:  Index aligned_with_B_offset = (PacketSize-internal::first_default_aligned(B.data(), PacketSize))%PacketSize;
+    #####:   73:  Map<Matrix<Scalar,Dynamic,1>, 0, OuterStride<> > l(tempv.data()+segsize+aligned_offset+aligned_with_B_offset, nrow, OuterStride<>(ldl) );
+        -:   74:  
+    #####:   75:  l.noalias() = B * u;
+        -:   76:  
+        -:   77:  // Scatter tempv[] into SPA dense[] as a temporary storage 
+    #####:   78:  isub = lptr + no_zeros;
+    #####:   79:  for (i = 0; i < ((SegSizeAtCompileTime==Dynamic)?segsize:SegSizeAtCompileTime); i++)
+        -:   80:  {
+    #####:   81:    irow = lsub(isub++); 
+    #####:   82:    dense(irow) = tempv(i);
+    #####:   83:  }
+        -:   84:  
+        -:   85:  // Scatter l into SPA dense[]
+    #####:   86:  for (i = 0; i < nrow; i++)
+        -:   87:  {
+    #####:   88:    irow = lsub(isub++); 
+    #####:   89:    dense(irow) -= l(i);
+    #####:   90:  } 
+    #####:   91:}
+        -:   92:
+        -:   93:template <> struct LU_kernel_bmod<1>
+        -:   94:{
+        -:   95:  template <typename BlockScalarVector, typename ScalarVector, typename IndexVector>
+        -:   96:  static EIGEN_DONT_INLINE void run(const Index /*segsize*/, BlockScalarVector& dense, ScalarVector& /*tempv*/, ScalarVector& lusup, Index& luptr,
+        -:   97:                                    const Index lda, const Index nrow, IndexVector& lsub, const Index lptr, const Index no_zeros);
+        -:   98:};
+        -:   99:
+        -:  100:
+        -:  101:template <typename BlockScalarVector, typename ScalarVector, typename IndexVector>
+    #####:  102:EIGEN_DONT_INLINE void LU_kernel_bmod<1>::run(const Index /*segsize*/, BlockScalarVector& dense, ScalarVector& /*tempv*/, ScalarVector& lusup, Index& luptr,
+        -:  103:                                              const Index lda, const Index nrow, IndexVector& lsub, const Index lptr, const Index no_zeros)
+        -:  104:{
+        -:  105:  typedef typename ScalarVector::Scalar Scalar;
+        -:  106:  typedef typename IndexVector::Scalar StorageIndex;
+    #####:  107:  Scalar f = dense(lsub(lptr + no_zeros));
+    #####:  108:  luptr += lda * no_zeros + no_zeros + 1;
+    #####:  109:  const Scalar* a(lusup.data() + luptr);
+    #####:  110:  const StorageIndex*  irow(lsub.data()+lptr + no_zeros + 1);
+    #####:  111:  Index i = 0;
+    #####:  112:  for (; i+1 < nrow; i+=2)
+        -:  113:  {
+    #####:  114:    Index i0 = *(irow++);
+    #####:  115:    Index i1 = *(irow++);
+    #####:  116:    Scalar a0 = *(a++);
+    #####:  117:    Scalar a1 = *(a++);
+    #####:  118:    Scalar d0 = dense.coeff(i0);
+    #####:  119:    Scalar d1 = dense.coeff(i1);
+    #####:  120:    d0 -= f*a0;
+    #####:  121:    d1 -= f*a1;
+    #####:  122:    dense.coeffRef(i0) = d0;
+    #####:  123:    dense.coeffRef(i1) = d1;
+    #####:  124:  }
+    #####:  125:  if(i<nrow)
+    #####:  126:    dense.coeffRef(*(irow++)) -= f * *(a++);
+    #####:  127:}
+        -:  128:
+        -:  129:} // end namespace internal
+        -:  130:
+        -:  131:} // end namespace Eigen
+        -:  132:#endif // SPARSELU_KERNEL_BMOD_H

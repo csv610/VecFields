@@ -1,0 +1,117 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/SparseLU/SparseLU_Structs.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2012 Désiré Nuentsa-Wakam <desire.nuentsa_wakam@inria.fr>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:/* 
+        -:   11: * NOTE: This file comes from a partly modified version of files slu_[s,d,c,z]defs.h
+        -:   12: * -- SuperLU routine (version 4.1) --
+        -:   13: * Univ. of California Berkeley, Xerox Palo Alto Research Center,
+        -:   14: * and Lawrence Berkeley National Lab.
+        -:   15: * November, 2010
+        -:   16: * 
+        -:   17: * Global data structures used in LU factorization -
+        -:   18: * 
+        -:   19: *   nsuper: #supernodes = nsuper + 1, numbered [0, nsuper].
+        -:   20: *   (xsup,supno): supno[i] is the supernode no to which i belongs;
+        -:   21: *  xsup(s) points to the beginning of the s-th supernode.
+        -:   22: *  e.g.   supno 0 1 2 2 3 3 3 4 4 4 4 4   (n=12)
+        -:   23: *          xsup 0 1 2 4 7 12
+        -:   24: *  Note: dfs will be performed on supernode rep. relative to the new 
+        -:   25: *        row pivoting ordering
+        -:   26: *
+        -:   27: *   (xlsub,lsub): lsub[*] contains the compressed subscript of
+        -:   28: *  rectangular supernodes; xlsub[j] points to the starting
+        -:   29: *  location of the j-th column in lsub[*]. Note that xlsub 
+        -:   30: *  is indexed by column.
+        -:   31: *  Storage: original row subscripts
+        -:   32: *
+        -:   33: *      During the course of sparse LU factorization, we also use
+        -:   34: *  (xlsub,lsub) for the purpose of symmetric pruning. For each
+        -:   35: *  supernode {s,s+1,...,t=s+r} with first column s and last
+        -:   36: *  column t, the subscript set
+        -:   37: *    lsub[j], j=xlsub[s], .., xlsub[s+1]-1
+        -:   38: *  is the structure of column s (i.e. structure of this supernode).
+        -:   39: *  It is used for the storage of numerical values.
+        -:   40: *  Furthermore,
+        -:   41: *    lsub[j], j=xlsub[t], .., xlsub[t+1]-1
+        -:   42: *  is the structure of the last column t of this supernode.
+        -:   43: *  It is for the purpose of symmetric pruning. Therefore, the
+        -:   44: *  structural subscripts can be rearranged without making physical
+        -:   45: *  interchanges among the numerical values.
+        -:   46: *
+        -:   47: *  However, if the supernode has only one column, then we
+        -:   48: *  only keep one set of subscripts. For any subscript interchange
+        -:   49: *  performed, similar interchange must be done on the numerical
+        -:   50: *  values.
+        -:   51: *
+        -:   52: *  The last column structures (for pruning) will be removed
+        -:   53: *  after the numercial LU factorization phase.
+        -:   54: *
+        -:   55: *   (xlusup,lusup): lusup[*] contains the numerical values of the
+        -:   56: *  rectangular supernodes; xlusup[j] points to the starting
+        -:   57: *  location of the j-th column in storage vector lusup[*]
+        -:   58: *  Note: xlusup is indexed by column.
+        -:   59: *  Each rectangular supernode is stored by column-major
+        -:   60: *  scheme, consistent with Fortran 2-dim array storage.
+        -:   61: *
+        -:   62: *   (xusub,ucol,usub): ucol[*] stores the numerical values of
+        -:   63: *  U-columns outside the rectangular supernodes. The row
+        -:   64: *  subscript of nonzero ucol[k] is stored in usub[k].
+        -:   65: *  xusub[i] points to the starting location of column i in ucol.
+        -:   66: *  Storage: new row subscripts; that is subscripts of PA.
+        -:   67: */
+        -:   68:
+        -:   69:#ifndef EIGEN_LU_STRUCTS
+        -:   70:#define EIGEN_LU_STRUCTS
+        -:   71:// IWYU pragma: private
+        -:   72:#include "./InternalHeaderCheck.h"
+        -:   73:
+        -:   74:namespace Eigen {
+        -:   75:namespace internal {
+        -:   76:
+        -:   77:enum MemType {LUSUP, UCOL, LSUB, USUB, LLVL, ULVL};
+        -:   78:
+        -:   79:template <typename IndexVector, typename ScalarVector>
+    #####:   80:struct LU_GlobalLU_t {
+        -:   81:  typedef typename IndexVector::Scalar StorageIndex; 
+        -:   82:  IndexVector xsup; //First supernode column ... xsup(s) points to the beginning of the s-th supernode
+        -:   83:  IndexVector supno; // Supernode number corresponding to this column (column to supernode mapping)
+        -:   84:  ScalarVector  lusup; // nonzero values of L ordered by columns 
+        -:   85:  IndexVector lsub; // Compressed row indices of L rectangular supernodes. 
+        -:   86:  IndexVector xlusup; // pointers to the beginning of each column in lusup
+        -:   87:  IndexVector xlsub; // pointers to the beginning of each column in lsub
+        -:   88:  Index   nzlmax; // Current max size of lsub
+        -:   89:  Index   nzlumax; // Current max size of lusup
+        -:   90:  ScalarVector  ucol; // nonzero values of U ordered by columns 
+        -:   91:  IndexVector usub; // row indices of U columns in ucol
+        -:   92:  IndexVector xusub; // Pointers to the beginning of each column of U in ucol 
+        -:   93:  Index   nzumax; // Current max size of ucol
+        -:   94:  Index   n; // Number of columns in the matrix  
+        -:   95:  Index   num_expansions; 
+        -:   96:};
+        -:   97:
+        -:   98:// Values to set for performance
+        -:   99:struct perfvalues {
+        -:  100:  Index panel_size; // a panel consists of at most <panel_size> consecutive columns
+        -:  101:  Index relax; // To control degree of relaxing supernodes. If the number of nodes (columns) 
+        -:  102:                // in a subtree of the elimination tree is less than relax, this subtree is considered 
+        -:  103:                // as one supernode regardless of the row structures of those columns
+        -:  104:  Index maxsuper; // The maximum size for a supernode in complete LU
+        -:  105:  Index rowblk; // The minimum row dimension for 2-D blocking to be used;
+        -:  106:  Index colblk; // The minimum column dimension for 2-D blocking to be used;
+        -:  107:  Index fillfactor; // The estimated fills factors for L and U, compared with A
+        -:  108:}; 
+        -:  109:
+        -:  110:} // end namespace internal
+        -:  111:
+        -:  112:} // end namespace Eigen
+        -:  113:#endif // EIGEN_LU_STRUCTS

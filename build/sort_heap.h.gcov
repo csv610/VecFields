@@ -1,0 +1,67 @@
+        -:    0:Source:/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort_heap.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1://===----------------------------------------------------------------------===//
+        -:    2://
+        -:    3:// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+        -:    4:// See https://llvm.org/LICENSE.txt for license information.
+        -:    5:// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+        -:    6://
+        -:    7://===----------------------------------------------------------------------===//
+        -:    8:
+        -:    9:#ifndef _LIBCPP___ALGORITHM_SORT_HEAP_H
+        -:   10:#define _LIBCPP___ALGORITHM_SORT_HEAP_H
+        -:   11:
+        -:   12:#include <__algorithm/comp.h>
+        -:   13:#include <__algorithm/comp_ref_type.h>
+        -:   14:#include <__algorithm/iterator_operations.h>
+        -:   15:#include <__algorithm/pop_heap.h>
+        -:   16:#include <__config>
+        -:   17:#include <__debug_utils/strict_weak_ordering_check.h>
+        -:   18:#include <__iterator/iterator_traits.h>
+        -:   19:#include <__type_traits/is_assignable.h>
+        -:   20:#include <__type_traits/is_constructible.h>
+        -:   21:#include <__utility/move.h>
+        -:   22:
+        -:   23:#if !defined(_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER)
+        -:   24:#  pragma GCC system_header
+        -:   25:#endif
+        -:   26:
+        -:   27:_LIBCPP_PUSH_MACROS
+        -:   28:#include <__undef_macros>
+        -:   29:
+        -:   30:_LIBCPP_BEGIN_NAMESPACE_STD
+        -:   31:
+        -:   32:template <class _AlgPolicy, class _Compare, class _RandomAccessIterator>
+        -:   33:inline _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 void
+    #####:   34:__sort_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare&& __comp) {
+    #####:   35:  _RandomAccessIterator __saved_last   = __last;
+    #####:   36:  __comp_ref_type<_Compare> __comp_ref = __comp;
+        -:   37:
+        -:   38:  using difference_type = typename iterator_traits<_RandomAccessIterator>::difference_type;
+    #####:   39:  for (difference_type __n = __last - __first; __n > 1; --__last, (void)--__n)
+    #####:   40:    std::__pop_heap<_AlgPolicy>(__first, __last, __comp_ref, __n);
+    #####:   41:  std::__check_strict_weak_ordering_sorted(__first, __saved_last, __comp_ref);
+    #####:   42:}
+        -:   43:
+        -:   44:template <class _RandomAccessIterator, class _Compare>
+        -:   45:inline _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 void
+        -:   46:sort_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp) {
+        -:   47:  static_assert(std::is_copy_constructible<_RandomAccessIterator>::value, "Iterators must be copy constructible.");
+        -:   48:  static_assert(std::is_copy_assignable<_RandomAccessIterator>::value, "Iterators must be copy assignable.");
+        -:   49:
+        -:   50:  std::__sort_heap<_ClassicAlgPolicy>(std::move(__first), std::move(__last), __comp);
+        -:   51:}
+        -:   52:
+        -:   53:template <class _RandomAccessIterator>
+        -:   54:inline _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 void
+        -:   55:sort_heap(_RandomAccessIterator __first, _RandomAccessIterator __last) {
+        -:   56:  std::sort_heap(std::move(__first), std::move(__last), __less<>());
+        -:   57:}
+        -:   58:
+        -:   59:_LIBCPP_END_NAMESPACE_STD
+        -:   60:
+        -:   61:_LIBCPP_POP_MACROS
+        -:   62:
+        -:   63:#endif // _LIBCPP___ALGORITHM_SORT_HEAP_H

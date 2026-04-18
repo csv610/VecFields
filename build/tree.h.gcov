@@ -1,0 +1,95 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/include/directional/tree.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Directional, a library for directional field processing.
+        -:    2:// Copyright (C) 2016 Amir Vaxman <avaxman@gmail.com>
+        -:    3://
+        -:    4:// This Source Code Form is subject to the terms of the Mozilla Public License
+        -:    5:// v. 2.0. If a copy of the MPL was not distributed with this file, You can
+        -:    6:// obtain one at http://mozilla.org/MPL/2.0/.
+        -:    7:#ifndef DIRECTIONAL_TREE_H
+        -:    8:#define DIRECTIONAL_TREE_H
+        -:    9:
+        -:   10:#include <Eigen/Core>
+        -:   11:#include <vector>
+        -:   12:#include <queue>
+        -:   13:
+        -:   14:
+        -:   15:namespace directional
+        -:   16:{
+        -:   17:// Creates a tree from a graph given by the edges in EV
+        -:   18:// edges containing a negative vertex are skipped.
+        -:   19:// Input:
+        -:   20://  EV:   #E by 2 list of edges in the graph
+        -:   21:// Output:
+        -:   22://  tE:   #Te vector of edges (within EV) in the graph.
+        -:   23://  tEf:  #V the edges leading to each vertex. -1 for the root
+    #####:   24:inline void tree(const Eigen::MatrixXi& EV,
+        -:   25:                 Eigen::VectorXi& tE,
+        -:   26:                 Eigen::VectorXi& tEf)
+        -:   27:{
+        -:   28:    using namespace Eigen;
+    #####:   29:    int numV=EV.maxCoeff()+1;
+    #####:   30:    VectorXi Valences=VectorXi::Zero(numV);
+    #####:   31:    for (int i=0;i<EV.rows();i++){
+    #####:   32:        if (EV(i, 0) == -1 || EV(i, 1) == -1)
+    #####:   33:            continue;
+    #####:   34:        Valences(EV(i,0))++;
+    #####:   35:        Valences(EV(i,1))++;
+    #####:   36:    }
+        -:   37:    
+    #####:   38:    MatrixXi VE(numV, Valences.maxCoeff());
+    #####:   39:    Valences.setZero();
+    #####:   40:    for (int i=0;i<EV.rows();i++){
+    #####:   41:        if (EV(i, 0) == -1 || EV(i, 1) == -1)
+    #####:   42:            continue;
+    #####:   43:        VE(EV(i,0), Valences(EV(i,0))++)=i;
+    #####:   44:        VE(EV(i,1), Valences(EV(i,1))++)=i;
+    #####:   45:    }
+        -:   46:    
+    #####:   47:    Eigen::VectorXi usedVertices=VectorXi::Zero(numV);
+        -:   48:    
+        -:   49:    //queue and initial possible edges
+    #####:   50:    std::queue<std::pair<int,int> > edgeVertices;
+        -:   51:    
+    #####:   52:    tE.resize(numV-1);
+    #####:   53:    tEf.resize(numV);
+    #####:   54:    tEf.setConstant(-2);
+    #####:   55:    int currEdgeIndex=0;
+    #####:   56:    int start = 0;
+        -:   57:    
+        -:   58:    //Try to find initial possible root for the tree.
+    #####:   59:    while (Valences[start] == 0)
+    #####:   60:        if (++start > Valences.size())
+    #####:   61:            return;
+        -:   62:    
+    #####:   63:    edgeVertices.push(std::pair<int, int>(-1, start));
+    #####:   64:    do{
+    #####:   65:        std::pair<int, int> currEdgeVertex=edgeVertices.front();
+    #####:   66:        edgeVertices.pop();
+    #####:   67:        if (usedVertices(currEdgeVertex.second))
+    #####:   68:            continue;
+        -:   69:        
+    #####:   70:        if (currEdgeVertex.first!=-1)
+    #####:   71:            tE(currEdgeIndex++)=currEdgeVertex.first;
+    #####:   72:        tEf(currEdgeVertex.second)=currEdgeVertex.first;
+    #####:   73:        usedVertices(currEdgeVertex.second)=1;
+        -:   74:        
+        -:   75:        //inserting the new unused vertices
+    #####:   76:        for (int i=0;i<Valences(currEdgeVertex.second);i++){
+    #####:   77:            int nextEdge=VE(currEdgeVertex.second, i);
+    #####:   78:            int nextVertex=(EV(nextEdge, 0)==currEdgeVertex.second ? EV(nextEdge, 1) : EV(nextEdge, 0));
+    #####:   79:            if (!usedVertices(nextVertex))
+    #####:   80:                edgeVertices.push(std::pair<int, int>(nextEdge, nextVertex));
+    #####:   81:        }
+    #####:   82:    }while (edgeVertices.size()!=0);
+        -:   83:    
+    #####:   84:    tE.conservativeResize(usedVertices.sum() - 1);
+    #####:   85:}
+        -:   86:
+        -:   87:}
+        -:   88:
+        -:   89:#endif
+        -:   90:
+        -:   91:

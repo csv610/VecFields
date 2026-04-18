@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/Map.h
-        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
-        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
-        -:    0:Runs:4
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -109,22 +109,22 @@
         -:  105:    typedef typename Base::PointerType PointerType;
         -:  106:    typedef PointerType PointerArgType;
         -:  107:    EIGEN_DEVICE_FUNC
-    28558:  108:    inline PointerType cast_to_pointer_type(PointerArgType ptr) { return ptr; }
+     1360:  108:    inline PointerType cast_to_pointer_type(PointerArgType ptr) { return ptr; }
         -:  109:
         -:  110:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
-   189884:  111:    inline Index innerStride() const
+    22019:  111:    inline Index innerStride() const
         -:  112:    {
-   189884:  113:      return StrideType::InnerStrideAtCompileTime != 0 ? m_stride.inner() : 1;
+    22019:  113:      return StrideType::InnerStrideAtCompileTime != 0 ? m_stride.inner() : 1;
         -:  114:    }
         -:  115:
         -:  116:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
-   140012:  117:    inline Index outerStride() const
+    12154:  117:    inline Index outerStride() const
         -:  118:    {
-   140012:  119:      return StrideType::OuterStrideAtCompileTime != 0 ? m_stride.outer()
+    12154:  119:      return StrideType::OuterStrideAtCompileTime != 0 ? m_stride.outer()
         -:  120:           : internal::traits<Map>::OuterStrideAtCompileTime != Dynamic ? Index(internal::traits<Map>::OuterStrideAtCompileTime)
-    65178:  121:           : IsVectorAtCompileTime ? (this->size() * innerStride())
+    10220:  121:           : IsVectorAtCompileTime ? (this->size() * innerStride())
         -:  122:           : int(Flags)&RowMajorBit ? (this->cols() * innerStride())
-     4768:  123:           : (this->rows() * innerStride());
+    #####:  123:           : (this->rows() * innerStride());
         -:  124:    }
         -:  125:
         -:  126:    /** Constructor in the fixed-size case.
@@ -145,10 +145,10 @@
         -:  141:      * \param stride optional Stride object, passing the strides.
         -:  142:      */
         -:  143:    EIGEN_DEVICE_FUNC
-    38784:  144:    inline Map(PointerArgType dataPtr, Index size, const StrideType& stride = StrideType())
-    19392:  145:      : Base(cast_to_pointer_type(dataPtr), size), m_stride(stride)
-    19392:  146:    {
-    38784:  147:    }
+     1762:  144:    inline Map(PointerArgType dataPtr, Index size, const StrideType& stride = StrideType())
+      881:  145:      : Base(cast_to_pointer_type(dataPtr), size), m_stride(stride)
+      881:  146:    {
+     1762:  147:    }
         -:  148:
         -:  149:    /** Constructor in the dynamic-size matrix case.
         -:  150:      *
@@ -158,12 +158,12 @@
         -:  154:      * \param stride optional Stride object, passing the strides.
         -:  155:      */
         -:  156:    EIGEN_DEVICE_FUNC
-    18332:  157:    inline Map(PointerArgType dataPtr, Index rows, Index cols, const StrideType& stride = StrideType())
-     9166:  158:      : Base(cast_to_pointer_type(dataPtr), rows, cols), m_stride(stride)
-     9166:  159:    {
-    18332:  160:    }
+      958:  157:    inline Map(PointerArgType dataPtr, Index rows, Index cols, const StrideType& stride = StrideType())
+      479:  158:      : Base(cast_to_pointer_type(dataPtr), rows, cols), m_stride(stride)
+      479:  159:    {
+      958:  160:    }
         -:  161:
-   215008:  162:    EIGEN_INHERIT_ASSIGNMENT_OPERATORS(Map)
+    10331:  162:    EIGEN_INHERIT_ASSIGNMENT_OPERATORS(Map)
         -:  163:
         -:  164:  protected:
         -:  165:    StrideType m_stride;

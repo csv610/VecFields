@@ -1,0 +1,229 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/SparseLU/SparseLU_panel_bmod.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2012 Désiré Nuentsa-Wakam <desire.nuentsa_wakam@inria.fr>
+        -:    5:// Copyright (C) 2012 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    6://
+        -:    7:// This Source Code Form is subject to the terms of the Mozilla
+        -:    8:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    9:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:   10:
+        -:   11:/* 
+        -:   12: 
+        -:   13: * NOTE: This file is the modified version of [s,d,c,z]panel_bmod.c file in SuperLU 
+        -:   14: 
+        -:   15: * -- SuperLU routine (version 3.0) --
+        -:   16: * Univ. of California Berkeley, Xerox Palo Alto Research Center,
+        -:   17: * and Lawrence Berkeley National Lab.
+        -:   18: * October 15, 2003
+        -:   19: *
+        -:   20: * Copyright (c) 1994 by Xerox Corporation.  All rights reserved.
+        -:   21: *
+        -:   22: * THIS MATERIAL IS PROVIDED AS IS, WITH ABSOLUTELY NO WARRANTY
+        -:   23: * EXPRESSED OR IMPLIED.  ANY USE IS AT YOUR OWN RISK.
+        -:   24: *
+        -:   25: * Permission is hereby granted to use or copy this program for any
+        -:   26: * purpose, provided the above notices are retained on all copies.
+        -:   27: * Permission to modify the code and to distribute modified code is
+        -:   28: * granted, provided the above notices are retained, and a notice that
+        -:   29: * the code was modified is included with the above copyright notice.
+        -:   30: */
+        -:   31:#ifndef SPARSELU_PANEL_BMOD_H
+        -:   32:#define SPARSELU_PANEL_BMOD_H
+        -:   33:
+        -:   34:// IWYU pragma: private
+        -:   35:#include "./InternalHeaderCheck.h"
+        -:   36:
+        -:   37:namespace Eigen {
+        -:   38:namespace internal {
+        -:   39:
+        -:   40:/**
+        -:   41: * \brief Performs numeric block updates (sup-panel) in topological order.
+        -:   42: * 
+        -:   43: * Before entering this routine, the original nonzeros in the panel
+        -:   44: * were already copied into the spa[m,w]
+        -:   45: * 
+        -:   46: * \param m number of rows in the matrix
+        -:   47: * \param w Panel size
+        -:   48: * \param jcol Starting  column of the panel
+        -:   49: * \param nseg Number of segments in the U part
+        -:   50: * \param dense Store the full representation of the panel 
+        -:   51: * \param tempv working array 
+        -:   52: * \param segrep segment representative... first row in the segment
+        -:   53: * \param repfnz First nonzero rows
+        -:   54: * \param glu Global LU data. 
+        -:   55: * 
+        -:   56: * 
+        -:   57: */
+        -:   58:template <typename Scalar, typename StorageIndex>
+    #####:   59:void SparseLUImpl<Scalar,StorageIndex>::panel_bmod(const Index m, const Index w, const Index jcol, 
+        -:   60:                                            const Index nseg, ScalarVector& dense, ScalarVector& tempv,
+        -:   61:                                            IndexVector& segrep, IndexVector& repfnz, GlobalLU_t& glu)
+        -:   62:{
+        -:   63:  
+        -:   64:  Index ksub,jj,nextl_col; 
+        -:   65:  Index fsupc, nsupc, nsupr, nrow; 
+        -:   66:  Index krep, kfnz; 
+        -:   67:  Index lptr; // points to the row subscripts of a supernode 
+        -:   68:  Index luptr; // ...
+        -:   69:  Index segsize,no_zeros ; 
+        -:   70:  // For each nonz supernode segment of U[*,j] in topological order
+    #####:   71:  Index k = nseg - 1; 
+    #####:   72:  const Index PacketSize = internal::packet_traits<Scalar>::size;
+        -:   73:  
+    #####:   74:  for (ksub = 0; ksub < nseg; ksub++)
+        -:   75:  { // For each updating supernode
+        -:   76:    /* krep = representative of current k-th supernode
+        -:   77:     * fsupc =  first supernodal column
+        -:   78:     * nsupc = number of columns in a supernode
+        -:   79:     * nsupr = number of rows in a supernode
+        -:   80:     */
+    #####:   81:    krep = segrep(k); k--; 
+    #####:   82:    fsupc = glu.xsup(glu.supno(krep)); 
+    #####:   83:    nsupc = krep - fsupc + 1; 
+    #####:   84:    nsupr = glu.xlsub(fsupc+1) - glu.xlsub(fsupc); 
+    #####:   85:    nrow = nsupr - nsupc; 
+    #####:   86:    lptr = glu.xlsub(fsupc); 
+        -:   87:    
+        -:   88:    // loop over the panel columns to detect the actual number of columns and rows
+    #####:   89:    Index u_rows = 0;
+    #####:   90:    Index u_cols = 0;
+    #####:   91:    for (jj = jcol; jj < jcol + w; jj++)
+        -:   92:    {
+    #####:   93:      nextl_col = (jj-jcol) * m; 
+    #####:   94:      VectorBlock<IndexVector> repfnz_col(repfnz, nextl_col, m); // First nonzero column index for each row
+        -:   95:      
+    #####:   96:      kfnz = repfnz_col(krep); 
+    #####:   97:      if ( kfnz == emptyIdxLU ) 
+    #####:   98:        continue; // skip any zero segment
+        -:   99:      
+    #####:  100:      segsize = krep - kfnz + 1;
+    #####:  101:      u_cols++;
+    #####:  102:      u_rows = (std::max)(segsize,u_rows);
+    #####:  103:    }
+        -:  104:    
+    #####:  105:    if(nsupc >= 2)
+        -:  106:    { 
+    #####:  107:      Index ldu = internal::first_multiple<Index>(u_rows, PacketSize);
+    #####:  108:      Map<ScalarMatrix, Aligned,  OuterStride<> > U(tempv.data(), u_rows, u_cols, OuterStride<>(ldu));
+        -:  109:      
+        -:  110:      // gather U
+    #####:  111:      Index u_col = 0;
+    #####:  112:      for (jj = jcol; jj < jcol + w; jj++)
+        -:  113:      {
+    #####:  114:        nextl_col = (jj-jcol) * m; 
+    #####:  115:        VectorBlock<IndexVector> repfnz_col(repfnz, nextl_col, m); // First nonzero column index for each row
+    #####:  116:        VectorBlock<ScalarVector> dense_col(dense, nextl_col, m); // Scatter/gather entire matrix column from/to here
+        -:  117:        
+    #####:  118:        kfnz = repfnz_col(krep); 
+    #####:  119:        if ( kfnz == emptyIdxLU ) 
+    #####:  120:          continue; // skip any zero segment
+        -:  121:        
+    #####:  122:        segsize = krep - kfnz + 1;
+    #####:  123:        luptr = glu.xlusup(fsupc);    
+    #####:  124:        no_zeros = kfnz - fsupc; 
+        -:  125:        
+    #####:  126:        Index isub = lptr + no_zeros;
+    #####:  127:        Index off = u_rows-segsize;
+    #####:  128:        for (Index i = 0; i < off; i++) U(i,u_col) = 0;
+    #####:  129:        for (Index i = 0; i < segsize; i++)
+        -:  130:        {
+    #####:  131:          Index irow = glu.lsub(isub); 
+    #####:  132:          U(i+off,u_col) = dense_col(irow); 
+    #####:  133:          ++isub; 
+    #####:  134:        }
+    #####:  135:        u_col++;
+    #####:  136:      }
+        -:  137:      // solve U = A^-1 U
+    #####:  138:      luptr = glu.xlusup(fsupc);
+    #####:  139:      Index lda = glu.xlusup(fsupc+1) - glu.xlusup(fsupc);
+    #####:  140:      no_zeros = (krep - u_rows + 1) - fsupc;
+    #####:  141:      luptr += lda * no_zeros + no_zeros;
+    #####:  142:      MappedMatrixBlock A(glu.lusup.data()+luptr, u_rows, u_rows, OuterStride<>(lda) );
+    #####:  143:      U = A.template triangularView<UnitLower>().solve(U);
+        -:  144:      
+        -:  145:      // update
+    #####:  146:      luptr += u_rows;
+    #####:  147:      MappedMatrixBlock B(glu.lusup.data()+luptr, nrow, u_rows, OuterStride<>(lda) );
+    #####:  148:      eigen_assert(tempv.size()>w*ldu + nrow*w + 1);
+        -:  149:      
+    #####:  150:      Index ldl = internal::first_multiple<Index>(nrow, PacketSize);
+    #####:  151:      Index offset = (PacketSize-internal::first_default_aligned(B.data(), PacketSize)) % PacketSize;
+    #####:  152:      MappedMatrixBlock L(tempv.data()+w*ldu+offset, nrow, u_cols, OuterStride<>(ldl));
+        -:  153:      
+    #####:  154:      L.noalias() = B * U;
+        -:  155:      
+        -:  156:      // scatter U and L
+    #####:  157:      u_col = 0;
+    #####:  158:      for (jj = jcol; jj < jcol + w; jj++)
+        -:  159:      {
+    #####:  160:        nextl_col = (jj-jcol) * m; 
+    #####:  161:        VectorBlock<IndexVector> repfnz_col(repfnz, nextl_col, m); // First nonzero column index for each row
+    #####:  162:        VectorBlock<ScalarVector> dense_col(dense, nextl_col, m); // Scatter/gather entire matrix column from/to here
+        -:  163:        
+    #####:  164:        kfnz = repfnz_col(krep); 
+    #####:  165:        if ( kfnz == emptyIdxLU ) 
+    #####:  166:          continue; // skip any zero segment
+        -:  167:        
+    #####:  168:        segsize = krep - kfnz + 1;
+    #####:  169:        no_zeros = kfnz - fsupc; 
+    #####:  170:        Index isub = lptr + no_zeros;
+        -:  171:        
+    #####:  172:        Index off = u_rows-segsize;
+    #####:  173:        for (Index i = 0; i < segsize; i++)
+        -:  174:        {
+    #####:  175:          Index irow = glu.lsub(isub++); 
+    #####:  176:          dense_col(irow) = U.coeff(i+off,u_col);
+    #####:  177:          U.coeffRef(i+off,u_col) = 0;
+    #####:  178:        }
+        -:  179:        
+        -:  180:        // Scatter l into SPA dense[]
+    #####:  181:        for (Index i = 0; i < nrow; i++)
+        -:  182:        {
+    #####:  183:          Index irow = glu.lsub(isub++); 
+    #####:  184:          dense_col(irow) -= L.coeff(i,u_col);
+    #####:  185:          L.coeffRef(i,u_col) = 0;
+    #####:  186:        }
+    #####:  187:        u_col++;
+    #####:  188:      }
+    #####:  189:    }
+        -:  190:    else // level 2 only
+        -:  191:    {
+        -:  192:      // Sequence through each column in the panel
+    #####:  193:      for (jj = jcol; jj < jcol + w; jj++)
+        -:  194:      {
+    #####:  195:        nextl_col = (jj-jcol) * m; 
+    #####:  196:        VectorBlock<IndexVector> repfnz_col(repfnz, nextl_col, m); // First nonzero column index for each row
+    #####:  197:        VectorBlock<ScalarVector> dense_col(dense, nextl_col, m); // Scatter/gather entire matrix column from/to here
+        -:  198:        
+    #####:  199:        kfnz = repfnz_col(krep); 
+    #####:  200:        if ( kfnz == emptyIdxLU ) 
+    #####:  201:          continue; // skip any zero segment
+        -:  202:        
+    #####:  203:        segsize = krep - kfnz + 1;
+    #####:  204:        luptr = glu.xlusup(fsupc);
+        -:  205:        
+    #####:  206:        Index lda = glu.xlusup(fsupc+1)-glu.xlusup(fsupc);// nsupr
+        -:  207:        
+        -:  208:        // Perform a trianglar solve and block update, 
+        -:  209:        // then scatter the result of sup-col update to dense[]
+    #####:  210:        no_zeros = kfnz - fsupc; 
+    #####:  211:              if(segsize==1)  LU_kernel_bmod<1>::run(segsize, dense_col, tempv, glu.lusup, luptr, lda, nrow, glu.lsub, lptr, no_zeros);
+    #####:  212:        else  if(segsize==2)  LU_kernel_bmod<2>::run(segsize, dense_col, tempv, glu.lusup, luptr, lda, nrow, glu.lsub, lptr, no_zeros);
+    #####:  213:        else  if(segsize==3)  LU_kernel_bmod<3>::run(segsize, dense_col, tempv, glu.lusup, luptr, lda, nrow, glu.lsub, lptr, no_zeros);
+    #####:  214:        else                  LU_kernel_bmod<Dynamic>::run(segsize, dense_col, tempv, glu.lusup, luptr, lda, nrow, glu.lsub, lptr, no_zeros); 
+    #####:  215:      } // End for each column in the panel 
+        -:  216:    }
+        -:  217:    
+    #####:  218:  } // End for each updating supernode
+    #####:  219:} // end panel bmod
+        -:  220:
+        -:  221:} // end namespace internal
+        -:  222:
+        -:  223:} // end namespace Eigen
+        -:  224:
+        -:  225:#endif // SPARSELU_PANEL_BMOD_H

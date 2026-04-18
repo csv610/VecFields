@@ -1,0 +1,133 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/SparseCore/SparseSolverBase.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2014 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:#ifndef EIGEN_SPARSESOLVERBASE_H
+        -:   11:#define EIGEN_SPARSESOLVERBASE_H
+        -:   12:
+        -:   13:// IWYU pragma: private
+        -:   14:#include "./InternalHeaderCheck.h"
+        -:   15:
+        -:   16:namespace Eigen { 
+        -:   17:
+        -:   18:namespace internal {
+        -:   19:
+        -:   20:  /** \internal
+        -:   21:  * Helper functions to solve with a sparse right-hand-side and result.
+        -:   22:  * The rhs is decomposed into small vertical panels which are solved through dense temporaries.
+        -:   23:  */
+        -:   24:template<typename Decomposition, typename Rhs, typename Dest>
+        -:   25:std::enable_if_t<Rhs::ColsAtCompileTime!=1 && Dest::ColsAtCompileTime!=1>
+        -:   26:solve_sparse_through_dense_panels(const Decomposition &dec, const Rhs& rhs, Dest &dest)
+        -:   27:{
+        -:   28:  EIGEN_STATIC_ASSERT((Dest::Flags&RowMajorBit)==0,THIS_METHOD_IS_ONLY_FOR_COLUMN_MAJOR_MATRICES);
+        -:   29:  typedef typename Dest::Scalar DestScalar;
+        -:   30:  // we process the sparse rhs per block of NbColsAtOnce columns temporarily stored into a dense matrix.
+        -:   31:  static const Index NbColsAtOnce = 4;
+        -:   32:  Index rhsCols = rhs.cols();
+        -:   33:  Index size = rhs.rows();
+        -:   34:  // the temporary matrices do not need more columns than NbColsAtOnce:
+        -:   35:  Index tmpCols = (std::min)(rhsCols, NbColsAtOnce); 
+        -:   36:  Eigen::Matrix<DestScalar,Dynamic,Dynamic> tmp(size,tmpCols);
+        -:   37:  Eigen::Matrix<DestScalar,Dynamic,Dynamic> tmpX(size,tmpCols);
+        -:   38:  for(Index k=0; k<rhsCols; k+=NbColsAtOnce)
+        -:   39:  {
+        -:   40:    Index actualCols = std::min<Index>(rhsCols-k, NbColsAtOnce);
+        -:   41:    tmp.leftCols(actualCols) = rhs.middleCols(k,actualCols);
+        -:   42:    tmpX.leftCols(actualCols) = dec.solve(tmp.leftCols(actualCols));
+        -:   43:    dest.middleCols(k,actualCols) = tmpX.leftCols(actualCols).sparseView();
+        -:   44:  }
+        -:   45:}
+        -:   46:
+        -:   47:// Overload for vector as rhs
+        -:   48:template<typename Decomposition, typename Rhs, typename Dest>
+        -:   49:std::enable_if_t<Rhs::ColsAtCompileTime==1 || Dest::ColsAtCompileTime==1>
+        -:   50:solve_sparse_through_dense_panels(const Decomposition &dec, const Rhs& rhs, Dest &dest)
+        -:   51:{
+        -:   52:  typedef typename Dest::Scalar DestScalar;
+        -:   53:  Index size = rhs.rows();
+        -:   54:  Eigen::Matrix<DestScalar,Dynamic,1> rhs_dense(rhs);
+        -:   55:  Eigen::Matrix<DestScalar,Dynamic,1> dest_dense(size);
+        -:   56:  dest_dense = dec.solve(rhs_dense);
+        -:   57:  dest = dest_dense.sparseView();
+        -:   58:}
+        -:   59:
+        -:   60:} // end namespace internal
+        -:   61:
+        -:   62:/** \class SparseSolverBase
+        -:   63:  * \ingroup SparseCore_Module
+        -:   64:  * \brief A base class for sparse solvers
+        -:   65:  *
+        -:   66:  * \tparam Derived the actual type of the solver.
+        -:   67:  *
+        -:   68:  */
+        -:   69:template<typename Derived>
+        -:   70:class SparseSolverBase : internal::noncopyable
+        -:   71:{
+        -:   72:  public:
+        -:   73:
+        -:   74:    /** Default constructor */
+        3:   75:    SparseSolverBase()
+        3:   76:      : m_isInitialized(false)
+        3:   77:    {}
+        -:   78:
+        -:   79:    SparseSolverBase(SparseSolverBase&&other ) : internal::noncopyable{}, m_isInitialized{other.m_isInitialized} {}
+        -:   80:
+        3:   81:    ~SparseSolverBase()
+        3:   82:    {}
+        -:   83:
+        -:   84:    Derived& derived() { return *static_cast<Derived*>(this); }
+        2:   85:    const Derived& derived() const { return *static_cast<const Derived*>(this); }
+        -:   86:    
+        -:   87:    /** \returns an expression of the solution x of \f$ A x = b \f$ using the current decomposition of A.
+        -:   88:      *
+        -:   89:      * \sa compute()
+        -:   90:      */
+        -:   91:    template<typename Rhs>
+        -:   92:    inline const Solve<Derived, Rhs>
+        1:   93:    solve(const MatrixBase<Rhs>& b) const
+        -:   94:    {
+        2:   95:      eigen_assert(m_isInitialized && "Solver is not initialized.");
+        2:   96:      eigen_assert(derived().rows()==b.rows() && "solve(): invalid number of rows of the right hand side matrix b");
+        1:   97:      return Solve<Derived, Rhs>(derived(), b.derived());
+        -:   98:    }
+        -:   99:    
+        -:  100:    /** \returns an expression of the solution x of \f$ A x = b \f$ using the current decomposition of A.
+        -:  101:      *
+        -:  102:      * \sa compute()
+        -:  103:      */
+        -:  104:    template<typename Rhs>
+        -:  105:    inline const Solve<Derived, Rhs>
+        -:  106:    solve(const SparseMatrixBase<Rhs>& b) const
+        -:  107:    {
+        -:  108:      eigen_assert(m_isInitialized && "Solver is not initialized.");
+        -:  109:      eigen_assert(derived().rows()==b.rows() && "solve(): invalid number of rows of the right hand side matrix b");
+        -:  110:      return Solve<Derived, Rhs>(derived(), b.derived());
+        -:  111:    }
+        -:  112:    
+        -:  113:    #ifndef EIGEN_PARSED_BY_DOXYGEN
+        -:  114:    /** \internal default implementation of solving with a sparse rhs */
+        -:  115:    template<typename Rhs,typename Dest>
+        -:  116:    void _solve_impl(const SparseMatrixBase<Rhs> &b, SparseMatrixBase<Dest> &dest) const
+        -:  117:    {
+        -:  118:      internal::solve_sparse_through_dense_panels(derived(), b.derived(), dest.derived());
+        -:  119:    }
+        -:  120:    #endif // EIGEN_PARSED_BY_DOXYGEN
+        -:  121:
+        -:  122:  protected:
+        -:  123:    
+        -:  124:    mutable bool m_isInitialized;
+        -:  125:};
+        -:  126:
+        -:  127:} // end namespace Eigen
+        -:  128:
+        -:  129:#endif // EIGEN_SPARSESOLVERBASE_H

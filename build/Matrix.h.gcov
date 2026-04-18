@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/Matrix.h
-        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
-        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
-        -:    0:Runs:4
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -210,9 +210,9 @@
         -:  206:      * \callgraph
         -:  207:      */
         -:  208:    EIGEN_DEVICE_FUNC
-     1498:  209:    EIGEN_STRONG_INLINE Matrix& operator=(const Matrix& other)
+      134:  209:    EIGEN_STRONG_INLINE Matrix& operator=(const Matrix& other)
         -:  210:    {
-     1498:  211:      return Base::_set(other);
+      134:  211:      return Base::_set(other);
         -:  212:    }
         -:  213:
         -:  214:    /** \internal
@@ -227,9 +227,9 @@
         -:  223:      */
         -:  224:    template<typename OtherDerived>
         -:  225:    EIGEN_DEVICE_FUNC
-     4514:  226:    EIGEN_STRONG_INLINE Matrix& operator=(const DenseBase<OtherDerived>& other)
+      631:  226:    EIGEN_STRONG_INLINE Matrix& operator=(const DenseBase<OtherDerived>& other)
         -:  227:    {
-     4514:  228:      return Base::_set(other);
+      631:  228:      return Base::_set(other);
         -:  229:    }
         -:  230:
         -:  231:    /* Here, doxygen failed to copy the brief information when using \copydoc */
@@ -240,9 +240,9 @@
         -:  236:      */
         -:  237:    template<typename OtherDerived>
         -:  238:    EIGEN_DEVICE_FUNC
-     1490:  239:    EIGEN_STRONG_INLINE Matrix& operator=(const EigenBase<OtherDerived> &other)
+      120:  239:    EIGEN_STRONG_INLINE Matrix& operator=(const EigenBase<OtherDerived> &other)
         -:  240:    {
-     1490:  241:      return Base::operator=(other);
+      120:  241:      return Base::operator=(other);
         -:  242:    }
         -:  243:
         -:  244:    template<typename OtherDerived>
@@ -263,10 +263,10 @@
         -:  259:      * \sa resize(Index,Index)
         -:  260:      */
         -:  261:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-    25384:  262:    Matrix() : Base()
-    12692:  263:    {
+     3064:  262:    Matrix() : Base()
+     1532:  263:    {
         -:  264:      EIGEN_INITIALIZE_COEFFS_IF_THAT_OPTION_IS_ENABLED
-    25384:  265:    }
+     3064:  265:    }
         -:  266:
         -:  267:    // FIXME is it still needed
         -:  268:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
@@ -275,13 +275,13 @@
     #####:  271:    { EIGEN_INITIALIZE_COEFFS_IF_THAT_OPTION_IS_ENABLED }
         -:  272:
         -:  273:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-     1016:  274:    Matrix(Matrix&& other) EIGEN_NOEXCEPT_IF(std::is_nothrow_move_constructible<Scalar>::value)
-     1016:  275:      : Base(std::move(other)) {}
+      508:  274:    Matrix(Matrix&& other) EIGEN_NOEXCEPT_IF(std::is_nothrow_move_constructible<Scalar>::value)
+      508:  275:      : Base(std::move(other)) {}
         -:  276:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-     2740:  277:    Matrix& operator=(Matrix&& other) EIGEN_NOEXCEPT_IF(std::is_nothrow_move_assignable<Scalar>::value)
+      123:  277:    Matrix& operator=(Matrix&& other) EIGEN_NOEXCEPT_IF(std::is_nothrow_move_assignable<Scalar>::value)
         -:  278:    {
-     2740:  279:      Base::operator=(std::move(other));
-     2740:  280:      return *this;
+      123:  279:      Base::operator=(std::move(other));
+      123:  280:      return *this;
         -:  281:    }
         -:  282:
         -:  283:    /** \copydoc PlainObjectBase(const Scalar&, const Scalar&, const Scalar&,  const Scalar&, const ArgTypes&... args)
@@ -326,17 +326,17 @@
         -:  322:    // This constructor is for both 1x1 matrices and dynamic vectors
         -:  323:    template<typename T>
         -:  324:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-    14908:  325:    explicit Matrix(const T& x)
-     7454:  326:    {
-     7454:  327:      Base::template _init1<T>(x);
-    14908:  328:    }
+     1286:  325:    explicit Matrix(const T& x)
+      643:  326:    {
+      643:  327:      Base::template _init1<T>(x);
+     1286:  328:    }
         -:  329:
         -:  330:    template<typename T0, typename T1>
         -:  331:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-     8940:  332:    Matrix(const T0& x, const T1& y)
-     4470:  333:    {
-     4470:  334:      Base::template _init2<T0,T1>(x, y);
-     8940:  335:    }
+      752:  332:    Matrix(const T0& x, const T1& y)
+      376:  333:    {
+      376:  334:      Base::template _init2<T0,T1>(x, y);
+      752:  335:    }
         -:  336:
         -:  337:
         -:  338:#else
@@ -384,13 +384,13 @@
         -:  380:      * \sa Matrix(const Scalar&, const Scalar&, const Scalar&,  const Scalar&, const ArgTypes&...)
         -:  381:      */
         -:  382:    EIGEN_DEVICE_FUNC
-    13940:  383:    EIGEN_STRONG_INLINE Matrix(const Scalar& x, const Scalar& y, const Scalar& z)
-     6970:  384:    {
+      720:  383:    EIGEN_STRONG_INLINE Matrix(const Scalar& x, const Scalar& y, const Scalar& z)
+      360:  384:    {
         -:  385:      EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Matrix, 3)
-     6970:  386:      m_storage.data()[0] = x;
-     6970:  387:      m_storage.data()[1] = y;
-     6970:  388:      m_storage.data()[2] = z;
-    13940:  389:    }
+      360:  386:      m_storage.data()[0] = x;
+      360:  387:      m_storage.data()[1] = y;
+      360:  388:      m_storage.data()[2] = z;
+      720:  389:    }
         -:  390:    /** \brief Constructs an initialized 4D vector with given coefficients
         -:  391:      * \sa Matrix(const Scalar&, const Scalar&, const Scalar&,  const Scalar&, const ArgTypes&...)
         -:  392:      */
@@ -407,22 +407,22 @@
         -:  403:
         -:  404:    /** \brief Copy constructor */
         -:  405:    EIGEN_DEVICE_FUNC
-     6920:  406:    EIGEN_STRONG_INLINE Matrix(const Matrix& other) : Base(other)
-     6920:  407:    { }
+      960:  406:    EIGEN_STRONG_INLINE Matrix(const Matrix& other) : Base(other)
+      960:  407:    { }
         -:  408:
         -:  409:    /** \brief Copy constructor for generic expressions.
         -:  410:      * \sa MatrixBase::operator=(const EigenBase<OtherDerived>&)
         -:  411:      */
         -:  412:    template<typename OtherDerived>
         -:  413:    EIGEN_DEVICE_FUNC
-   115956:  414:    EIGEN_STRONG_INLINE Matrix(const EigenBase<OtherDerived> &other)
-    57978:  415:      : Base(other.derived())
-   115956:  416:    { }
+    13946:  414:    EIGEN_STRONG_INLINE Matrix(const EigenBase<OtherDerived> &other)
+     6973:  415:      : Base(other.derived())
+    13946:  416:    { }
         -:  417:
         -:  418:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
-   838666:  419:    inline Index innerStride() const EIGEN_NOEXCEPT { return 1; }
+    72841:  419:    inline Index innerStride() const EIGEN_NOEXCEPT { return 1; }
         -:  420:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
-   947758:  421:    inline Index outerStride() const EIGEN_NOEXCEPT { return this->innerSize(); }
+    92015:  421:    inline Index outerStride() const EIGEN_NOEXCEPT { return this->innerSize(); }
         -:  422:
         -:  423:    /////////// Geometry module ///////////
         -:  424:

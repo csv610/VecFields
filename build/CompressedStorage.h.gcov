@@ -1,0 +1,230 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/SparseCore/CompressedStorage.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2008-2014 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:#ifndef EIGEN_COMPRESSED_STORAGE_H
+        -:   11:#define EIGEN_COMPRESSED_STORAGE_H
+        -:   12:
+        -:   13:// IWYU pragma: private
+        -:   14:#include "./InternalHeaderCheck.h"
+        -:   15:
+        -:   16:namespace Eigen { 
+        -:   17:
+        -:   18:namespace internal {
+        -:   19:
+        -:   20:/** \internal
+        -:   21:  * Stores a sparse set of values as a list of values and a list of indices.
+        -:   22:  *
+        -:   23:  */
+        -:   24:template<typename Scalar_,typename StorageIndex_>
+        -:   25:class CompressedStorage
+        -:   26:{
+        -:   27:  public:
+        -:   28:
+        -:   29:    typedef Scalar_ Scalar;
+        -:   30:    typedef StorageIndex_ StorageIndex;
+        -:   31:
+        -:   32:  protected:
+        -:   33:
+        -:   34:    typedef typename NumTraits<Scalar>::Real RealScalar;
+        -:   35:
+        -:   36:  public:
+        -:   37:
+      240:   38:    CompressedStorage()
+      120:   39:      : m_values(0), m_indices(0), m_size(0), m_allocatedSize(0)
+      240:   40:    {}
+        -:   41:
+        -:   42:    explicit CompressedStorage(Index size)
+        -:   43:      : m_values(0), m_indices(0), m_size(0), m_allocatedSize(0)
+        -:   44:    {
+        -:   45:      resize(size);
+        -:   46:    }
+        -:   47:
+        -:   48:    CompressedStorage(const CompressedStorage& other)
+        -:   49:      : m_values(0), m_indices(0), m_size(0), m_allocatedSize(0)
+        -:   50:    {
+        -:   51:      *this = other;
+        -:   52:    }
+        -:   53:
+       14:   54:    CompressedStorage& operator=(const CompressedStorage& other)
+        -:   55:    {
+       14:   56:      resize(other.size());
+       14:   57:      if(other.size()>0)
+        -:   58:      {
+       14:   59:        internal::smart_copy(other.m_values,  other.m_values  + m_size, m_values);
+       14:   60:        internal::smart_copy(other.m_indices, other.m_indices + m_size, m_indices);
+       14:   61:      }
+       14:   62:      return *this;
+        -:   63:    }
+        -:   64:
+       42:   65:    void swap(CompressedStorage& other)
+        -:   66:    {
+       42:   67:      std::swap(m_values, other.m_values);
+       42:   68:      std::swap(m_indices, other.m_indices);
+       42:   69:      std::swap(m_size, other.m_size);
+       42:   70:      std::swap(m_allocatedSize, other.m_allocatedSize);
+       42:   71:    }
+        -:   72:
+      240:   73:    ~CompressedStorage()
+      120:   74:    {
+      120:   75:      conditional_aligned_delete_auto<Scalar, true>(m_values, m_allocatedSize);
+      120:   76:      conditional_aligned_delete_auto<StorageIndex, true>(m_indices, m_allocatedSize);
+      240:   77:    }
+        -:   78:
+       16:   79:    void reserve(Index size)
+        -:   80:    {
+       16:   81:      Index newAllocatedSize = m_size + size;
+       16:   82:      if (newAllocatedSize > m_allocatedSize)
+       14:   83:        reallocate(newAllocatedSize);
+       16:   84:    }
+        -:   85:
+    #####:   86:    void squeeze()
+        -:   87:    {
+    #####:   88:      if (m_allocatedSize>m_size)
+    #####:   89:        reallocate(m_size);
+    #####:   90:    }
+        -:   91:
+     9044:   92:    void resize(Index size, double reserveSizeFactor = 0)
+        -:   93:    {
+     9044:   94:      if (m_allocatedSize<size)
+        -:   95:      {
+       56:   96:        Index realloc_size = (std::min<Index>)(NumTraits<StorageIndex>::highest(),  size + Index(reserveSizeFactor*double(size)));
+       56:   97:        if(realloc_size<size)
+    #####:   98:          internal::throw_std_bad_alloc();
+       56:   99:        reallocate(realloc_size);
+       56:  100:      }
+     9044:  101:      m_size = size;
+     9044:  102:    }
+        -:  103:
+     8976:  104:    void append(const Scalar& v, Index i)
+        -:  105:    {
+     8976:  106:      Index id = m_size;
+     8976:  107:      resize(m_size+1, 1);
+     8976:  108:      m_values[id] = v;
+     8976:  109:      m_indices[id] = internal::convert_index<StorageIndex>(i);
+     8976:  110:    }
+        -:  111:
+    11544:  112:    inline Index size() const { return m_size; }
+        -:  113:    inline Index allocatedSize() const { return m_allocatedSize; }
+      128:  114:    inline void clear() { m_size = 0; }
+        -:  115:
+    28311:  116:    const Scalar* valuePtr() const { return m_values; }
+      593:  117:    Scalar* valuePtr() { return m_values; }
+    28309:  118:    const StorageIndex* indexPtr() const { return m_indices; }
+      594:  119:    StorageIndex* indexPtr() { return m_indices; }
+        -:  120:
+    31990:  121:    inline Scalar& value(Index i) { eigen_internal_assert(m_values!=0); return m_values[i]; }
+        -:  122:    inline const Scalar& value(Index i) const { eigen_internal_assert(m_values!=0); return m_values[i]; }
+        -:  123:
+    25045:  124:    inline StorageIndex& index(Index i) { eigen_internal_assert(m_indices!=0); return m_indices[i]; }
+        -:  125:    inline const StorageIndex& index(Index i) const { eigen_internal_assert(m_indices!=0); return m_indices[i]; }
+        -:  126:
+        -:  127:    /** \returns the largest \c k such that for all \c j in [0,k) index[\c j]\<\a key */
+        -:  128:    inline Index searchLowerIndex(Index key) const
+        -:  129:    {
+        -:  130:      return searchLowerIndex(0, m_size, key);
+        -:  131:    }
+        -:  132:
+        -:  133:    /** \returns the largest \c k in [start,end) such that for all \c j in [start,k) index[\c j]\<\a key */
+    #####:  134:    inline Index searchLowerIndex(Index start, Index end, Index key) const
+        -:  135:    {
+    #####:  136:      return static_cast<Index>(std::distance(m_indices, std::lower_bound(m_indices + start, m_indices + end, key)));
+        -:  137:    }
+        -:  138:
+        -:  139:    /** \returns the stored value at index \a key
+        -:  140:      * If the value does not exist, then the value \a defaultValue is returned without any insertion. */
+        -:  141:    inline Scalar at(Index key, const Scalar& defaultValue = Scalar(0)) const
+        -:  142:    {
+        -:  143:      if (m_size==0)
+        -:  144:        return defaultValue;
+        -:  145:      else if (key==m_indices[m_size-1])
+        -:  146:        return m_values[m_size-1];
+        -:  147:      // ^^  optimization: let's first check if it is the last coefficient
+        -:  148:      // (very common in high level algorithms)
+        -:  149:      const Index id = searchLowerIndex(0,m_size-1,key);
+        -:  150:      return ((id<m_size) && (m_indices[id]==key)) ? m_values[id] : defaultValue;
+        -:  151:    }
+        -:  152:
+        -:  153:    /** Like at(), but the search is performed in the range [start,end) */
+    #####:  154:    inline Scalar atInRange(Index start, Index end, Index key, const Scalar &defaultValue = Scalar(0)) const
+        -:  155:    {
+    #####:  156:      if (start>=end)
+    #####:  157:        return defaultValue;
+    #####:  158:      else if (end>start && key==m_indices[end-1])
+    #####:  159:        return m_values[end-1];
+        -:  160:      // ^^  optimization: let's first check if it is the last coefficient
+        -:  161:      // (very common in high level algorithms)
+    #####:  162:      const Index id = searchLowerIndex(start,end-1,key);
+    #####:  163:      return ((id<end) && (m_indices[id]==key)) ? m_values[id] : defaultValue;
+    #####:  164:    }
+        -:  165:
+        -:  166:    /** \returns a reference to the value at index \a key
+        -:  167:      * If the value does not exist, then the value \a defaultValue is inserted
+        -:  168:      * such that the keys are sorted. */
+        -:  169:    inline Scalar& atWithInsertion(Index key, const Scalar& defaultValue = Scalar(0))
+        -:  170:    {
+        -:  171:      Index id = searchLowerIndex(0,m_size,key);
+        -:  172:      if (id>=m_size || m_indices[id]!=key)
+        -:  173:      {
+        -:  174:        if (m_allocatedSize<m_size+1)
+        -:  175:        {
+        -:  176:          Index newAllocatedSize = 2 * (m_size + 1);
+        -:  177:          m_values = conditional_aligned_realloc_new_auto<Scalar, true>(m_values, newAllocatedSize, m_allocatedSize);
+        -:  178:          m_indices =
+        -:  179:              conditional_aligned_realloc_new_auto<StorageIndex, true>(m_indices, newAllocatedSize, m_allocatedSize);
+        -:  180:          m_allocatedSize = newAllocatedSize;
+        -:  181:        }
+        -:  182:        if(m_size>id)
+        -:  183:        {
+        -:  184:          internal::smart_memmove(m_values +id, m_values +m_size, m_values +id+1);
+        -:  185:          internal::smart_memmove(m_indices+id, m_indices+m_size, m_indices+id+1);
+        -:  186:        }
+        -:  187:        m_size++;
+        -:  188:        m_indices[id] = internal::convert_index<StorageIndex>(key);
+        -:  189:        m_values[id] = defaultValue;
+        -:  190:      }
+        -:  191:      return m_values[id];
+        -:  192:    }
+        -:  193:
+        -:  194:    inline void moveChunk(Index from, Index to, Index chunkSize)
+        -:  195:    {
+        -:  196:      eigen_internal_assert(chunkSize >= 0 && to+chunkSize <= m_size);
+        -:  197:      internal::smart_memmove(m_values + from, m_values + from + chunkSize, m_values + to);
+        -:  198:      internal::smart_memmove(m_indices + from, m_indices + from + chunkSize, m_indices + to);
+        -:  199:    }
+        -:  200:
+        -:  201:  protected:
+        -:  202:
+       70:  203:    inline void reallocate(Index size)
+        -:  204:    {
+        -:  205:      #ifdef EIGEN_SPARSE_COMPRESSED_STORAGE_REALLOCATE_PLUGIN
+        -:  206:        EIGEN_SPARSE_COMPRESSED_STORAGE_REALLOCATE_PLUGIN
+        -:  207:      #endif
+        -:  208:      eigen_internal_assert(size!=m_allocatedSize);
+       70:  209:      m_values = conditional_aligned_realloc_new_auto<Scalar, true>(m_values, size, m_allocatedSize);
+       70:  210:      m_indices = conditional_aligned_realloc_new_auto<StorageIndex, true>(m_indices, size, m_allocatedSize);
+       70:  211:      m_allocatedSize = size;
+       70:  212:    }
+        -:  213:
+        -:  214:  protected:
+        -:  215:    Scalar* m_values;
+        -:  216:    StorageIndex* m_indices;
+        -:  217:    Index m_size;
+        -:  218:    Index m_allocatedSize;
+        -:  219:
+        -:  220:};
+        -:  221:
+        -:  222:} // end namespace internal
+        -:  223:
+        -:  224:} // end namespace Eigen
+        -:  225:
+        -:  226:#endif // EIGEN_COMPRESSED_STORAGE_H

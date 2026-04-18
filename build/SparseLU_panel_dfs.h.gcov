@@ -1,0 +1,265 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/SparseLU/SparseLU_panel_dfs.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2012 Désiré Nuentsa-Wakam <desire.nuentsa_wakam@inria.fr>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:/* 
+        -:   11: 
+        -:   12: * NOTE: This file is the modified version of [s,d,c,z]panel_dfs.c file in SuperLU 
+        -:   13: 
+        -:   14: * -- SuperLU routine (version 2.0) --
+        -:   15: * Univ. of California Berkeley, Xerox Palo Alto Research Center,
+        -:   16: * and Lawrence Berkeley National Lab.
+        -:   17: * November 15, 1997
+        -:   18: *
+        -:   19: * Copyright (c) 1994 by Xerox Corporation.  All rights reserved.
+        -:   20: *
+        -:   21: * THIS MATERIAL IS PROVIDED AS IS, WITH ABSOLUTELY NO WARRANTY
+        -:   22: * EXPRESSED OR IMPLIED.  ANY USE IS AT YOUR OWN RISK.
+        -:   23: *
+        -:   24: * Permission is hereby granted to use or copy this program for any
+        -:   25: * purpose, provided the above notices are retained on all copies.
+        -:   26: * Permission to modify the code and to distribute modified code is
+        -:   27: * granted, provided the above notices are retained, and a notice that
+        -:   28: * the code was modified is included with the above copyright notice.
+        -:   29: */
+        -:   30:#ifndef SPARSELU_PANEL_DFS_H
+        -:   31:#define SPARSELU_PANEL_DFS_H
+        -:   32:
+        -:   33:// IWYU pragma: private
+        -:   34:#include "./InternalHeaderCheck.h"
+        -:   35:
+        -:   36:namespace Eigen {
+        -:   37:
+        -:   38:namespace internal {
+        -:   39:  
+        -:   40:template<typename IndexVector>
+        -:   41:struct panel_dfs_traits
+        -:   42:{
+        -:   43:  typedef typename IndexVector::Scalar StorageIndex;
+    #####:   44:  panel_dfs_traits(Index jcol, StorageIndex* marker)
+    #####:   45:    : m_jcol(jcol), m_marker(marker)
+    #####:   46:  {}
+    #####:   47:  bool update_segrep(Index krep, StorageIndex jj)
+        -:   48:  {
+    #####:   49:    if(m_marker[krep]<m_jcol)
+        -:   50:    {
+    #####:   51:      m_marker[krep] = jj; 
+    #####:   52:      return true;
+        -:   53:    }
+    #####:   54:    return false;
+    #####:   55:  }
+    #####:   56:  void mem_expand(IndexVector& /*glu.lsub*/, Index /*nextl*/, Index /*chmark*/) {}
+        -:   57:  enum { ExpandMem = false };
+        -:   58:  Index m_jcol;
+        -:   59:  StorageIndex* m_marker;
+        -:   60:};
+        -:   61:
+        -:   62:
+        -:   63:template <typename Scalar, typename StorageIndex>
+        -:   64:template <typename Traits>
+    #####:   65:void SparseLUImpl<Scalar,StorageIndex>::dfs_kernel(const StorageIndex jj, IndexVector& perm_r,
+        -:   66:                   Index& nseg, IndexVector& panel_lsub, IndexVector& segrep,
+        -:   67:                   Ref<IndexVector> repfnz_col, IndexVector& xprune, Ref<IndexVector> marker, IndexVector& parent,
+        -:   68:                   IndexVector& xplore, GlobalLU_t& glu,
+        -:   69:                   Index& nextl_col, Index krow, Traits& traits
+        -:   70:                  )
+        -:   71:{
+        -:   72:  
+    #####:   73:  StorageIndex kmark = marker(krow);
+        -:   74:      
+        -:   75:  // For each unmarked krow of jj
+    #####:   76:  marker(krow) = jj; 
+    #####:   77:  StorageIndex kperm = perm_r(krow); 
+    #####:   78:  if (kperm == emptyIdxLU ) {
+        -:   79:    // krow is in L : place it in structure of L(*, jj)
+    #####:   80:    panel_lsub(nextl_col++) = StorageIndex(krow);  // krow is indexed into A
+        -:   81:    
+    #####:   82:    traits.mem_expand(panel_lsub, nextl_col, kmark);
+    #####:   83:  }
+        -:   84:  else 
+        -:   85:  {
+        -:   86:    // krow is in U : if its supernode-representative krep
+        -:   87:    // has been explored, update repfnz(*)
+        -:   88:    // krep = supernode representative of the current row
+    #####:   89:    StorageIndex krep = glu.xsup(glu.supno(kperm)+1) - 1; 
+        -:   90:    // First nonzero element in the current column:
+    #####:   91:    StorageIndex myfnz = repfnz_col(krep); 
+        -:   92:    
+    #####:   93:    if (myfnz != emptyIdxLU )
+        -:   94:    {
+        -:   95:      // Representative visited before
+    #####:   96:      if (myfnz > kperm ) repfnz_col(krep) = kperm; 
+        -:   97:      
+    #####:   98:    }
+        -:   99:    else 
+        -:  100:    {
+        -:  101:      // Otherwise, perform dfs starting at krep
+    #####:  102:      StorageIndex oldrep = emptyIdxLU; 
+    #####:  103:      parent(krep) = oldrep; 
+    #####:  104:      repfnz_col(krep) = kperm; 
+    #####:  105:      StorageIndex xdfs =  glu.xlsub(krep); 
+    #####:  106:      Index maxdfs = xprune(krep); 
+        -:  107:      
+        -:  108:      StorageIndex kpar;
+    #####:  109:      do 
+        -:  110:      {
+        -:  111:        // For each unmarked kchild of krep
+    #####:  112:        while (xdfs < maxdfs) 
+        -:  113:        {
+    #####:  114:          StorageIndex kchild = glu.lsub(xdfs); 
+    #####:  115:          xdfs++; 
+    #####:  116:          StorageIndex chmark = marker(kchild); 
+        -:  117:          
+    #####:  118:          if (chmark != jj ) 
+        -:  119:          {
+    #####:  120:            marker(kchild) = jj; 
+    #####:  121:            StorageIndex chperm = perm_r(kchild); 
+        -:  122:            
+    #####:  123:            if (chperm == emptyIdxLU) 
+        -:  124:            {
+        -:  125:              // case kchild is in L: place it in L(*, j)
+    #####:  126:              panel_lsub(nextl_col++) = kchild;
+    #####:  127:              traits.mem_expand(panel_lsub, nextl_col, chmark);
+    #####:  128:            }
+        -:  129:            else
+        -:  130:            {
+        -:  131:              // case kchild is in U :
+        -:  132:              // chrep = its supernode-rep. If its rep has been explored, 
+        -:  133:              // update its repfnz(*)
+    #####:  134:              StorageIndex chrep = glu.xsup(glu.supno(chperm)+1) - 1; 
+    #####:  135:              myfnz = repfnz_col(chrep); 
+        -:  136:              
+    #####:  137:              if (myfnz != emptyIdxLU) 
+        -:  138:              { // Visited before 
+    #####:  139:                if (myfnz > chperm) 
+    #####:  140:                  repfnz_col(chrep) = chperm; 
+    #####:  141:              }
+        -:  142:              else 
+        -:  143:              { // Cont. dfs at snode-rep of kchild
+    #####:  144:                xplore(krep) = xdfs; 
+    #####:  145:                oldrep = krep; 
+    #####:  146:                krep = chrep; // Go deeper down G(L)
+    #####:  147:                parent(krep) = oldrep; 
+    #####:  148:                repfnz_col(krep) = chperm; 
+    #####:  149:                xdfs = glu.xlsub(krep); 
+    #####:  150:                maxdfs = xprune(krep); 
+        -:  151:                
+        -:  152:              } // end if myfnz != -1
+        -:  153:            } // end if chperm == -1 
+        -:  154:                
+    #####:  155:          } // end if chmark !=jj
+        -:  156:        } // end while xdfs < maxdfs
+        -:  157:        
+        -:  158:        // krow has no more unexplored nbrs :
+        -:  159:        //    Place snode-rep krep in postorder DFS, if this 
+        -:  160:        //    segment is seen for the first time. (Note that 
+        -:  161:        //    "repfnz(krep)" may change later.)
+        -:  162:        //    Baktrack dfs to its parent
+    #####:  163:        if(traits.update_segrep(krep,jj))
+        -:  164:        //if (marker1(krep) < jcol )
+        -:  165:        {
+    #####:  166:          segrep(nseg) = krep; 
+    #####:  167:          ++nseg; 
+        -:  168:          //marker1(krep) = jj; 
+    #####:  169:        }
+        -:  170:        
+    #####:  171:        kpar = parent(krep); // Pop recursion, mimic recursion 
+    #####:  172:        if (kpar == emptyIdxLU) 
+    #####:  173:          break; // dfs done 
+    #####:  174:        krep = kpar; 
+    #####:  175:        xdfs = xplore(krep); 
+    #####:  176:        maxdfs = xprune(krep); 
+        -:  177:
+    #####:  178:      } while (kpar != emptyIdxLU); // Do until empty stack 
+        -:  179:      
+        -:  180:    } // end if (myfnz = -1)
+        -:  181:
+        -:  182:  } // end if (kperm == -1)   
+    #####:  183:}
+        -:  184:
+        -:  185:/**
+        -:  186: * \brief Performs a symbolic factorization on a panel of columns [jcol, jcol+w)
+        -:  187: * 
+        -:  188: * A supernode representative is the last column of a supernode.
+        -:  189: * The nonzeros in U[*,j] are segments that end at supernodes representatives
+        -:  190: * 
+        -:  191: * The routine returns a list of the supernodal representatives 
+        -:  192: * in topological order of the dfs that generates them. This list is 
+        -:  193: * a superset of the topological order of each individual column within 
+        -:  194: * the panel.
+        -:  195: * The location of the first nonzero in each supernodal segment 
+        -:  196: * (supernodal entry location) is also returned. Each column has 
+        -:  197: * a separate list for this purpose. 
+        -:  198: * 
+        -:  199: * Two markers arrays are used for dfs :
+        -:  200: *    marker[i] == jj, if i was visited during dfs of current column jj;
+        -:  201: *    marker1[i] >= jcol, if i was visited by earlier columns in this panel; 
+        -:  202: * 
+        -:  203: * \param[in] m number of rows in the matrix
+        -:  204: * \param[in] w Panel size
+        -:  205: * \param[in] jcol Starting  column of the panel
+        -:  206: * \param[in] A Input matrix in column-major storage
+        -:  207: * \param[in] perm_r Row permutation
+        -:  208: * \param[out] nseg Number of U segments
+        -:  209: * \param[out] dense Accumulate the column vectors of the panel
+        -:  210: * \param[out] panel_lsub Subscripts of the row in the panel 
+        -:  211: * \param[out] segrep Segment representative i.e first nonzero row of each segment
+        -:  212: * \param[out] repfnz First nonzero location in each row
+        -:  213: * \param[out] xprune The pruned elimination tree
+        -:  214: * \param[out] marker work vector
+        -:  215: * \param  parent The elimination tree
+        -:  216: * \param xplore work vector
+        -:  217: * \param glu The global data structure
+        -:  218: * 
+        -:  219: */
+        -:  220:
+        -:  221:template <typename Scalar, typename StorageIndex>
+    #####:  222:void SparseLUImpl<Scalar,StorageIndex>::panel_dfs(const Index m, const Index w, const Index jcol, MatrixType& A, IndexVector& perm_r, Index& nseg, ScalarVector& dense, IndexVector& panel_lsub, IndexVector& segrep, IndexVector& repfnz, IndexVector& xprune, IndexVector& marker, IndexVector& parent, IndexVector& xplore, GlobalLU_t& glu)
+        -:  223:{
+        -:  224:  Index nextl_col; // Next available position in panel_lsub[*,jj] 
+        -:  225:  
+        -:  226:  // Initialize pointers 
+    #####:  227:  VectorBlock<IndexVector> marker1(marker, m, m); 
+    #####:  228:  nseg = 0; 
+        -:  229:  
+    #####:  230:  panel_dfs_traits<IndexVector> traits(jcol, marker1.data());
+        -:  231:  
+        -:  232:  // For each column in the panel 
+    #####:  233:  for (StorageIndex jj = StorageIndex(jcol); jj < jcol + w; jj++) 
+        -:  234:  {
+    #####:  235:    nextl_col = (jj - jcol) * m; 
+        -:  236:    
+    #####:  237:    VectorBlock<IndexVector> repfnz_col(repfnz, nextl_col, m); // First nonzero location in each row
+    #####:  238:    VectorBlock<ScalarVector> dense_col(dense,nextl_col, m); // Accumulate a column vector here
+        -:  239:    
+        -:  240:    
+        -:  241:    // For each nnz in A[*, jj] do depth first search
+    #####:  242:    for (typename MatrixType::InnerIterator it(A, jj); it; ++it)
+        -:  243:    {
+    #####:  244:      Index krow = it.row(); 
+    #####:  245:      dense_col(krow) = it.value();
+        -:  246:      
+    #####:  247:      StorageIndex kmark = marker(krow); 
+    #####:  248:      if (kmark == jj) 
+    #####:  249:        continue; // krow visited before, go to the next nonzero
+        -:  250:      
+    #####:  251:      dfs_kernel(jj, perm_r, nseg, panel_lsub, segrep, repfnz_col, xprune, marker, parent,
+    #####:  252:                   xplore, glu, nextl_col, krow, traits);
+    #####:  253:    }// end for nonzeros in column jj
+        -:  254:    
+    #####:  255:  } // end for column jj
+    #####:  256:}
+        -:  257:
+        -:  258:} // end namespace internal
+        -:  259:} // end namespace Eigen
+        -:  260:
+        -:  261:#endif // SPARSELU_PANEL_DFS_H

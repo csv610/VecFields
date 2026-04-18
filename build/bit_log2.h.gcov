@@ -1,0 +1,37 @@
+        -:    0:Source:/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__bit/bit_log2.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1://===----------------------------------------------------------------------===//
+        -:    2://
+        -:    3:// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+        -:    4:// See https://llvm.org/LICENSE.txt for license information.
+        -:    5:// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+        -:    6://
+        -:    7://===----------------------------------------------------------------------===//
+        -:    8:
+        -:    9:#ifndef _LIBCPP___BIT_BIT_LOG2_H
+        -:   10:#define _LIBCPP___BIT_BIT_LOG2_H
+        -:   11:
+        -:   12:#include <__assert>
+        -:   13:#include <__bit/countl.h>
+        -:   14:#include <__config>
+        -:   15:#include <__type_traits/integer_traits.h>
+        -:   16:#include <limits>
+        -:   17:
+        -:   18:#if !defined(_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER)
+        -:   19:#  pragma GCC system_header
+        -:   20:#endif
+        -:   21:
+        -:   22:_LIBCPP_BEGIN_NAMESPACE_STD
+        -:   23:
+        -:   24:template <class _Tp>
+    #####:   25:_LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 _Tp __bit_log2(_Tp __t) _NOEXCEPT {
+        -:   26:  static_assert(__is_unsigned_integer_v<_Tp>, "__bit_log2 requires an unsigned integer type");
+        -:   27:  _LIBCPP_ASSERT_INTERNAL(__t != 0, "logarithm of 0 is undefined");
+    #####:   28:  return numeric_limits<_Tp>::digits - 1 - std::__countl_zero(__t);
+        -:   29:}
+        -:   30:
+        -:   31:_LIBCPP_END_NAMESPACE_STD
+        -:   32:
+        -:   33:#endif // _LIBCPP___BIT_BIT_LOG2_H

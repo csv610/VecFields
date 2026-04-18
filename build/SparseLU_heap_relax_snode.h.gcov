@@ -1,0 +1,128 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2012 Désiré Nuentsa-Wakam <desire.nuentsa_wakam@inria.fr>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:/* This file is a modified version of heap_relax_snode.c file in SuperLU
+        -:   11: * -- SuperLU routine (version 3.0) --
+        -:   12: * Univ. of California Berkeley, Xerox Palo Alto Research Center,
+        -:   13: * and Lawrence Berkeley National Lab.
+        -:   14: * October 15, 2003
+        -:   15: *
+        -:   16: * Copyright (c) 1994 by Xerox Corporation.  All rights reserved.
+        -:   17: *
+        -:   18: * THIS MATERIAL IS PROVIDED AS IS, WITH ABSOLUTELY NO WARRANTY
+        -:   19: * EXPRESSED OR IMPLIED.  ANY USE IS AT YOUR OWN RISK.
+        -:   20: *
+        -:   21: * Permission is hereby granted to use or copy this program for any
+        -:   22: * purpose, provided the above notices are retained on all copies.
+        -:   23: * Permission to modify the code and to distribute modified code is
+        -:   24: * granted, provided the above notices are retained, and a notice that
+        -:   25: * the code was modified is included with the above copyright notice.
+        -:   26: */
+        -:   27:
+        -:   28:#ifndef SPARSELU_HEAP_RELAX_SNODE_H
+        -:   29:#define SPARSELU_HEAP_RELAX_SNODE_H
+        -:   30:
+        -:   31:// IWYU pragma: private
+        -:   32:#include "./InternalHeaderCheck.h"
+        -:   33:
+        -:   34:namespace Eigen {
+        -:   35:namespace internal {
+        -:   36:
+        -:   37:/** 
+        -:   38: * \brief Identify the initial relaxed supernodes
+        -:   39: * 
+        -:   40: * This routine applied to a symmetric elimination tree. 
+        -:   41: * It assumes that the matrix has been reordered according to the postorder of the etree
+        -:   42: * \param n The number of columns
+        -:   43: * \param et elimination tree 
+        -:   44: * \param relax_columns Maximum number of columns allowed in a relaxed snode 
+        -:   45: * \param descendants Number of descendants of each node in the etree
+        -:   46: * \param relax_end last column in a supernode
+        -:   47: */
+        -:   48:template <typename Scalar, typename StorageIndex>
+    #####:   49:void SparseLUImpl<Scalar,StorageIndex>::heap_relax_snode (const Index n, IndexVector& et, const Index relax_columns, IndexVector& descendants, IndexVector& relax_end)
+        -:   50:{
+        -:   51:  
+        -:   52:  // The etree may not be postordered, but its heap ordered  
+    #####:   53:  IndexVector post;
+    #####:   54:  internal::treePostorder(StorageIndex(n), et, post); // Post order etree
+    #####:   55:  IndexVector inv_post(n+1); 
+    #####:   56:  for (StorageIndex i = 0; i < n+1; ++i) inv_post(post(i)) = i; // inv_post = post.inverse()???
+        -:   57:  
+        -:   58:  // Renumber etree in postorder 
+    #####:   59:  IndexVector iwork(n);
+    #####:   60:  IndexVector et_save(n+1);
+    #####:   61:  for (Index i = 0; i < n; ++i)
+        -:   62:  {
+    #####:   63:    iwork(post(i)) = post(et(i));
+    #####:   64:  }
+    #####:   65:  et_save = et; // Save the original etree
+    #####:   66:  et = iwork; 
+        -:   67:  
+        -:   68:  // compute the number of descendants of each node in the etree
+    #####:   69:  relax_end.setConstant(emptyIdxLU);
+        -:   70:  Index j, parent; 
+    #####:   71:  descendants.setZero();
+    #####:   72:  for (j = 0; j < n; j++) 
+        -:   73:  {
+    #####:   74:    parent = et(j);
+    #####:   75:    if (parent != n) // not the dummy root
+    #####:   76:      descendants(parent) += descendants(j) + 1;
+    #####:   77:  }
+        -:   78:  // Identify the relaxed supernodes by postorder traversal of the etree
+        -:   79:  Index snode_start; // beginning of a snode 
+        -:   80:  StorageIndex k;
+        -:   81:  StorageIndex l; 
+    #####:   82:  for (j = 0; j < n; )
+        -:   83:  {
+    #####:   84:    parent = et(j);
+    #####:   85:    snode_start = j; 
+    #####:   86:    while ( parent != n && descendants(parent) < relax_columns ) 
+        -:   87:    {
+    #####:   88:      j = parent; 
+    #####:   89:      parent = et(j);
+        -:   90:    }
+        -:   91:    // Found a supernode in postordered etree, j is the last column 
+    #####:   92:    k = StorageIndex(n);
+    #####:   93:    for (Index i = snode_start; i <= j; ++i)
+    #####:   94:      k = (std::min)(k, inv_post(i));
+    #####:   95:    l = inv_post(j);
+    #####:   96:    if ( (l - k) == (j - snode_start) )  // Same number of columns in the snode
+        -:   97:    {
+        -:   98:      // This is also a supernode in the original etree
+    #####:   99:      relax_end(k) = l; // Record last column 
+    #####:  100:    }
+        -:  101:    else 
+        -:  102:    {
+    #####:  103:      for (Index i = snode_start; i <= j; ++i) 
+        -:  104:      {
+    #####:  105:        l = inv_post(i);
+    #####:  106:        if (descendants(i) == 0) 
+        -:  107:        {
+    #####:  108:          relax_end(l) = l;
+    #####:  109:        }
+    #####:  110:      }
+        -:  111:    }
+    #####:  112:    j++;
+        -:  113:    // Search for a new leaf
+    #####:  114:    while (descendants(j) != 0 && j < n) j++;
+        -:  115:  } // End postorder traversal of the etree
+        -:  116:  
+        -:  117:  // Recover the original etree
+    #####:  118:  et = et_save; 
+    #####:  119:}
+        -:  120:
+        -:  121:} // end namespace internal
+        -:  122:
+        -:  123:} // end namespace Eigen
+        -:  124:#endif // SPARSELU_HEAP_RELAX_SNODE_H

@@ -1,0 +1,206 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/include/directional/polyvector_iteration_functions.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Directional, a library for directional field processing.
+        -:    2:// Copyright (C) 2025 Amir Vaxman <avaxman@gmail.com>
+        -:    3://
+        -:    4:// This Source Code Form is subject to the terms of the Mozilla Public License
+        -:    5:// v. 2.0. If a copy of the MPL was not distributed with this file, You can
+        -:    6:// obtain one at http://mozilla.org/MPL/2.0/.
+        -:    7:
+        -:    8:#ifndef DIRECTIONAL_POLYVECTOR_ITERATION_FUNCTIONS_H
+        -:    9:#define DIRECTIONAL_POLYVECTOR_ITERATION_FUNCTIONS_H
+        -:   10:
+        -:   11:#include <Eigen/Geometry>
+        -:   12:#include <Eigen/Sparse>
+        -:   13:#include <Eigen/SparseCholesky>
+        -:   14:#include <iostream>
+        -:   15:#include <directional/TangentBundle.h>
+        -:   16:#include <directional/IntrinsicVertexTangentBundle.h>
+        -:   17:#include <directional/CartesianField.h>
+        -:   18:#include <directional/polyvector_to_raw.h>
+        -:   19:#include <directional/raw_to_polyvector.h>
+        -:   20:#include <directional/project_curl.h>
+        -:   21:#include <directional/principal_matching.h>
+        -:   22:#include <directional/sparse_diagonal.h>
+        -:   23:#include <directional/PolyVectorData.h>
+        -:   24:
+        -:   25:namespace directional{
+        -:   26:
+        -:   27:
+        -:   28://This file contains a collection of functions that can be used in the "local" or "projection" steps of the extended polyvector algorithm.
+        -:   29:
+        -:   30:typedef std::function<CartesianField(const CartesianField&, const PolyVectorData&)> PvIterationFunction;
+        -:   31:typedef std::function<bool(const CartesianField&, const PolyVectorData&)>           PvTerminationFunction;
+        -:   32:
+        -:   33:
+        -:   34://Normalizes the field to have unit length on all its vectors
+    #####:   35:CartesianField hard_normalization(const CartesianField& pvField, const PolyVectorData& pvData){
+    #####:   36:    CartesianField rawField, normPvField;
+    #####:   37:    polyvector_to_raw(pvField, rawField, pvData.N%2==0, true);
+    #####:   38:    directional::raw_to_polyvector(rawField, normPvField);
+    #####:   39:    return normPvField;
+    #####:   40:}
+        -:   41:
+        -:   42://Projects the field into the nearest RoSy field
+    #####:   43:CartesianField hard_rosy(const CartesianField& pvField, const PolyVectorData& pvData){
+    #####:   44:    Eigen::MatrixXcd rosyField = pvField.get_complex_intrinsic_field();
+    #####:   45:    rosyField.block(0,1,rosyField.rows(), rosyField.cols()-1).setZero();
+    #####:   46:    rosyField.col(0) = rosyField.col(0).array() / rosyField.col(0).array().abs();
+    #####:   47:    CartesianField hardRosyField = pvField;
+    #####:   48:    hardRosyField.set_intrinsic_field(rosyField);
+    #####:   49:    return hardRosyField;
+    #####:   50:}
+        -:   51:
+        -:   52:
+        -:   53://A single implicit step (with the pvData state coefficients) that makes the current field more RoSy.
+    #####:   54:CartesianField soft_rosy(const CartesianField& pvField, const PolyVectorData& pvData){
+    #####:   55:    Eigen::MatrixXcd rosyField = pvField.get_complex_intrinsic_field();
+    #####:   56:    rosyField.block(0,1,rosyField.rows(), rosyField.cols()-1).setZero();
+    #####:   57:    rosyField.col(0) = rosyField.col(0).array() / rosyField.col(0).array().abs();
+        -:   58:    //doing closed-form implicit step
+    #####:   59:    CartesianField softRosyField = pvField;
+    #####:   60:    Eigen::MatrixXcd interpField = (pvField.get_complex_intrinsic_field().array() + 2.0*pvData.currImplicitFactor*rosyField.array())/(1+2.0*pvData.currImplicitFactor);
+    #####:   61:    softRosyField.set_intrinsic_field(interpField);
+    #####:   62:    return softRosyField;
+    #####:   63:}
+        -:   64:
+        -:   65://Projects the field onto the nearest curl-free field.
+    #####:   66:CartesianField curl_projection(const CartesianField& pvField, const PolyVectorData& pvData){
+    #####:   67:    assert(pvData.tb->discTangType()==directional::discTangTypeEnum::FACE_SPACES && "Projecting curl only works for face-based fields for now!");
+    #####:   68:    CartesianField rawField, curlFreeFieldRaw, curlFreeFieldPv;
+    #####:   69:    polyvector_to_raw(pvField, rawField, pvData.N%2==0);
+    #####:   70:    directional::principal_matching(rawField);
+    #####:   71:    project_curl(rawField, Eigen::VectorXi(), Eigen::MatrixXd(), curlFreeFieldRaw);
+    #####:   72:    directional::raw_to_polyvector(curlFreeFieldRaw,  curlFreeFieldPv);
+    #####:   73:    return curlFreeFieldPv;
+    #####:   74:}
+        -:   75:
+        -:   76://Projects a vector on a quadric (used for the conjugacy projection)
+    #####:   77:Eigen::RowVectorXd project_on_quadric(const Eigen::RowVectorXd& y0, const Eigen::MatrixXd& H){
+        -:   78:    // Step 1: Perform eigen-decomposition of H (since it's symmetric)
+    #####:   79:    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigensolver(0.5*(H+H.transpose()));
+    #####:   80:    assert(eigensolver.info() == Eigen::Success && "directional:project_on_quadric(): Eigen decomposition failed!");
+        -:   81:    
+    #####:   82:    Eigen::MatrixXd U = eigensolver.eigenvectors();
+    #####:   83:    Eigen::VectorXd sigma = eigensolver.eigenvalues();
+    #####:   84:    Eigen::VectorXd z = U.transpose() * y0.transpose();
+    #####:   85:    double lambda = 0.0; // initial guess
+    #####:   86:    int maxIters = 100;
+    #####:   87:    double tol = 10e-9;
+    #####:   88:    for (int iter = 0; iter < maxIters; ++iter) {
+    #####:   89:        double f = 0.0;
+    #####:   90:        double df = 0.0;
+    #####:   91:        for (int i = 0; i < z.size(); ++i) {
+    #####:   92:            double zi = z[i], si = sigma[i];
+    #####:   93:            double denom = 1.0 + lambda * si;
+    #####:   94:            if (std::abs(denom) < 1e-14) continue; // skip unstable terms
+        -:   95:            
+    #####:   96:            double denom2 = denom * denom;
+    #####:   97:            double denom3 = denom2 * denom;
+        -:   98:            
+    #####:   99:            f  += zi * zi * si / denom2;
+    #####:  100:            df += -2.0 * zi * zi * si * si / denom3;
+    #####:  101:        }
+    #####:  102:        if (std::abs(f) < tol) break;
+        -:  103:        
+    #####:  104:        double step = f / df;
+    #####:  105:        lambda -= step;
+        -:  106:        
+    #####:  107:        if (std::abs(step) < tol) break;
+        -:  108:        
+    #####:  109:        if (std::isnan(lambda) || std::isinf(lambda))
+    #####:  110:            throw std::runtime_error("Newton-Raphson diverged");
+    #####:  111:    }
+        -:  112:    
+    #####:  113:    Eigen::ArrayXd denom = (1.0 + lambda * sigma.array());
+    #####:  114:    Eigen::VectorXd z_scaled = (z.array() / denom).matrix();
+    #####:  115:    Eigen::VectorXd y = U * z_scaled;                                 // back to original coordinates
+        -:  116:    
+    #####:  117:    return y.transpose(); // Return RowVectorXd
+    #####:  118:}
+        -:  119:
+        -:  120://This is a "no termination" function which is the case by default
+    #####:  121:bool default_termination(const CartesianField& pvField, const PolyVectorData& pvData){
+    #####:  122:    return false;
+        -:  123:}
+        -:  124:
+        -:  125:
+        -:  126://Projecting a 2^2 Rosy field to a conjugate field
+    #####:  127:CartesianField conjugate(const CartesianField& pvField, const PolyVectorData& pvData){
+    #####:  128:    assert(pvField.N==4 && pvData.signSymmetry && pvField.tb->discTangType()==discTangTypeEnum::VERTEX_SPACES&& "directional::conjugate(): This method only works on symmetric 2^2 fields on vertices!");
+        -:  129:    
+    #####:  130:    CartesianField rawField, conjugatePvField;
+    #####:  131:    polyvector_to_raw(pvField, rawField, pvData.N%2==0);
+    #####:  132:    Eigen::MatrixXd extField = rawField.extField;
+    #####:  133:    IntrinsicVertexTangentBundle* tb =(IntrinsicVertexTangentBundle*)pvField.tb;
+    #####:  134:    Eigen::VectorXd conjugacy(tb->mesh->V.rows());
+    #####:  135:    Eigen::VectorXd conjugacyBefore(tb->mesh->V.rows());
+    #####:  136:    for (int i=0;i<tb->mesh->V.rows();i++){
+    #####:  137:        Eigen::Matrix3d G1 =tb->mesh->vertexPrincipalCurvatures(i,0)*tb->mesh->minVertexPrincipalDirections.row(i).transpose()*tb->mesh->minVertexPrincipalDirections.row(i);
+    #####:  138:        Eigen::Matrix3d G2 =tb->mesh->vertexPrincipalCurvatures(i,1)*tb->mesh->maxVertexPrincipalDirections.row(i).transpose()*tb->mesh->maxVertexPrincipalDirections.row(i);
+    #####:  139:        Eigen::Matrix<double, 6,6> H; H.setZero();
+    #####:  140:        H.block(0,3,3,3) = G1;
+    #####:  141:        H.block(3,0,3,3) = G2;
+    #####:  142:        Eigen::RowVectorXd y0(6); y0<<rawField.extField.row(i).head(6);
+    #####:  143:        conjugacyBefore(i) = extField.row(i).head(3)*tb->mesh->Sv[i]*extField.row(i).segment(3,3).transpose();
+    #####:  144:        if ((std::abs(tb->mesh->vertexPrincipalCurvatures(i,0))>10e-8)||(std::abs(tb->mesh->vertexPrincipalCurvatures(i,1))>10e-8))
+    #####:  145:            extField.row(i).head(6)<<project_on_quadric(y0, H);
+        -:  146:        else
+    #####:  147:            extField.row(i).head(6) = y0;
+    #####:  148:        extField.row(i).tail(6) = - extField.row(i).head(6);
+        -:  149:        //checking conjugacy
+    #####:  150:        conjugacy(i) = (extField.row(i).head(3)*tb->mesh->Sv[i]*extField.row(i).segment(3,3).transpose()).coeff(0,0);
+    #####:  151:    }
+        -:  152:    //std::cout<<"conjugacy: "<<conjugacy.head(20)<<std::endl;
+    #####:  153:    if (pvData.verbose){
+    #####:  154:        std:: cout<<"conjugacy before conjugate(): "<<conjugacyBefore.cwiseAbs().maxCoeff()<<std::endl;
+    #####:  155:        std:: cout<<"conjugacy after  conjugate(): "<<conjugacy.cwiseAbs().maxCoeff()<<std::endl;
+    #####:  156:    }
+    #####:  157:    rawField.set_extrinsic_field(extField);
+    #####:  158:    directional::raw_to_polyvector(rawField, conjugatePvField);
+        -:  159:    //std::cout<<"rawField.row(0)"<<rawField.extField.row(0)<<std::endl;
+        -:  160:    //std::cout<<"conjugatePvField.row(0)"<<conjugatePvField.intField.row(0)<<std::endl;
+    #####:  161:    CartesianField rawField2;
+    #####:  162:    directional::polyvector_to_raw(conjugatePvField, rawField2, pvData.N%2==0);
+        -:  163:    //std::cout<<"rawField2.row(0)"<<rawField2.extField.row(0)<<std::endl;
+        -:  164:    //std::cout<<"rawField2 - rawField"<<(rawField.extField-rawField2.extField).maxCoeff()<<std::endl;
+    #####:  165:    return conjugatePvField;
+    #####:  166:}
+        -:  167:
+    #####:  168:bool conjugate_termination(const CartesianField& pvField, const PolyVectorData& pvData){
+    #####:  169:    assert(pvField.N==4 && pvData.signSymmetry && pvField.tb->discTangType()==discTangTypeEnum::VERTEX_SPACES&& "directional::conjugate_termination(): This method only works on symmetric 2^2 fields on vertices!");
+        -:  170:    static double tolerance = 1e-2;
+    #####:  171:    CartesianField rawField, conjugatePvField;
+    #####:  172:    polyvector_to_raw(pvField, rawField, pvData.N%2==0);
+        -:  173:    //std::cout<<"rawField.row(0)"<<rawField.extField.row(0)<<std::endl;
+    #####:  174:    Eigen::MatrixXd extField = rawField.extField;
+    #####:  175:    IntrinsicVertexTangentBundle* tb =(IntrinsicVertexTangentBundle*)pvField.tb;
+    #####:  176:    Eigen::VectorXd conjugacy(tb->mesh->V.rows());
+    #####:  177:    for (int i=0;i<tb->mesh->V.rows();i++){
+    #####:  178:        Eigen::Matrix3d G1 = tb->mesh->vertexPrincipalCurvatures(i,0)*tb->mesh->minVertexPrincipalDirections.row(i).transpose()*tb->mesh->minVertexPrincipalDirections.row(i);
+    #####:  179:        Eigen::Matrix3d G2 = tb->mesh->vertexPrincipalCurvatures(i,1)*tb->mesh->maxVertexPrincipalDirections.row(i).transpose()*tb->mesh->maxVertexPrincipalDirections.row(i);
+    #####:  180:        Eigen::Matrix<double, 6,6> H; H.setZero();
+    #####:  181:        H.block(0,3,3,3) = G1;
+    #####:  182:        H.block(3,0,3,3) = G2;
+        -:  183:        //conjugacy(i) = (extField.row(i).head(3)*tb->mesh->Sv[i]*extField.row(i).segment(3,3).transpose()).cwiseAbs().coeff(0,0);
+    #####:  184:        conjugacy(i) = (extField.row(i).head(6)*H*extField.row(i).head(6).transpose()).cwiseAbs().coeff(0,0);
+        -:  185:        
+    #####:  186:    }
+    #####:  187:    if (conjugacy.maxCoeff()>tolerance){
+    #####:  188:        if (pvData.verbose)
+    #####:  189:            std::cout<<"Maximum conjugacy is "<<conjugacy.maxCoeff()<<" and above termination threshold "<<tolerance<<std::endl;
+    #####:  190:        return false;
+        -:  191:    } else {
+    #####:  192:        if (pvData.verbose)
+    #####:  193:            std:: cout<<"conjugacy at termination: "<<conjugacy.cwiseAbs().maxCoeff()<<std::endl;
+    #####:  194:        return true;
+        -:  195:    }
+        -:  196:    
+    #####:  197:}
+        -:  198:
+        -:  199:}
+        -:  200:
+        -:  201:
+        -:  202:#endif

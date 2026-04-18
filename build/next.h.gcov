@@ -1,0 +1,78 @@
+        -:    0:Source:/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__iterator/next.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// -*- C++ -*-
+        -:    2://===----------------------------------------------------------------------===//
+        -:    3://
+        -:    4:// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+        -:    5:// See https://llvm.org/LICENSE.txt for license information.
+        -:    6:// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+        -:    7://
+        -:    8://===----------------------------------------------------------------------===//
+        -:    9:
+        -:   10:#ifndef _LIBCPP___ITERATOR_NEXT_H
+        -:   11:#define _LIBCPP___ITERATOR_NEXT_H
+        -:   12:
+        -:   13:#include <__config>
+        -:   14:#include <__iterator/advance.h>
+        -:   15:#include <__iterator/concepts.h>
+        -:   16:#include <__iterator/incrementable_traits.h>
+        -:   17:#include <__iterator/iterator_traits.h>
+        -:   18:#include <__type_traits/enable_if.h>
+        -:   19:
+        -:   20:#if !defined(_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER)
+        -:   21:#  pragma GCC system_header
+        -:   22:#endif
+        -:   23:
+        -:   24:_LIBCPP_BEGIN_NAMESPACE_STD
+        -:   25:
+        -:   26:template <class _InputIter, __enable_if_t<__has_input_iterator_category<_InputIter>::value, int> = 0>
+        -:   27:[[__nodiscard__]] inline _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX17 _InputIter
+    #####:   28:next(_InputIter __x, typename iterator_traits<_InputIter>::difference_type __n = 1) {
+    #####:   29:  std::advance(__x, __n);
+    #####:   30:  return __x;
+        -:   31:}
+        -:   32:
+        -:   33:#if _LIBCPP_STD_VER >= 20
+        -:   34:
+        -:   35:// [range.iter.op.next]
+        -:   36:
+        -:   37:namespace ranges {
+        -:   38:struct __next {
+        -:   39:  template <input_or_output_iterator _Ip>
+        -:   40:  [[nodiscard]] _LIBCPP_HIDE_FROM_ABI constexpr _Ip operator()(_Ip __x) const {
+        -:   41:    ++__x;
+        -:   42:    return __x;
+        -:   43:  }
+        -:   44:
+        -:   45:  template <input_or_output_iterator _Ip>
+        -:   46:  [[nodiscard]] _LIBCPP_HIDE_FROM_ABI constexpr _Ip operator()(_Ip __x, iter_difference_t<_Ip> __n) const {
+        -:   47:    ranges::advance(__x, __n);
+        -:   48:    return __x;
+        -:   49:  }
+        -:   50:
+        -:   51:  template <input_or_output_iterator _Ip, sentinel_for<_Ip> _Sp>
+        -:   52:  [[nodiscard]] _LIBCPP_HIDE_FROM_ABI constexpr _Ip operator()(_Ip __x, _Sp __bound_sentinel) const {
+        -:   53:    ranges::advance(__x, __bound_sentinel);
+        -:   54:    return __x;
+        -:   55:  }
+        -:   56:
+        -:   57:  template <input_or_output_iterator _Ip, sentinel_for<_Ip> _Sp>
+        -:   58:  [[nodiscard]] _LIBCPP_HIDE_FROM_ABI constexpr _Ip
+        -:   59:  operator()(_Ip __x, iter_difference_t<_Ip> __n, _Sp __bound_sentinel) const {
+        -:   60:    ranges::advance(__x, __n, __bound_sentinel);
+        -:   61:    return __x;
+        -:   62:  }
+        -:   63:};
+        -:   64:
+        -:   65:inline namespace __cpo {
+        -:   66:inline constexpr auto next = __next{};
+        -:   67:} // namespace __cpo
+        -:   68:} // namespace ranges
+        -:   69:
+        -:   70:#endif // _LIBCPP_STD_VER >= 20
+        -:   71:
+        -:   72:_LIBCPP_END_NAMESPACE_STD
+        -:   73:
+        -:   74:#endif // _LIBCPP___ITERATOR_NEXT_H

@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/Diagonal.h
-        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
-        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
-        -:    0:Runs:4
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -77,22 +77,22 @@
         -:   73:    EIGEN_DENSE_PUBLIC_INTERFACE(Diagonal)
         -:   74:
         -:   75:    EIGEN_DEVICE_FUNC
-     8940:   76:    explicit inline Diagonal(MatrixType& matrix, Index a_index = DiagIndex) : m_matrix(matrix), m_index(a_index)
-     4470:   77:    {
-     4470:   78:      eigen_assert( a_index <= m_matrix.cols() && -a_index <= m_matrix.rows() );
-     8940:   79:    }
+      720:   76:    explicit inline Diagonal(MatrixType& matrix, Index a_index = DiagIndex) : m_matrix(matrix), m_index(a_index)
+      360:   77:    {
+      360:   78:      eigen_assert( a_index <= m_matrix.cols() && -a_index <= m_matrix.rows() );
+      720:   79:    }
         -:   80:
-     1490:   81:    EIGEN_INHERIT_ASSIGNMENT_OPERATORS(Diagonal)
+      120:   81:    EIGEN_INHERIT_ASSIGNMENT_OPERATORS(Diagonal)
         -:   82:
         -:   83:    EIGEN_DEVICE_FUNC
-     7450:   84:    inline Index rows() const
+      600:   84:    inline Index rows() const
         -:   85:    {
-     7450:   86:      return m_index.value()<0 ? numext::mini<Index>(m_matrix.cols(),m_matrix.rows()+m_index.value())
-     5960:   87:                               : numext::mini<Index>(m_matrix.rows(),m_matrix.cols()-m_index.value());
+      600:   86:      return m_index.value()<0 ? numext::mini<Index>(m_matrix.cols(),m_matrix.rows()+m_index.value())
+      480:   87:                               : numext::mini<Index>(m_matrix.rows(),m_matrix.cols()-m_index.value());
         -:   88:    }
         -:   89:
         -:   90:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
-     7450:   91:    inline Index cols() const EIGEN_NOEXCEPT { return 1; }
+      600:   91:    inline Index cols() const EIGEN_NOEXCEPT { return 1; }
         -:   92:
         -:   93:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
         -:   94:    inline Index innerStride() const EIGEN_NOEXCEPT {
@@ -153,15 +153,15 @@
         -:  149:
         -:  150:    EIGEN_DEVICE_FUNC
         -:  151:    inline const internal::remove_all_t<typename MatrixType::Nested>&
-     4470:  152:    nestedExpression() const
+      360:  152:    nestedExpression() const
         -:  153:    {
-     4470:  154:      return m_matrix;
+      360:  154:      return m_matrix;
         -:  155:    }
         -:  156:
         -:  157:    EIGEN_DEVICE_FUNC
-     4470:  158:    inline Index index() const
+      360:  158:    inline Index index() const
         -:  159:    {
-     4470:  160:      return m_index.value();
+      360:  160:      return m_index.value();
         -:  161:    }
         -:  162:
         -:  163:  protected:
@@ -191,9 +191,9 @@
         -:  187:  * \sa class Diagonal */
         -:  188:template<typename Derived>
         -:  189:EIGEN_DEVICE_FUNC inline typename MatrixBase<Derived>::DiagonalReturnType
-     2980:  190:MatrixBase<Derived>::diagonal()
+      240:  190:MatrixBase<Derived>::diagonal()
         -:  191:{
-     2980:  192:  return DiagonalReturnType(derived());
+      240:  192:  return DiagonalReturnType(derived());
         -:  193:}
         -:  194:
         -:  195:/** This is the const version of diagonal(). */
@@ -246,9 +246,9 @@
         -:  242:template<int Index_>
         -:  243:EIGEN_DEVICE_FUNC
         -:  244:inline Diagonal<Derived, Index_>
-     1490:  245:MatrixBase<Derived>::diagonal()
+      120:  245:MatrixBase<Derived>::diagonal()
         -:  246:{
-     1490:  247:  return Diagonal<Derived, Index_>(derived());
+      120:  247:  return Diagonal<Derived, Index_>(derived());
         -:  248:}
         -:  249:
         -:  250:/** This is the const version of diagonal<int>(). */

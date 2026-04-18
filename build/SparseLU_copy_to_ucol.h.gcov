@@ -1,0 +1,114 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/SparseLU/SparseLU_copy_to_ucol.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2012 Désiré Nuentsa-Wakam <desire.nuentsa_wakam@inria.fr>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:/* 
+        -:   10: 
+        -:   11: * NOTE: This file is the modified version of [s,d,c,z]copy_to_ucol.c file in SuperLU 
+        -:   12: 
+        -:   13: * -- SuperLU routine (version 2.0) --
+        -:   14: * Univ. of California Berkeley, Xerox Palo Alto Research Center,
+        -:   15: * and Lawrence Berkeley National Lab.
+        -:   16: * November 15, 1997
+        -:   17: *
+        -:   18: * Copyright (c) 1994 by Xerox Corporation.  All rights reserved.
+        -:   19: *
+        -:   20: * THIS MATERIAL IS PROVIDED AS IS, WITH ABSOLUTELY NO WARRANTY
+        -:   21: * EXPRESSED OR IMPLIED.  ANY USE IS AT YOUR OWN RISK.
+        -:   22: *
+        -:   23: * Permission is hereby granted to use or copy this program for any
+        -:   24: * purpose, provided the above notices are retained on all copies.
+        -:   25: * Permission to modify the code and to distribute modified code is
+        -:   26: * granted, provided the above notices are retained, and a notice that
+        -:   27: * the code was modified is included with the above copyright notice.
+        -:   28: */
+        -:   29:#ifndef SPARSELU_COPY_TO_UCOL_H
+        -:   30:#define SPARSELU_COPY_TO_UCOL_H
+        -:   31:
+        -:   32:// IWYU pragma: private
+        -:   33:#include "./InternalHeaderCheck.h"
+        -:   34:
+        -:   35:namespace Eigen {
+        -:   36:namespace internal {
+        -:   37:
+        -:   38:/**
+        -:   39: * \brief Performs numeric block updates (sup-col) in topological order
+        -:   40: * 
+        -:   41: * \param jcol current column to update
+        -:   42: * \param nseg Number of segments in the U part
+        -:   43: * \param segrep segment representative ...
+        -:   44: * \param repfnz First nonzero column in each row  ...
+        -:   45: * \param perm_r Row permutation 
+        -:   46: * \param dense Store the full representation of the column
+        -:   47: * \param glu Global LU data. 
+        -:   48: * \return 0 - successful return 
+        -:   49: *         > 0 - number of bytes allocated when run out of space
+        -:   50: * 
+        -:   51: */
+        -:   52:template <typename Scalar, typename StorageIndex>
+    #####:   53:Index SparseLUImpl<Scalar,StorageIndex>::copy_to_ucol(const Index jcol, const Index nseg, IndexVector& segrep,
+        -:   54:                                                      BlockIndexVector repfnz ,IndexVector& perm_r, BlockScalarVector dense, GlobalLU_t& glu)
+        -:   55:{  
+        -:   56:  Index ksub, krep, ksupno; 
+        -:   57:    
+    #####:   58:  Index jsupno = glu.supno(jcol);
+        -:   59:  
+        -:   60:  // For each nonzero supernode segment of U[*,j] in topological order 
+    #####:   61:  Index k = nseg - 1, i; 
+    #####:   62:  StorageIndex nextu = glu.xusub(jcol); 
+        -:   63:  Index kfnz, isub, segsize; 
+        -:   64:  Index new_next,irow; 
+        -:   65:  Index fsupc, mem; 
+    #####:   66:  for (ksub = 0; ksub < nseg; ksub++)
+        -:   67:  {
+    #####:   68:    krep = segrep(k); k--; 
+    #####:   69:    ksupno = glu.supno(krep); 
+    #####:   70:    if (jsupno != ksupno ) // should go into ucol(); 
+        -:   71:    {
+    #####:   72:      kfnz = repfnz(krep); 
+    #####:   73:      if (kfnz != emptyIdxLU)
+        -:   74:      { // Nonzero U-segment 
+    #####:   75:        fsupc = glu.xsup(ksupno); 
+    #####:   76:        isub = glu.xlsub(fsupc) + kfnz - fsupc; 
+    #####:   77:        segsize = krep - kfnz + 1; 
+    #####:   78:        new_next = nextu + segsize; 
+    #####:   79:        while (new_next > glu.nzumax) 
+        -:   80:        {
+    #####:   81:          mem = memXpand<ScalarVector>(glu.ucol, glu.nzumax, nextu, UCOL, glu.num_expansions); 
+    #####:   82:          if (mem) return mem; 
+    #####:   83:          mem = memXpand<IndexVector>(glu.usub, glu.nzumax, nextu, USUB, glu.num_expansions); 
+    #####:   84:          if (mem) return mem; 
+        -:   85:          
+        -:   86:        }
+        -:   87:        
+    #####:   88:        for (i = 0; i < segsize; i++)
+        -:   89:        {
+    #####:   90:          irow = glu.lsub(isub); 
+    #####:   91:          glu.usub(nextu) = perm_r(irow); // Unlike the L part, the U part is stored in its final order
+    #####:   92:          glu.ucol(nextu) = dense(irow); 
+    #####:   93:          dense(irow) = Scalar(0.0); 
+    #####:   94:          nextu++;
+    #####:   95:          isub++;
+    #####:   96:        }
+        -:   97:        
+    #####:   98:      } // end nonzero U-segment 
+        -:   99:      
+    #####:  100:    } // end if jsupno 
+        -:  101:    
+    #####:  102:  } // end for each segment
+    #####:  103:  glu.xusub(jcol + 1) = nextu; // close U(*,jcol)
+    #####:  104:  return 0; 
+    #####:  105:}
+        -:  106:
+        -:  107:} // namespace internal
+        -:  108:} // end namespace Eigen
+        -:  109:
+        -:  110:#endif // SPARSELU_COPY_TO_UCOL_H

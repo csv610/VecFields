@@ -1,0 +1,218 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/GlobalFunctions.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2010-2016 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    5:// Copyright (C) 2010 Benoit Jacob <jacob.benoit.1@gmail.com>
+        -:    6://
+        -:    7:// This Source Code Form is subject to the terms of the Mozilla
+        -:    8:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    9:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:   10:
+        -:   11:#ifndef EIGEN_GLOBAL_FUNCTIONS_H
+        -:   12:#define EIGEN_GLOBAL_FUNCTIONS_H
+        -:   13:
+        -:   14:#ifdef EIGEN_PARSED_BY_DOXYGEN
+        -:   15:
+        -:   16:#define EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(NAME,FUNCTOR,DOC_OP,DOC_DETAILS) \
+        -:   17:  /** \returns an expression of the coefficient-wise DOC_OP of \a x
+        -:   18:
+        -:   19:    DOC_DETAILS
+        -:   20:
+        -:   21:    \sa <a href="group__CoeffwiseMathFunctions.html#cwisetable_##NAME">Math functions</a>, class CwiseUnaryOp
+        -:   22:    */ \
+        -:   23:  template<typename Derived> \
+        -:   24:  inline const Eigen::CwiseUnaryOp<Eigen::internal::FUNCTOR<typename Derived::Scalar>, const Derived> \
+        -:   25:  NAME(const Eigen::ArrayBase<Derived>& x);
+        -:   26:
+        -:   27:#else
+        -:   28:
+        -:   29:#define EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(NAME,FUNCTOR,DOC_OP,DOC_DETAILS) \
+        -:   30:  template<typename Derived> \
+        -:   31:  inline const Eigen::CwiseUnaryOp<Eigen::internal::FUNCTOR<typename Derived::Scalar>, const Derived> \
+        -:   32:  (NAME)(const Eigen::ArrayBase<Derived>& x) { \
+        -:   33:    return Eigen::CwiseUnaryOp<Eigen::internal::FUNCTOR<typename Derived::Scalar>, const Derived>(x.derived()); \
+        -:   34:  }
+        -:   35:
+        -:   36:#endif // EIGEN_PARSED_BY_DOXYGEN
+        -:   37:
+        -:   38:#define EIGEN_ARRAY_DECLARE_GLOBAL_EIGEN_UNARY(NAME,FUNCTOR) \
+        -:   39:  \
+        -:   40:  template<typename Derived> \
+        -:   41:  struct NAME##_retval<ArrayBase<Derived> > \
+        -:   42:  { \
+        -:   43:    typedef const Eigen::CwiseUnaryOp<Eigen::internal::FUNCTOR<typename Derived::Scalar>, const Derived> type; \
+        -:   44:  }; \
+        -:   45:  template<typename Derived> \
+        -:   46:  struct NAME##_impl<ArrayBase<Derived> > \
+        -:   47:  { \
+        -:   48:    static inline typename NAME##_retval<ArrayBase<Derived> >::type run(const Eigen::ArrayBase<Derived>& x) \
+        -:   49:    { \
+        -:   50:      return typename NAME##_retval<ArrayBase<Derived> >::type(x.derived()); \
+        -:   51:    } \
+        -:   52:  };
+        -:   53:
+        -:   54:// IWYU pragma: private
+        -:   55:#include "./InternalHeaderCheck.h"
+        -:   56:
+        -:   57:namespace Eigen
+        -:   58:{
+        -:   59:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(real,scalar_real_op,real part,\sa ArrayBase::real)
+        -:   60:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(imag,scalar_imag_op,imaginary part,\sa ArrayBase::imag)
+        -:   61:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(conj,scalar_conjugate_op,complex conjugate,\sa ArrayBase::conjugate)
+        -:   62:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(inverse,scalar_inverse_op,inverse,\sa ArrayBase::inverse)
+        -:   63:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(sin,scalar_sin_op,sine,\sa ArrayBase::sin)
+        -:   64:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(cos,scalar_cos_op,cosine,\sa ArrayBase::cos)
+        -:   65:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(tan,scalar_tan_op,tangent,\sa ArrayBase::tan)
+        -:   66:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(atan,scalar_atan_op,arc-tangent,\sa ArrayBase::atan)
+        -:   67:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(asin,scalar_asin_op,arc-sine,\sa ArrayBase::asin)
+        -:   68:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(acos,scalar_acos_op,arc-consine,\sa ArrayBase::acos)
+        -:   69:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(sinh,scalar_sinh_op,hyperbolic sine,\sa ArrayBase::sinh)
+        -:   70:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(cosh,scalar_cosh_op,hyperbolic cosine,\sa ArrayBase::cosh)
+        -:   71:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(tanh,scalar_tanh_op,hyperbolic tangent,\sa ArrayBase::tanh)
+        -:   72:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(asinh,scalar_asinh_op,inverse hyperbolic sine,\sa ArrayBase::asinh)
+        -:   73:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(acosh,scalar_acosh_op,inverse hyperbolic cosine,\sa ArrayBase::acosh)
+        -:   74:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(atanh,scalar_atanh_op,inverse hyperbolic tangent,\sa ArrayBase::atanh)
+        -:   75:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(logistic,scalar_logistic_op,logistic function,\sa ArrayBase::logistic)
+        -:   76:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(lgamma,scalar_lgamma_op,natural logarithm of the gamma function,\sa ArrayBase::lgamma)
+        -:   77:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(digamma,scalar_digamma_op,derivative of lgamma,\sa ArrayBase::digamma)
+        -:   78:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(erf,scalar_erf_op,error function,\sa ArrayBase::erf)
+        -:   79:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(erfc,scalar_erfc_op,complement error function,\sa ArrayBase::erfc)
+        -:   80:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(ndtri,scalar_ndtri_op,inverse normal distribution function,\sa ArrayBase::ndtri)
+        -:   81:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(exp,scalar_exp_op,exponential,\sa ArrayBase::exp)
+        -:   82:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(expm1,scalar_expm1_op,exponential of a value minus 1,\sa ArrayBase::expm1)
+        -:   83:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(log,scalar_log_op,natural logarithm,\sa Eigen::log10 DOXCOMMA ArrayBase::log)
+        -:   84:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(log1p,scalar_log1p_op,natural logarithm of 1 plus the value,\sa ArrayBase::log1p)
+        -:   85:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(log10,scalar_log10_op,base 10 logarithm,\sa Eigen::log DOXCOMMA ArrayBase::log10)
+        -:   86:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(log2,scalar_log2_op,base 2 logarithm,\sa Eigen::log DOXCOMMA ArrayBase::log2)
+        -:   87:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(abs,scalar_abs_op,absolute value,\sa ArrayBase::abs DOXCOMMA MatrixBase::cwiseAbs)
+        -:   88:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(abs2,scalar_abs2_op,squared absolute value,\sa ArrayBase::abs2 DOXCOMMA MatrixBase::cwiseAbs2)
+        -:   89:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(arg,scalar_arg_op,complex argument,\sa ArrayBase::arg DOXCOMMA MatrixBase::cwiseArg)
+        -:   90:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(carg, scalar_carg_op, complex argument, \sa ArrayBase::carg DOXCOMMA MatrixBase::cwiseCArg)
+        -:   91:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(sqrt,scalar_sqrt_op,square root,\sa ArrayBase::sqrt DOXCOMMA MatrixBase::cwiseSqrt)
+        -:   92:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(rsqrt,scalar_rsqrt_op,reciprocal square root,\sa ArrayBase::rsqrt)
+        -:   93:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(square,scalar_square_op,square (power 2),\sa Eigen::abs2 DOXCOMMA Eigen::pow DOXCOMMA ArrayBase::square)
+        -:   94:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(cube,scalar_cube_op,cube (power 3),\sa Eigen::pow DOXCOMMA ArrayBase::cube)
+        -:   95:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(rint,scalar_rint_op,nearest integer,\sa Eigen::floor DOXCOMMA Eigen::ceil DOXCOMMA ArrayBase::round)
+        -:   96:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(round,scalar_round_op,nearest integer,\sa Eigen::floor DOXCOMMA Eigen::ceil DOXCOMMA ArrayBase::round)
+        -:   97:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(floor,scalar_floor_op,nearest integer not greater than the giben value,\sa Eigen::ceil DOXCOMMA ArrayBase::floor)
+        -:   98:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(ceil,scalar_ceil_op,nearest integer not less than the giben value,\sa Eigen::floor DOXCOMMA ArrayBase::ceil)
+        -:   99:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(isnan,scalar_isnan_op,not-a-number test,\sa Eigen::isinf DOXCOMMA Eigen::isfinite DOXCOMMA ArrayBase::isnan)
+        -:  100:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(isinf,scalar_isinf_op,infinite value test,\sa Eigen::isnan DOXCOMMA Eigen::isfinite DOXCOMMA ArrayBase::isinf)
+        -:  101:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(isfinite,scalar_isfinite_op,finite value test,\sa Eigen::isinf DOXCOMMA Eigen::isnan DOXCOMMA ArrayBase::isfinite)
+        -:  102:  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(sign,scalar_sign_op,sign (or 0),\sa ArrayBase::sign)
+        -:  103:
+        -:  104:  template <typename Derived, typename ScalarExponent>
+        -:  105:  using GlobalUnaryPowReturnType = std::enable_if_t<
+        -:  106:      !internal::is_arithmetic<typename NumTraits<Derived>::Real>::value &&
+        -:  107:          internal::is_arithmetic<typename NumTraits<ScalarExponent>::Real>::value,
+        -:  108:      CwiseUnaryOp<internal::scalar_unary_pow_op<typename Derived::Scalar, ScalarExponent>, const Derived> >;
+        -:  109:
+        -:  110:  /** \returns an expression of the coefficient-wise power of \a x to the given constant \a exponent.
+        -:  111:   *
+        -:  112:   * \tparam ScalarExponent is the scalar type of \a exponent. It must be compatible with the scalar type of the given
+        -:  113:   * expression (\c Derived::Scalar).
+        -:  114:   *
+        -:  115:   * \sa ArrayBase::pow()
+        -:  116:   *
+        -:  117:   * \relates ArrayBase
+        -:  118:   */
+        -:  119:#ifdef EIGEN_PARSED_BY_DOXYGEN
+        -:  120:  template <typename Derived, typename ScalarExponent>
+        -:  121:  EIGEN_DEVICE_FUNC inline const GlobalUnaryPowReturnType<Derived, ScalarExponent> pow(
+        -:  122:      const Eigen::ArrayBase<Derived>& x, const ScalarExponent& exponent);
+        -:  123:#else
+        -:  124:  template <typename Derived, typename ScalarExponent>
+        1:  125:  EIGEN_DEVICE_FUNC inline const GlobalUnaryPowReturnType<Derived, ScalarExponent> pow(
+        -:  126:      const Eigen::ArrayBase<Derived>& x, const ScalarExponent& exponent) {
+        1:  127:    return GlobalUnaryPowReturnType<Derived, ScalarExponent>(
+        1:  128:        x.derived(), internal::scalar_unary_pow_op<typename Derived::Scalar, ScalarExponent>(exponent));
+        -:  129:  }
+        -:  130:#endif
+        -:  131:
+        -:  132:  /** \returns an expression of the coefficient-wise power of \a x to the given array of \a exponents.
+        -:  133:    *
+        -:  134:    * This function computes the coefficient-wise power.
+        -:  135:    *
+        -:  136:    * Example: \include Cwise_array_power_array.cpp
+        -:  137:    * Output: \verbinclude Cwise_array_power_array.out
+        -:  138:    *
+        -:  139:    * \sa ArrayBase::pow()
+        -:  140:    *
+        -:  141:    * \relates ArrayBase
+        -:  142:    */
+        -:  143:  template<typename Derived,typename ExponentDerived>
+        -:  144:  inline const Eigen::CwiseBinaryOp<Eigen::internal::scalar_pow_op<typename Derived::Scalar, typename ExponentDerived::Scalar>, const Derived, const ExponentDerived>
+        -:  145:  pow(const Eigen::ArrayBase<Derived>& x, const Eigen::ArrayBase<ExponentDerived>& exponents)
+        -:  146:  {
+        -:  147:    return Eigen::CwiseBinaryOp<Eigen::internal::scalar_pow_op<typename Derived::Scalar, typename ExponentDerived::Scalar>, const Derived, const ExponentDerived>(
+        -:  148:      x.derived(),
+        -:  149:      exponents.derived()
+        -:  150:    );
+        -:  151:  }
+        -:  152:
+        -:  153:  /** \returns an expression of the coefficient-wise power of the scalar \a x to the given array of \a exponents.
+        -:  154:    *
+        -:  155:    * This function computes the coefficient-wise power between a scalar and an array of exponents.
+        -:  156:    *
+        -:  157:    * \tparam Scalar is the scalar type of \a x. It must be compatible with the scalar type of the given array expression (\c Derived::Scalar).
+        -:  158:    *
+        -:  159:    * Example: \include Cwise_scalar_power_array.cpp
+        -:  160:    * Output: \verbinclude Cwise_scalar_power_array.out
+        -:  161:    *
+        -:  162:    * \sa ArrayBase::pow()
+        -:  163:    *
+        -:  164:    * \relates ArrayBase
+        -:  165:    */
+        -:  166:#ifdef EIGEN_PARSED_BY_DOXYGEN
+        -:  167:  template<typename Scalar,typename Derived>
+        -:  168:  inline const CwiseBinaryOp<internal::scalar_pow_op<Scalar,Derived::Scalar>,Constant<Scalar>,Derived>
+        -:  169:  pow(const Scalar& x,const Eigen::ArrayBase<Derived>& x);
+        -:  170:#else
+        -:  171:  template <typename Scalar, typename Derived>
+        -:  172:  EIGEN_DEVICE_FUNC inline
+        -:  173:    const EIGEN_SCALAR_BINARYOP_EXPR_RETURN_TYPE(typename internal::promote_scalar_arg<typename Derived::Scalar
+        -:  174:                                                 EIGEN_COMMA Scalar EIGEN_COMMA
+        -:  175:                                                 EIGEN_SCALAR_BINARY_SUPPORTED(pow,Scalar,typename Derived::Scalar)>::type,Derived,pow)
+        -:  176:  pow(const Scalar& x, const Eigen::ArrayBase<Derived>& exponents) {
+        -:  177:    typedef typename internal::promote_scalar_arg<typename Derived::Scalar,Scalar,
+        -:  178:                                                  EIGEN_SCALAR_BINARY_SUPPORTED(pow,Scalar,typename Derived::Scalar)>::type PromotedScalar;
+        -:  179:    return EIGEN_SCALAR_BINARYOP_EXPR_RETURN_TYPE(PromotedScalar,Derived,pow)(
+        -:  180:           typename internal::plain_constant_type<Derived,PromotedScalar>::type(exponents.derived().rows(), exponents.derived().cols(), internal::scalar_constant_op<PromotedScalar>(x)), exponents.derived());
+        -:  181:  }
+        -:  182:#endif
+        -:  183:
+        -:  184:  /** \returns an expression of the coefficient-wise atan2(\a x, \a y). \a x and \a y must be of the same type.
+        -:  185:    *
+        -:  186:    * This function computes the coefficient-wise atan2().
+        -:  187:    *
+        -:  188:    * \sa ArrayBase::atan2()
+        -:  189:    *
+        -:  190:    * \relates ArrayBase
+        -:  191:    */
+        -:  192:  template <typename LhsDerived, typename RhsDerived>
+        -:  193:  inline const std::enable_if_t<
+        -:  194:      std::is_same<typename LhsDerived::Scalar, typename RhsDerived::Scalar>::value,
+        -:  195:      Eigen::CwiseBinaryOp<Eigen::internal::scalar_atan2_op<typename LhsDerived::Scalar, typename RhsDerived::Scalar>, const LhsDerived, const RhsDerived>
+        -:  196:      >
+        -:  197:  atan2(const Eigen::ArrayBase<LhsDerived>& x, const Eigen::ArrayBase<RhsDerived>& exponents) {
+        -:  198:    return Eigen::CwiseBinaryOp<Eigen::internal::scalar_atan2_op<typename LhsDerived::Scalar, typename RhsDerived::Scalar>, const LhsDerived, const RhsDerived>(
+        -:  199:      x.derived(),
+        -:  200:      exponents.derived()
+        -:  201:    );
+        -:  202:  }
+        -:  203:
+        -:  204:  namespace internal
+        -:  205:  {
+        -:  206:    EIGEN_ARRAY_DECLARE_GLOBAL_EIGEN_UNARY(real,scalar_real_op)
+        -:  207:    EIGEN_ARRAY_DECLARE_GLOBAL_EIGEN_UNARY(imag,scalar_imag_op)
+        -:  208:    EIGEN_ARRAY_DECLARE_GLOBAL_EIGEN_UNARY(abs2,scalar_abs2_op)
+        -:  209:  }
+        -:  210:}
+        -:  211:
+        -:  212:// TODO: cleanly disable those functions that are not supported on Array (numext::real_ref, internal::random, internal::isApprox...)
+        -:  213:
+        -:  214:#endif // EIGEN_GLOBAL_FUNCTIONS_H

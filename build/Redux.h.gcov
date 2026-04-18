@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/Redux.h
-        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
-        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
-        -:    0:Runs:4
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -153,10 +153,10 @@
         -:  149:  typedef typename Evaluator::Scalar Scalar;
         -:  150:
         -:  151:  EIGEN_DEVICE_FUNC
-     2980:  152:  static EIGEN_STRONG_INLINE Scalar run(const Evaluator &eval, const Func& func)
+      240:  152:  static EIGEN_STRONG_INLINE Scalar run(const Evaluator &eval, const Func& func)
         -:  153:  {
-     5960:  154:    return func(redux_novec_linear_unroller<Func, Evaluator, Start, HalfLength>::run(eval,func),
-     2980:  155:                redux_novec_linear_unroller<Func, Evaluator, Start+HalfLength, Length-HalfLength>::run(eval,func));
+      480:  154:    return func(redux_novec_linear_unroller<Func, Evaluator, Start, HalfLength>::run(eval,func),
+      240:  155:                redux_novec_linear_unroller<Func, Evaluator, Start+HalfLength, Length-HalfLength>::run(eval,func));
         -:  156:  }
         -:  157:};
         -:  158:
@@ -166,9 +166,9 @@
         -:  162:  typedef typename Evaluator::Scalar Scalar;
         -:  163:
         -:  164:  EIGEN_DEVICE_FUNC
-    72132:  165:  static EIGEN_STRONG_INLINE Scalar run(const Evaluator &eval, const Func&)
+     4689:  165:  static EIGEN_STRONG_INLINE Scalar run(const Evaluator &eval, const Func&)
         -:  166:  {
-    72132:  167:    return eval.coeff(Start);
+     4689:  167:    return eval.coeff(Start);
         -:  168:  }
         -:  169:};
         -:  170:
@@ -222,13 +222,13 @@
         -:  218:{
         -:  219:  template<typename PacketType>
         -:  220:  EIGEN_DEVICE_FUNC
-     1490:  221:  static EIGEN_STRONG_INLINE PacketType run(const Evaluator &eval, const Func& func)
+      120:  221:  static EIGEN_STRONG_INLINE PacketType run(const Evaluator &eval, const Func& func)
         -:  222:  {
-     1490:  223:    constexpr Index HalfLength = Length/2;
+      120:  223:    constexpr Index HalfLength = Length/2;
         -:  224:
-     2980:  225:    return func.packetOp(
-     1490:  226:            redux_vec_linear_unroller<Func, Evaluator, Start, HalfLength>::template run<PacketType>(eval,func),
-     1490:  227:            redux_vec_linear_unroller<Func, Evaluator, Start+HalfLength, Length-HalfLength>::template run<PacketType>(eval,func) );
+      240:  225:    return func.packetOp(
+      120:  226:            redux_vec_linear_unroller<Func, Evaluator, Start, HalfLength>::template run<PacketType>(eval,func),
+      120:  227:            redux_vec_linear_unroller<Func, Evaluator, Start+HalfLength, Length-HalfLength>::template run<PacketType>(eval,func) );
         -:  228:  }
         -:  229:};
         -:  230:
@@ -237,12 +237,12 @@
         -:  233:{
         -:  234:  template<typename PacketType>
         -:  235:  EIGEN_DEVICE_FUNC
-    63980:  236:  static EIGEN_STRONG_INLINE PacketType run(const Evaluator &eval, const Func&)
+     4320:  236:  static EIGEN_STRONG_INLINE PacketType run(const Evaluator &eval, const Func&)
         -:  237:  {
-    63980:  238:    constexpr Index PacketSize = unpacket_traits<PacketType>::size;
-    63980:  239:    constexpr Index index = (Start * PacketSize);
-    63980:  240:    constexpr int alignment = Evaluator::Alignment;
-    63980:  241:    return eval.template packet<alignment,PacketType>(index);
+     4320:  238:    constexpr Index PacketSize = unpacket_traits<PacketType>::size;
+     4320:  239:    constexpr Index index = (Start * PacketSize);
+     4320:  240:    constexpr int alignment = Evaluator::Alignment;
+     4320:  241:    return eval.template packet<alignment,PacketType>(index);
         -:  242:  }
         -:  243:};
         -:  244:
@@ -263,16 +263,16 @@
         -:  259:
         -:  260:  template<typename XprType>
         -:  261:  EIGEN_DEVICE_FUNC static EIGEN_STRONG_INLINE
-        -:  262:  Scalar run(const Evaluator &eval, const Func& func, const XprType& xpr)
+        2:  262:  Scalar run(const Evaluator &eval, const Func& func, const XprType& xpr)
         -:  263:  {
-        -:  264:    eigen_assert(xpr.rows()>0 && xpr.cols()>0 && "you are using an empty matrix");
-        -:  265:    Scalar res = eval.coeffByOuterInner(0, 0);
-        -:  266:    for(Index i = 1; i < xpr.innerSize(); ++i)
-        -:  267:      res = func(res, eval.coeffByOuterInner(0, i));
-        -:  268:    for(Index i = 1; i < xpr.outerSize(); ++i)
-        -:  269:      for(Index j = 0; j < xpr.innerSize(); ++j)
-        -:  270:        res = func(res, eval.coeffByOuterInner(i, j));
-        -:  271:    return res;
+        4:  264:    eigen_assert(xpr.rows()>0 && xpr.cols()>0 && "you are using an empty matrix");
+        2:  265:    Scalar res = eval.coeffByOuterInner(0, 0);
+        2:  266:    for(Index i = 1; i < xpr.innerSize(); ++i)
+    #####:  267:      res = func(res, eval.coeffByOuterInner(0, i));
+        6:  268:    for(Index i = 1; i < xpr.outerSize(); ++i)
+        8:  269:      for(Index j = 0; j < xpr.innerSize(); ++j)
+        8:  270:        res = func(res, eval.coeffByOuterInner(i, j));
+        2:  271:    return res;
         -:  272:  }
         -:  273:};
         -:  274:
@@ -283,13 +283,13 @@
         -:  279:
         -:  280:  template<typename XprType>
         -:  281:  EIGEN_DEVICE_FUNC static EIGEN_STRONG_INLINE
-    11682:  282:  Scalar run(const Evaluator &eval, const Func& func, const XprType& xpr)
+     1561:  282:  Scalar run(const Evaluator &eval, const Func& func, const XprType& xpr)
         -:  283:  {
-    23364:  284:    eigen_assert(xpr.size()>0 && "you are using an empty matrix");
-    11682:  285:    Scalar res = eval.coeff(0);
-    35046:  286:    for(Index k = 1; k < xpr.size(); ++k)
-    23364:  287:      res = func(res, eval.coeff(k));
-    11682:  288:    return res;
+     3122:  284:    eigen_assert(xpr.size()>0 && "you are using an empty matrix");
+     1561:  285:    Scalar res = eval.coeff(0);
+     4681:  286:    for(Index k = 1; k < xpr.size(); ++k)
+     3120:  287:      res = func(res, eval.coeff(k));
+     1561:  288:    return res;
         -:  289:  }
         -:  290:};
         -:  291:
@@ -315,9 +315,9 @@
         -:  311:  typedef typename Evaluator::Scalar Scalar;
         -:  312:  template<typename XprType>
         -:  313:  EIGEN_DEVICE_FUNC static EIGEN_STRONG_INLINE
-     1490:  314:  Scalar run(const Evaluator &eval, const Func& func, const XprType& /*xpr*/)
+      120:  314:  Scalar run(const Evaluator &eval, const Func& func, const XprType& /*xpr*/)
         -:  315:  {
-     1490:  316:    return Base::run(eval,func);
+      120:  316:    return Base::run(eval,func);
         -:  317:  }
         -:  318:};
         -:  319:
@@ -328,53 +328,53 @@
         -:  324:  typedef typename redux_traits<Func, Evaluator>::PacketType PacketScalar;
         -:  325:
         -:  326:  template<typename XprType>
-    24866:  327:  static Scalar run(const Evaluator &eval, const Func& func, const XprType& xpr)
+     1698:  327:  static Scalar run(const Evaluator &eval, const Func& func, const XprType& xpr)
         -:  328:  {
-    24866:  329:    const Index size = xpr.size();
+     1698:  329:    const Index size = xpr.size();
         -:  330:    
-    24866:  331:    constexpr Index packetSize = redux_traits<Func, Evaluator>::PacketSize;
-    24866:  332:    constexpr int packetAlignment = unpacket_traits<PacketScalar>::alignment;
-    24866:  333:    constexpr int alignment0 = (bool(Evaluator::Flags & DirectAccessBit) && bool(packet_traits<Scalar>::AlignedOnScalar)) ? int(packetAlignment) : int(Unaligned);
-    24866:  334:    constexpr int alignment = plain_enum_max(alignment0, Evaluator::Alignment);
-    24866:  335:    const Index alignedStart = internal::first_default_aligned(xpr);
-    24866:  336:    const Index alignedSize2 = ((size-alignedStart)/(2*packetSize))*(2*packetSize);
-    24866:  337:    const Index alignedSize = ((size-alignedStart)/(packetSize))*(packetSize);
-    24866:  338:    const Index alignedEnd2 = alignedStart + alignedSize2;
-    24866:  339:    const Index alignedEnd  = alignedStart + alignedSize;
-        -:  340:    Scalar res;
-    24866:  341:    if(alignedSize)
+     1698:  331:    constexpr Index packetSize = redux_traits<Func, Evaluator>::PacketSize;
+     1698:  332:    constexpr int packetAlignment = unpacket_traits<PacketScalar>::alignment;
+     1698:  333:    constexpr int alignment0 = (bool(Evaluator::Flags & DirectAccessBit) && bool(packet_traits<Scalar>::AlignedOnScalar)) ? int(packetAlignment) : int(Unaligned);
+     1698:  334:    constexpr int alignment = plain_enum_max(alignment0, Evaluator::Alignment);
+     1698:  335:    const Index alignedStart = internal::first_default_aligned(xpr);
+     1698:  336:    const Index alignedSize2 = ((size-alignedStart)/(2*packetSize))*(2*packetSize);
+     1698:  337:    const Index alignedSize = ((size-alignedStart)/(packetSize))*(packetSize);
+     1698:  338:    const Index alignedEnd2 = alignedStart + alignedSize2;
+     1698:  339:    const Index alignedEnd  = alignedStart + alignedSize;
+    #####:  340:    Scalar res;
+     1698:  341:    if(alignedSize)
         -:  342:    {
-    20798:  343:      PacketScalar packet_res0 = eval.template packet<alignment,PacketScalar>(alignedStart);
-    20798:  344:      if(alignedSize>packetSize) // we have at least two packets to partly unroll the loop
+     1333:  343:      PacketScalar packet_res0 = eval.template packet<alignment,PacketScalar>(alignedStart);
+     1333:  344:      if(alignedSize>packetSize) // we have at least two packets to partly unroll the loop
         -:  345:      {
-    14050:  346:        PacketScalar packet_res1 = eval.template packet<alignment,PacketScalar>(alignedStart+packetSize);
-    18412:  347:        for(Index index = alignedStart + 2*packetSize; index < alignedEnd2; index += 2*packetSize)
+      729:  346:        PacketScalar packet_res1 = eval.template packet<alignment,PacketScalar>(alignedStart+packetSize);
+     1281:  347:        for(Index index = alignedStart + 2*packetSize; index < alignedEnd2; index += 2*packetSize)
         -:  348:        {
-     4362:  349:          packet_res0 = func.packetOp(packet_res0, eval.template packet<alignment,PacketScalar>(index));
-     4362:  350:          packet_res1 = func.packetOp(packet_res1, eval.template packet<alignment,PacketScalar>(index+packetSize));
-     4362:  351:        }
+      552:  349:          packet_res0 = func.packetOp(packet_res0, eval.template packet<alignment,PacketScalar>(index));
+      552:  350:          packet_res1 = func.packetOp(packet_res1, eval.template packet<alignment,PacketScalar>(index+packetSize));
+      552:  351:        }
         -:  352:
-    14050:  353:        packet_res0 = func.packetOp(packet_res0,packet_res1);
-    14050:  354:        if(alignedEnd>alignedEnd2)
-     4686:  355:          packet_res0 = func.packetOp(packet_res0, eval.template packet<alignment,PacketScalar>(alignedEnd2));
-    14050:  356:      }
-    20798:  357:      res = func.predux(packet_res0);
+      729:  353:        packet_res0 = func.packetOp(packet_res0,packet_res1);
+      729:  354:        if(alignedEnd>alignedEnd2)
+       11:  355:          packet_res0 = func.packetOp(packet_res0, eval.template packet<alignment,PacketScalar>(alignedEnd2));
+      729:  356:      }
+     1333:  357:      res = func.predux(packet_res0);
         -:  358:
-    20802:  359:      for(Index index = 0; index < alignedStart; ++index)
-        4:  360:        res = func(res,eval.coeff(index));
+     1333:  359:      for(Index index = 0; index < alignedStart; ++index)
+    #####:  360:        res = func(res,eval.coeff(index));
         -:  361:
-    30628:  362:      for(Index index = alignedEnd; index < size; ++index)
-     9830:  363:        res = func(res,eval.coeff(index));
-    20798:  364:    }
+     1712:  362:      for(Index index = alignedEnd; index < size; ++index)
+      379:  363:        res = func(res,eval.coeff(index));
+     1333:  364:    }
         -:  365:    else // too small to vectorize anything.
         -:  366:         // since this is dynamic-size hence inefficient anyway for such small sizes, don't try to optimize.
         -:  367:    {
-     4068:  368:      res = eval.coeff(0);
-     4068:  369:      for(Index index = 1; index < size; ++index)
+      365:  368:      res = eval.coeff(0);
+      365:  369:      for(Index index = 1; index < size; ++index)
     #####:  370:        res = func(res,eval.coeff(index));
         -:  371:    }
         -:  372:
-    24866:  373:    return res;
+     1698:  373:    return res;
         -:  374:  }
         -:  375:};
         -:  376:
@@ -386,33 +386,33 @@
         -:  382:  typedef typename redux_traits<Func, Evaluator>::PacketType PacketType;
         -:  383:
         -:  384:  template<typename XprType>
-        -:  385:  EIGEN_DEVICE_FUNC static Scalar run(const Evaluator &eval, const Func& func, const XprType& xpr)
+    #####:  385:  EIGEN_DEVICE_FUNC static Scalar run(const Evaluator &eval, const Func& func, const XprType& xpr)
         -:  386:  {
-        -:  387:    eigen_assert(xpr.rows()>0 && xpr.cols()>0 && "you are using an empty matrix");
-        -:  388:    constexpr Index packetSize = redux_traits<Func, Evaluator>::PacketSize;
-        -:  389:    const Index innerSize = xpr.innerSize();
-        -:  390:    const Index outerSize = xpr.outerSize();
-        -:  391:    const Index packetedInnerSize = ((innerSize)/packetSize)*packetSize;
+    #####:  387:    eigen_assert(xpr.rows()>0 && xpr.cols()>0 && "you are using an empty matrix");
+    #####:  388:    constexpr Index packetSize = redux_traits<Func, Evaluator>::PacketSize;
+    #####:  389:    const Index innerSize = xpr.innerSize();
+    #####:  390:    const Index outerSize = xpr.outerSize();
+    #####:  391:    const Index packetedInnerSize = ((innerSize)/packetSize)*packetSize;
         -:  392:    Scalar res;
-        -:  393:    if(packetedInnerSize)
+    #####:  393:    if(packetedInnerSize)
         -:  394:    {
-        -:  395:      PacketType packet_res = eval.template packet<Unaligned,PacketType>(0,0);
-        -:  396:      for(Index j=0; j<outerSize; ++j)
-        -:  397:        for(Index i=(j==0?packetSize:0); i<packetedInnerSize; i+=Index(packetSize))
-        -:  398:          packet_res = func.packetOp(packet_res, eval.template packetByOuterInner<Unaligned,PacketType>(j,i));
+    #####:  395:      PacketType packet_res = eval.template packet<Unaligned,PacketType>(0,0);
+    #####:  396:      for(Index j=0; j<outerSize; ++j)
+    #####:  397:        for(Index i=(j==0?packetSize:0); i<packetedInnerSize; i+=Index(packetSize))
+    #####:  398:          packet_res = func.packetOp(packet_res, eval.template packetByOuterInner<Unaligned,PacketType>(j,i));
         -:  399:
-        -:  400:      res = func.predux(packet_res);
-        -:  401:      for(Index j=0; j<outerSize; ++j)
-        -:  402:        for(Index i=packetedInnerSize; i<innerSize; ++i)
-        -:  403:          res = func(res, eval.coeffByOuterInner(j,i));
-        -:  404:    }
+    #####:  400:      res = func.predux(packet_res);
+    #####:  401:      for(Index j=0; j<outerSize; ++j)
+    #####:  402:        for(Index i=packetedInnerSize; i<innerSize; ++i)
+    #####:  403:          res = func(res, eval.coeffByOuterInner(j,i));
+    #####:  404:    }
         -:  405:    else // too small to vectorize anything.
         -:  406:         // since this is dynamic-size hence inefficient anyway for such small sizes, don't try to optimize.
         -:  407:    {
-        -:  408:      res = redux_impl<Func, Evaluator, DefaultTraversal, NoUnrolling>::run(eval, func, xpr);
+    #####:  408:      res = redux_impl<Func, Evaluator, DefaultTraversal, NoUnrolling>::run(eval, func, xpr);
         -:  409:    }
         -:  410:
-        -:  411:    return res;
+    #####:  411:    return res;
         -:  412:  }
         -:  413:};
         -:  414:
@@ -428,18 +428,18 @@
         -:  424:
         -:  425:  template<typename XprType>
         -:  426:  EIGEN_DEVICE_FUNC static EIGEN_STRONG_INLINE
-    69152:  427:  Scalar run(const Evaluator &eval, const Func& func, const XprType &xpr)
+     4449:  427:  Scalar run(const Evaluator &eval, const Func& func, const XprType &xpr)
         -:  428:  {
         -:  429:    EIGEN_ONLY_USED_FOR_DEBUG(xpr)
-   138304:  430:    eigen_assert(xpr.rows()>0 && xpr.cols()>0 && "you are using an empty matrix");
+     8898:  430:    eigen_assert(xpr.rows()>0 && xpr.cols()>0 && "you are using an empty matrix");
         -:  431:    if (VectorizedSize > 0) {
-    62490:  432:      Scalar res = func.predux(redux_vec_linear_unroller<Func, Evaluator, 0, Size / PacketSize>::template run<PacketType>(eval,func));
+     4200:  432:      Scalar res = func.predux(redux_vec_linear_unroller<Func, Evaluator, 0, Size / PacketSize>::template run<PacketType>(eval,func));
         -:  433:      if (VectorizedSize != Size)
-    61000:  434:        res = func(res,redux_novec_linear_unroller<Func, Evaluator, VectorizedSize, Size-VectorizedSize>::run(eval,func));
-    62490:  435:      return res;
+     4080:  434:        res = func(res,redux_novec_linear_unroller<Func, Evaluator, VectorizedSize, Size-VectorizedSize>::run(eval,func));
+     4200:  435:      return res;
         -:  436:    }
         -:  437:    else {
-     6662:  438:      return redux_novec_linear_unroller<Func, Evaluator, 0, Size>::run(eval,func);
+      249:  438:      return redux_novec_linear_unroller<Func, Evaluator, 0, Size>::run(eval,func);
         -:  439:    }
         -:  440:  }
         -:  441:};
@@ -452,7 +452,7 @@
         -:  448:public:
         -:  449:  typedef XprType_ XprType;
         -:  450:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-   215868:  451:  explicit redux_evaluator(const XprType &xpr) : Base(xpr) {}
+    15780:  451:  explicit redux_evaluator(const XprType &xpr) : Base(xpr) {}
         -:  452:  
         -:  453:  typedef typename XprType::Scalar Scalar;
         -:  454:  typedef typename XprType::CoeffReturnType CoeffReturnType;
@@ -469,13 +469,13 @@
         -:  465:  };
         -:  466:  
         -:  467:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-        -:  468:  CoeffReturnType coeffByOuterInner(Index outer, Index inner) const
-        -:  469:  { return Base::coeff(IsRowMajor ? outer : inner, IsRowMajor ? inner : outer); }
+        6:  468:  CoeffReturnType coeffByOuterInner(Index outer, Index inner) const
+        6:  469:  { return Base::coeff(IsRowMajor ? outer : inner, IsRowMajor ? inner : outer); }
         -:  470:  
         -:  471:  template<int LoadMode, typename PacketType>
         -:  472:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-     2232:  473:  PacketType packetByOuterInner(Index outer, Index inner) const
-     2232:  474:  { return Base::template packet<LoadMode,PacketType>(IsRowMajor ? outer : inner, IsRowMajor ? inner : outer); }
+      180:  473:  PacketType packetByOuterInner(Index outer, Index inner) const
+      180:  474:  { return Base::template packet<LoadMode,PacketType>(IsRowMajor ? outer : inner, IsRowMajor ? inner : outer); }
         -:  475:  
         -:  476:};
         -:  477:
@@ -498,17 +498,17 @@
         -:  494:template<typename Derived>
         -:  495:template<typename Func>
         -:  496:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE typename internal::traits<Derived>::Scalar
-   107190:  497:DenseBase<Derived>::redux(const Func& func) const
+     7830:  497:DenseBase<Derived>::redux(const Func& func) const
         -:  498:{
-   214380:  499:  eigen_assert(this->rows()>0 && this->cols()>0 && "you are using an empty matrix");
+    15660:  499:  eigen_assert(this->rows()>0 && this->cols()>0 && "you are using an empty matrix");
         -:  500:
         -:  501:  typedef typename internal::redux_evaluator<Derived> ThisEvaluator;
-   107190:  502:  ThisEvaluator thisEval(derived());
+     7830:  502:  ThisEvaluator thisEval(derived());
         -:  503:
         -:  504:  // The initial expression is passed to the reducer as an additional argument instead of
         -:  505:  // passing it as a member of redux_evaluator to help  
-   107190:  506:  return internal::redux_impl<Func, ThisEvaluator>::run(thisEval, func, derived());
-   107190:  507:}
+     7830:  506:  return internal::redux_impl<Func, ThisEvaluator>::run(thisEval, func, derived());
+     7830:  507:}
         -:  508:
         -:  509:/** \returns the minimum of all coefficients of \c *this.
         -:  510:  * In case \c *this contains NaN, NaNPropagation determines the behavior:
@@ -520,9 +520,9 @@
         -:  516:template<typename Derived>
         -:  517:template<int NaNPropagation>
         -:  518:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE typename internal::traits<Derived>::Scalar
-       14:  519:DenseBase<Derived>::minCoeff() const
+        4:  519:DenseBase<Derived>::minCoeff() const
         -:  520:{
-       14:  521:  return derived().redux(Eigen::internal::scalar_min_op<Scalar,Scalar, NaNPropagation>());
+        4:  521:  return derived().redux(Eigen::internal::scalar_min_op<Scalar,Scalar, NaNPropagation>());
         -:  522:}
         -:  523:
         -:  524:/** \returns the maximum of all coefficients of \c *this. 
@@ -535,9 +535,9 @@
         -:  531:template<typename Derived>
         -:  532:template<int NaNPropagation>
         -:  533:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE typename internal::traits<Derived>::Scalar
-     3000:  534:DenseBase<Derived>::maxCoeff() const
+      246:  534:DenseBase<Derived>::maxCoeff() const
         -:  535:{
-     3000:  536:  return derived().redux(Eigen::internal::scalar_max_op<Scalar,Scalar, NaNPropagation>());
+      246:  536:  return derived().redux(Eigen::internal::scalar_max_op<Scalar,Scalar, NaNPropagation>());
         -:  537:}
         -:  538:
         -:  539:/** \returns the sum of all coefficients of \c *this
@@ -548,12 +548,12 @@
         -:  544:  */
         -:  545:template<typename Derived>
         -:  546:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE typename internal::traits<Derived>::Scalar
-   104392:  547:DenseBase<Derived>::sum() const
+     7651:  547:DenseBase<Derived>::sum() const
         -:  548:{
-    35240:  549:  if(SizeAtCompileTime==0 || (SizeAtCompileTime==Dynamic && size()==0))
-      216:  550:    return Scalar(0);
-   104176:  551:  return derived().redux(Eigen::internal::scalar_sum_op<Scalar,Scalar>());
-    35240:  552:}
+     3202:  549:  if(SizeAtCompileTime==0 || (SizeAtCompileTime==Dynamic && size()==0))
+       71:  550:    return Scalar(0);
+     7580:  551:  return derived().redux(Eigen::internal::scalar_sum_op<Scalar,Scalar>());
+     3202:  552:}
         -:  553:
         -:  554:/** \returns the mean of all coefficients of *this
         -:  555:*

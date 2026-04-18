@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/MapBase.h
-        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
-        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
-        -:    0:Runs:4
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -95,10 +95,10 @@
         -:   91:
         -:   92:    /** \copydoc DenseBase::rows() */
         -:   93:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
-  1499380:   94:    inline Index rows() const EIGEN_NOEXCEPT { return m_rows.value(); }
+   141098:   94:    inline Index rows() const EIGEN_NOEXCEPT { return m_rows.value(); }
         -:   95:    /** \copydoc DenseBase::cols() */
         -:   96:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
-  1407450:   97:    inline Index cols() const EIGEN_NOEXCEPT { return m_cols.value(); }
+   127766:   97:    inline Index cols() const EIGEN_NOEXCEPT { return m_cols.value(); }
         -:   98:
         -:   99:    /** Returns a pointer to the first coefficient of the matrix or vector.
         -:  100:      *
@@ -106,28 +106,28 @@
         -:  102:      *
         -:  103:      * \sa innerStride(), outerStride()
         -:  104:      */
-   115684:  105:    EIGEN_DEVICE_FUNC inline const Scalar* data() const { return m_data; }
+    10014:  105:    EIGEN_DEVICE_FUNC inline const Scalar* data() const { return m_data; }
         -:  106:
         -:  107:    /** \copydoc PlainObjectBase::coeff(Index,Index) const */
         -:  108:    EIGEN_DEVICE_FUNC
-     6176:  109:    inline const Scalar& coeff(Index rowId, Index colId) const
+    #####:  109:    inline const Scalar& coeff(Index rowId, Index colId) const
         -:  110:    {
-     6176:  111:      return m_data[colId * colStride() + rowId * rowStride()];
+    #####:  111:      return m_data[colId * colStride() + rowId * rowStride()];
         -:  112:    }
         -:  113:
         -:  114:    /** \copydoc PlainObjectBase::coeff(Index) const */
         -:  115:    EIGEN_DEVICE_FUNC
-     2980:  116:    inline const Scalar& coeff(Index index) const
+      240:  116:    inline const Scalar& coeff(Index index) const
         -:  117:    {
         -:  118:      EIGEN_STATIC_ASSERT_INDEX_BASED_ACCESS(Derived)
-     2980:  119:      return m_data[index * innerStride()];
+      240:  119:      return m_data[index * innerStride()];
         -:  120:    }
         -:  121:
         -:  122:    /** \copydoc PlainObjectBase::coeffRef(Index,Index) const */
         -:  123:    EIGEN_DEVICE_FUNC
-     1490:  124:    inline const Scalar& coeffRef(Index rowId, Index colId) const
+      120:  124:    inline const Scalar& coeffRef(Index rowId, Index colId) const
         -:  125:    {
-     1490:  126:      return this->m_data[colId * colStride() + rowId * rowStride()];
+      120:  126:      return this->m_data[colId * colStride() + rowId * rowStride()];
         -:  127:    }
         -:  128:
         -:  129:    /** \copydoc PlainObjectBase::coeffRef(Index) const */
@@ -164,27 +164,27 @@
         -:  160:
         -:  161:    /** \internal Constructor for dynamically sized vectors */
         -:  162:    EIGEN_DEVICE_FUNC
-    19392:  163:    inline MapBase(PointerType dataPtr, Index vecSize)
-    19392:  164:            : m_data(dataPtr),
-    19392:  165:              m_rows(RowsAtCompileTime == Dynamic ? vecSize : Index(RowsAtCompileTime)),
-    19392:  166:              m_cols(ColsAtCompileTime == Dynamic ? vecSize : Index(ColsAtCompileTime))
+      881:  163:    inline MapBase(PointerType dataPtr, Index vecSize)
+      881:  164:            : m_data(dataPtr),
+      881:  165:              m_rows(RowsAtCompileTime == Dynamic ? vecSize : Index(RowsAtCompileTime)),
+      881:  166:              m_cols(ColsAtCompileTime == Dynamic ? vecSize : Index(ColsAtCompileTime))
         -:  167:    {
         -:  168:      EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived)
-    19392:  169:      eigen_assert(vecSize >= 0);
-    19392:  170:      eigen_assert(dataPtr == 0 || SizeAtCompileTime == Dynamic || SizeAtCompileTime == vecSize);
-    19392:  171:      checkSanity<Derived>();
-    19392:  172:    }
+      881:  169:      eigen_assert(vecSize >= 0);
+      881:  170:      eigen_assert(dataPtr == 0 || SizeAtCompileTime == Dynamic || SizeAtCompileTime == vecSize);
+      881:  171:      checkSanity<Derived>();
+      881:  172:    }
         -:  173:
         -:  174:    /** \internal Constructor for dynamically sized matrices */
         -:  175:    EIGEN_DEVICE_FUNC
-   397122:  176:    inline MapBase(PointerType dataPtr, Index rows, Index cols)
-   397122:  177:            : m_data(dataPtr), m_rows(rows), m_cols(cols)
+    33131:  176:    inline MapBase(PointerType dataPtr, Index rows, Index cols)
+    33131:  177:            : m_data(dataPtr), m_rows(rows), m_cols(cols)
         -:  178:    {
-   590478:  179:      eigen_assert( (dataPtr == 0)
+    52336:  179:      eigen_assert( (dataPtr == 0)
         -:  180:              || (   rows >= 0 && (RowsAtCompileTime == Dynamic || RowsAtCompileTime == rows)
         -:  181:                  && cols >= 0 && (ColsAtCompileTime == Dynamic || ColsAtCompileTime == cols)));
-   397122:  182:      checkSanity<Derived>();
-   397122:  183:    }
+    33131:  182:      checkSanity<Derived>();
+    33131:  183:    }
         -:  184:
         -:  185:    #ifdef EIGEN_MAPBASE_PLUGIN
         -:  186:    #include EIGEN_MAPBASE_PLUGIN
@@ -196,32 +196,32 @@
         -:  192:
         -:  193:    template<typename T>
         -:  194:    EIGEN_DEVICE_FUNC
-     6484:  195:    void checkSanity(std::enable_if_t<(internal::traits<T>::Alignment>0),void*> = 0) const
+      370:  195:    void checkSanity(std::enable_if_t<(internal::traits<T>::Alignment>0),void*> = 0) const
         -:  196:    {
         -:  197:// Temporary macro to allow scalars to not be properly aligned.  This is while we sort out failures
         -:  198:// in TensorFlow Lite that are currently relying on this UB.
         -:  199:#ifndef EIGEN_ALLOW_UNALIGNED_SCALARS
         -:  200:      // Pointer must be aligned to the Scalar type, otherwise we get UB.
-    12968:  201:      eigen_assert((std::uintptr_t(m_data) % alignof(Scalar) == 0) && "data is not scalar-aligned");
+      740:  201:      eigen_assert((std::uintptr_t(m_data) % alignof(Scalar) == 0) && "data is not scalar-aligned");
         -:  202:#endif
         -:  203:#if EIGEN_MAX_ALIGN_BYTES>0
         -:  204:      // innerStride() is not set yet when this function is called, so we optimistically assume the lowest plausible value:
-     6484:  205:      const Index minInnerStride = InnerStrideAtCompileTime == Dynamic ? 1 : Index(InnerStrideAtCompileTime);
+      370:  205:      const Index minInnerStride = InnerStrideAtCompileTime == Dynamic ? 1 : Index(InnerStrideAtCompileTime);
         -:  206:      EIGEN_ONLY_USED_FOR_DEBUG(minInnerStride);
-    12968:  207:      eigen_assert((   ((std::uintptr_t(m_data) % internal::traits<Derived>::Alignment) == 0)
+      740:  207:      eigen_assert((   ((std::uintptr_t(m_data) % internal::traits<Derived>::Alignment) == 0)
         -:  208:                    || (cols() * rows() * minInnerStride * sizeof(Scalar)) < internal::traits<Derived>::Alignment ) && "data is not aligned");
         -:  209:#endif
-     6484:  210:    }
+      370:  210:    }
         -:  211:
         -:  212:    template<typename T>
         -:  213:    EIGEN_DEVICE_FUNC
-   410030:  214:    void checkSanity(std::enable_if_t<internal::traits<T>::Alignment==0,void*> = 0) const
+    33642:  214:    void checkSanity(std::enable_if_t<internal::traits<T>::Alignment==0,void*> = 0) const
         -:  215:    {
         -:  216:#ifndef EIGEN_ALLOW_UNALIGNED_SCALARS
         -:  217:      // Pointer must be aligned to the Scalar type, otherwise we get UB.
-   820060:  218:      eigen_assert((std::uintptr_t(m_data) % alignof(Scalar) == 0) && "data is not scalar-aligned");
+    67284:  218:      eigen_assert((std::uintptr_t(m_data) % alignof(Scalar) == 0) && "data is not scalar-aligned");
         -:  219:#endif
-   410030:  220:    }
+    33642:  220:    }
         -:  221:
         -:  222:    PointerType m_data;
         -:  223:    const internal::variable_if_dynamic<Index, RowsAtCompileTime> m_rows;
@@ -270,21 +270,21 @@
         -:  266:                  > ScalarWithConstIfNotLvalue;
         -:  267:
         -:  268:    EIGEN_DEVICE_FUNC
-   344274:  269:    inline const Scalar* data() const { return this->m_data; }
+    32133:  269:    inline const Scalar* data() const { return this->m_data; }
         -:  270:    EIGEN_DEVICE_FUNC
-   162990:  271:    inline ScalarWithConstIfNotLvalue* data() { return this->m_data; } // no const-cast here so non-const-correct code will give a compile error
+    10766:  271:    inline ScalarWithConstIfNotLvalue* data() { return this->m_data; } // no const-cast here so non-const-correct code will give a compile error
         -:  272:
         -:  273:    EIGEN_DEVICE_FUNC
-    61412:  274:    inline ScalarWithConstIfNotLvalue& coeffRef(Index row, Index col)
+     3509:  274:    inline ScalarWithConstIfNotLvalue& coeffRef(Index row, Index col)
         -:  275:    {
-    61412:  276:      return this->m_data[col * colStride() + row * rowStride()];
+     3509:  276:      return this->m_data[col * colStride() + row * rowStride()];
         -:  277:    }
         -:  278:
         -:  279:    EIGEN_DEVICE_FUNC
-     5364:  280:    inline ScalarWithConstIfNotLvalue& coeffRef(Index index)
+      240:  280:    inline ScalarWithConstIfNotLvalue& coeffRef(Index index)
         -:  281:    {
         -:  282:      EIGEN_STATIC_ASSERT_INDEX_BASED_ACCESS(Derived)
-     5364:  283:      return this->m_data[index * innerStride()];
+      240:  283:      return this->m_data[index * innerStride()];
         -:  284:    }
         -:  285:
         -:  286:    template<int StoreMode>
@@ -303,14 +303,14 @@
         -:  299:    }
         -:  300:
         -:  301:    EIGEN_DEVICE_FUNC explicit inline MapBase(PointerType dataPtr) : Base(dataPtr) {}
-    19392:  302:    EIGEN_DEVICE_FUNC inline MapBase(PointerType dataPtr, Index vecSize) : Base(dataPtr, vecSize) {}
-   304724:  303:    EIGEN_DEVICE_FUNC inline MapBase(PointerType dataPtr, Index rows, Index cols) : Base(dataPtr, rows, cols) {}
+      879:  302:    EIGEN_DEVICE_FUNC inline MapBase(PointerType dataPtr, Index vecSize) : Base(dataPtr, vecSize) {}
+    24097:  303:    EIGEN_DEVICE_FUNC inline MapBase(PointerType dataPtr, Index rows, Index cols) : Base(dataPtr, rows, cols) {}
         -:  304:
         -:  305:    EIGEN_DEVICE_FUNC
-     7132:  306:    Derived& operator=(const MapBase& other)
+      478:  306:    Derived& operator=(const MapBase& other)
         -:  307:    {
-     7132:  308:      ReadOnlyMapBase::Base::operator=(other);
-     7132:  309:      return derived();
+      478:  308:      ReadOnlyMapBase::Base::operator=(other);
+      478:  309:      return derived();
         -:  310:    }
         -:  311:
         -:  312:    // In theory we could simply refer to Base:Base::operator=, but MSVC does not like Base::Base,

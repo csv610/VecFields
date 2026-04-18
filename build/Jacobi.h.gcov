@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Jacobi/Jacobi.h
-        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
-        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
-        -:    0:Runs:4
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -45,16 +45,16 @@
         -:   41:
         -:   42:    /** Default constructor without any initialization. */
         -:   43:    EIGEN_DEVICE_FUNC
-     2384:   44:    JacobiRotation() {}
+    #####:   44:    JacobiRotation() {}
         -:   45:
         -:   46:    /** Construct a planar rotation from a cosine-sine pair (\a c, \c s). */
         -:   47:    EIGEN_DEVICE_FUNC
-     2384:   48:    JacobiRotation(const Scalar& c, const Scalar& s) : m_c(c), m_s(s) {}
+    #####:   48:    JacobiRotation(const Scalar& c, const Scalar& s) : m_c(c), m_s(s) {}
         -:   49:
-     8344:   50:    EIGEN_DEVICE_FUNC Scalar& c() { return m_c; }
-     1192:   51:    EIGEN_DEVICE_FUNC Scalar c() const { return m_c; }
-     8344:   52:    EIGEN_DEVICE_FUNC Scalar& s() { return m_s; }
-     1192:   53:    EIGEN_DEVICE_FUNC Scalar s() const { return m_s; }
+    #####:   50:    EIGEN_DEVICE_FUNC Scalar& c() { return m_c; }
+    #####:   51:    EIGEN_DEVICE_FUNC Scalar c() const { return m_c; }
+    #####:   52:    EIGEN_DEVICE_FUNC Scalar& s() { return m_s; }
+    #####:   53:    EIGEN_DEVICE_FUNC Scalar s() const { return m_s; }
         -:   54:
         -:   55:    /** Concatenates two planar rotation */
         -:   56:    EIGEN_DEVICE_FUNC
@@ -67,7 +67,7 @@
         -:   63:
         -:   64:    /** Returns the transposed transformation */
         -:   65:    EIGEN_DEVICE_FUNC
-     1192:   66:    JacobiRotation transpose() const { using numext::conj; return JacobiRotation(m_c, -conj(m_s)); }
+    #####:   66:    JacobiRotation transpose() const { using numext::conj; return JacobiRotation(m_c, -conj(m_s)); }
         -:   67:
         -:   68:    /** Returns the adjoint transformation */
         -:   69:    EIGEN_DEVICE_FUNC
@@ -166,10 +166,10 @@
         -:  162:  */
         -:  163:template<typename Scalar>
         -:  164:EIGEN_DEVICE_FUNC
-     1192:  165:void JacobiRotation<Scalar>::makeGivens(const Scalar& p, const Scalar& q, Scalar* r)
+    #####:  165:void JacobiRotation<Scalar>::makeGivens(const Scalar& p, const Scalar& q, Scalar* r)
         -:  166:{
-     1192:  167:  makeGivens(p, q, r, std::conditional_t<NumTraits<Scalar>::IsComplex, internal::true_type, internal::false_type>());
-     1192:  168:}
+    #####:  167:  makeGivens(p, q, r, std::conditional_t<NumTraits<Scalar>::IsComplex, internal::true_type, internal::false_type>());
+    #####:  168:}
         -:  169:
         -:  170:
         -:  171:// specialization for complexes
@@ -235,32 +235,32 @@
         -:  231:// specialization for reals
         -:  232:template<typename Scalar>
         -:  233:EIGEN_DEVICE_FUNC
-     1192:  234:void JacobiRotation<Scalar>::makeGivens(const Scalar& p, const Scalar& q, Scalar* r, internal::false_type)
+    #####:  234:void JacobiRotation<Scalar>::makeGivens(const Scalar& p, const Scalar& q, Scalar* r, internal::false_type)
         -:  235:{
         -:  236:  using std::sqrt;
         -:  237:  using std::abs;
-     1192:  238:  if(numext::is_exactly_zero(q))
+    #####:  238:  if(numext::is_exactly_zero(q))
         -:  239:  {
     #####:  240:    m_c = p<Scalar(0) ? Scalar(-1) : Scalar(1);
     #####:  241:    m_s = Scalar(0);
     #####:  242:    if(r) *r = abs(p);
     #####:  243:  }
-     1192:  244:  else if(numext::is_exactly_zero(p))
+    #####:  244:  else if(numext::is_exactly_zero(p))
         -:  245:  {
     #####:  246:    m_c = Scalar(0);
     #####:  247:    m_s = q<Scalar(0) ? Scalar(1) : Scalar(-1);
     #####:  248:    if(r) *r = abs(q);
     #####:  249:  }
-     1192:  250:  else if(abs(p) > abs(q))
+    #####:  250:  else if(abs(p) > abs(q))
         -:  251:  {
-     1192:  252:    Scalar t = q/p;
-     1192:  253:    Scalar u = sqrt(Scalar(1) + numext::abs2(t));
-     1192:  254:    if(p<Scalar(0))
-      644:  255:      u = -u;
-     1192:  256:    m_c = Scalar(1)/u;
-     1192:  257:    m_s = -t * m_c;
-     1192:  258:    if(r) *r = p * u;
-     1192:  259:  }
+    #####:  252:    Scalar t = q/p;
+    #####:  253:    Scalar u = sqrt(Scalar(1) + numext::abs2(t));
+    #####:  254:    if(p<Scalar(0))
+    #####:  255:      u = -u;
+    #####:  256:    m_c = Scalar(1)/u;
+    #####:  257:    m_s = -t * m_c;
+    #####:  258:    if(r) *r = p * u;
+    #####:  259:  }
         -:  260:  else
         -:  261:  {
     #####:  262:    Scalar t = p/q;
@@ -272,7 +272,7 @@
     #####:  268:    if(r) *r = q * u;
         -:  269:  }
         -:  270:
-     1192:  271:}
+    #####:  271:}
         -:  272:
         -:  273:/****************************************************************************************
         -:  274:*   Implementation of MatrixBase methods
@@ -315,12 +315,12 @@
         -:  311:template<typename Derived>
         -:  312:template<typename OtherScalar>
         -:  313:EIGEN_DEVICE_FUNC
-     1192:  314:inline void MatrixBase<Derived>::applyOnTheRight(Index p, Index q, const JacobiRotation<OtherScalar>& j)
+    #####:  314:inline void MatrixBase<Derived>::applyOnTheRight(Index p, Index q, const JacobiRotation<OtherScalar>& j)
         -:  315:{
-     1192:  316:  ColXpr x(this->col(p));
-     1192:  317:  ColXpr y(this->col(q));
-     1192:  318:  internal::apply_rotation_in_the_plane(x, y, j.transpose());
-     1192:  319:}
+    #####:  316:  ColXpr x(this->col(p));
+    #####:  317:  ColXpr y(this->col(q));
+    #####:  318:  internal::apply_rotation_in_the_plane(x, y, j.transpose());
+    #####:  319:}
         -:  320:
         -:  321:namespace internal {
         -:  322:
@@ -329,35 +329,35 @@
         -:  325:struct apply_rotation_in_the_plane_selector
         -:  326:{
         -:  327:  static EIGEN_DEVICE_FUNC
-     1192:  328:  inline void run(Scalar *x, Index incrx, Scalar *y, Index incry, Index size, OtherScalar c, OtherScalar s)
+    #####:  328:  inline void run(Scalar *x, Index incrx, Scalar *y, Index incry, Index size, OtherScalar c, OtherScalar s)
         -:  329:  {
-     3576:  330:    for(Index i=0; i<size; ++i)
+    #####:  330:    for(Index i=0; i<size; ++i)
         -:  331:    {
-     2384:  332:      Scalar xi = *x;
-     2384:  333:      Scalar yi = *y;
-     2384:  334:      *x =  c * xi + numext::conj(s) * yi;
-     2384:  335:      *y = -s * xi + numext::conj(c) * yi;
-     2384:  336:      x += incrx;
-     2384:  337:      y += incry;
-     2384:  338:    }
-     1192:  339:  }
+    #####:  332:      Scalar xi = *x;
+    #####:  333:      Scalar yi = *y;
+    #####:  334:      *x =  c * xi + numext::conj(s) * yi;
+    #####:  335:      *y = -s * xi + numext::conj(c) * yi;
+    #####:  336:      x += incrx;
+    #####:  337:      y += incry;
+    #####:  338:    }
+    #####:  339:  }
         -:  340:};
         -:  341:
         -:  342:template<typename Scalar, typename OtherScalar,
         -:  343:         int SizeAtCompileTime, int MinAlignment>
         -:  344:struct apply_rotation_in_the_plane_selector<Scalar,OtherScalar,SizeAtCompileTime,MinAlignment,true /* vectorizable */>
         -:  345:{
-     1192:  346:  static inline void run(Scalar *x, Index incrx, Scalar *y, Index incry, Index size, OtherScalar c, OtherScalar s)
+    #####:  346:  static inline void run(Scalar *x, Index incrx, Scalar *y, Index incry, Index size, OtherScalar c, OtherScalar s)
         -:  347:  {
         -:  348:    typedef typename packet_traits<Scalar>::type Packet;
         -:  349:    typedef typename packet_traits<OtherScalar>::type OtherPacket;
         -:  350:
-     1192:  351:    constexpr int RequiredAlignment =
+    #####:  351:    constexpr int RequiredAlignment =
         -:  352:        (std::max)(unpacket_traits<Packet>::alignment, unpacket_traits<OtherPacket>::alignment);
-     1192:  353:    constexpr Index PacketSize = packet_traits<Scalar>::size;
+    #####:  353:    constexpr Index PacketSize = packet_traits<Scalar>::size;
         -:  354:
         -:  355:    /*** dynamic-size vectorized paths ***/
-     1192:  356:    if(size >= 2 * PacketSize && SizeAtCompileTime == Dynamic && ((incrx == 1 && incry == 1) || PacketSize == 1))
+    #####:  356:    if(size >= 2 * PacketSize && SizeAtCompileTime == Dynamic && ((incrx == 1 && incry == 1) || PacketSize == 1))
         -:  357:    {
         -:  358:      // both vectors are sequentially stored in memory => vectorization
     #####:  359:      constexpr Index Peeling = 2;
@@ -450,36 +450,36 @@
         -:  446:    /*** non-vectorized path ***/
         -:  447:    else
         -:  448:    {
-     1192:  449:      apply_rotation_in_the_plane_selector<Scalar,OtherScalar,SizeAtCompileTime,MinAlignment,false>::run(x,incrx,y,incry,size,c,s);
+    #####:  449:      apply_rotation_in_the_plane_selector<Scalar,OtherScalar,SizeAtCompileTime,MinAlignment,false>::run(x,incrx,y,incry,size,c,s);
         -:  450:    }
-     1192:  451:  }
+    #####:  451:  }
         -:  452:};
         -:  453:
         -:  454:template<typename VectorX, typename VectorY, typename OtherScalar>
         -:  455:EIGEN_DEVICE_FUNC
-     1192:  456:void inline apply_rotation_in_the_plane(DenseBase<VectorX>& xpr_x, DenseBase<VectorY>& xpr_y, const JacobiRotation<OtherScalar>& j)
+    #####:  456:void inline apply_rotation_in_the_plane(DenseBase<VectorX>& xpr_x, DenseBase<VectorY>& xpr_y, const JacobiRotation<OtherScalar>& j)
         -:  457:{
         -:  458:  typedef typename VectorX::Scalar Scalar;
-     1192:  459:  constexpr bool Vectorizable = (int(evaluator<VectorX>::Flags) & int(evaluator<VectorY>::Flags) & PacketAccessBit) &&
+    #####:  459:  constexpr bool Vectorizable = (int(evaluator<VectorX>::Flags) & int(evaluator<VectorY>::Flags) & PacketAccessBit) &&
         -:  460:                                (int(packet_traits<Scalar>::size) == int(packet_traits<OtherScalar>::size));
         -:  461:
-     1192:  462:  eigen_assert(xpr_x.size() == xpr_y.size());
-     1192:  463:  Index size = xpr_x.size();
-     1192:  464:  Index incrx = xpr_x.derived().innerStride();
-     1192:  465:  Index incry = xpr_y.derived().innerStride();
+    #####:  462:  eigen_assert(xpr_x.size() == xpr_y.size());
+    #####:  463:  Index size = xpr_x.size();
+    #####:  464:  Index incrx = xpr_x.derived().innerStride();
+    #####:  465:  Index incry = xpr_y.derived().innerStride();
         -:  466:
-     1192:  467:  Scalar* EIGEN_RESTRICT x = &xpr_x.derived().coeffRef(0);
-     1192:  468:  Scalar* EIGEN_RESTRICT y = &xpr_y.derived().coeffRef(0);
+    #####:  467:  Scalar* EIGEN_RESTRICT x = &xpr_x.derived().coeffRef(0);
+    #####:  468:  Scalar* EIGEN_RESTRICT y = &xpr_y.derived().coeffRef(0);
         -:  469:
-     1192:  470:  OtherScalar c = j.c();
-     1192:  471:  OtherScalar s = j.s();
-     1192:  472:  if (numext::is_exactly_one(c) && numext::is_exactly_zero(s))
+    #####:  470:  OtherScalar c = j.c();
+    #####:  471:  OtherScalar s = j.s();
+    #####:  472:  if (numext::is_exactly_one(c) && numext::is_exactly_zero(s))
     #####:  473:    return;
         -:  474:
-     1192:  475:  constexpr int Alignment = (std::min)(int(evaluator<VectorX>::Alignment), int(evaluator<VectorY>::Alignment));
-     1192:  476:  apply_rotation_in_the_plane_selector<Scalar, OtherScalar, VectorX::SizeAtCompileTime, Alignment, Vectorizable>::run(
-     1192:  477:      x, incrx, y, incry, size, c, s);
-     1192:  478:}
+    #####:  475:  constexpr int Alignment = (std::min)(int(evaluator<VectorX>::Alignment), int(evaluator<VectorY>::Alignment));
+    #####:  476:  apply_rotation_in_the_plane_selector<Scalar, OtherScalar, VectorX::SizeAtCompileTime, Alignment, Vectorizable>::run(
+    #####:  477:      x, incrx, y, incry, size, c, s);
+    #####:  478:}
         -:  479:
         -:  480:} // end namespace internal
         -:  481:

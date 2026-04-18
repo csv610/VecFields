@@ -1,0 +1,144 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/SparseLU/SparseLU_pivotL.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2012 Désiré Nuentsa-Wakam <desire.nuentsa_wakam@inria.fr>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:/* 
+        -:   11: 
+        -:   12: * NOTE: This file is the modified version of xpivotL.c file in SuperLU 
+        -:   13: 
+        -:   14: * -- SuperLU routine (version 3.0) --
+        -:   15: * Univ. of California Berkeley, Xerox Palo Alto Research Center,
+        -:   16: * and Lawrence Berkeley National Lab.
+        -:   17: * October 15, 2003
+        -:   18: *
+        -:   19: * Copyright (c) 1994 by Xerox Corporation.  All rights reserved.
+        -:   20: *
+        -:   21: * THIS MATERIAL IS PROVIDED AS IS, WITH ABSOLUTELY NO WARRANTY
+        -:   22: * EXPRESSED OR IMPLIED.  ANY USE IS AT YOUR OWN RISK.
+        -:   23: *
+        -:   24: * Permission is hereby granted to use or copy this program for any
+        -:   25: * purpose, provided the above notices are retained on all copies.
+        -:   26: * Permission to modify the code and to distribute modified code is
+        -:   27: * granted, provided the above notices are retained, and a notice that
+        -:   28: * the code was modified is included with the above copyright notice.
+        -:   29: */
+        -:   30:#ifndef SPARSELU_PIVOTL_H
+        -:   31:#define SPARSELU_PIVOTL_H
+        -:   32:
+        -:   33:// IWYU pragma: private
+        -:   34:#include "./InternalHeaderCheck.h"
+        -:   35:
+        -:   36:namespace Eigen {
+        -:   37:namespace internal {
+        -:   38:  
+        -:   39:/**
+        -:   40: * \brief Performs the numerical pivotin on the current column of L, and the CDIV operation.
+        -:   41: * 
+        -:   42: * Pivot policy :
+        -:   43: * (1) Compute thresh = u * max_(i>=j) abs(A_ij);
+        -:   44: * (2) IF user specifies pivot row k and abs(A_kj) >= thresh THEN
+        -:   45: *           pivot row = k;
+        -:   46: *       ELSE IF abs(A_jj) >= thresh THEN
+        -:   47: *           pivot row = j;
+        -:   48: *       ELSE
+        -:   49: *           pivot row = m;
+        -:   50: * 
+        -:   51: *   Note: If you absolutely want to use a given pivot order, then set u=0.0.
+        -:   52: * 
+        -:   53: * \param jcol The current column of L
+        -:   54: * \param diagpivotthresh diagonal pivoting threshold
+        -:   55: * \param[in,out] perm_r Row permutation (threshold pivoting)
+        -:   56: * \param[in] iperm_c column permutation - used to finf diagonal of Pc*A*Pc'
+        -:   57: * \param[out] pivrow  The pivot row
+        -:   58: * \param glu Global LU data
+        -:   59: * \return 0 if success, i > 0 if U(i,i) is exactly zero 
+        -:   60: * 
+        -:   61: */
+        -:   62:template <typename Scalar, typename StorageIndex>
+    #####:   63:Index SparseLUImpl<Scalar,StorageIndex>::pivotL(const Index jcol, const RealScalar& diagpivotthresh, IndexVector& perm_r, IndexVector& iperm_c, Index& pivrow, GlobalLU_t& glu)
+        -:   64:{
+        -:   65:  
+    #####:   66:  Index fsupc = (glu.xsup)((glu.supno)(jcol)); // First column in the supernode containing the column jcol
+    #####:   67:  Index nsupc = jcol - fsupc; // Number of columns in the supernode portion, excluding jcol; nsupc >=0
+    #####:   68:  Index lptr = glu.xlsub(fsupc); // pointer to the starting location of the row subscripts for this supernode portion
+    #####:   69:  Index nsupr = glu.xlsub(fsupc+1) - lptr; // Number of rows in the supernode
+    #####:   70:  Index lda = glu.xlusup(fsupc+1) - glu.xlusup(fsupc); // leading dimension
+    #####:   71:  Scalar* lu_sup_ptr = &(glu.lusup.data()[glu.xlusup(fsupc)]); // Start of the current supernode
+    #####:   72:  Scalar* lu_col_ptr = &(glu.lusup.data()[glu.xlusup(jcol)]); // Start of jcol in the supernode
+    #####:   73:  StorageIndex* lsub_ptr = &(glu.lsub.data()[lptr]); // Start of row indices of the supernode
+        -:   74:  
+        -:   75:  // Determine the largest abs numerical value for partial pivoting 
+    #####:   76:  Index diagind = iperm_c(jcol); // diagonal index 
+    #####:   77:  RealScalar pivmax(-1.0);
+    #####:   78:  Index pivptr = nsupc; 
+    #####:   79:  Index diag = emptyIdxLU; 
+        -:   80:  RealScalar rtemp;
+        -:   81:  Index isub, icol, itemp, k; 
+    #####:   82:  for (isub = nsupc; isub < nsupr; ++isub) {
+        -:   83:    using std::abs;
+    #####:   84:    rtemp = abs(lu_col_ptr[isub]);
+    #####:   85:    if (rtemp > pivmax) {
+    #####:   86:      pivmax = rtemp; 
+    #####:   87:      pivptr = isub;
+    #####:   88:    } 
+    #####:   89:    if (lsub_ptr[isub] == diagind) diag = isub;
+    #####:   90:  }
+        -:   91:  
+        -:   92:  // Test for singularity
+    #####:   93:  if ( pivmax <= RealScalar(0.0) ) {
+        -:   94:    // if pivmax == -1, the column is structurally empty, otherwise it is only numerically zero
+    #####:   95:    pivrow = pivmax < RealScalar(0.0) ? diagind : lsub_ptr[pivptr];
+    #####:   96:    perm_r(pivrow) = StorageIndex(jcol);
+    #####:   97:    return (jcol+1);
+        -:   98:  }
+        -:   99:  
+    #####:  100:  RealScalar thresh = diagpivotthresh * pivmax; 
+        -:  101:  
+        -:  102:  // Choose appropriate pivotal element 
+        -:  103:  
+        -:  104:  {
+        -:  105:    // Test if the diagonal element can be used as a pivot (given the threshold value)
+    #####:  106:    if (diag >= 0 ) 
+        -:  107:    {
+        -:  108:      // Diagonal element exists
+        -:  109:      using std::abs;
+    #####:  110:      rtemp = abs(lu_col_ptr[diag]);
+    #####:  111:      if (rtemp != RealScalar(0.0) && rtemp >= thresh) pivptr = diag;
+    #####:  112:    }
+    #####:  113:    pivrow = lsub_ptr[pivptr];
+        -:  114:  }
+        -:  115:  
+        -:  116:  // Record pivot row
+    #####:  117:  perm_r(pivrow) = StorageIndex(jcol);
+        -:  118:  // Interchange row subscripts
+    #####:  119:  if (pivptr != nsupc )
+        -:  120:  {
+    #####:  121:    std::swap( lsub_ptr[pivptr], lsub_ptr[nsupc] );
+        -:  122:    // Interchange numerical values as well, for the two rows in the whole snode
+        -:  123:    // such that L is indexed the same way as A
+    #####:  124:    for (icol = 0; icol <= nsupc; icol++)
+        -:  125:    {
+    #####:  126:      itemp = pivptr + icol * lda; 
+    #####:  127:      std::swap(lu_sup_ptr[itemp], lu_sup_ptr[nsupc + icol * lda]);
+    #####:  128:    }
+    #####:  129:  }
+        -:  130:  // cdiv operations
+    #####:  131:  Scalar temp = Scalar(1.0) / lu_col_ptr[nsupc];
+    #####:  132:  for (k = nsupc+1; k < nsupr; k++)
+    #####:  133:    lu_col_ptr[k] *= temp; 
+    #####:  134:  return 0;
+    #####:  135:}
+        -:  136:
+        -:  137:} // end namespace internal
+        -:  138:} // end namespace Eigen
+        -:  139:
+        -:  140:#endif // SPARSELU_PIVOTL_H

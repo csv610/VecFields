@@ -1,0 +1,1917 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/SparseCore/SparseMatrix.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2008-2014 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:#ifndef EIGEN_SPARSEMATRIX_H
+        -:   11:#define EIGEN_SPARSEMATRIX_H
+        -:   12:
+        -:   13:// IWYU pragma: private
+        -:   14:#include "./InternalHeaderCheck.h"
+        -:   15:
+        -:   16:namespace Eigen { 
+        -:   17:
+        -:   18:/** \ingroup SparseCore_Module
+        -:   19:  *
+        -:   20:  * \class SparseMatrix
+        -:   21:  *
+        -:   22:  * \brief A versatible sparse matrix representation
+        -:   23:  *
+        -:   24:  * This class implements a more versatile variants of the common \em compressed row/column storage format.
+        -:   25:  * Each colmun's (resp. row) non zeros are stored as a pair of value with associated row (resp. colmiun) index.
+        -:   26:  * All the non zeros are stored in a single large buffer. Unlike the \em compressed format, there might be extra
+        -:   27:  * space in between the nonzeros of two successive colmuns (resp. rows) such that insertion of new non-zero
+        -:   28:  * can be done with limited memory reallocation and copies.
+        -:   29:  *
+        -:   30:  * A call to the function makeCompressed() turns the matrix into the standard \em compressed format
+        -:   31:  * compatible with many library.
+        -:   32:  *
+        -:   33:  * More details on this storage sceheme are given in the \ref TutorialSparse "manual pages".
+        -:   34:  *
+        -:   35:  * \tparam Scalar_ the scalar type, i.e. the type of the coefficients
+        -:   36:  * \tparam Options_ Union of bit flags controlling the storage scheme. Currently the only possibility
+        -:   37:  *                 is ColMajor or RowMajor. The default is 0 which means column-major.
+        -:   38:  * \tparam StorageIndex_ the type of the indices. It has to be a \b signed type (e.g., short, int, std::ptrdiff_t). Default is \c int.
+        -:   39:  *
+        -:   40:  * \warning In %Eigen 3.2, the undocumented type \c SparseMatrix::Index was improperly defined as the storage index type (e.g., int),
+        -:   41:  *          whereas it is now (starting from %Eigen 3.3) deprecated and always defined as Eigen::Index.
+        -:   42:  *          Codes making use of \c SparseMatrix::Index, might thus likely have to be changed to use \c SparseMatrix::StorageIndex instead.
+        -:   43:  *
+        -:   44:  * This class can be extended with the help of the plugin mechanism described on the page
+        -:   45:  * \ref TopicCustomizing_Plugins by defining the preprocessor symbol \c EIGEN_SPARSEMATRIX_PLUGIN.
+        -:   46:  */
+        -:   47:
+        -:   48:namespace internal {
+        -:   49:template<typename Scalar_, int Options_, typename StorageIndex_>
+        -:   50:struct traits<SparseMatrix<Scalar_, Options_, StorageIndex_> >
+        -:   51:{
+        -:   52:  typedef Scalar_ Scalar;
+        -:   53:  typedef StorageIndex_ StorageIndex;
+        -:   54:  typedef Sparse StorageKind;
+        -:   55:  typedef MatrixXpr XprKind;
+        -:   56:  enum {
+        -:   57:    RowsAtCompileTime = Dynamic,
+        -:   58:    ColsAtCompileTime = Dynamic,
+        -:   59:    MaxRowsAtCompileTime = Dynamic,
+        -:   60:    MaxColsAtCompileTime = Dynamic,
+        -:   61:    Flags = Options_ | NestByRefBit | LvalueBit | CompressedAccessBit,
+        -:   62:    SupportedAccessPatterns = InnerRandomAccessPattern
+        -:   63:  };
+        -:   64:};
+        -:   65:
+        -:   66:template<typename Scalar_, int Options_, typename StorageIndex_, int DiagIndex>
+        -:   67:struct traits<Diagonal<SparseMatrix<Scalar_, Options_, StorageIndex_>, DiagIndex> >
+        -:   68:{
+        -:   69:  typedef SparseMatrix<Scalar_, Options_, StorageIndex_> MatrixType;
+        -:   70:  typedef typename ref_selector<MatrixType>::type MatrixTypeNested;
+        -:   71:  typedef std::remove_reference_t<MatrixTypeNested> MatrixTypeNested_;
+        -:   72:
+        -:   73:  typedef Scalar_ Scalar;
+        -:   74:  typedef Dense StorageKind;
+        -:   75:  typedef StorageIndex_ StorageIndex;
+        -:   76:  typedef MatrixXpr XprKind;
+        -:   77:
+        -:   78:  enum {
+        -:   79:    RowsAtCompileTime = Dynamic,
+        -:   80:    ColsAtCompileTime = 1,
+        -:   81:    MaxRowsAtCompileTime = Dynamic,
+        -:   82:    MaxColsAtCompileTime = 1,
+        -:   83:    Flags = LvalueBit
+        -:   84:  };
+        -:   85:};
+        -:   86:
+        -:   87:template<typename Scalar_, int Options_, typename StorageIndex_, int DiagIndex>
+        -:   88:struct traits<Diagonal<const SparseMatrix<Scalar_, Options_, StorageIndex_>, DiagIndex> >
+        -:   89: : public traits<Diagonal<SparseMatrix<Scalar_, Options_, StorageIndex_>, DiagIndex> >
+        -:   90:{
+        -:   91:  enum {
+        -:   92:    Flags = 0
+        -:   93:  };
+        -:   94:};
+        -:   95:
+        -:   96:template <typename StorageIndex>
+        -:   97:struct sparse_reserve_op {
+        -:   98:  EIGEN_DEVICE_FUNC sparse_reserve_op(Index begin, Index end, Index size) {
+        -:   99:    Index range = numext::mini(end - begin, size);
+        -:  100:    m_begin = begin;
+        -:  101:    m_end = begin + range;
+        -:  102:    m_val = StorageIndex(size / range);
+        -:  103:    m_remainder = StorageIndex(size % range);
+        -:  104:  }
+        -:  105:  template <typename IndexType>
+        -:  106:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE StorageIndex operator()(IndexType i) const {
+        -:  107:    if ((i >= m_begin) && (i < m_end))
+        -:  108:      return m_val + ((i - m_begin) < m_remainder ? 1 : 0);
+        -:  109:    else
+        -:  110:      return 0;
+        -:  111:  }
+        -:  112:  StorageIndex m_val, m_remainder;
+        -:  113:  Index m_begin, m_end;
+        -:  114:};
+        -:  115:
+        -:  116:template <typename Scalar>
+        -:  117:struct functor_traits<sparse_reserve_op<Scalar>> {
+        -:  118:  enum { Cost = 1, PacketAccess = false, IsRepeatable = true };
+        -:  119:};
+        -:  120:
+        -:  121:} // end namespace internal
+        -:  122:
+        -:  123:template<typename Scalar_, int Options_, typename StorageIndex_>
+        -:  124:class SparseMatrix
+        -:  125:  : public SparseCompressedBase<SparseMatrix<Scalar_, Options_, StorageIndex_> >
+        -:  126:{
+        -:  127:    typedef SparseCompressedBase<SparseMatrix> Base;
+        -:  128:    using Base::convert_index;
+        -:  129:    friend class SparseVector<Scalar_,0,StorageIndex_>;
+        -:  130:    template<typename, typename, typename, typename, typename>
+        -:  131:    friend struct internal::Assignment;
+        -:  132:  public:
+        -:  133:    using Base::isCompressed;
+        -:  134:    using Base::nonZeros;
+        -:  135:    EIGEN_SPARSE_PUBLIC_INTERFACE(SparseMatrix)
+        -:  136:    using Base::operator+=;
+        -:  137:    using Base::operator-=;
+        -:  138:
+        -:  139:    typedef Eigen::Map<SparseMatrix<Scalar,Options_,StorageIndex>> Map;
+        -:  140:    typedef Diagonal<SparseMatrix> DiagonalReturnType;
+        -:  141:    typedef Diagonal<const SparseMatrix> ConstDiagonalReturnType;
+        -:  142:    typedef typename Base::InnerIterator InnerIterator;
+        -:  143:    typedef typename Base::ReverseInnerIterator ReverseInnerIterator;
+        -:  144:    
+        -:  145:
+        -:  146:    using Base::IsRowMajor;
+        -:  147:    typedef internal::CompressedStorage<Scalar,StorageIndex> Storage;
+        -:  148:    enum {
+        -:  149:      Options = Options_
+        -:  150:    };
+        -:  151:
+        -:  152:    typedef typename Base::IndexVector IndexVector;
+        -:  153:    typedef typename Base::ScalarVector ScalarVector;
+        -:  154:  protected:
+        -:  155:    typedef SparseMatrix<Scalar, IsRowMajor ? ColMajor : RowMajor, StorageIndex> TransposedSparseMatrix;
+        -:  156:
+        -:  157:    Index m_outerSize;
+        -:  158:    Index m_innerSize;
+        -:  159:    StorageIndex* m_outerIndex;
+        -:  160:    StorageIndex* m_innerNonZeros;     // optional, if null then the data is compressed
+        -:  161:    Storage m_data;
+        -:  162:
+        -:  163:  public:
+        -:  164:    
+        -:  165:    /** \returns the number of rows of the matrix */
+     3490:  166:    inline Index rows() const { return IsRowMajor ? m_outerSize : m_innerSize; }
+        -:  167:    /** \returns the number of columns of the matrix */
+     3747:  168:    inline Index cols() const { return IsRowMajor ? m_innerSize : m_outerSize; }
+        -:  169:
+        -:  170:    /** \returns the number of rows (resp. columns) of the matrix if the storage order column major (resp. row major) */
+       79:  171:    inline Index innerSize() const { return m_innerSize; }
+        -:  172:    /** \returns the number of columns (resp. rows) of the matrix if the storage order column major (resp. row major) */
+    22054:  173:    inline Index outerSize() const { return m_outerSize; }
+        -:  174:    
+        -:  175:    /** \returns a const pointer to the array of values.
+        -:  176:      * This function is aimed at interoperability with other libraries.
+        -:  177:      * \sa innerIndexPtr(), outerIndexPtr() */
+    28309:  178:    inline const Scalar* valuePtr() const { return m_data.valuePtr(); }
+        -:  179:    /** \returns a non-const pointer to the array of values.
+        -:  180:      * This function is aimed at interoperability with other libraries.
+        -:  181:      * \sa innerIndexPtr(), outerIndexPtr() */
+      593:  182:    inline Scalar* valuePtr() { return m_data.valuePtr(); }
+        -:  183:
+        -:  184:    /** \returns a const pointer to the array of inner indices.
+        -:  185:      * This function is aimed at interoperability with other libraries.
+        -:  186:      * \sa valuePtr(), outerIndexPtr() */
+    28309:  187:    inline const StorageIndex* innerIndexPtr() const { return m_data.indexPtr(); }
+        -:  188:    /** \returns a non-const pointer to the array of inner indices.
+        -:  189:      * This function is aimed at interoperability with other libraries.
+        -:  190:      * \sa valuePtr(), outerIndexPtr() */
+      594:  191:    inline StorageIndex* innerIndexPtr() { return m_data.indexPtr(); }
+        -:  192:
+        -:  193:    /** \returns a const pointer to the array of the starting positions of the inner vectors.
+        -:  194:      * This function is aimed at interoperability with other libraries.
+        -:  195:      * \sa valuePtr(), innerIndexPtr() */
+    56654:  196:    inline const StorageIndex* outerIndexPtr() const { return m_outerIndex; }
+        -:  197:    /** \returns a non-const pointer to the array of the starting positions of the inner vectors.
+        -:  198:      * This function is aimed at interoperability with other libraries.
+        -:  199:      * \sa valuePtr(), innerIndexPtr() */
+     4027:  200:    inline StorageIndex* outerIndexPtr() { return m_outerIndex; }
+        -:  201:
+        -:  202:    /** \returns a const pointer to the array of the number of non zeros of the inner vectors.
+        -:  203:      * This function is aimed at interoperability with other libraries.
+        -:  204:      * \warning it returns the null pointer 0 in compressed mode */
+    28386:  205:    inline const StorageIndex* innerNonZeroPtr() const { return m_innerNonZeros; }
+        -:  206:    /** \returns a non-const pointer to the array of the number of non zeros of the inner vectors.
+        -:  207:      * This function is aimed at interoperability with other libraries.
+        -:  208:      * \warning it returns the null pointer 0 in compressed mode */
+    #####:  209:    inline StorageIndex* innerNonZeroPtr() { return m_innerNonZeros; }
+        -:  210:
+        -:  211:    /** \internal */
+     6482:  212:    inline Storage& data() { return m_data; }
+        -:  213:    /** \internal */
+        -:  214:    inline const Storage& data() const { return m_data; }
+        -:  215:
+        -:  216:    /** \returns the value of the matrix at position \a i, \a j
+        -:  217:      * This function returns Scalar(0) if the element is an explicit \em zero */
+    #####:  218:    inline Scalar coeff(Index row, Index col) const
+        -:  219:    {
+    #####:  220:      eigen_assert(row>=0 && row<rows() && col>=0 && col<cols());
+        -:  221:      
+    #####:  222:      const Index outer = IsRowMajor ? row : col;
+    #####:  223:      const Index inner = IsRowMajor ? col : row;
+    #####:  224:      Index end = m_innerNonZeros ? m_outerIndex[outer] + m_innerNonZeros[outer] : m_outerIndex[outer+1];
+    #####:  225:      return m_data.atInRange(m_outerIndex[outer], end, inner);
+        -:  226:    }
+        -:  227:
+        -:  228:    /** \returns a non-const reference to the value of the matrix at position \a i, \a j
+        -:  229:      *
+        -:  230:      * If the element does not exist then it is inserted via the insert(Index,Index) function
+        -:  231:      * which itself turns the matrix into a non compressed form if that was not the case.
+        -:  232:      *
+        -:  233:      * This is a O(log(nnz_j)) operation (binary search) plus the cost of insert(Index,Index)
+        -:  234:      * function if the element does not already exist.
+        -:  235:      */
+        -:  236:    inline Scalar& coeffRef(Index row, Index col)
+        -:  237:    {
+        -:  238:      eigen_assert(row>=0 && row<rows() && col>=0 && col<cols());
+        -:  239:      const Index outer = IsRowMajor ? row : col;
+        -:  240:      const Index inner = IsRowMajor ? col : row;
+        -:  241:      Index start = m_outerIndex[outer];
+        -:  242:      Index end = isCompressed() ? m_outerIndex[outer + 1] : m_outerIndex[outer] + m_innerNonZeros[outer];
+        -:  243:      eigen_assert(end >= start && "you probably called coeffRef on a non finalized matrix");
+        -:  244:      Index dst = start == end ? end : m_data.searchLowerIndex(start, end, inner);
+        -:  245:      if (dst == end) {
+        -:  246:        Index capacity = m_outerIndex[outer + 1] - end;
+        -:  247:        if (capacity > 0) {
+        -:  248:          // implies uncompressed: push to back of vector
+        -:  249:          m_innerNonZeros[outer]++;
+        -:  250:          m_data.index(end) = StorageIndex(inner);
+        -:  251:          m_data.value(end) = Scalar(0);
+        -:  252:          return m_data.value(end);
+        -:  253:        }
+        -:  254:      }
+        -:  255:      if ((dst < end) && (m_data.index(dst) == inner))
+        -:  256:        // this coefficient exists, return a refernece to it
+        -:  257:        return m_data.value(dst);
+        -:  258:      else
+        -:  259:        // insertion will require reconfiguring the buffer
+        -:  260:        return insertAtByOuterInner(outer, inner, dst);
+        -:  261:    }
+        -:  262:
+        -:  263:    /** \returns a reference to a novel non zero coefficient with coordinates \a row x \a col.
+        -:  264:      * The non zero coefficient must \b not already exist.
+        -:  265:      *
+        -:  266:      * If the matrix \c *this is in compressed mode, then \c *this is turned into uncompressed
+        -:  267:      * mode while reserving room for 2 x this->innerSize() non zeros if reserve(Index) has not been called earlier.
+        -:  268:      * In this case, the insertion procedure is optimized for a \e sequential insertion mode where elements are assumed to be
+        -:  269:      * inserted by increasing outer-indices.
+        -:  270:      * 
+        -:  271:      * If that's not the case, then it is strongly recommended to either use a triplet-list to assemble the matrix, or to first
+        -:  272:      * call reserve(const SizesType &) to reserve the appropriate number of non-zero elements per inner vector.
+        -:  273:      *
+        -:  274:      * Assuming memory has been appropriately reserved, this function performs a sorted insertion in O(1)
+        -:  275:      * if the elements of each inner vector are inserted in increasing inner index order, and in O(nnz_j) for a random insertion.
+        -:  276:      *
+        -:  277:      */
+        -:  278:    inline Scalar& insert(Index row, Index col);
+        -:  279:
+        -:  280:  public:
+        -:  281:
+        -:  282:    /** Removes all non zeros but keep allocated memory
+        -:  283:      *
+        -:  284:      * This function does not free the currently allocated memory. To release as much as memory as possible,
+        -:  285:      * call \code mat.data().squeeze(); \endcode after resizing it.
+        -:  286:      * 
+        -:  287:      * \sa resize(Index,Index), data()
+        -:  288:      */
+        8:  289:    inline void setZero()
+        -:  290:    {
+        8:  291:      m_data.clear();
+        8:  292:      std::fill_n(m_outerIndex, m_outerSize + 1, StorageIndex(0));
+        8:  293:      if(m_innerNonZeros) {
+    #####:  294:        std::fill_n(m_innerNonZeros, m_outerSize, StorageIndex(0));
+    #####:  295:      }
+        8:  296:    }
+        -:  297:
+        -:  298:    /** Preallocates \a reserveSize non zeros.
+        -:  299:      *
+        -:  300:      * Precondition: the matrix must be in compressed mode. */
+       16:  301:    inline void reserve(Index reserveSize)
+        -:  302:    {
+       32:  303:      eigen_assert(isCompressed() && "This function does not make sense in non compressed mode.");
+       16:  304:      m_data.reserve(reserveSize);
+       16:  305:    }
+        -:  306:    
+        -:  307:    #ifdef EIGEN_PARSED_BY_DOXYGEN
+        -:  308:    /** Preallocates \a reserveSize[\c j] non zeros for each column (resp. row) \c j.
+        -:  309:      *
+        -:  310:      * This function turns the matrix in non-compressed mode.
+        -:  311:      * 
+        -:  312:      * The type \c SizesType must expose the following interface:
+        -:  313:        \code
+        -:  314:        typedef value_type;
+        -:  315:        const value_type& operator[](i) const;
+        -:  316:        \endcode
+        -:  317:      * for \c i in the [0,this->outerSize()[ range.
+        -:  318:      * Typical choices include std::vector<int>, Eigen::VectorXi, Eigen::VectorXi::Constant, etc.
+        -:  319:      */
+        -:  320:    template<class SizesType>
+        -:  321:    inline void reserve(const SizesType& reserveSizes);
+        -:  322:    #else
+        -:  323:    template<class SizesType>
+        -:  324:    inline void reserve(const SizesType& reserveSizes, const typename SizesType::value_type& enableif =
+        -:  325:        typename SizesType::value_type())
+        -:  326:    {
+        -:  327:      EIGEN_UNUSED_VARIABLE(enableif);
+        -:  328:      reserveInnerVectors(reserveSizes);
+        -:  329:    }
+        -:  330:    #endif // EIGEN_PARSED_BY_DOXYGEN
+        -:  331:  protected:
+        -:  332:    template<class SizesType>
+        -:  333:    inline void reserveInnerVectors(const SizesType& reserveSizes)
+        -:  334:    {
+        -:  335:      if(isCompressed())
+        -:  336:      {
+        -:  337:        Index totalReserveSize = 0;
+        -:  338:        for (Index j = 0; j < m_outerSize; ++j) totalReserveSize += internal::convert_index<Index>(reserveSizes[j]);
+        -:  339:
+        -:  340:        // if reserveSizes is empty, don't do anything!
+        -:  341:        if (totalReserveSize == 0) return;
+        -:  342:
+        -:  343:        // turn the matrix into non-compressed mode
+        -:  344:        m_innerNonZeros = internal::conditional_aligned_new_auto<StorageIndex, true>(m_outerSize);
+        -:  345:        
+        -:  346:        // temporarily use m_innerSizes to hold the new starting points.
+        -:  347:        StorageIndex* newOuterIndex = m_innerNonZeros;
+        -:  348:        
+        -:  349:        Index count = 0;
+        -:  350:        for(Index j=0; j<m_outerSize; ++j)
+        -:  351:        {
+        -:  352:          newOuterIndex[j] = internal::convert_index<StorageIndex>(count);
+        -:  353:          Index reserveSize = internal::convert_index<Index>(reserveSizes[j]);
+        -:  354:          count += reserveSize + internal::convert_index<Index>(m_outerIndex[j+1]-m_outerIndex[j]);
+        -:  355:        }
+        -:  356:
+        -:  357:        m_data.reserve(totalReserveSize);
+        -:  358:        StorageIndex previousOuterIndex = m_outerIndex[m_outerSize];
+        -:  359:        for(Index j=m_outerSize-1; j>=0; --j)
+        -:  360:        {
+        -:  361:          StorageIndex innerNNZ = previousOuterIndex - m_outerIndex[j];
+        -:  362:          StorageIndex begin = m_outerIndex[j];
+        -:  363:          StorageIndex end = begin + innerNNZ;
+        -:  364:          StorageIndex target = newOuterIndex[j];
+        -:  365:          internal::smart_memmove(innerIndexPtr() + begin, innerIndexPtr() + end, innerIndexPtr() + target);
+        -:  366:          internal::smart_memmove(valuePtr() + begin, valuePtr() + end, valuePtr() + target);
+        -:  367:          previousOuterIndex = m_outerIndex[j];
+        -:  368:          m_outerIndex[j] = newOuterIndex[j];
+        -:  369:          m_innerNonZeros[j] = innerNNZ;
+        -:  370:        }
+        -:  371:        if(m_outerSize>0)
+        -:  372:          m_outerIndex[m_outerSize] = m_outerIndex[m_outerSize-1] + m_innerNonZeros[m_outerSize-1] + internal::convert_index<StorageIndex>(reserveSizes[m_outerSize-1]);
+        -:  373:        
+        -:  374:        m_data.resize(m_outerIndex[m_outerSize]);
+        -:  375:      }
+        -:  376:      else
+        -:  377:      {
+        -:  378:        StorageIndex* newOuterIndex = internal::conditional_aligned_new_auto<StorageIndex, true>(m_outerSize + 1);
+        -:  379:        
+        -:  380:        Index count = 0;
+        -:  381:        for(Index j=0; j<m_outerSize; ++j)
+        -:  382:        {
+        -:  383:          newOuterIndex[j] = internal::convert_index<StorageIndex>(count);
+        -:  384:          Index alreadyReserved = internal::convert_index<Index>(m_outerIndex[j+1] - m_outerIndex[j] - m_innerNonZeros[j]);
+        -:  385:          Index reserveSize = internal::convert_index<Index>(reserveSizes[j]);
+        -:  386:          Index toReserve = numext::maxi(reserveSize, alreadyReserved);
+        -:  387:          count += toReserve + internal::convert_index<Index>(m_innerNonZeros[j]);
+        -:  388:        }
+        -:  389:        newOuterIndex[m_outerSize] = internal::convert_index<StorageIndex>(count);
+        -:  390:
+        -:  391:        m_data.resize(count);
+        -:  392:        for(Index j=m_outerSize-1; j>=0; --j)
+        -:  393:        {
+        -:  394:          StorageIndex innerNNZ = m_innerNonZeros[j];
+        -:  395:          StorageIndex begin = m_outerIndex[j];
+        -:  396:          StorageIndex target = newOuterIndex[j];
+        -:  397:          m_data.moveChunk(begin, target, innerNNZ);
+        -:  398:        }
+        -:  399:        
+        -:  400:        std::swap(m_outerIndex, newOuterIndex);
+        -:  401:        internal::conditional_aligned_delete_auto<StorageIndex, true>(newOuterIndex, m_outerSize + 1);
+        -:  402:      }
+        -:  403:      
+        -:  404:    }
+        -:  405:  public:
+        -:  406:
+        -:  407:    //--- low level purely coherent filling ---
+        -:  408:
+        -:  409:    /** \internal
+        -:  410:      * \returns a reference to the non zero coefficient at position \a row, \a col assuming that:
+        -:  411:      * - the nonzero does not already exist
+        -:  412:      * - the new coefficient is the last one according to the storage order
+        -:  413:      *
+        -:  414:      * Before filling a given inner vector you must call the statVec(Index) function.
+        -:  415:      *
+        -:  416:      * After an insertion session, you should call the finalize() function.
+        -:  417:      *
+        -:  418:      * \sa insert, insertBackByOuterInner, startVec */
+        -:  419:    inline Scalar& insertBack(Index row, Index col)
+        -:  420:    {
+        -:  421:      return insertBackByOuterInner(IsRowMajor?row:col, IsRowMajor?col:row);
+        -:  422:    }
+        -:  423:
+        -:  424:    /** \internal
+        -:  425:      * \sa insertBack, startVec */
+     4430:  426:    inline Scalar& insertBackByOuterInner(Index outer, Index inner)
+        -:  427:    {
+     8860:  428:      eigen_assert(Index(m_outerIndex[outer+1]) == m_data.size() && "Invalid ordered insertion (invalid outer index)");
+     8860:  429:      eigen_assert( (m_outerIndex[outer+1]-m_outerIndex[outer]==0 || m_data.index(m_data.size()-1)<inner) && "Invalid ordered insertion (invalid inner index)");
+     4430:  430:      StorageIndex p = m_outerIndex[outer+1];
+     4430:  431:      ++m_outerIndex[outer+1];
+     4430:  432:      m_data.append(Scalar(0), inner);
+     4430:  433:      return m_data.value(p);
+        -:  434:    }
+        -:  435:
+        -:  436:    /** \internal
+        -:  437:      * \warning use it only if you know what you are doing */
+     4546:  438:    inline Scalar& insertBackByOuterInnerUnordered(Index outer, Index inner)
+        -:  439:    {
+     4546:  440:      StorageIndex p = m_outerIndex[outer+1];
+     4546:  441:      ++m_outerIndex[outer+1];
+     4546:  442:      m_data.append(Scalar(0), inner);
+     4546:  443:      return m_data.value(p);
+        -:  444:    }
+        -:  445:
+        -:  446:    /** \internal
+        -:  447:      * \sa insertBack, insertBackByOuterInner */
+     5037:  448:    inline void startVec(Index outer)
+        -:  449:    {
+    10074:  450:      eigen_assert(m_outerIndex[outer]==Index(m_data.size()) && "You must call startVec for each inner vector sequentially");
+    10074:  451:      eigen_assert(m_outerIndex[outer+1]==0 && "You must call startVec for each inner vector sequentially");
+     5037:  452:      m_outerIndex[outer+1] = m_outerIndex[outer];
+     5037:  453:    }
+        -:  454:
+        -:  455:    /** \internal
+        -:  456:      * Must be called after inserting a set of non zero entries using the low level compressed API.
+        -:  457:      */
+       16:  458:    inline void finalize()
+        -:  459:    {
+       16:  460:      if(isCompressed())
+        -:  461:      {
+       16:  462:        StorageIndex size = internal::convert_index<StorageIndex>(m_data.size());
+       16:  463:        Index i = m_outerSize;
+        -:  464:        // find the last filled column
+      498:  465:        while (i>=0 && m_outerIndex[i]==0)
+      482:  466:          --i;
+       16:  467:        ++i;
+      498:  468:        while (i<=m_outerSize)
+        -:  469:        {
+      482:  470:          m_outerIndex[i] = size;
+      482:  471:          ++i;
+        -:  472:        }
+       16:  473:      }
+       16:  474:    }
+        -:  475:
+        -:  476:    // remove outer vectors j, j+1 ... j+num-1 and resize the matrix
+        -:  477:    void removeOuterVectors(Index j, Index num = 1) {
+        -:  478:      eigen_assert(num >= 0 && j >= 0 && j + num <= m_outerSize && "Invalid parameters");
+        -:  479:
+        -:  480:      const Index newRows = IsRowMajor ? m_outerSize - num : rows();
+        -:  481:      const Index newCols = IsRowMajor ? cols() : m_outerSize - num;
+        -:  482:
+        -:  483:      const Index begin = j + num;
+        -:  484:      const Index end = m_outerSize;
+        -:  485:      const Index target = j;
+        -:  486:
+        -:  487:      // if the removed vectors are not empty, uncompress the matrix
+        -:  488:      if (m_outerIndex[j + num] > m_outerIndex[j]) uncompress();
+        -:  489:
+        -:  490:      // shift m_outerIndex and m_innerNonZeros [num] to the left
+        -:  491:      internal::smart_memmove(m_outerIndex + begin, m_outerIndex + end + 1, m_outerIndex + target);
+        -:  492:      if (!isCompressed())
+        -:  493:        internal::smart_memmove(m_innerNonZeros + begin, m_innerNonZeros + end, m_innerNonZeros + target);
+        -:  494:
+        -:  495:      // if m_outerIndex[0] > 0, shift the data within the first vector while it is easy to do so
+        -:  496:      if (m_outerIndex[0] > StorageIndex(0)) {
+        -:  497:        uncompress();
+        -:  498:        const Index from = internal::convert_index<Index>(m_outerIndex[0]);
+        -:  499:        const Index to = Index(0);
+        -:  500:        const Index chunkSize = internal::convert_index<Index>(m_innerNonZeros[0]);
+        -:  501:        m_data.moveChunk(from, to, chunkSize);
+        -:  502:        m_outerIndex[0] = StorageIndex(0);
+        -:  503:      }
+        -:  504:
+        -:  505:      // truncate the matrix to the smaller size
+        -:  506:      conservativeResize(newRows, newCols);
+        -:  507:    }
+        -:  508:
+        -:  509:    // insert empty outer vectors at indices j, j+1 ... j+num-1 and resize the matrix
+        -:  510:    void insertEmptyOuterVectors(Index j, Index num = 1) {
+        -:  511:      EIGEN_USING_STD(fill_n);
+        -:  512:      eigen_assert(num >= 0 && j >= 0 && j < m_outerSize && "Invalid parameters");
+        -:  513:
+        -:  514:      const Index newRows = IsRowMajor ? m_outerSize + num : rows();
+        -:  515:      const Index newCols = IsRowMajor ? cols() : m_outerSize + num;
+        -:  516:
+        -:  517:      const Index begin = j;
+        -:  518:      const Index end = m_outerSize;
+        -:  519:      const Index target = j + num;
+        -:  520:
+        -:  521:      // expand the matrix to the larger size
+        -:  522:      conservativeResize(newRows, newCols);
+        -:  523:
+        -:  524:      // shift m_outerIndex and m_innerNonZeros [num] to the right
+        -:  525:      internal::smart_memmove(m_outerIndex + begin, m_outerIndex + end + 1, m_outerIndex + target);
+        -:  526:      // m_outerIndex[begin] == m_outerIndex[target], set all indices in this range to same value
+        -:  527:      fill_n(m_outerIndex + begin, num, m_outerIndex[begin]);
+        -:  528:
+        -:  529:      if (!isCompressed()) {
+        -:  530:        internal::smart_memmove(m_innerNonZeros + begin, m_innerNonZeros + end, m_innerNonZeros + target);
+        -:  531:        // set the nonzeros of the newly inserted vectors to 0
+        -:  532:        fill_n(m_innerNonZeros + begin, num, StorageIndex(0));
+        -:  533:      }
+        -:  534:    }
+        -:  535:
+        -:  536:    template<typename InputIterators>
+        -:  537:    void setFromTriplets(const InputIterators& begin, const InputIterators& end);
+        -:  538:
+        -:  539:    template<typename InputIterators,typename DupFunctor>
+        -:  540:    void setFromTriplets(const InputIterators& begin, const InputIterators& end, DupFunctor dup_func);
+        -:  541:
+        -:  542:    template<typename Derived, typename DupFunctor>
+        -:  543:    void collapseDuplicates(DenseBase<Derived>& wi, DupFunctor dup_func = DupFunctor());
+        -:  544:
+        -:  545:    template<typename InputIterators>
+        -:  546:    void setFromSortedTriplets(const InputIterators& begin, const InputIterators& end);
+        -:  547:
+        -:  548:    template<typename InputIterators, typename DupFunctor>
+        -:  549:    void setFromSortedTriplets(const InputIterators& begin, const InputIterators& end, DupFunctor dup_func);
+        -:  550:
+        -:  551:    template<typename InputIterators>
+        -:  552:    void insertFromTriplets(const InputIterators& begin, const InputIterators& end);
+        -:  553:
+        -:  554:    template<typename InputIterators, typename DupFunctor>
+        -:  555:    void insertFromTriplets(const InputIterators& begin, const InputIterators& end, DupFunctor dup_func);
+        -:  556:
+        -:  557:    template<typename InputIterators>
+        -:  558:    void insertFromSortedTriplets(const InputIterators& begin, const InputIterators& end);
+        -:  559:
+        -:  560:    template<typename InputIterators, typename DupFunctor>
+        -:  561:    void insertFromSortedTriplets(const InputIterators& begin, const InputIterators& end, DupFunctor dup_func);
+        -:  562:
+        -:  563:    //---
+        -:  564:    
+        -:  565:    /** \internal
+        -:  566:      * same as insert(Index,Index) except that the indices are given relative to the storage order */
+        -:  567:    Scalar& insertByOuterInner(Index j, Index i)
+        -:  568:    {
+        -:  569:      Index start = m_outerIndex[j];
+        -:  570:      Index end = isCompressed() ? m_outerIndex[j + 1] : start + m_innerNonZeros[j];
+        -:  571:      Index dst = start == end ? end : m_data.searchLowerIndex(start, end, i);
+        -:  572:      if (dst == end) {
+        -:  573:        Index capacity = m_outerIndex[j + 1] - end;
+        -:  574:        if (capacity > 0) {
+        -:  575:          // implies uncompressed: push to back of vector
+        -:  576:          m_innerNonZeros[j]++;
+        -:  577:          m_data.index(end) = StorageIndex(i);
+        -:  578:          m_data.value(end) = Scalar(0);
+        -:  579:          return m_data.value(end);
+        -:  580:        }
+        -:  581:      }
+        -:  582:      eigen_assert((dst == end || m_data.index(dst) != i) &&
+        -:  583:          "you cannot insert an element that already exists, you must call coeffRef to this end");
+        -:  584:      return insertAtByOuterInner(j, i, dst);
+        -:  585:    }
+        -:  586:
+        -:  587:    /** Turns the matrix into the \em compressed format.
+        -:  588:      */
+        -:  589:    void makeCompressed()
+        -:  590:    {
+        -:  591:      if (isCompressed()) return;
+        -:  592:      
+        -:  593:      eigen_internal_assert(m_outerIndex!=0 && m_outerSize>0);
+        -:  594:
+        -:  595:      StorageIndex start = m_outerIndex[1];
+        -:  596:      m_outerIndex[1] = m_innerNonZeros[0];
+        -:  597:      // try to move fewer, larger contiguous chunks
+        -:  598:      Index copyStart = start;
+        -:  599:      Index copyTarget = m_innerNonZeros[0];
+        -:  600:      for (Index j = 1; j < m_outerSize; j++)
+        -:  601:      {
+        -:  602:        StorageIndex end = start + m_innerNonZeros[j];
+        -:  603:        StorageIndex nextStart = m_outerIndex[j + 1];
+        -:  604:        // dont forget to move the last chunk!
+        -:  605:        bool breakUpCopy = (end != nextStart) || (j == m_outerSize - 1);
+        -:  606:        if (breakUpCopy)
+        -:  607:        {
+        -:  608:          Index chunkSize = end - copyStart;
+        -:  609:          if(chunkSize > 0) m_data.moveChunk(copyStart, copyTarget, chunkSize);
+        -:  610:          copyStart = nextStart;
+        -:  611:          copyTarget += chunkSize;
+        -:  612:        }
+        -:  613:        start = nextStart;
+        -:  614:        m_outerIndex[j + 1] = m_outerIndex[j] + m_innerNonZeros[j];
+        -:  615:      }
+        -:  616:      m_data.resize(m_outerIndex[m_outerSize]);
+        -:  617:
+        -:  618:      // release as much memory as possible
+        -:  619:      internal::conditional_aligned_delete_auto<StorageIndex, true>(m_innerNonZeros, m_outerSize);
+        -:  620:      m_innerNonZeros = 0;
+        -:  621:      m_data.squeeze();
+        -:  622:    }
+        -:  623:
+        -:  624:    /** Turns the matrix into the uncompressed mode */
+    #####:  625:    void uncompress()
+        -:  626:    {
+    #####:  627:      if (!isCompressed()) return;
+    #####:  628:      m_innerNonZeros = internal::conditional_aligned_new_auto<StorageIndex, true>(m_outerSize);
+    #####:  629:      if (m_outerIndex[m_outerSize] == 0)
+    #####:  630:        std::fill_n(m_innerNonZeros, m_outerSize, StorageIndex(0));
+        -:  631:      else
+    #####:  632:        for (Index j = 0; j < m_outerSize; j++) m_innerNonZeros[j] = m_outerIndex[j + 1] - m_outerIndex[j];
+    #####:  633:    }
+        -:  634:
+        -:  635:    /** Suppresses all nonzeros which are \b much \b smaller \b than \a reference under the tolerance \a epsilon */
+        -:  636:    void prune(const Scalar& reference, const RealScalar& epsilon = NumTraits<RealScalar>::dummy_precision())
+        -:  637:    {
+        -:  638:      prune(default_prunning_func(reference,epsilon));
+        -:  639:    }
+        -:  640:    
+        -:  641:    /** Turns the matrix into compressed format, and suppresses all nonzeros which do not satisfy the predicate \a keep.
+        -:  642:      * The functor type \a KeepFunc must implement the following function:
+        -:  643:      * \code
+        -:  644:      * bool operator() (const Index& row, const Index& col, const Scalar& value) const;
+        -:  645:      * \endcode
+        -:  646:      * \sa prune(Scalar,RealScalar)
+        -:  647:      */
+        -:  648:    template<typename KeepFunc>
+        -:  649:    void prune(const KeepFunc& keep = KeepFunc())
+        -:  650:    {
+        -:  651:      StorageIndex k = 0;
+        -:  652:      for(Index j=0; j<m_outerSize; ++j)
+        -:  653:      {
+        -:  654:        StorageIndex previousStart = m_outerIndex[j];
+        -:  655:        if (isCompressed())
+        -:  656:          m_outerIndex[j] = k;
+        -:  657:        else
+        -:  658:          k = m_outerIndex[j];
+        -:  659:        StorageIndex end = isCompressed() ? m_outerIndex[j+1] : previousStart + m_innerNonZeros[j];
+        -:  660:        for(StorageIndex i=previousStart; i<end; ++i)
+        -:  661:        {
+        -:  662:          StorageIndex row = IsRowMajor ? StorageIndex(j) : m_data.index(i);
+        -:  663:          StorageIndex col = IsRowMajor ? m_data.index(i) : StorageIndex(j);
+        -:  664:          bool keepEntry = keep(row, col, m_data.value(i));
+        -:  665:          if (keepEntry) {
+        -:  666:            m_data.value(k) = m_data.value(i);
+        -:  667:            m_data.index(k) = m_data.index(i);
+        -:  668:            ++k;
+        -:  669:          } else if (!isCompressed())
+        -:  670:            m_innerNonZeros[j]--;
+        -:  671:        }
+        -:  672:      }
+        -:  673:      if (isCompressed()) {
+        -:  674:        m_outerIndex[m_outerSize] = k;
+        -:  675:        m_data.resize(k, 0);
+        -:  676:      }
+        -:  677:    }
+        -:  678:
+        -:  679:    /** Resizes the matrix to a \a rows x \a cols matrix leaving old values untouched.
+        -:  680:      *
+        -:  681:      * If the sizes of the matrix are decreased, then the matrix is turned to \b uncompressed-mode
+        -:  682:      * and the storage of the out of bounds coefficients is kept and reserved.
+        -:  683:      * Call makeCompressed() to pack the entries and squeeze extra memory.
+        -:  684:      *
+        -:  685:      * \sa reserve(), setZero(), makeCompressed()
+        -:  686:      */
+    #####:  687:    void conservativeResize(Index rows, Index cols) {
+        -:  688:
+        -:  689:      // If one dimension is null, then there is nothing to be preserved
+    #####:  690:      if (rows == 0 || cols == 0) return resize(rows, cols);
+        -:  691:
+    #####:  692:      Index newOuterSize = IsRowMajor ? rows : cols;
+    #####:  693:      Index newInnerSize = IsRowMajor ? cols : rows;
+        -:  694:
+    #####:  695:      Index innerChange = newInnerSize - m_innerSize;
+    #####:  696:      Index outerChange = newOuterSize - m_outerSize;
+        -:  697:
+    #####:  698:      if (outerChange != 0) {
+    #####:  699:        m_outerIndex = internal::conditional_aligned_realloc_new_auto<StorageIndex, true>(
+    #####:  700:            m_outerIndex, newOuterSize + 1, m_outerSize + 1);
+        -:  701:
+    #####:  702:        if (!isCompressed())
+    #####:  703:          m_innerNonZeros = internal::conditional_aligned_realloc_new_auto<StorageIndex, true>(
+    #####:  704:              m_innerNonZeros, newOuterSize, m_outerSize);
+        -:  705:
+    #####:  706:        if (outerChange > 0) {
+    #####:  707:          StorageIndex lastIdx = m_outerSize == 0 ? StorageIndex(0) : m_outerIndex[m_outerSize];
+    #####:  708:          std::fill_n(m_outerIndex + m_outerSize, outerChange + 1, lastIdx);
+        -:  709:
+    #####:  710:          if (!isCompressed()) std::fill_n(m_innerNonZeros + m_outerSize, outerChange, StorageIndex(0));
+    #####:  711:        }
+    #####:  712:      }
+    #####:  713:      m_outerSize = newOuterSize;
+        -:  714:
+    #####:  715:      if (innerChange < 0) {
+    #####:  716:        for (Index j = 0; j < m_outerSize; j++) {
+    #####:  717:          Index start = m_outerIndex[j];
+    #####:  718:          Index end = isCompressed() ? m_outerIndex[j + 1] : start + m_innerNonZeros[j];
+    #####:  719:          Index lb = m_data.searchLowerIndex(start, end, newInnerSize);
+    #####:  720:          if (lb != end) {
+    #####:  721:            uncompress();
+    #####:  722:            m_innerNonZeros[j] = StorageIndex(lb - start);
+    #####:  723:          }
+    #####:  724:        }
+    #####:  725:      }
+    #####:  726:      m_innerSize = newInnerSize;
+        -:  727:
+    #####:  728:      Index newSize = m_outerIndex[m_outerSize];
+    #####:  729:      eigen_assert(newSize <= m_data.size());
+    #####:  730:      m_data.resize(newSize);
+    #####:  731:    }
+        -:  732:    
+        -:  733:    /** Resizes the matrix to a \a rows x \a cols matrix and initializes it to zero.
+        -:  734:      * 
+        -:  735:      * This function does not free the currently allocated memory. To release as much as memory as possible,
+        -:  736:      * call \code mat.data().squeeze(); \endcode after resizing it.
+        -:  737:      * 
+        -:  738:      * \sa reserve(), setZero()
+        -:  739:      */
+      120:  740:    void resize(Index rows, Index cols)
+        -:  741:    {
+      120:  742:      const Index outerSize = IsRowMajor ? rows : cols;
+      120:  743:      m_innerSize = IsRowMajor ? cols : rows;
+      120:  744:      m_data.clear();
+        -:  745:
+      120:  746:      if ((m_outerIndex == 0) || (m_outerSize != outerSize)) {
+      116:  747:        m_outerIndex = internal::conditional_aligned_realloc_new_auto<StorageIndex, true>(m_outerIndex, outerSize + 1, m_outerSize + 1);
+      116:  748:        m_outerSize = outerSize;
+      116:  749:      }
+        -:  750:
+      120:  751:      internal::conditional_aligned_delete_auto<StorageIndex, true>(m_innerNonZeros, m_outerSize);
+      120:  752:      m_innerNonZeros = 0;
+        -:  753:
+      120:  754:      std::fill_n(m_outerIndex, m_outerSize + 1, StorageIndex(0));
+      120:  755:    }
+        -:  756:
+        -:  757:    /** \internal
+        -:  758:      * Resize the nonzero vector to \a size */
+       15:  759:    void resizeNonZeros(Index size)
+        -:  760:    {
+       15:  761:      m_data.resize(size);
+       15:  762:    }
+        -:  763:
+        -:  764:    /** \returns a const expression of the diagonal coefficients. */
+        -:  765:    const ConstDiagonalReturnType diagonal() const { return ConstDiagonalReturnType(*this); }
+        -:  766:    
+        -:  767:    /** \returns a read-write expression of the diagonal coefficients.
+        -:  768:      * \warning If the diagonal entries are written, then all diagonal
+        -:  769:      * entries \b must already exist, otherwise an assertion will be raised.
+        -:  770:      */
+        -:  771:    DiagonalReturnType diagonal() { return DiagonalReturnType(*this); }
+        -:  772:
+        -:  773:    /** Default constructor yielding an empty \c 0 \c x \c 0 matrix */
+       69:  774:    inline SparseMatrix()
+       23:  775:      : m_outerSize(0), m_innerSize(0), m_outerIndex(0), m_innerNonZeros(0)
+       23:  776:    {
+       23:  777:      resize(0, 0);
+       46:  778:    }
+        -:  779:
+        -:  780:    /** Constructs a \a rows \c x \a cols empty matrix */
+      210:  781:    inline SparseMatrix(Index rows, Index cols)
+       70:  782:      : m_outerSize(0), m_innerSize(0), m_outerIndex(0), m_innerNonZeros(0)
+       70:  783:    {
+       70:  784:      resize(rows, cols);
+      140:  785:    }
+        -:  786:
+        -:  787:    /** Constructs a sparse matrix from the sparse expression \a other */
+        -:  788:    template<typename OtherDerived>
+       39:  789:    inline SparseMatrix(const SparseMatrixBase<OtherDerived>& other)
+       13:  790:      : m_outerSize(0), m_innerSize(0), m_outerIndex(0), m_innerNonZeros(0)
+       13:  791:    {
+        -:  792:      EIGEN_STATIC_ASSERT((internal::is_same<Scalar, typename OtherDerived::Scalar>::value),
+        -:  793:        YOU_MIXED_DIFFERENT_NUMERIC_TYPES__YOU_NEED_TO_USE_THE_CAST_METHOD_OF_MATRIXBASE_TO_CAST_NUMERIC_TYPES_EXPLICITLY)
+       13:  794:      const bool needToTranspose = (Flags & RowMajorBit) != (internal::evaluator<OtherDerived>::Flags & RowMajorBit);
+        -:  795:      if (needToTranspose)
+        8:  796:        *this = other.derived();
+        -:  797:      else
+        -:  798:      {
+        -:  799:        #ifdef EIGEN_SPARSE_CREATE_TEMPORARY_PLUGIN
+        -:  800:          EIGEN_SPARSE_CREATE_TEMPORARY_PLUGIN
+        -:  801:        #endif
+        5:  802:        internal::call_assignment_no_alias(*this, other.derived());
+        -:  803:      }
+       26:  804:    }
+        -:  805:
+        -:  806:    /** Constructs a sparse matrix from the sparse selfadjoint view \a other */
+        -:  807:    template<typename OtherDerived, unsigned int UpLo>
+        -:  808:    inline SparseMatrix(const SparseSelfAdjointView<OtherDerived, UpLo>& other)
+        -:  809:      : m_outerSize(0), m_innerSize(0), m_outerIndex(0), m_innerNonZeros(0)
+        -:  810:    {
+        -:  811:      Base::operator=(other);
+        -:  812:    }
+        -:  813:
+    #####:  814:    inline SparseMatrix(SparseMatrix&& other) : Base(), m_outerSize(0), m_innerSize(0), m_outerIndex(0), m_innerNonZeros(0)
+    #####:  815:    {
+    #####:  816:      *this = other.derived().markAsRValue();
+    #####:  817:    }
+        -:  818:
+        -:  819:    /** Copy constructor (it performs a deep copy) */
+       42:  820:    inline SparseMatrix(const SparseMatrix& other)
+       14:  821:      : Base(), m_outerSize(0), m_innerSize(0), m_outerIndex(0), m_innerNonZeros(0)
+       14:  822:    {
+       14:  823:      *this = other.derived();
+       28:  824:    }
+        -:  825:
+        -:  826:    /** \brief Copy constructor with in-place evaluation */
+        -:  827:    template<typename OtherDerived>
+        -:  828:    SparseMatrix(const ReturnByValue<OtherDerived>& other)
+        -:  829:      : Base(), m_outerSize(0), m_innerSize(0), m_outerIndex(0), m_innerNonZeros(0)
+        -:  830:    {
+        -:  831:      initAssignment(other);
+        -:  832:      other.evalTo(*this);
+        -:  833:    }
+        -:  834:
+        -:  835:    /** \brief Copy constructor with in-place evaluation */
+        -:  836:    template<typename OtherDerived>
+        -:  837:    explicit SparseMatrix(const DiagonalBase<OtherDerived>& other)
+        -:  838:      : Base(), m_outerSize(0), m_innerSize(0), m_outerIndex(0), m_innerNonZeros(0)
+        -:  839:    {
+        -:  840:      *this = other.derived();
+        -:  841:    }
+        -:  842:
+        -:  843:    /** Swaps the content of two sparse matrices of the same type.
+        -:  844:      * This is a fast operation that simply swaps the underlying pointers and parameters. */
+       42:  845:    inline void swap(SparseMatrix& other)
+        -:  846:    {
+        -:  847:      //EIGEN_DBG_SPARSE(std::cout << "SparseMatrix:: swap\n");
+       42:  848:      std::swap(m_outerIndex, other.m_outerIndex);
+       42:  849:      std::swap(m_innerSize, other.m_innerSize);
+       42:  850:      std::swap(m_outerSize, other.m_outerSize);
+       42:  851:      std::swap(m_innerNonZeros, other.m_innerNonZeros);
+       42:  852:      m_data.swap(other.m_data);
+       42:  853:    }
+        -:  854:
+        -:  855:    /** Sets *this to the identity matrix.
+        -:  856:      * This function also turns the matrix into compressed mode, and drop any reserved memory. */
+    #####:  857:    inline void setIdentity()
+        -:  858:    {
+    #####:  859:      eigen_assert(m_outerSize == m_innerSize && "ONLY FOR SQUARED MATRICES");
+    #####:  860:      internal::conditional_aligned_delete_auto<StorageIndex, true>(m_innerNonZeros, m_outerSize);
+    #####:  861:      m_innerNonZeros = 0;
+    #####:  862:      m_data.resize(m_outerSize);
+        -:  863:      // is it necessary to squeeze?
+    #####:  864:      m_data.squeeze();
+    #####:  865:      std::iota(m_outerIndex, m_outerIndex + m_outerSize + 1, StorageIndex(0));
+    #####:  866:      std::iota(innerIndexPtr(), innerIndexPtr() + m_outerSize, StorageIndex(0));
+    #####:  867:      std::fill_n(valuePtr(), m_outerSize, Scalar(1));
+    #####:  868:    }
+        -:  869:
+       25:  870:    inline SparseMatrix& operator=(const SparseMatrix& other)
+        -:  871:    {
+       25:  872:      if (other.isRValue())
+        -:  873:      {
+       11:  874:        swap(other.const_cast_derived());
+       11:  875:      }
+       14:  876:      else if(this!=&other)
+        -:  877:      {
+        -:  878:        #ifdef EIGEN_SPARSE_CREATE_TEMPORARY_PLUGIN
+        -:  879:          EIGEN_SPARSE_CREATE_TEMPORARY_PLUGIN
+        -:  880:        #endif
+       14:  881:        initAssignment(other);
+       14:  882:        if(other.isCompressed())
+        -:  883:        {
+       14:  884:          internal::smart_copy(other.m_outerIndex, other.m_outerIndex + m_outerSize + 1, m_outerIndex);
+       14:  885:          m_data = other.m_data;
+       14:  886:        }
+        -:  887:        else
+        -:  888:        {
+    #####:  889:          Base::operator=(other);
+        -:  890:        }
+       14:  891:      }
+       25:  892:      return *this;
+        -:  893:    }
+        -:  894:
+        3:  895:    inline SparseMatrix& operator=(SparseMatrix&& other) {
+        3:  896:      return *this = other.derived().markAsRValue();
+        -:  897:    }
+        -:  898:
+        -:  899:#ifndef EIGEN_PARSED_BY_DOXYGEN
+        -:  900:    template<typename OtherDerived>
+        1:  901:    inline SparseMatrix& operator=(const EigenBase<OtherDerived>& other)
+        1:  902:    { return Base::operator=(other.derived()); }
+        -:  903:
+        -:  904:    template<typename Lhs, typename Rhs>
+        -:  905:    inline SparseMatrix& operator=(const Product<Lhs,Rhs,AliasFreeProduct>& other);
+        -:  906:#endif // EIGEN_PARSED_BY_DOXYGEN
+        -:  907:
+        -:  908:    template<typename OtherDerived>
+        -:  909:    EIGEN_DONT_INLINE SparseMatrix& operator=(const SparseMatrixBase<OtherDerived>& other);
+        -:  910:
+        -:  911:#ifndef EIGEN_NO_IO
+        -:  912:    friend std::ostream & operator << (std::ostream & s, const SparseMatrix& m)
+        -:  913:    {
+        -:  914:      EIGEN_DBG_SPARSE(
+        -:  915:        s << "Nonzero entries:\n";
+        -:  916:        if(m.isCompressed())
+        -:  917:        {
+        -:  918:          for (Index i=0; i<m.nonZeros(); ++i)
+        -:  919:            s << "(" << m.m_data.value(i) << "," << m.m_data.index(i) << ") ";
+        -:  920:        }
+        -:  921:        else
+        -:  922:        {
+        -:  923:          for (Index i=0; i<m.outerSize(); ++i)
+        -:  924:          {
+        -:  925:            Index p = m.m_outerIndex[i];
+        -:  926:            Index pe = m.m_outerIndex[i]+m.m_innerNonZeros[i];
+        -:  927:            Index k=p;
+        -:  928:            for (; k<pe; ++k) {
+        -:  929:              s << "(" << m.m_data.value(k) << "," << m.m_data.index(k) << ") ";
+        -:  930:            }
+        -:  931:            for (; k<m.m_outerIndex[i+1]; ++k) {
+        -:  932:              s << "(_,_) ";
+        -:  933:            }
+        -:  934:          }
+        -:  935:        }
+        -:  936:        s << std::endl;
+        -:  937:        s << std::endl;
+        -:  938:        s << "Outer pointers:\n";
+        -:  939:        for (Index i=0; i<m.outerSize(); ++i) {
+        -:  940:          s << m.m_outerIndex[i] << " ";
+        -:  941:        }
+        -:  942:        s << " $" << std::endl;
+        -:  943:        if(!m.isCompressed())
+        -:  944:        {
+        -:  945:          s << "Inner non zeros:\n";
+        -:  946:          for (Index i=0; i<m.outerSize(); ++i) {
+        -:  947:            s << m.m_innerNonZeros[i] << " ";
+        -:  948:          }
+        -:  949:          s << " $" << std::endl;
+        -:  950:        }
+        -:  951:        s << std::endl;
+        -:  952:      );
+        -:  953:      s << static_cast<const SparseMatrixBase<SparseMatrix>&>(m);
+        -:  954:      return s;
+        -:  955:    }
+        -:  956:#endif
+        -:  957:
+        -:  958:    /** Destructor */
+      240:  959:    inline ~SparseMatrix()
+      120:  960:    {
+      120:  961:      internal::conditional_aligned_delete_auto<StorageIndex, true>(m_outerIndex, m_outerSize + 1);
+      120:  962:      internal::conditional_aligned_delete_auto<StorageIndex, true>(m_innerNonZeros, m_outerSize);
+      240:  963:    }
+        -:  964:
+        -:  965:    /** Overloaded for performance */
+        -:  966:    Scalar sum() const;
+        -:  967:    
+        -:  968:#   ifdef EIGEN_SPARSEMATRIX_PLUGIN
+        -:  969:#     include EIGEN_SPARSEMATRIX_PLUGIN
+        -:  970:#   endif
+        -:  971:
+        -:  972:protected:
+        -:  973:
+        -:  974:    template<typename Other>
+       14:  975:    void initAssignment(const Other& other)
+        -:  976:    {
+       14:  977:      resize(other.rows(), other.cols());
+       14:  978:      internal::conditional_aligned_delete_auto<StorageIndex, true>(m_innerNonZeros, m_outerSize);
+       14:  979:      m_innerNonZeros = 0;
+       14:  980:    }
+        -:  981:
+        -:  982:    /** \internal
+        -:  983:      * \sa insert(Index,Index) */
+        -:  984:    EIGEN_DEPRECATED EIGEN_DONT_INLINE Scalar& insertCompressed(Index row, Index col);
+        -:  985:
+        -:  986:    /** \internal
+        -:  987:      * A vector object that is equal to 0 everywhere but v at the position i */
+        -:  988:    class SingletonVector
+        -:  989:    {
+        -:  990:        StorageIndex m_index;
+        -:  991:        StorageIndex m_value;
+        -:  992:      public:
+        -:  993:        typedef StorageIndex value_type;
+        -:  994:        SingletonVector(Index i, Index v)
+        -:  995:          : m_index(convert_index(i)), m_value(convert_index(v))
+        -:  996:        {}
+        -:  997:
+        -:  998:        StorageIndex operator[](Index i) const { return i==m_index ? m_value : 0; }
+        -:  999:    };
+        -: 1000:
+        -: 1001:    /** \internal
+        -: 1002:      * \sa insert(Index,Index) */
+        -: 1003:    EIGEN_DEPRECATED EIGEN_DONT_INLINE Scalar& insertUncompressed(Index row, Index col);
+        -: 1004:
+        -: 1005:public:
+        -: 1006:    /** \internal
+        -: 1007:      * \sa insert(Index,Index) */
+        -: 1008:    EIGEN_STRONG_INLINE Scalar& insertBackUncompressed(Index row, Index col)
+        -: 1009:    {
+        -: 1010:      const Index outer = IsRowMajor ? row : col;
+        -: 1011:      const Index inner = IsRowMajor ? col : row;
+        -: 1012:
+        -: 1013:      eigen_assert(!isCompressed());
+        -: 1014:      eigen_assert(m_innerNonZeros[outer]<=(m_outerIndex[outer+1] - m_outerIndex[outer]));
+        -: 1015:
+        -: 1016:      Index p = m_outerIndex[outer] + m_innerNonZeros[outer]++;
+        -: 1017:      m_data.index(p) = StorageIndex(inner);
+        -: 1018:      m_data.value(p) = Scalar(0);
+        -: 1019:      return m_data.value(p);
+        -: 1020:    }
+        -: 1021:protected:
+        -: 1022:    struct IndexPosPair {
+        -: 1023:      IndexPosPair(Index a_i, Index a_p) : i(a_i), p(a_p) {}
+        -: 1024:      Index i;
+        -: 1025:      Index p;
+        -: 1026:    };
+        -: 1027:
+        -: 1028:    /** \internal assign \a diagXpr to the diagonal of \c *this
+        -: 1029:      * There are different strategies:
+        -: 1030:      *   1 - if *this is overwritten (Func==assign_op) or *this is empty, then we can work treat *this as a dense vector expression.
+        -: 1031:      *   2 - otherwise, for each diagonal coeff,
+        -: 1032:      *     2.a - if it already exists, then we update it,
+        -: 1033:      *     2.b - if the correct position is at the end of the vector, and there is capacity, push to back
+        -: 1034:      *     2.b - otherwise, the insertion requires a data move, record insertion locations and handle in a second pass
+        -: 1035:      *   3 - at the end, if some entries failed to be updated in-place, then we alloc a new buffer, copy each chunk at the right position, and insert the new elements.
+        -: 1036:      */
+        -: 1037:    template<typename DiagXpr, typename Func>
+        -: 1038:    void assignDiagonal(const DiagXpr diagXpr, const Func& assignFunc)
+        -: 1039:    {
+        -: 1040:      
+        -: 1041:      constexpr StorageIndex kEmptyIndexVal(-1);
+        -: 1042:      typedef typename ScalarVector::AlignedMapType ValueMap;
+        -: 1043:
+        -: 1044:      Index n = diagXpr.size();
+        -: 1045:
+        -: 1046:      const bool overwrite = internal::is_same<Func, internal::assign_op<Scalar,Scalar> >::value;
+        -: 1047:      if(overwrite)
+        -: 1048:      {
+        -: 1049:        if((m_outerSize != n) || (m_innerSize != n))
+        -: 1050:          resize(n, n);
+        -: 1051:      }
+        -: 1052:
+        -: 1053:      if(m_data.size()==0 || overwrite)
+        -: 1054:      {
+        -: 1055:        internal::conditional_aligned_delete_auto<StorageIndex, true>(m_innerNonZeros, m_outerSize);
+        -: 1056:        m_innerNonZeros = 0;
+        -: 1057:        resizeNonZeros(n);
+        -: 1058:        ValueMap valueMap(valuePtr(), n);
+        -: 1059:        std::iota(m_outerIndex, m_outerIndex + n + 1, StorageIndex(0));
+        -: 1060:        std::iota(innerIndexPtr(), innerIndexPtr() + n, StorageIndex(0));
+        -: 1061:        valueMap.setZero();
+        -: 1062:        internal::call_assignment_no_alias(valueMap, diagXpr, assignFunc);
+        -: 1063:      }
+        -: 1064:      else
+        -: 1065:      {
+        -: 1066:          internal::evaluator<DiagXpr> diaEval(diagXpr);
+        -: 1067:
+        -: 1068:          ei_declare_aligned_stack_constructed_variable(StorageIndex, tmp, n, 0);
+        -: 1069:          typename IndexVector::AlignedMapType insertionLocations(tmp, n);
+        -: 1070:          insertionLocations.setConstant(kEmptyIndexVal);
+        -: 1071:
+        -: 1072:          Index deferredInsertions = 0;
+        -: 1073:          Index shift = 0;
+        -: 1074:
+        -: 1075:          for (Index j = 0; j < n; j++) {
+        -: 1076:            Index begin = m_outerIndex[j];
+        -: 1077:            Index end = isCompressed() ? m_outerIndex[j + 1] : begin + m_innerNonZeros[j];
+        -: 1078:            Index capacity = m_outerIndex[j + 1] - end;
+        -: 1079:            Index dst = m_data.searchLowerIndex(begin, end, j);
+        -: 1080:            // the entry exists: update it now
+        -: 1081:            if (dst != end && m_data.index(dst) == StorageIndex(j)) assignFunc.assignCoeff(m_data.value(dst), diaEval.coeff(j));
+        -: 1082:            // the entry belongs at the back of the vector: push to back
+        -: 1083:            else if (dst == end && capacity > 0)
+        -: 1084:              assignFunc.assignCoeff(insertBackUncompressed(j, j), diaEval.coeff(j));
+        -: 1085:            // the insertion requires a data move, record insertion location and handle in second pass
+        -: 1086:            else {
+        -: 1087:              insertionLocations.coeffRef(j) = StorageIndex(dst);
+        -: 1088:              deferredInsertions++;
+        -: 1089:              // if there is no capacity, all vectors to the right of this are shifted
+        -: 1090:              if (capacity == 0) shift++;
+        -: 1091:            }
+        -: 1092:          }
+        -: 1093:          
+        -: 1094:          if (deferredInsertions > 0) {
+        -: 1095:
+        -: 1096:            m_data.resize(m_data.size() + shift);
+        -: 1097:            Index copyEnd = isCompressed() ? m_outerIndex[m_outerSize]
+        -: 1098:                                           : m_outerIndex[m_outerSize - 1] + m_innerNonZeros[m_outerSize - 1];
+        -: 1099:            for (Index j = m_outerSize - 1; deferredInsertions > 0; j--) {
+        -: 1100:              Index begin = m_outerIndex[j];
+        -: 1101:              Index end = isCompressed() ? m_outerIndex[j + 1] : begin + m_innerNonZeros[j];
+        -: 1102:              Index capacity = m_outerIndex[j + 1] - end;
+        -: 1103:
+        -: 1104:              bool doInsertion = insertionLocations(j) >= 0;
+        -: 1105:              bool breakUpCopy = doInsertion && (capacity > 0);
+        -: 1106:              // break up copy for sorted insertion into inactive nonzeros
+        -: 1107:              // optionally, add another criterium, i.e. 'breakUpCopy || (capacity > threhsold)'
+        -: 1108:              // where `threshold >= 0` to skip inactive nonzeros in each vector
+        -: 1109:              // this reduces the total number of copied elements, but requires more moveChunk calls
+        -: 1110:              if (breakUpCopy) {
+        -: 1111:                Index copyBegin = m_outerIndex[j + 1];
+        -: 1112:                Index to = copyBegin + shift;
+        -: 1113:                Index chunkSize = copyEnd - copyBegin;
+        -: 1114:                m_data.moveChunk(copyBegin, to, chunkSize);
+        -: 1115:                copyEnd = end;
+        -: 1116:              }
+        -: 1117:
+        -: 1118:              m_outerIndex[j + 1] += shift;
+        -: 1119:              
+        -: 1120:              if (doInsertion) {
+        -: 1121:                // if there is capacity, shift into the inactive nonzeros
+        -: 1122:                if (capacity > 0) shift++;
+        -: 1123:                Index copyBegin = insertionLocations(j);
+        -: 1124:                Index to = copyBegin + shift;
+        -: 1125:                Index chunkSize = copyEnd - copyBegin;
+        -: 1126:                m_data.moveChunk(copyBegin, to, chunkSize);
+        -: 1127:                Index dst = to - 1;
+        -: 1128:                m_data.index(dst) = StorageIndex(j);
+        -: 1129:                m_data.value(dst) = Scalar(0);
+        -: 1130:                assignFunc.assignCoeff(m_data.value(dst), diaEval.coeff(j));
+        -: 1131:                if (!isCompressed()) m_innerNonZeros[j]++;
+        -: 1132:                shift--;
+        -: 1133:                deferredInsertions--;
+        -: 1134:                copyEnd = copyBegin;
+        -: 1135:              }
+        -: 1136:            }
+        -: 1137:          }     
+        -: 1138:          eigen_assert((shift == 0) && (deferredInsertions == 0));
+        -: 1139:      }
+        -: 1140:    }
+        -: 1141:
+        -: 1142:    /* These functions are used to avoid a redundant binary search operation in functions such as coeffRef() and assume `dst` is the appropriate sorted insertion point */
+        -: 1143:    EIGEN_STRONG_INLINE Scalar& insertAtByOuterInner(Index outer, Index inner, Index dst);
+        -: 1144:    Scalar& insertCompressedAtByOuterInner(Index outer, Index inner, Index dst);
+        -: 1145:    Scalar& insertUncompressedAtByOuterInner(Index outer, Index inner, Index dst);
+        -: 1146:
+        -: 1147:private:
+        -: 1148:  EIGEN_STATIC_ASSERT(NumTraits<StorageIndex>::IsSigned,THE_INDEX_TYPE_MUST_BE_A_SIGNED_TYPE)
+        -: 1149:  EIGEN_STATIC_ASSERT((Options&(ColMajor|RowMajor))==Options,INVALID_MATRIX_TEMPLATE_PARAMETERS)
+        -: 1150:
+        -: 1151:  struct default_prunning_func {
+        -: 1152:    default_prunning_func(const Scalar& ref, const RealScalar& eps) : reference(ref), epsilon(eps) {}
+        -: 1153:    inline bool operator() (const Index&, const Index&, const Scalar& value) const
+        -: 1154:    {
+        -: 1155:      return !internal::isMuchSmallerThan(value, reference, epsilon);
+        -: 1156:    }
+        -: 1157:    Scalar reference;
+        -: 1158:    RealScalar epsilon;
+        -: 1159:  };
+        -: 1160:};
+        -: 1161:
+        -: 1162:namespace internal {
+        -: 1163:
+        -: 1164:// Creates a compressed sparse matrix from a range of unsorted triplets
+        -: 1165:// Requires temporary storage to handle duplicate entries
+        -: 1166:template <typename InputIterator, typename SparseMatrixType, typename DupFunctor>
+       13: 1167:void set_from_triplets(const InputIterator& begin, const InputIterator& end, SparseMatrixType& mat,
+        -: 1168:                       DupFunctor dup_func) {
+       13: 1169:  constexpr bool IsRowMajor = SparseMatrixType::IsRowMajor;
+        -: 1170:  using StorageIndex = typename SparseMatrixType::StorageIndex;
+        -: 1171:  using IndexMap = typename VectorX<StorageIndex>::AlignedMapType;
+        -: 1172:  using TransposedSparseMatrix = SparseMatrix<typename SparseMatrixType::Scalar, IsRowMajor ? ColMajor : RowMajor, StorageIndex>;
+        -: 1173:
+       13: 1174:  if (begin == end) return;
+        -: 1175:
+        -: 1176:  // There are two strategies to consider for constructing a matrix from unordered triplets:
+        -: 1177:  // A) construct the 'mat' in its native storage order and sort in-place (less memory); or, 
+        -: 1178:  // B) construct the transposed matrix and use an implicit sort upon assignment to `mat` (less time).
+        -: 1179:  // This routine uses B) for faster execution time.
+       11: 1180:  TransposedSparseMatrix trmat(mat.rows(), mat.cols());
+        -: 1181:
+        -: 1182:  // scan triplets to determine allocation size before constructing matrix
+       11: 1183:  Index nonZeros = 0;
+     3252: 1184:  for (InputIterator it(begin); it != end; ++it) {
+     3241: 1185:    eigen_assert(it->row() >= 0 && it->row() < mat.rows() && it->col() >= 0 && it->col() < mat.cols());
+     3241: 1186:    StorageIndex j = convert_index<StorageIndex>(IsRowMajor ? it->col() : it->row());
+     3241: 1187:    if (nonZeros == NumTraits<StorageIndex>::highest()) internal::throw_std_bad_alloc();
+     3241: 1188:    trmat.outerIndexPtr()[j + 1]++;
+     3241: 1189:    nonZeros++;
+     3241: 1190:  }
+        -: 1191:
+       11: 1192:  std::partial_sum(trmat.outerIndexPtr(), trmat.outerIndexPtr() + trmat.outerSize() + 1, trmat.outerIndexPtr());
+       11: 1193:  eigen_assert(nonZeros == trmat.outerIndexPtr()[trmat.outerSize()]);
+       11: 1194:  trmat.resizeNonZeros(nonZeros);
+        -: 1195:
+        -: 1196:  // construct temporary array to track insertions (outersize) and collapse duplicates (innersize)
+       11: 1197:  ei_declare_aligned_stack_constructed_variable(StorageIndex, tmp, numext::maxi(mat.innerSize(), mat.outerSize()), 0);
+       11: 1198:  smart_copy(trmat.outerIndexPtr(), trmat.outerIndexPtr() + trmat.outerSize(), tmp);
+        -: 1199:
+        -: 1200:  // push triplets to back of each vector
+     3252: 1201:  for (InputIterator it(begin); it != end; ++it) {
+     3241: 1202:    StorageIndex j = convert_index<StorageIndex>(IsRowMajor ? it->col() : it->row());
+     3241: 1203:    StorageIndex i = convert_index<StorageIndex>(IsRowMajor ? it->row() : it->col());
+     3241: 1204:    StorageIndex k = tmp[j];
+     3241: 1205:    trmat.data().index(k) = i;
+     3241: 1206:    trmat.data().value(k) = it->value();
+     3241: 1207:    tmp[j]++;
+     3241: 1208:  }
+        -: 1209:
+       11: 1210:  IndexMap wi(tmp, trmat.innerSize());
+       11: 1211:  trmat.collapseDuplicates(wi, dup_func);
+        -: 1212:  // implicit sorting
+       11: 1213:  mat = trmat;
+       13: 1214:}
+        -: 1215:
+        -: 1216:// Creates a compressed sparse matrix from a sorted range of triplets
+        -: 1217:template <typename InputIterator, typename SparseMatrixType, typename DupFunctor>
+        -: 1218:void set_from_triplets_sorted(const InputIterator& begin, const InputIterator& end, SparseMatrixType& mat,
+        -: 1219:                              DupFunctor dup_func) {
+        -: 1220:  constexpr bool IsRowMajor = SparseMatrixType::IsRowMajor;
+        -: 1221:  using StorageIndex = typename SparseMatrixType::StorageIndex;
+        -: 1222:
+        -: 1223:  if (begin == end) return;
+        -: 1224:
+        -: 1225:  constexpr StorageIndex kEmptyIndexValue(-1);
+        -: 1226:  // deallocate inner nonzeros if present and zero outerIndexPtr
+        -: 1227:  mat.resize(mat.rows(), mat.cols());
+        -: 1228:  // use outer indices to count non zero entries (excluding duplicate entries)
+        -: 1229:  StorageIndex previous_j = kEmptyIndexValue;
+        -: 1230:  StorageIndex previous_i = kEmptyIndexValue;
+        -: 1231:  // scan triplets to determine allocation size before constructing matrix
+        -: 1232:  Index nonZeros = 0;
+        -: 1233:  for (InputIterator it(begin); it != end; ++it) {
+        -: 1234:    eigen_assert(it->row() >= 0 && it->row() < mat.rows() && it->col() >= 0 && it->col() < mat.cols());
+        -: 1235:    StorageIndex j = convert_index<StorageIndex>(IsRowMajor ? it->row() : it->col());
+        -: 1236:    StorageIndex i = convert_index<StorageIndex>(IsRowMajor ? it->col() : it->row());
+        -: 1237:    eigen_assert(j > previous_j || (j == previous_j && i >= previous_i));
+        -: 1238:    // identify duplicates by examining previous location
+        -: 1239:    bool duplicate = (previous_j == j) && (previous_i == i);
+        -: 1240:    if (!duplicate) {
+        -: 1241:      if (nonZeros == NumTraits<StorageIndex>::highest()) internal::throw_std_bad_alloc();
+        -: 1242:      nonZeros++;
+        -: 1243:      mat.outerIndexPtr()[j + 1]++;
+        -: 1244:      previous_j = j;
+        -: 1245:      previous_i = i;
+        -: 1246:    }
+        -: 1247:  }
+        -: 1248:
+        -: 1249:  // finalize outer indices and allocate memory
+        -: 1250:  std::partial_sum(mat.outerIndexPtr(), mat.outerIndexPtr() + mat.outerSize() + 1, mat.outerIndexPtr());
+        -: 1251:  eigen_assert(nonZeros == mat.outerIndexPtr()[mat.outerSize()]);
+        -: 1252:  mat.resizeNonZeros(nonZeros);
+        -: 1253:
+        -: 1254:  previous_i = kEmptyIndexValue;
+        -: 1255:  previous_j = kEmptyIndexValue;
+        -: 1256:  Index back = 0;
+        -: 1257:  for (InputIterator it(begin); it != end; ++it) {
+        -: 1258:    StorageIndex j = convert_index<StorageIndex>(IsRowMajor ? it->row() : it->col());
+        -: 1259:    StorageIndex i = convert_index<StorageIndex>(IsRowMajor ? it->col() : it->row());
+        -: 1260:    bool duplicate = (previous_j == j) && (previous_i == i);
+        -: 1261:    if (duplicate) {
+        -: 1262:      mat.data().value(back - 1) = dup_func(mat.data().value(back - 1), it->value());
+        -: 1263:    } else {
+        -: 1264:      // push triplets to back
+        -: 1265:      mat.data().index(back) = i;
+        -: 1266:      mat.data().value(back) = it->value();
+        -: 1267:      previous_j = j;
+        -: 1268:      previous_i = i;
+        -: 1269:      back++;
+        -: 1270:    }
+        -: 1271:  }
+        -: 1272:  eigen_assert(back == nonZeros);
+        -: 1273:  // matrix is finalized
+        -: 1274:}
+        -: 1275:
+        -: 1276:// thin wrapper around a generic binary functor to use the sparse disjunction evaulator instead of the default "arithmetic" evaulator
+        -: 1277:template<typename DupFunctor, typename LhsScalar, typename RhsScalar = LhsScalar>
+        -: 1278:struct scalar_disjunction_op
+        -: 1279:{
+        -: 1280:  using result_type = typename result_of<DupFunctor(LhsScalar, RhsScalar)>::type;
+        -: 1281:  scalar_disjunction_op(const DupFunctor& op) : m_functor(op) {}
+        -: 1282:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type operator() (const LhsScalar& a, const RhsScalar& b) const { return m_functor(a, b); }
+        -: 1283:  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const DupFunctor& functor() const { return m_functor; }
+        -: 1284:  const DupFunctor& m_functor;
+        -: 1285:};
+        -: 1286:
+        -: 1287:template <typename DupFunctor, typename LhsScalar, typename RhsScalar>
+        -: 1288:struct functor_traits<scalar_disjunction_op<DupFunctor, LhsScalar, RhsScalar>> : public functor_traits<DupFunctor> {};
+        -: 1289:
+        -: 1290:// Creates a compressed sparse matrix from its existing entries and those from an unsorted range of triplets
+        -: 1291:template <typename InputIterator, typename SparseMatrixType, typename DupFunctor>
+        -: 1292:void insert_from_triplets(const InputIterator& begin, const InputIterator& end, SparseMatrixType& mat,
+        -: 1293:                          DupFunctor dup_func) {
+        -: 1294:  using Scalar = typename SparseMatrixType::Scalar;
+        -: 1295:  using SrcXprType = CwiseBinaryOp<scalar_disjunction_op<DupFunctor, Scalar>, const SparseMatrixType, const SparseMatrixType>;
+        -: 1296:
+        -: 1297:  // set_from_triplets is necessary to sort the inner indices and remove the duplicate entries
+        -: 1298:  SparseMatrixType trips(mat.rows(), mat.cols());
+        -: 1299:  set_from_triplets(begin, end, trips, dup_func);
+        -: 1300:
+        -: 1301:  SrcXprType src = mat.binaryExpr(trips, scalar_disjunction_op<DupFunctor, Scalar>(dup_func));
+        -: 1302:  // the sparse assignment procedure creates a temporary matrix and swaps the final result
+        -: 1303:  assign_sparse_to_sparse<SparseMatrixType, SrcXprType>(mat, src);
+        -: 1304:}
+        -: 1305:
+        -: 1306:// Creates a compressed sparse matrix from its existing entries and those from an sorted range of triplets
+        -: 1307:template <typename InputIterator, typename SparseMatrixType, typename DupFunctor>
+        -: 1308:void insert_from_triplets_sorted(const InputIterator& begin, const InputIterator& end, SparseMatrixType& mat,
+        -: 1309:                                 DupFunctor dup_func) {
+        -: 1310:  using Scalar = typename SparseMatrixType::Scalar;
+        -: 1311:  using SrcXprType = CwiseBinaryOp<scalar_disjunction_op<DupFunctor, Scalar>, const SparseMatrixType, const SparseMatrixType>;
+        -: 1312:
+        -: 1313:  // TODO: process triplets without making a copy
+        -: 1314:  SparseMatrixType trips(mat.rows(), mat.cols());
+        -: 1315:  set_from_triplets_sorted(begin, end, trips, dup_func);
+        -: 1316:
+        -: 1317:  SrcXprType src = mat.binaryExpr(trips, scalar_disjunction_op<DupFunctor, Scalar>(dup_func));
+        -: 1318:  // the sparse assignment procedure creates a temporary matrix and swaps the final result
+        -: 1319:  assign_sparse_to_sparse<SparseMatrixType, SrcXprType>(mat, src);
+        -: 1320:}
+        -: 1321:
+        -: 1322:}  // namespace internal
+        -: 1323:
+        -: 1324:/** Fill the matrix \c *this with the list of \em triplets defined in the half-open range from \a begin to \a end.
+        -: 1325:  *
+        -: 1326:  * A \em triplet is a tuple (i,j,value) defining a non-zero element.
+        -: 1327:  * The input list of triplets does not have to be sorted, and may contain duplicated elements.
+        -: 1328:  * In any case, the result is a \b sorted and \b compressed sparse matrix where the duplicates have been summed up.
+        -: 1329:  * This is a \em O(n) operation, with \em n the number of triplet elements.
+        -: 1330:  * The initial contents of \c *this are destroyed.
+        -: 1331:  * The matrix \c *this must be properly resized beforehand using the SparseMatrix(Index,Index) constructor,
+        -: 1332:  * or the resize(Index,Index) method. The sizes are not extracted from the triplet list.
+        -: 1333:  *
+        -: 1334:  * The \a InputIterators value_type must provide the following interface:
+        -: 1335:  * \code
+        -: 1336:  * Scalar value() const; // the value
+        -: 1337:  * IndexType row() const;   // the row index i
+        -: 1338:  * IndexType col() const;   // the column index j
+        -: 1339:  * \endcode
+        -: 1340:  * See for instance the Eigen::Triplet template class.
+        -: 1341:  *
+        -: 1342:  * Here is a typical usage example:
+        -: 1343:  * \code
+        -: 1344:    typedef Triplet<double> T;
+        -: 1345:    std::vector<T> tripletList;
+        -: 1346:    tripletList.reserve(estimation_of_entries);
+        -: 1347:    for(...)
+        -: 1348:    {
+        -: 1349:      // ...
+        -: 1350:      tripletList.push_back(T(i,j,v_ij));
+        -: 1351:    }
+        -: 1352:    SparseMatrixType m(rows,cols);
+        -: 1353:    m.setFromTriplets(tripletList.begin(), tripletList.end());
+        -: 1354:    // m is ready to go!
+        -: 1355:  * \endcode
+        -: 1356:  *
+        -: 1357:  * \warning The list of triplets is read multiple times (at least twice). Therefore, it is not recommended to define
+        -: 1358:  * an abstract iterator over a complex data-structure that would be expensive to evaluate. The triplets should rather
+        -: 1359:  * be explicitly stored into a std::vector for instance.
+        -: 1360:  */
+        -: 1361:template<typename Scalar, int Options_, typename StorageIndex_>
+        -: 1362:template<typename InputIterators>
+       13: 1363:void SparseMatrix<Scalar,Options_,StorageIndex_>::setFromTriplets(const InputIterators& begin, const InputIterators& end)
+        -: 1364:{
+       13: 1365:  internal::set_from_triplets<InputIterators, SparseMatrix<Scalar,Options_,StorageIndex_> >(begin, end, *this, internal::scalar_sum_op<Scalar,Scalar>());
+       13: 1366:}
+        -: 1367:
+        -: 1368:/** The same as setFromTriplets but when duplicates are met the functor \a dup_func is applied:
+        -: 1369:  * \code
+        -: 1370:  * value = dup_func(OldValue, NewValue)
+        -: 1371:  * \endcode
+        -: 1372:  * Here is a C++11 example keeping the latest entry only:
+        -: 1373:  * \code
+        -: 1374:  * mat.setFromTriplets(triplets.begin(), triplets.end(), [] (const Scalar&,const Scalar &b) { return b; });
+        -: 1375:  * \endcode
+        -: 1376:  */
+        -: 1377:template<typename Scalar, int Options_, typename StorageIndex_>
+        -: 1378:template<typename InputIterators, typename DupFunctor>
+        -: 1379:void SparseMatrix<Scalar, Options_, StorageIndex_>::setFromTriplets(const InputIterators& begin, const InputIterators& end, DupFunctor dup_func)
+        -: 1380:{
+        -: 1381:  internal::set_from_triplets<InputIterators, SparseMatrix<Scalar, Options_, StorageIndex_>, DupFunctor>(begin, end, *this, dup_func);
+        -: 1382:}
+        -: 1383:
+        -: 1384:/** The same as setFromTriplets but triplets are assumed to be pre-sorted. This is faster and requires less temporary storage. 
+        -: 1385:  * Two triplets `a` and `b` are appropriately ordered if:
+        -: 1386:  * \code
+        -: 1387:  * ColMajor: ((a.col() != b.col()) ? (a.col() < b.col()) : (a.row() < b.row())
+        -: 1388:  * RowMajor: ((a.row() != b.row()) ? (a.row() < b.row()) : (a.col() < b.col())
+        -: 1389:  * \endcode
+        -: 1390:  */
+        -: 1391:template<typename Scalar, int Options_, typename StorageIndex_>
+        -: 1392:template<typename InputIterators>
+        -: 1393:void SparseMatrix<Scalar, Options_, StorageIndex_>::setFromSortedTriplets(const InputIterators& begin, const InputIterators& end)
+        -: 1394:{
+        -: 1395:  internal::set_from_triplets_sorted<InputIterators, SparseMatrix<Scalar, Options_, StorageIndex_> >(begin, end, *this, internal::scalar_sum_op<Scalar, Scalar>());
+        -: 1396:}
+        -: 1397:
+        -: 1398:/** The same as setFromSortedTriplets but when duplicates are met the functor \a dup_func is applied:
+        -: 1399:  * \code
+        -: 1400:  * value = dup_func(OldValue, NewValue)
+        -: 1401:  * \endcode
+        -: 1402:  * Here is a C++11 example keeping the latest entry only:
+        -: 1403:  * \code
+        -: 1404:  * mat.setFromSortedTriplets(triplets.begin(), triplets.end(), [] (const Scalar&,const Scalar &b) { return b; });
+        -: 1405:  * \endcode
+        -: 1406:  */
+        -: 1407:template<typename Scalar, int Options_, typename StorageIndex_>
+        -: 1408:template<typename InputIterators, typename DupFunctor>
+        -: 1409:void SparseMatrix<Scalar, Options_, StorageIndex_>::setFromSortedTriplets(const InputIterators& begin, const InputIterators& end, DupFunctor dup_func)
+        -: 1410:{
+        -: 1411:  internal::set_from_triplets_sorted<InputIterators, SparseMatrix<Scalar, Options_, StorageIndex_>, DupFunctor>(begin, end, *this, dup_func);
+        -: 1412:}
+        -: 1413:
+        -: 1414:/** Insert a batch of elements into the matrix \c *this with the list of \em triplets defined in the half-open range from \a begin to \a end.
+        -: 1415:  *
+        -: 1416:  * A \em triplet is a tuple (i,j,value) defining a non-zero element.
+        -: 1417:  * The input list of triplets does not have to be sorted, and may contain duplicated elements.
+        -: 1418:  * In any case, the result is a \b sorted and \b compressed sparse matrix where the duplicates have been summed up.
+        -: 1419:  * This is a \em O(n) operation, with \em n the number of triplet elements.
+        -: 1420:  * The initial contents of \c *this are preserved (except for the summation of duplicate elements).
+        -: 1421:  * The matrix \c *this must be properly sized beforehand. The sizes are not extracted from the triplet list.
+        -: 1422:  *
+        -: 1423:  * The \a InputIterators value_type must provide the following interface:
+        -: 1424:  * \code
+        -: 1425:  * Scalar value() const; // the value
+        -: 1426:  * IndexType row() const;   // the row index i
+        -: 1427:  * IndexType col() const;   // the column index j
+        -: 1428:  * \endcode
+        -: 1429:  * See for instance the Eigen::Triplet template class.
+        -: 1430:  *
+        -: 1431:  * Here is a typical usage example:
+        -: 1432:  * \code
+        -: 1433:    SparseMatrixType m(rows,cols); // m contains nonzero entries
+        -: 1434:    typedef Triplet<double> T;
+        -: 1435:    std::vector<T> tripletList;
+        -: 1436:    tripletList.reserve(estimation_of_entries);
+        -: 1437:    for(...)
+        -: 1438:    {
+        -: 1439:      // ...
+        -: 1440:      tripletList.push_back(T(i,j,v_ij));
+        -: 1441:    }
+        -: 1442:    
+        -: 1443:    m.insertFromTriplets(tripletList.begin(), tripletList.end());
+        -: 1444:    // m is ready to go!
+        -: 1445:  * \endcode
+        -: 1446:  *
+        -: 1447:  * \warning The list of triplets is read multiple times (at least twice). Therefore, it is not recommended to define
+        -: 1448:  * an abstract iterator over a complex data-structure that would be expensive to evaluate. The triplets should rather
+        -: 1449:  * be explicitly stored into a std::vector for instance.
+        -: 1450:  */
+        -: 1451:template<typename Scalar, int Options_, typename StorageIndex_>
+        -: 1452:template<typename InputIterators>
+        -: 1453:void SparseMatrix<Scalar, Options_, StorageIndex_>::insertFromTriplets(const InputIterators& begin, const InputIterators& end)
+        -: 1454:{
+        -: 1455:  internal::insert_from_triplets<InputIterators, SparseMatrix<Scalar, Options_, StorageIndex_> >(begin, end, *this, internal::scalar_sum_op<Scalar, Scalar>());
+        -: 1456:}
+        -: 1457:
+        -: 1458:/** The same as insertFromTriplets but when duplicates are met the functor \a dup_func is applied:
+        -: 1459:  * \code
+        -: 1460:  * value = dup_func(OldValue, NewValue)
+        -: 1461:  * \endcode
+        -: 1462:  * Here is a C++11 example keeping the latest entry only:
+        -: 1463:  * \code
+        -: 1464:  * mat.insertFromTriplets(triplets.begin(), triplets.end(), [] (const Scalar&,const Scalar &b) { return b; });
+        -: 1465:  * \endcode
+        -: 1466:  */
+        -: 1467:template<typename Scalar, int Options_, typename StorageIndex_>
+        -: 1468:template<typename InputIterators, typename DupFunctor>
+        -: 1469:void SparseMatrix<Scalar, Options_, StorageIndex_>::insertFromTriplets(const InputIterators& begin, const InputIterators& end, DupFunctor dup_func)
+        -: 1470:{
+        -: 1471:  internal::insert_from_triplets<InputIterators, SparseMatrix<Scalar, Options_, StorageIndex_>, DupFunctor>(begin, end, *this, dup_func);
+        -: 1472:}
+        -: 1473:
+        -: 1474:/** The same as insertFromTriplets but triplets are assumed to be pre-sorted. This is faster and requires less temporary storage.
+        -: 1475:  * Two triplets `a` and `b` are appropriately ordered if:
+        -: 1476:  * \code
+        -: 1477:  * ColMajor: ((a.col() != b.col()) ? (a.col() < b.col()) : (a.row() < b.row())
+        -: 1478:  * RowMajor: ((a.row() != b.row()) ? (a.row() < b.row()) : (a.col() < b.col())
+        -: 1479:  * \endcode
+        -: 1480:  */
+        -: 1481:template<typename Scalar, int Options_, typename StorageIndex_>
+        -: 1482:template<typename InputIterators>
+        -: 1483:void SparseMatrix<Scalar, Options_, StorageIndex_>::insertFromSortedTriplets(const InputIterators& begin, const InputIterators& end)
+        -: 1484:{
+        -: 1485:  internal::insert_from_triplets_sorted<InputIterators, SparseMatrix<Scalar, Options_, StorageIndex_> >(begin, end, *this, internal::scalar_sum_op<Scalar, Scalar>());
+        -: 1486:}
+        -: 1487:
+        -: 1488:/** The same as insertFromSortedTriplets but when duplicates are met the functor \a dup_func is applied:
+        -: 1489:  * \code
+        -: 1490:  * value = dup_func(OldValue, NewValue)
+        -: 1491:  * \endcode
+        -: 1492:  * Here is a C++11 example keeping the latest entry only:
+        -: 1493:  * \code
+        -: 1494:  * mat.insertFromSortedTriplets(triplets.begin(), triplets.end(), [] (const Scalar&,const Scalar &b) { return b; });
+        -: 1495:  * \endcode
+        -: 1496:  */
+        -: 1497:template<typename Scalar, int Options_, typename StorageIndex_>
+        -: 1498:template<typename InputIterators, typename DupFunctor>
+        -: 1499:void SparseMatrix<Scalar, Options_, StorageIndex_>::insertFromSortedTriplets(const InputIterators& begin, const InputIterators& end, DupFunctor dup_func)
+        -: 1500:{
+        -: 1501:  internal::insert_from_triplets_sorted<InputIterators, SparseMatrix<Scalar, Options_, StorageIndex_>, DupFunctor>(begin, end, *this, dup_func);
+        -: 1502:}
+        -: 1503:
+        -: 1504:/** \internal */
+        -: 1505:template <typename Scalar_, int Options_, typename StorageIndex_>
+        -: 1506:template <typename Derived, typename DupFunctor>
+       11: 1507:void SparseMatrix<Scalar_, Options_, StorageIndex_>::collapseDuplicates(DenseBase<Derived>& wi, DupFunctor dup_func) {
+        -: 1508:  // removes duplicate entries and compresses the matrix
+        -: 1509:  // the excess allocated memory is not released
+        -: 1510:  // the inner indices do not need to be sorted, nor is the matrix returned in a sorted state
+       11: 1511:  eigen_assert(wi.size() == m_innerSize);
+       11: 1512:  constexpr StorageIndex kEmptyIndexValue(-1);
+       11: 1513:  wi.setConstant(kEmptyIndexValue);
+       11: 1514:  StorageIndex count = 0;
+       11: 1515:  const bool is_compressed = isCompressed();
+        -: 1516:  // for each inner-vector, wi[inner_index] will hold the position of first element into the index/value buffers
+     2775: 1517:  for (Index j = 0; j < m_outerSize; ++j) {
+     2764: 1518:    const StorageIndex newBegin = count;
+     2764: 1519:    const StorageIndex end = is_compressed ? m_outerIndex[j + 1] : m_outerIndex[j] + m_innerNonZeros[j];
+     6005: 1520:    for (StorageIndex k = m_outerIndex[j]; k < end; ++k) {
+     3241: 1521:      StorageIndex i = m_data.index(k);
+     3241: 1522:      if (wi(i) >= newBegin) {
+        -: 1523:        // entry at k is a duplicate
+        -: 1524:        // accumulate it into the primary entry located at wi(i)
+    #####: 1525:        m_data.value(wi(i)) = dup_func(m_data.value(wi(i)), m_data.value(k));
+    #####: 1526:      } else {
+        -: 1527:        // k is the primary entry in j with inner index i
+        -: 1528:        // shift it to the left and record its location at wi(i)
+     3241: 1529:        m_data.index(count) = i;
+     3241: 1530:        m_data.value(count) = m_data.value(k);
+     3241: 1531:        wi(i) = count;
+     3241: 1532:        ++count;
+        -: 1533:      }
+     3241: 1534:    }
+     2764: 1535:    m_outerIndex[j] = newBegin;
+     2764: 1536:  }
+       11: 1537:  m_outerIndex[m_outerSize] = count;
+       11: 1538:  m_data.resize(count);
+        -: 1539:
+        -: 1540:  // turn the matrix into compressed form (if it is not already)
+       11: 1541:  internal::conditional_aligned_delete_auto<StorageIndex, true>(m_innerNonZeros, m_outerSize);
+       11: 1542:  m_innerNonZeros = 0;
+       11: 1543:}
+        -: 1544:
+        -: 1545:/** \internal */
+        -: 1546:template<typename Scalar, int Options_, typename StorageIndex_>
+        -: 1547:template<typename OtherDerived>
+       31: 1548:EIGEN_DONT_INLINE SparseMatrix<Scalar,Options_,StorageIndex_>& SparseMatrix<Scalar,Options_,StorageIndex_>::operator=(const SparseMatrixBase<OtherDerived>& other)
+        -: 1549:{
+        -: 1550:  EIGEN_STATIC_ASSERT((internal::is_same<Scalar, typename OtherDerived::Scalar>::value),
+        -: 1551:        YOU_MIXED_DIFFERENT_NUMERIC_TYPES__YOU_NEED_TO_USE_THE_CAST_METHOD_OF_MATRIXBASE_TO_CAST_NUMERIC_TYPES_EXPLICITLY)
+        -: 1552:
+        -: 1553:  #ifdef EIGEN_SPARSE_CREATE_TEMPORARY_PLUGIN
+        -: 1554:    EIGEN_SPARSE_CREATE_TEMPORARY_PLUGIN
+        -: 1555:  #endif
+        -: 1556:      
+       31: 1557:  const bool needToTranspose = (Flags & RowMajorBit) != (internal::evaluator<OtherDerived>::Flags & RowMajorBit);
+        -: 1558:  if (needToTranspose)
+        -: 1559:  {
+        -: 1560:    #ifdef EIGEN_SPARSE_TRANSPOSED_COPY_PLUGIN
+        -: 1561:      EIGEN_SPARSE_TRANSPOSED_COPY_PLUGIN
+        -: 1562:    #endif
+        -: 1563:    // two passes algorithm:
+        -: 1564:    //  1 - compute the number of coeffs per dest inner vector
+        -: 1565:    //  2 - do the actual copy/eval
+        -: 1566:    // Since each coeff of the rhs has to be evaluated twice, let's evaluate it if needed
+        -: 1567:    typedef typename internal::nested_eval<OtherDerived,2,typename internal::plain_matrix_type<OtherDerived>::type >::type OtherCopy;
+        -: 1568:    typedef internal::remove_all_t<OtherCopy> OtherCopy_;
+        -: 1569:    typedef internal::evaluator<OtherCopy_> OtherCopyEval;
+       28: 1570:    OtherCopy otherCopy(other.derived());
+       28: 1571:    OtherCopyEval otherCopyEval(otherCopy);
+        -: 1572:
+       28: 1573:    SparseMatrix dest(other.rows(),other.cols());
+       28: 1574:    Eigen::Map<IndexVector> (dest.m_outerIndex,dest.outerSize()).setZero();
+        -: 1575:
+        -: 1576:    // pass 1
+        -: 1577:    // FIXME the above copy could be merged with that pass
+     6874: 1578:    for (Index j=0; j<otherCopy.outerSize(); ++j)
+    20137: 1579:      for (typename OtherCopyEval::InnerIterator it(otherCopyEval, j); it; ++it)
+    20137: 1580:        ++dest.m_outerIndex[it.index()];
+        -: 1581:
+        -: 1582:    // prefix sum
+       28: 1583:    StorageIndex count = 0;
+       28: 1584:    IndexVector positions(dest.outerSize());
+     6512: 1585:    for (Index j=0; j<dest.outerSize(); ++j)
+        -: 1586:    {
+     6484: 1587:      StorageIndex tmp = dest.m_outerIndex[j];
+     6484: 1588:      dest.m_outerIndex[j] = count;
+     6484: 1589:      positions[j] = count;
+     6484: 1590:      count += tmp;
+     6484: 1591:    }
+       28: 1592:    dest.m_outerIndex[dest.outerSize()] = count;
+        -: 1593:    // alloc
+       28: 1594:    dest.m_data.resize(count);
+        -: 1595:    // pass 2
+     6874: 1596:    for (StorageIndex j=0; j<otherCopy.outerSize(); ++j)
+        -: 1597:    {
+    20137: 1598:      for (typename OtherCopyEval::InnerIterator it(otherCopyEval, j); it; ++it)
+        -: 1599:      {
+    13291: 1600:        Index pos = positions[it.index()]++;
+    13291: 1601:        dest.m_data.index(pos) = j;
+    13291: 1602:        dest.m_data.value(pos) = it.value();
+    13291: 1603:      }
+     6846: 1604:    }
+       28: 1605:    this->swap(dest);
+       28: 1606:    return *this;
+       28: 1607:  }
+        -: 1608:  else
+        -: 1609:  {
+        3: 1610:    if(other.isRValue())
+        -: 1611:    {
+    #####: 1612:      initAssignment(other.derived());
+    #####: 1613:    }
+        -: 1614:    // there is no special optimization
+        3: 1615:    return Base::operator=(other.derived());
+        -: 1616:  }
+    #####: 1617:}
+        -: 1618:
+        -: 1619:template <typename Scalar_, int Options_, typename StorageIndex_>
+        -: 1620:inline typename SparseMatrix<Scalar_, Options_, StorageIndex_>::Scalar&
+        -: 1621:SparseMatrix<Scalar_, Options_, StorageIndex_>::insert(Index row, Index col) {
+        -: 1622:  return insertByOuterInner(IsRowMajor ? row : col, IsRowMajor ? col : row);
+        -: 1623:}
+        -: 1624:
+        -: 1625:template <typename Scalar_, int Options_, typename StorageIndex_>
+        -: 1626:EIGEN_STRONG_INLINE typename SparseMatrix<Scalar_, Options_, StorageIndex_>::Scalar&
+        -: 1627:SparseMatrix<Scalar_, Options_, StorageIndex_>::insertAtByOuterInner(Index outer, Index inner, Index dst) {
+        -: 1628:  // random insertion into compressed matrix is very slow
+        -: 1629:  uncompress();
+        -: 1630:  return insertUncompressedAtByOuterInner(outer, inner, dst);
+        -: 1631:}
+        -: 1632:
+        -: 1633:template <typename Scalar_, int Options_, typename StorageIndex_>
+        -: 1634:EIGEN_DEPRECATED EIGEN_DONT_INLINE typename SparseMatrix<Scalar_, Options_, StorageIndex_>::Scalar&
+        -: 1635:SparseMatrix<Scalar_, Options_, StorageIndex_>::insertUncompressed(Index row, Index col) {
+        -: 1636:  eigen_assert(!isCompressed());
+        -: 1637:  Index outer = IsRowMajor ? row : col;
+        -: 1638:  Index inner = IsRowMajor ? col : row;
+        -: 1639:  Index start = m_outerIndex[outer];
+        -: 1640:  Index end = start + m_innerNonZeros[outer];
+        -: 1641:  Index dst = start == end ? end : m_data.searchLowerIndex(start, end, inner);
+        -: 1642:  if (dst == end) {
+        -: 1643:    Index capacity = m_outerIndex[outer + 1] - end;
+        -: 1644:    if (capacity > 0) {
+        -: 1645:      // implies uncompressed: push to back of vector
+        -: 1646:      m_innerNonZeros[outer]++;
+        -: 1647:      m_data.index(end) = StorageIndex(inner);
+        -: 1648:      m_data.value(end) = Scalar(0);
+        -: 1649:      return m_data.value(end);
+        -: 1650:    }
+        -: 1651:  }
+        -: 1652:  eigen_assert((dst == end || m_data.index(dst) != inner) &&
+        -: 1653:               "you cannot insert an element that already exists, you must call coeffRef to this end");
+        -: 1654:  return insertUncompressedAtByOuterInner(outer, inner, dst);
+        -: 1655:}
+        -: 1656:
+        -: 1657:template <typename Scalar_, int Options_, typename StorageIndex_>
+        -: 1658:EIGEN_DEPRECATED EIGEN_DONT_INLINE typename SparseMatrix<Scalar_, Options_, StorageIndex_>::Scalar&
+        -: 1659:SparseMatrix<Scalar_, Options_, StorageIndex_>::insertCompressed(Index row, Index col) {
+        -: 1660:  eigen_assert(isCompressed());
+        -: 1661:  Index outer = IsRowMajor ? row : col;
+        -: 1662:  Index inner = IsRowMajor ? col : row;
+        -: 1663:  Index start = m_outerIndex[outer];
+        -: 1664:  Index end = m_outerIndex[outer + 1];
+        -: 1665:  Index dst = start == end ? end : m_data.searchLowerIndex(start, end, inner);
+        -: 1666:  eigen_assert((dst == end || m_data.index(dst) != inner) &&
+        -: 1667:               "you cannot insert an element that already exists, you must call coeffRef to this end");
+        -: 1668:  return insertCompressedAtByOuterInner(outer, inner, dst);
+        -: 1669:}
+        -: 1670:
+        -: 1671:template <typename Scalar_, int Options_, typename StorageIndex_>
+        -: 1672:typename SparseMatrix<Scalar_, Options_, StorageIndex_>::Scalar&
+        -: 1673:SparseMatrix<Scalar_, Options_, StorageIndex_>::insertCompressedAtByOuterInner(Index outer, Index inner, Index dst) {
+        -: 1674:  eigen_assert(isCompressed());
+        -: 1675:  // compressed insertion always requires expanding the buffer
+        -: 1676:  // first, check if there is adequate allocated memory
+        -: 1677:  if (m_data.allocatedSize() <= m_data.size()) {
+        -: 1678:    // if there is no capacity for a single insertion, double the capacity
+        -: 1679:    // increase capacity by a mininum of 32
+        -: 1680:    Index minReserve = 32;
+        -: 1681:    Index reserveSize = numext::maxi(minReserve, m_data.allocatedSize());
+        -: 1682:    m_data.reserve(reserveSize);
+        -: 1683:  }
+        -: 1684:  m_data.resize(m_data.size() + 1);
+        -: 1685:  Index chunkSize = m_outerIndex[m_outerSize] - dst;
+        -: 1686:  // shift the existing data to the right if necessary
+        -: 1687:  m_data.moveChunk(dst, dst + 1, chunkSize);
+        -: 1688:  // update nonzero counts
+        -: 1689:  // potentially O(outerSize) bottleneck!
+        -: 1690:  for (Index j = outer; j < m_outerSize; j++) m_outerIndex[j + 1]++;
+        -: 1691:  // initialize the coefficient
+        -: 1692:  m_data.index(dst) = StorageIndex(inner);
+        -: 1693:  m_data.value(dst) = Scalar(0);
+        -: 1694:  // return a reference to the coefficient
+        -: 1695:  return m_data.value(dst);
+        -: 1696:}
+        -: 1697:
+        -: 1698:template <typename Scalar_, int Options_, typename StorageIndex_>
+        -: 1699:typename SparseMatrix<Scalar_, Options_, StorageIndex_>::Scalar&
+        -: 1700:SparseMatrix<Scalar_, Options_, StorageIndex_>::insertUncompressedAtByOuterInner(Index outer, Index inner, Index dst) {
+        -: 1701:  eigen_assert(!isCompressed());
+        -: 1702:  // find a vector with capacity, starting at `outer` and searching to the left and right
+        -: 1703:  for (Index leftTarget = outer - 1, rightTarget = outer; (leftTarget >= 0) || (rightTarget < m_outerSize);) {
+        -: 1704:    if (rightTarget < m_outerSize) {
+        -: 1705:      Index start = m_outerIndex[rightTarget];
+        -: 1706:      Index end = start + m_innerNonZeros[rightTarget];
+        -: 1707:      Index nextStart = m_outerIndex[rightTarget + 1];
+        -: 1708:      Index capacity = nextStart - end;
+        -: 1709:      if (capacity > 0) {
+        -: 1710:        // move [dst, end) to dst+1 and insert at dst
+        -: 1711:        Index chunkSize = end - dst;
+        -: 1712:        if (chunkSize > 0) m_data.moveChunk(dst, dst + 1, chunkSize);
+        -: 1713:        m_innerNonZeros[outer]++;
+        -: 1714:        for (Index j = outer; j < rightTarget; j++) m_outerIndex[j + 1]++;
+        -: 1715:        m_data.index(dst) = StorageIndex(inner);
+        -: 1716:        m_data.value(dst) = Scalar(0);
+        -: 1717:        return m_data.value(dst);
+        -: 1718:      }
+        -: 1719:      rightTarget++;
+        -: 1720:    }
+        -: 1721:    if (leftTarget >= 0) {
+        -: 1722:      Index start = m_outerIndex[leftTarget];
+        -: 1723:      Index end = start + m_innerNonZeros[leftTarget];
+        -: 1724:      Index nextStart = m_outerIndex[leftTarget + 1];
+        -: 1725:      Index capacity = nextStart - end;
+        -: 1726:      if (capacity > 0) {
+        -: 1727:        // tricky: dst is a lower bound, so we must insert at dst-1 when shifting left
+        -: 1728:        // move [nextStart, dst) to nextStart-1 and insert at dst-1
+        -: 1729:        Index chunkSize = dst - nextStart;
+        -: 1730:        if (chunkSize > 0) m_data.moveChunk(nextStart, nextStart - 1, chunkSize);
+        -: 1731:        m_innerNonZeros[outer]++;
+        -: 1732:        for (Index j = leftTarget; j < outer; j++) m_outerIndex[j + 1]--;
+        -: 1733:        m_data.index(dst - 1) = StorageIndex(inner);
+        -: 1734:        m_data.value(dst - 1) = Scalar(0);
+        -: 1735:        return m_data.value(dst - 1);
+        -: 1736:      }
+        -: 1737:      leftTarget--;
+        -: 1738:    }
+        -: 1739:  }
+        -: 1740:
+        -: 1741:  // no room for interior insertion
+        -: 1742:  // nonZeros() == m_data.size()
+        -: 1743:  // record offset as outerIndxPtr will change
+        -: 1744:  Index dst_offset = dst - m_outerIndex[outer];
+        -: 1745:  // allocate space for random insertion
+        -: 1746:  if (m_data.allocatedSize() == 0) {
+        -: 1747:    // fast method to allocate space for one element per vector in empty matrix
+        -: 1748:    m_data.resize(m_outerSize);
+        -: 1749:    std::iota(m_outerIndex, m_outerIndex + m_outerSize + 1, StorageIndex(0));
+        -: 1750:  } else {
+        -: 1751:    // check for integer overflow: if maxReserveSize == 0, insertion is not possible
+        -: 1752:    Index maxReserveSize = static_cast<Index>(NumTraits<StorageIndex>::highest()) - m_data.allocatedSize();
+        -: 1753:    eigen_assert(maxReserveSize > 0);
+        -: 1754:    if (m_outerSize <= maxReserveSize) {
+        -: 1755:      // allocate space for one additional element per vector
+        -: 1756:      reserveInnerVectors(IndexVector::Constant(m_outerSize, 1));
+        -: 1757:    } else {
+        -: 1758:      // handle the edge case where StorageIndex is insufficient to reserve outerSize additional elements
+        -: 1759:      // allocate space for one additional element in the interval [outer,maxReserveSize)
+        -: 1760:      typedef internal::sparse_reserve_op<StorageIndex> ReserveSizesOp;
+        -: 1761:      typedef CwiseNullaryOp<ReserveSizesOp, IndexVector> ReserveSizesXpr;
+        -: 1762:      ReserveSizesXpr reserveSizesXpr(m_outerSize, 1, ReserveSizesOp(outer, m_outerSize, maxReserveSize));
+        -: 1763:      reserveInnerVectors(reserveSizesXpr);
+        -: 1764:    }
+        -: 1765:  }
+        -: 1766:  // insert element at `dst` with new outer indices
+        -: 1767:  Index start = m_outerIndex[outer];
+        -: 1768:  Index end = start + m_innerNonZeros[outer];
+        -: 1769:  Index new_dst = start + dst_offset;
+        -: 1770:  Index chunkSize = end - new_dst;
+        -: 1771:  if (chunkSize > 0) m_data.moveChunk(new_dst, new_dst + 1, chunkSize);
+        -: 1772:  m_innerNonZeros[outer]++;
+        -: 1773:  m_data.index(new_dst) = StorageIndex(inner);
+        -: 1774:  m_data.value(new_dst) = Scalar(0);
+        -: 1775:  return m_data.value(new_dst);
+        -: 1776:}
+        -: 1777:
+        -: 1778:namespace internal {
+        -: 1779:
+        -: 1780:    template <typename Scalar_, int Options_, typename StorageIndex_>
+        -: 1781:    struct evaluator<SparseMatrix<Scalar_, Options_, StorageIndex_>>
+        -: 1782:        : evaluator<SparseCompressedBase<SparseMatrix<Scalar_, Options_, StorageIndex_>>> {
+        -: 1783:      typedef evaluator<SparseCompressedBase<SparseMatrix<Scalar_, Options_, StorageIndex_>>> Base;
+        -: 1784:      typedef SparseMatrix<Scalar_, Options_, StorageIndex_> SparseMatrixType;
+        5: 1785:      evaluator() : Base() {}
+      113: 1786:      explicit evaluator(const SparseMatrixType& mat) : Base(mat) {}
+        -: 1787:    };
+        -: 1788:
+        -: 1789:}
+        -: 1790:
+        -: 1791:// Specialization for SparseMatrix.
+        -: 1792:// Serializes [rows, cols, isCompressed, outerSize, innerBufferSize,
+        -: 1793:// innerNonZeros, outerIndices, innerIndices, values].
+        -: 1794:template <typename Scalar, int Options, typename StorageIndex>
+        -: 1795:class Serializer<SparseMatrix<Scalar, Options, StorageIndex>, void> {
+        -: 1796: public:
+        -: 1797:  typedef SparseMatrix<Scalar, Options, StorageIndex> SparseMat;
+        -: 1798:
+        -: 1799:  struct Header {
+        -: 1800:    typename SparseMat::Index rows;
+        -: 1801:    typename SparseMat::Index cols;
+        -: 1802:    bool compressed;
+        -: 1803:    Index outer_size;
+        -: 1804:    Index inner_buffer_size;
+        -: 1805:  };
+        -: 1806:
+        -: 1807:  EIGEN_DEVICE_FUNC size_t size(const SparseMat& value) const {
+        -: 1808:    // innerNonZeros.
+        -: 1809:    std::size_t num_storage_indices = value.isCompressed() ? 0 : value.outerSize();
+        -: 1810:    // Outer indices.
+        -: 1811:    num_storage_indices += value.outerSize() + 1;
+        -: 1812:    // Inner indices.
+        -: 1813:    const StorageIndex inner_buffer_size = value.outerIndexPtr()[value.outerSize()];
+        -: 1814:    num_storage_indices += inner_buffer_size;
+        -: 1815:    // Values.
+        -: 1816:    std::size_t num_values = inner_buffer_size;
+        -: 1817:    return sizeof(Header) + sizeof(Scalar) * num_values +
+        -: 1818:           sizeof(StorageIndex) * num_storage_indices;
+        -: 1819:  }
+        -: 1820:
+        -: 1821:  EIGEN_DEVICE_FUNC uint8_t* serialize(uint8_t* dest, uint8_t* end,
+        -: 1822:                                       const SparseMat& value) {
+        -: 1823:    if (EIGEN_PREDICT_FALSE(dest == nullptr)) return nullptr;
+        -: 1824:    if (EIGEN_PREDICT_FALSE(dest + size(value) > end)) return nullptr;
+        -: 1825:
+        -: 1826:    const size_t header_bytes = sizeof(Header);
+        -: 1827:    Header header = {value.rows(), value.cols(), value.isCompressed(),
+        -: 1828:                     value.outerSize(), value.outerIndexPtr()[value.outerSize()]};
+        -: 1829:    EIGEN_USING_STD(memcpy)
+        -: 1830:    memcpy(dest, &header, header_bytes);
+        -: 1831:    dest += header_bytes;
+        -: 1832:
+        -: 1833:    // innerNonZeros.
+        -: 1834:    if (!header.compressed) {
+        -: 1835:      std::size_t data_bytes = sizeof(StorageIndex) * header.outer_size;
+        -: 1836:      memcpy(dest, value.innerNonZeroPtr(), data_bytes);
+        -: 1837:      dest += data_bytes;
+        -: 1838:    }
+        -: 1839:
+        -: 1840:    // Outer indices.
+        -: 1841:    std::size_t data_bytes = sizeof(StorageIndex) * (header.outer_size + 1);
+        -: 1842:    memcpy(dest, value.outerIndexPtr(), data_bytes);
+        -: 1843:    dest += data_bytes;
+        -: 1844:
+        -: 1845:    // Inner indices.
+        -: 1846:    data_bytes = sizeof(StorageIndex) * header.inner_buffer_size;
+        -: 1847:    memcpy(dest, value.innerIndexPtr(), data_bytes);
+        -: 1848:    dest += data_bytes;
+        -: 1849:
+        -: 1850:    // Values.
+        -: 1851:    data_bytes = sizeof(Scalar) * header.inner_buffer_size;
+        -: 1852:    memcpy(dest, value.valuePtr(), data_bytes);
+        -: 1853:    dest += data_bytes;
+        -: 1854:
+        -: 1855:    return dest;
+        -: 1856:  }
+        -: 1857:
+        -: 1858:  EIGEN_DEVICE_FUNC const uint8_t* deserialize(const uint8_t* src,
+        -: 1859:                                               const uint8_t* end,
+        -: 1860:                                               SparseMat& value) const {
+        -: 1861:    if (EIGEN_PREDICT_FALSE(src == nullptr)) return nullptr;
+        -: 1862:    if (EIGEN_PREDICT_FALSE(src + sizeof(Header) > end)) return nullptr;
+        -: 1863:
+        -: 1864:    const size_t header_bytes = sizeof(Header);
+        -: 1865:    Header header;
+        -: 1866:    EIGEN_USING_STD(memcpy)
+        -: 1867:    memcpy(&header, src, header_bytes);
+        -: 1868:    src += header_bytes;
+        -: 1869:
+        -: 1870:    value.setZero();
+        -: 1871:    value.resize(header.rows, header.cols);
+        -: 1872:    if (header.compressed) {
+        -: 1873:      value.makeCompressed();
+        -: 1874:    } else {
+        -: 1875:      value.uncompress();
+        -: 1876:    }
+        -: 1877:    
+        -: 1878:    // Adjust value ptr size.
+        -: 1879:    value.data().resize(header.inner_buffer_size);
+        -: 1880:
+        -: 1881:    // Initialize compressed state and inner non-zeros.
+        -: 1882:    if (!header.compressed) {           
+        -: 1883:      // Inner non-zero counts.
+        -: 1884:      std::size_t data_bytes = sizeof(StorageIndex) * header.outer_size;
+        -: 1885:      if (EIGEN_PREDICT_FALSE(src + data_bytes > end)) return nullptr;
+        -: 1886:      memcpy(value.innerNonZeroPtr(), src, data_bytes);
+        -: 1887:      src += data_bytes;
+        -: 1888:    }
+        -: 1889:
+        -: 1890:    // Outer indices.
+        -: 1891:    std::size_t data_bytes = sizeof(StorageIndex) * (header.outer_size + 1);
+        -: 1892:    if (EIGEN_PREDICT_FALSE(src + data_bytes > end)) return nullptr;
+        -: 1893:    memcpy(value.outerIndexPtr(), src, data_bytes);
+        -: 1894:    src += data_bytes;
+        -: 1895:
+        -: 1896:    // Inner indices.
+        -: 1897:    data_bytes = sizeof(StorageIndex) * header.inner_buffer_size;
+        -: 1898:    if (EIGEN_PREDICT_FALSE(src + data_bytes > end)) return nullptr;
+        -: 1899:    memcpy(value.innerIndexPtr(), src, data_bytes);
+        -: 1900:    src += data_bytes;
+        -: 1901:
+        -: 1902:    // Values.
+        -: 1903:    data_bytes = sizeof(Scalar) * header.inner_buffer_size;
+        -: 1904:    if (EIGEN_PREDICT_FALSE(src + data_bytes > end)) return nullptr;
+        -: 1905:    memcpy(value.valuePtr(), src, data_bytes);
+        -: 1906:    src += data_bytes;
+        -: 1907:    return src;
+        -: 1908:  }
+        -: 1909:};
+        -: 1910:
+        -: 1911:} // end namespace Eigen
+        -: 1912:
+        -: 1913:#endif // EIGEN_SPARSEMATRIX_H

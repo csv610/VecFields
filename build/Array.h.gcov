@@ -1,0 +1,410 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/Array.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2009 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:#ifndef EIGEN_ARRAY_H
+        -:   11:#define EIGEN_ARRAY_H
+        -:   12:
+        -:   13:// IWYU pragma: private
+        -:   14:#include "./InternalHeaderCheck.h"
+        -:   15:
+        -:   16:namespace Eigen {
+        -:   17:
+        -:   18:namespace internal {
+        -:   19:template<typename Scalar_, int Rows_, int Cols_, int Options_, int MaxRows_, int MaxCols_>
+        -:   20:struct traits<Array<Scalar_, Rows_, Cols_, Options_, MaxRows_, MaxCols_> > : traits<Matrix<Scalar_, Rows_, Cols_, Options_, MaxRows_, MaxCols_> >
+        -:   21:{
+        -:   22:  typedef ArrayXpr XprKind;
+        -:   23:  typedef ArrayBase<Array<Scalar_, Rows_, Cols_, Options_, MaxRows_, MaxCols_> > XprBase;
+        -:   24:};
+        -:   25:}
+        -:   26:
+        -:   27:/** \class Array
+        -:   28:  * \ingroup Core_Module
+        -:   29:  *
+        -:   30:  * \brief General-purpose arrays with easy API for coefficient-wise operations
+        -:   31:  *
+        -:   32:  * The %Array class is very similar to the Matrix class. It provides
+        -:   33:  * general-purpose one- and two-dimensional arrays. The difference between the
+        -:   34:  * %Array and the %Matrix class is primarily in the API: the API for the
+        -:   35:  * %Array class provides easy access to coefficient-wise operations, while the
+        -:   36:  * API for the %Matrix class provides easy access to linear-algebra
+        -:   37:  * operations.
+        -:   38:  *
+        -:   39:  * See documentation of class Matrix for detailed information on the template parameters
+        -:   40:  * storage layout.
+        -:   41:  *
+        -:   42:  * This class can be extended with the help of the plugin mechanism described on the page
+        -:   43:  * \ref TopicCustomizing_Plugins by defining the preprocessor symbol \c EIGEN_ARRAY_PLUGIN.
+        -:   44:  *
+        -:   45:  * \sa \blank \ref TutorialArrayClass, \ref TopicClassHierarchy
+        -:   46:  */
+        -:   47:template<typename Scalar_, int Rows_, int Cols_, int Options_, int MaxRows_, int MaxCols_>
+        -:   48:class Array
+        -:   49:  : public PlainObjectBase<Array<Scalar_, Rows_, Cols_, Options_, MaxRows_, MaxCols_> >
+        -:   50:{
+        -:   51:  public:
+        -:   52:
+        -:   53:    typedef PlainObjectBase<Array> Base;
+        -:   54:    EIGEN_DENSE_PUBLIC_INTERFACE(Array)
+        -:   55:
+        -:   56:    enum { Options = Options_ };
+        -:   57:    typedef typename Base::PlainObject PlainObject;
+        -:   58:
+        -:   59:  protected:
+        -:   60:    template <typename Derived, typename OtherDerived, bool IsVector>
+        -:   61:    friend struct internal::conservative_resize_like_impl;
+        -:   62:
+        -:   63:    using Base::m_storage;
+        -:   64:
+        -:   65:  public:
+        -:   66:
+        -:   67:    using Base::base;
+        -:   68:    using Base::coeff;
+        -:   69:    using Base::coeffRef;
+        -:   70:
+        -:   71:    /**
+        -:   72:      * The usage of
+        -:   73:      *   using Base::operator=;
+        -:   74:      * fails on MSVC. Since the code below is working with GCC and MSVC, we skipped
+        -:   75:      * the usage of 'using'. This should be done only for operator=.
+        -:   76:      */
+        -:   77:    template<typename OtherDerived>
+        -:   78:    EIGEN_DEVICE_FUNC
+        -:   79:    EIGEN_STRONG_INLINE Array& operator=(const EigenBase<OtherDerived> &other)
+        -:   80:    {
+        -:   81:      return Base::operator=(other);
+        -:   82:    }
+        -:   83:
+        -:   84:    /** Set all the entries to \a value.
+        -:   85:      * \sa DenseBase::setConstant(), DenseBase::fill()
+        -:   86:      */
+        -:   87:    /* This overload is needed because the usage of
+        -:   88:      *   using Base::operator=;
+        -:   89:      * fails on MSVC. Since the code below is working with GCC and MSVC, we skipped
+        -:   90:      * the usage of 'using'. This should be done only for operator=.
+        -:   91:      */
+        -:   92:    EIGEN_DEVICE_FUNC
+        -:   93:    EIGEN_STRONG_INLINE Array& operator=(const Scalar &value)
+        -:   94:    {
+        -:   95:      Base::setConstant(value);
+        -:   96:      return *this;
+        -:   97:    }
+        -:   98:
+        -:   99:    /** Copies the value of the expression \a other into \c *this with automatic resizing.
+        -:  100:      *
+        -:  101:      * *this might be resized to match the dimensions of \a other. If *this was a null matrix (not already initialized),
+        -:  102:      * it will be initialized.
+        -:  103:      *
+        -:  104:      * Note that copying a row-vector into a vector (and conversely) is allowed.
+        -:  105:      * The resizing, if any, is then done in the appropriate way so that row-vectors
+        -:  106:      * remain row-vectors and vectors remain vectors.
+        -:  107:      */
+        -:  108:    template<typename OtherDerived>
+        -:  109:    EIGEN_DEVICE_FUNC
+        -:  110:    EIGEN_STRONG_INLINE Array& operator=(const DenseBase<OtherDerived>& other)
+        -:  111:    {
+        -:  112:      return Base::_set(other);
+        -:  113:    }
+        -:  114:
+        -:  115:    /** This is a special case of the templated operator=. Its purpose is to
+        -:  116:      * prevent a default operator= from hiding the templated operator=.
+        -:  117:      */
+        -:  118:    EIGEN_DEVICE_FUNC
+        -:  119:    EIGEN_STRONG_INLINE Array& operator=(const Array& other)
+        -:  120:    {
+        -:  121:      return Base::_set(other);
+        -:  122:    }
+        -:  123:
+        -:  124:    /** Default constructor.
+        -:  125:      *
+        -:  126:      * For fixed-size matrices, does nothing.
+        -:  127:      *
+        -:  128:      * For dynamic-size matrices, creates an empty matrix of size 0. Does not allocate any array. Such a matrix
+        -:  129:      * is called a null matrix. This constructor is the unique way to create null matrices: resizing
+        -:  130:      * a matrix to 0 is not supported.
+        -:  131:      *
+        -:  132:      * \sa resize(Index,Index)
+        -:  133:      */
+        -:  134:    EIGEN_DEVICE_FUNC
+        -:  135:    EIGEN_STRONG_INLINE Array() : Base()
+        -:  136:    {
+        -:  137:      EIGEN_INITIALIZE_COEFFS_IF_THAT_OPTION_IS_ENABLED
+        -:  138:    }
+        -:  139:
+        -:  140:#ifndef EIGEN_PARSED_BY_DOXYGEN
+        -:  141:    // FIXME is it still needed ??
+        -:  142:    /** \internal */
+        -:  143:    EIGEN_DEVICE_FUNC
+        -:  144:    Array(internal::constructor_without_unaligned_array_assert)
+        -:  145:      : Base(internal::constructor_without_unaligned_array_assert())
+        -:  146:    {
+        -:  147:      EIGEN_INITIALIZE_COEFFS_IF_THAT_OPTION_IS_ENABLED
+        -:  148:    }
+        -:  149:#endif
+        -:  150:
+        -:  151:    EIGEN_DEVICE_FUNC
+        -:  152:    Array(Array&& other) EIGEN_NOEXCEPT_IF(std::is_nothrow_move_constructible<Scalar>::value)
+        -:  153:      : Base(std::move(other))
+        -:  154:    {
+        -:  155:    }
+        -:  156:    EIGEN_DEVICE_FUNC
+        -:  157:    Array& operator=(Array&& other) EIGEN_NOEXCEPT_IF(std::is_nothrow_move_assignable<Scalar>::value)
+        -:  158:    {
+        -:  159:      Base::operator=(std::move(other));
+        -:  160:      return *this;
+        -:  161:    }
+        -:  162:
+        -:  163:    /** \copydoc PlainObjectBase(const Scalar& a0, const Scalar& a1, const Scalar& a2, const Scalar& a3, const ArgTypes&... args)
+        -:  164:     *
+        -:  165:     * Example: \include Array_variadic_ctor_cxx11.cpp
+        -:  166:     * Output: \verbinclude Array_variadic_ctor_cxx11.out
+        -:  167:     *
+        -:  168:     * \sa Array(const std::initializer_list<std::initializer_list<Scalar>>&)
+        -:  169:     * \sa Array(const Scalar&), Array(const Scalar&,const Scalar&)
+        -:  170:     */
+        -:  171:    template <typename... ArgTypes>
+        -:  172:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+        -:  173:    Array(const Scalar& a0, const Scalar& a1, const Scalar& a2, const Scalar& a3, const ArgTypes&... args)
+        -:  174:      : Base(a0, a1, a2, a3, args...) {}
+        -:  175:
+        -:  176:    /** \brief Constructs an array and initializes it from the coefficients given as initializer-lists grouped by row. \cpp11
+        -:  177:      *
+        -:  178:      * In the general case, the constructor takes a list of rows, each row being represented as a list of coefficients:
+        -:  179:      *
+        -:  180:      * Example: \include Array_initializer_list_23_cxx11.cpp
+        -:  181:      * Output: \verbinclude Array_initializer_list_23_cxx11.out
+        -:  182:      *
+        -:  183:      * Each of the inner initializer lists must contain the exact same number of elements, otherwise an assertion is triggered.
+        -:  184:      *
+        -:  185:      * In the case of a compile-time column 1D array, implicit transposition from a single row is allowed.
+        -:  186:      * Therefore <code> Array<int,Dynamic,1>{{1,2,3,4,5}}</code> is legal and the more verbose syntax
+        -:  187:      * <code>Array<int,Dynamic,1>{{1},{2},{3},{4},{5}}</code> can be avoided:
+        -:  188:      *
+        -:  189:      * Example: \include Array_initializer_list_vector_cxx11.cpp
+        -:  190:      * Output: \verbinclude Array_initializer_list_vector_cxx11.out
+        -:  191:      *
+        -:  192:      * In the case of fixed-sized arrays, the initializer list sizes must exactly match the array sizes,
+        -:  193:      * and implicit transposition is allowed for compile-time 1D arrays only.
+        -:  194:      *
+        -:  195:      * \sa  Array(const Scalar& a0, const Scalar& a1, const Scalar& a2, const Scalar& a3, const ArgTypes&... args)
+        -:  196:      */
+        -:  197:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr Array(
+        -:  198:        const std::initializer_list<std::initializer_list<Scalar>>& list)
+        -:  199:        : Base(list) {}
+        -:  200:
+        -:  201:    #ifndef EIGEN_PARSED_BY_DOXYGEN
+        -:  202:    template<typename T>
+        -:  203:    EIGEN_DEVICE_FUNC
+    #####:  204:    EIGEN_STRONG_INLINE explicit Array(const T& x)
+    #####:  205:    {
+    #####:  206:      Base::template _init1<T>(x);
+    #####:  207:    }
+        -:  208:
+        -:  209:    template<typename T0, typename T1>
+        -:  210:    EIGEN_DEVICE_FUNC
+    #####:  211:    EIGEN_STRONG_INLINE Array(const T0& val0, const T1& val1)
+    #####:  212:    {
+    #####:  213:      this->template _init2<T0,T1>(val0, val1);
+    #####:  214:    }
+        -:  215:
+        -:  216:    #else
+        -:  217:    /** \brief Constructs a fixed-sized array initialized with coefficients starting at \a data */
+        -:  218:    EIGEN_DEVICE_FUNC explicit Array(const Scalar *data);
+        -:  219:    /** Constructs a vector or row-vector with given dimension. \only_for_vectors
+        -:  220:      *
+        -:  221:      * Note that this is only useful for dynamic-size vectors. For fixed-size vectors,
+        -:  222:      * it is redundant to pass the dimension here, so it makes more sense to use the default
+        -:  223:      * constructor Array() instead.
+        -:  224:      */
+        -:  225:    EIGEN_DEVICE_FUNC
+        -:  226:    EIGEN_STRONG_INLINE explicit Array(Index dim);
+        -:  227:    /** constructs an initialized 1x1 Array with the given coefficient
+        -:  228:      * \sa const Scalar& a0, const Scalar& a1, const Scalar& a2, const Scalar& a3, const ArgTypes&... args */
+        -:  229:    Array(const Scalar& value);
+        -:  230:    /** constructs an uninitialized array with \a rows rows and \a cols columns.
+        -:  231:      *
+        -:  232:      * This is useful for dynamic-size arrays. For fixed-size arrays,
+        -:  233:      * it is redundant to pass these parameters, so one should use the default constructor
+        -:  234:      * Array() instead. */
+        -:  235:    Array(Index rows, Index cols);
+        -:  236:    /** constructs an initialized 2D vector with given coefficients
+        -:  237:      * \sa Array(const Scalar& a0, const Scalar& a1, const Scalar& a2, const Scalar& a3, const ArgTypes&... args) */
+        -:  238:    Array(const Scalar& val0, const Scalar& val1);
+        -:  239:    #endif  // end EIGEN_PARSED_BY_DOXYGEN
+        -:  240:
+        -:  241:    /** constructs an initialized 3D vector with given coefficients
+        -:  242:      * \sa Array(const Scalar& a0, const Scalar& a1, const Scalar& a2, const Scalar& a3, const ArgTypes&... args)
+        -:  243:      */
+        -:  244:    EIGEN_DEVICE_FUNC
+        -:  245:    EIGEN_STRONG_INLINE Array(const Scalar& val0, const Scalar& val1, const Scalar& val2)
+        -:  246:    {
+        -:  247:      EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Array, 3)
+        -:  248:      m_storage.data()[0] = val0;
+        -:  249:      m_storage.data()[1] = val1;
+        -:  250:      m_storage.data()[2] = val2;
+        -:  251:    }
+        -:  252:    /** constructs an initialized 4D vector with given coefficients
+        -:  253:      * \sa Array(const Scalar& a0, const Scalar& a1, const Scalar& a2, const Scalar& a3, const ArgTypes&... args)
+        -:  254:      */
+        -:  255:    EIGEN_DEVICE_FUNC
+        -:  256:    EIGEN_STRONG_INLINE Array(const Scalar& val0, const Scalar& val1, const Scalar& val2, const Scalar& val3)
+        -:  257:    {
+        -:  258:      EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Array, 4)
+        -:  259:      m_storage.data()[0] = val0;
+        -:  260:      m_storage.data()[1] = val1;
+        -:  261:      m_storage.data()[2] = val2;
+        -:  262:      m_storage.data()[3] = val3;
+        -:  263:    }
+        -:  264:
+        -:  265:    /** Copy constructor */
+        -:  266:    EIGEN_DEVICE_FUNC
+        -:  267:    EIGEN_STRONG_INLINE Array(const Array& other)
+        -:  268:            : Base(other)
+        -:  269:    { }
+        -:  270:
+        -:  271:  private:
+        -:  272:    struct PrivateType {};
+        -:  273:  public:
+        -:  274:
+        -:  275:    /** \sa MatrixBase::operator=(const EigenBase<OtherDerived>&) */
+        -:  276:    template<typename OtherDerived>
+        -:  277:    EIGEN_DEVICE_FUNC
+    #####:  278:    EIGEN_STRONG_INLINE Array(const EigenBase<OtherDerived> &other,
+        -:  279:                              std::enable_if_t<internal::is_convertible<typename OtherDerived::Scalar,Scalar>::value,
+        -:  280:                                               PrivateType> = PrivateType())
+    #####:  281:      : Base(other.derived())
+    #####:  282:    { }
+        -:  283:
+        -:  284:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+        -:  285:    inline Index innerStride() const EIGEN_NOEXCEPT{ return 1; }
+        -:  286:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+        -:  287:    inline Index outerStride() const EIGEN_NOEXCEPT { return this->innerSize(); }
+        -:  288:
+        -:  289:    #ifdef EIGEN_ARRAY_PLUGIN
+        -:  290:    #include EIGEN_ARRAY_PLUGIN
+        -:  291:    #endif
+        -:  292:
+        -:  293:  private:
+        -:  294:
+        -:  295:    template<typename MatrixType, typename OtherDerived, bool SwapPointers>
+        -:  296:    friend struct internal::matrix_swap_impl;
+        -:  297:};
+        -:  298:
+        -:  299:/** \defgroup arraytypedefs Global array typedefs
+        -:  300:  * \ingroup Core_Module
+        -:  301:  *
+        -:  302:  * %Eigen defines several typedef shortcuts for most common 1D and 2D array types.
+        -:  303:  *
+        -:  304:  * The general patterns are the following:
+        -:  305:  *
+        -:  306:  * \c ArrayRowsColsType where \c Rows and \c Cols can be \c 2,\c 3,\c 4 for fixed size square matrices or \c X for dynamic size,
+        -:  307:  * and where \c Type can be \c i for integer, \c f for float, \c d for double, \c cf for complex float, \c cd
+        -:  308:  * for complex double.
+        -:  309:  *
+        -:  310:  * For example, \c Array33d is a fixed-size 3x3 array type of doubles, and \c ArrayXXf is a dynamic-size matrix of floats.
+        -:  311:  *
+        -:  312:  * There are also \c ArraySizeType which are self-explanatory. For example, \c Array4cf is
+        -:  313:  * a fixed-size 1D array of 4 complex floats.
+        -:  314:  *
+        -:  315:  * With \cpp11, template alias are also defined for common sizes.
+        -:  316:  * They follow the same pattern as above except that the scalar type suffix is replaced by a
+        -:  317:  * template parameter, i.e.:
+        -:  318:  *   - `ArrayRowsCols<Type>` where `Rows` and `Cols` can be \c 2,\c 3,\c 4, or \c X for fixed or dynamic size.
+        -:  319:  *   - `ArraySize<Type>` where `Size` can be \c 2,\c 3,\c 4 or \c X for fixed or dynamic size 1D arrays.
+        -:  320:  *
+        -:  321:  * \sa class Array
+        -:  322:  */
+        -:  323:
+        -:  324:#define EIGEN_MAKE_ARRAY_TYPEDEFS(Type, TypeSuffix, Size, SizeSuffix)   \
+        -:  325:/** \ingroup arraytypedefs */                                    \
+        -:  326:typedef Array<Type, Size, Size> Array##SizeSuffix##SizeSuffix##TypeSuffix;  \
+        -:  327:/** \ingroup arraytypedefs */                                    \
+        -:  328:typedef Array<Type, Size, 1>    Array##SizeSuffix##TypeSuffix;
+        -:  329:
+        -:  330:#define EIGEN_MAKE_ARRAY_FIXED_TYPEDEFS(Type, TypeSuffix, Size)         \
+        -:  331:/** \ingroup arraytypedefs */                                    \
+        -:  332:typedef Array<Type, Size, Dynamic> Array##Size##X##TypeSuffix;  \
+        -:  333:/** \ingroup arraytypedefs */                                    \
+        -:  334:typedef Array<Type, Dynamic, Size> Array##X##Size##TypeSuffix;
+        -:  335:
+        -:  336:#define EIGEN_MAKE_ARRAY_TYPEDEFS_ALL_SIZES(Type, TypeSuffix) \
+        -:  337:EIGEN_MAKE_ARRAY_TYPEDEFS(Type, TypeSuffix, 2, 2) \
+        -:  338:EIGEN_MAKE_ARRAY_TYPEDEFS(Type, TypeSuffix, 3, 3) \
+        -:  339:EIGEN_MAKE_ARRAY_TYPEDEFS(Type, TypeSuffix, 4, 4) \
+        -:  340:EIGEN_MAKE_ARRAY_TYPEDEFS(Type, TypeSuffix, Dynamic, X) \
+        -:  341:EIGEN_MAKE_ARRAY_FIXED_TYPEDEFS(Type, TypeSuffix, 2) \
+        -:  342:EIGEN_MAKE_ARRAY_FIXED_TYPEDEFS(Type, TypeSuffix, 3) \
+        -:  343:EIGEN_MAKE_ARRAY_FIXED_TYPEDEFS(Type, TypeSuffix, 4)
+        -:  344:
+        -:  345:EIGEN_MAKE_ARRAY_TYPEDEFS_ALL_SIZES(int,                  i)
+        -:  346:EIGEN_MAKE_ARRAY_TYPEDEFS_ALL_SIZES(float,                f)
+        -:  347:EIGEN_MAKE_ARRAY_TYPEDEFS_ALL_SIZES(double,               d)
+        -:  348:EIGEN_MAKE_ARRAY_TYPEDEFS_ALL_SIZES(std::complex<float>,  cf)
+        -:  349:EIGEN_MAKE_ARRAY_TYPEDEFS_ALL_SIZES(std::complex<double>, cd)
+        -:  350:
+        -:  351:#undef EIGEN_MAKE_ARRAY_TYPEDEFS_ALL_SIZES
+        -:  352:#undef EIGEN_MAKE_ARRAY_TYPEDEFS
+        -:  353:#undef EIGEN_MAKE_ARRAY_FIXED_TYPEDEFS
+        -:  354:
+        -:  355:#define EIGEN_MAKE_ARRAY_TYPEDEFS(Size, SizeSuffix)               \
+        -:  356:/** \ingroup arraytypedefs */                                     \
+        -:  357:/** \brief \cpp11 */                                              \
+        -:  358:template <typename Type>                                          \
+        -:  359:using Array##SizeSuffix##SizeSuffix = Array<Type, Size, Size>;    \
+        -:  360:/** \ingroup arraytypedefs */                                     \
+        -:  361:/** \brief \cpp11 */                                              \
+        -:  362:template <typename Type>                                          \
+        -:  363:using Array##SizeSuffix = Array<Type, Size, 1>;
+        -:  364:
+        -:  365:#define EIGEN_MAKE_ARRAY_FIXED_TYPEDEFS(Size)                     \
+        -:  366:/** \ingroup arraytypedefs */                                     \
+        -:  367:/** \brief \cpp11 */                                              \
+        -:  368:template <typename Type>                                          \
+        -:  369:using Array##Size##X = Array<Type, Size, Dynamic>;                \
+        -:  370:/** \ingroup arraytypedefs */                                     \
+        -:  371:/** \brief \cpp11 */                                              \
+        -:  372:template <typename Type>                                          \
+        -:  373:using Array##X##Size = Array<Type, Dynamic, Size>;
+        -:  374:
+        -:  375:EIGEN_MAKE_ARRAY_TYPEDEFS(2, 2)
+        -:  376:EIGEN_MAKE_ARRAY_TYPEDEFS(3, 3)
+        -:  377:EIGEN_MAKE_ARRAY_TYPEDEFS(4, 4)
+        -:  378:EIGEN_MAKE_ARRAY_TYPEDEFS(Dynamic, X)
+        -:  379:EIGEN_MAKE_ARRAY_FIXED_TYPEDEFS(2)
+        -:  380:EIGEN_MAKE_ARRAY_FIXED_TYPEDEFS(3)
+        -:  381:EIGEN_MAKE_ARRAY_FIXED_TYPEDEFS(4)
+        -:  382:
+        -:  383:#undef EIGEN_MAKE_ARRAY_TYPEDEFS
+        -:  384:#undef EIGEN_MAKE_ARRAY_FIXED_TYPEDEFS
+        -:  385:
+        -:  386:#define EIGEN_USING_ARRAY_TYPEDEFS_FOR_TYPE_AND_SIZE(TypeSuffix, SizeSuffix) \
+        -:  387:using Eigen::Matrix##SizeSuffix##TypeSuffix; \
+        -:  388:using Eigen::Vector##SizeSuffix##TypeSuffix; \
+        -:  389:using Eigen::RowVector##SizeSuffix##TypeSuffix;
+        -:  390:
+        -:  391:#define EIGEN_USING_ARRAY_TYPEDEFS_FOR_TYPE(TypeSuffix) \
+        -:  392:EIGEN_USING_ARRAY_TYPEDEFS_FOR_TYPE_AND_SIZE(TypeSuffix, 2) \
+        -:  393:EIGEN_USING_ARRAY_TYPEDEFS_FOR_TYPE_AND_SIZE(TypeSuffix, 3) \
+        -:  394:EIGEN_USING_ARRAY_TYPEDEFS_FOR_TYPE_AND_SIZE(TypeSuffix, 4) \
+        -:  395:EIGEN_USING_ARRAY_TYPEDEFS_FOR_TYPE_AND_SIZE(TypeSuffix, X) \
+        -:  396:
+        -:  397:#define EIGEN_USING_ARRAY_TYPEDEFS \
+        -:  398:EIGEN_USING_ARRAY_TYPEDEFS_FOR_TYPE(i) \
+        -:  399:EIGEN_USING_ARRAY_TYPEDEFS_FOR_TYPE(f) \
+        -:  400:EIGEN_USING_ARRAY_TYPEDEFS_FOR_TYPE(d) \
+        -:  401:EIGEN_USING_ARRAY_TYPEDEFS_FOR_TYPE(cf) \
+        -:  402:EIGEN_USING_ARRAY_TYPEDEFS_FOR_TYPE(cd)
+        -:  403:
+        -:  404:} // end namespace Eigen
+        -:  405:
+        -:  406:#endif // EIGEN_ARRAY_H

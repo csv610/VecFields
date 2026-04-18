@@ -1,0 +1,46 @@
+        -:    0:Source:/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__debug_utils/randomize_range.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1://===----------------------------------------------------------------------===//
+        -:    2://
+        -:    3:// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+        -:    4:// See https://llvm.org/LICENSE.txt for license information.
+        -:    5:// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+        -:    6://
+        -:    7://===----------------------------------------------------------------------===//
+        -:    8:
+        -:    9:#ifndef _LIBCPP___LIBCXX_DEBUG_RANDOMIZE_RANGE_H
+        -:   10:#define _LIBCPP___LIBCXX_DEBUG_RANDOMIZE_RANGE_H
+        -:   11:
+        -:   12:#include <__config>
+        -:   13:
+        -:   14:#ifdef _LIBCPP_DEBUG_RANDOMIZE_UNSPECIFIED_STABILITY
+        -:   15:#  include <__algorithm/shuffle.h>
+        -:   16:#  include <__type_traits/is_constant_evaluated.h>
+        -:   17:#endif
+        -:   18:
+        -:   19:#if !defined(_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER)
+        -:   20:#  pragma GCC system_header
+        -:   21:#endif
+        -:   22:
+        -:   23:_LIBCPP_BEGIN_NAMESPACE_STD
+        -:   24:
+        -:   25:template <class _AlgPolicy, class _Iterator, class _Sentinel>
+    #####:   26:_LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 void __debug_randomize_range(_Iterator __first, _Sentinel __last) {
+        -:   27:#ifdef _LIBCPP_DEBUG_RANDOMIZE_UNSPECIFIED_STABILITY
+        -:   28:#  ifdef _LIBCPP_CXX03_LANG
+        -:   29:#    error Support for unspecified stability is only for C++11 and higher
+        -:   30:#  endif
+        -:   31:
+        -:   32:  if (!__libcpp_is_constant_evaluated())
+        -:   33:    std::__shuffle<_AlgPolicy>(__first, __last, __libcpp_debug_randomizer());
+        -:   34:#else
+        -:   35:  (void)__first;
+        -:   36:  (void)__last;
+        -:   37:#endif
+    #####:   38:}
+        -:   39:
+        -:   40:_LIBCPP_END_NAMESPACE_STD
+        -:   41:
+        -:   42:#endif // _LIBCPP___LIBCXX_DEBUG_RANDOMIZE_RANGE_H

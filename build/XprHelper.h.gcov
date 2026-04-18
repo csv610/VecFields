@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/util/XprHelper.h
-        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
-        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
-        -:    0:Runs:4
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -39,9 +39,9 @@
         -:   35:          bool IndexSrcIsInteger = NumTraits<IndexSrc>::IsInteger,
         -:   36:          bool IndexSrcIsSigned = NumTraits<IndexSrc>::IsSigned>
         -:   37:struct convert_index_impl {
-        -:   38:  static inline EIGEN_DEVICE_FUNC IndexDest run(const IndexSrc& idx) {
+    19314:   38:  static inline EIGEN_DEVICE_FUNC IndexDest run(const IndexSrc& idx) {
         -:   39:    eigen_internal_assert(idx <= NumTraits<IndexDest>::highest() && "Index value is too big for target type");
-        -:   40:    return static_cast<IndexDest>(idx);
+    19314:   40:    return static_cast<IndexDest>(idx);
         -:   41:  }
         -:   42:};
         -:   43:template <typename IndexDest, typename IndexSrc>
@@ -66,8 +66,8 @@
         -:   62:};
         -:   63:
         -:   64:template <typename IndexDest, typename IndexSrc>
-        -:   65:EIGEN_DEVICE_FUNC inline IndexDest convert_index(const IndexSrc& idx) {
-        -:   66:  return convert_index_impl<IndexDest, IndexSrc>::run(idx);
+    19314:   65:EIGEN_DEVICE_FUNC inline IndexDest convert_index(const IndexSrc& idx) {
+    19314:   66:  return convert_index_impl<IndexDest, IndexSrc>::run(idx);
         -:   67:}
         -:   68:
         -:   69:// true if T can be considered as an integral index (i.e., and integral type or enum)
@@ -158,9 +158,9 @@
         -:  154:{
         -:  155:  public:
         -:  156:    EIGEN_DEFAULT_EMPTY_CONSTRUCTOR_AND_DESTRUCTOR(variable_if_dynamic)
-  2993992:  157:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE explicit variable_if_dynamic(T v) { EIGEN_ONLY_USED_FOR_DEBUG(v); eigen_assert(v == T(Value)); }
+   225892:  157:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE explicit variable_if_dynamic(T v) { EIGEN_ONLY_USED_FOR_DEBUG(v); eigen_assert(v == T(Value)); }
         -:  158:    EIGEN_DEVICE_FUNC static EIGEN_STRONG_INLINE EIGEN_CONSTEXPR
-  2441222:  159:    T value() { return T(Value); }
+   208629:  159:    T value() { return T(Value); }
         -:  160:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE EIGEN_CONSTEXPR
         -:  161:    operator T() const { return T(Value); }
         -:  162:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
@@ -171,8 +171,8 @@
         -:  167:{
         -:  168:    T m_value;
         -:  169:  public:
-  3051336:  170:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE explicit variable_if_dynamic(T value = 0) EIGEN_NO_THROW : m_value(value) {}
-  2204372:  171:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE T value() const { return m_value; }
+   331728:  170:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE explicit variable_if_dynamic(T value = 0) EIGEN_NO_THROW : m_value(value) {}
+   217878:  171:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE T value() const { return m_value; }
         -:  172:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE operator T() const { return m_value; }
         -:  173:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void setValue(T value) { m_value = value; }
         -:  174:};
@@ -182,9 +182,9 @@
         -:  178:template<typename T, int Value> class variable_if_dynamicindex
         -:  179:{
         -:  180:  public:
-    17880:  181:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE explicit variable_if_dynamicindex(T v) { EIGEN_ONLY_USED_FOR_DEBUG(v); eigen_assert(v == T(Value)); }
+     1440:  181:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE explicit variable_if_dynamicindex(T v) { EIGEN_ONLY_USED_FOR_DEBUG(v); eigen_assert(v == T(Value)); }
         -:  182:    EIGEN_DEVICE_FUNC static EIGEN_STRONG_INLINE EIGEN_CONSTEXPR
-    41720:  183:    T value() { return T(Value); }
+     3360:  183:    T value() { return T(Value); }
         -:  184:    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
         -:  185:    void setValue(T) {}
         -:  186:};
@@ -747,9 +747,9 @@
         -:  743:
         -:  744:template<typename T1, typename T2>
         -:  745:EIGEN_DEVICE_FUNC
-     1490:  746:bool is_same_dense(const T1 &mat1, const T2 &mat2, std::enable_if_t<possibly_same_dense<T1,T2>::value> * = 0)
+      122:  746:bool is_same_dense(const T1 &mat1, const T2 &mat2, std::enable_if_t<possibly_same_dense<T1,T2>::value> * = 0)
         -:  747:{
-     1490:  748:  return (mat1.data()==mat2.data()) && (mat1.innerStride()==mat2.innerStride()) && (mat1.outerStride()==mat2.outerStride());
+      122:  748:  return (mat1.data()==mat2.data()) && (mat1.innerStride()==mat2.innerStride()) && (mat1.outerStride()==mat2.outerStride());
         -:  749:}
         -:  750:
         -:  751:template<typename T1, typename T2>

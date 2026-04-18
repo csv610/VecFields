@@ -1,0 +1,191 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/SparseCore/SparseUtil.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2008-2014 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:#ifndef EIGEN_SPARSEUTIL_H
+        -:   11:#define EIGEN_SPARSEUTIL_H
+        -:   12:
+        -:   13:// IWYU pragma: private
+        -:   14:#include "./InternalHeaderCheck.h"
+        -:   15:
+        -:   16:namespace Eigen { 
+        -:   17:
+        -:   18:#ifdef NDEBUG
+        -:   19:#define EIGEN_DBG_SPARSE(X)
+        -:   20:#else
+        -:   21:#define EIGEN_DBG_SPARSE(X) X
+        -:   22:#endif
+        -:   23:
+        -:   24:#define EIGEN_SPARSE_INHERIT_ASSIGNMENT_OPERATOR(Derived, Op) \
+        -:   25:template<typename OtherDerived> \
+        -:   26:EIGEN_STRONG_INLINE Derived& operator Op(const Eigen::SparseMatrixBase<OtherDerived>& other) \
+        -:   27:{ \
+        -:   28:  return Base::operator Op(other.derived()); \
+        -:   29:} \
+        -:   30:EIGEN_STRONG_INLINE Derived& operator Op(const Derived& other) \
+        -:   31:{ \
+        -:   32:  return Base::operator Op(other); \
+        -:   33:}
+        -:   34:
+        -:   35:#define EIGEN_SPARSE_INHERIT_SCALAR_ASSIGNMENT_OPERATOR(Derived, Op) \
+        -:   36:template<typename Other> \
+        -:   37:EIGEN_STRONG_INLINE Derived& operator Op(const Other& scalar) \
+        -:   38:{ \
+        -:   39:  return Base::operator Op(scalar); \
+        -:   40:}
+        -:   41:
+        -:   42:#define EIGEN_SPARSE_INHERIT_ASSIGNMENT_OPERATORS(Derived) \
+        -:   43:EIGEN_SPARSE_INHERIT_ASSIGNMENT_OPERATOR(Derived, =)
+        -:   44:
+        -:   45:
+        -:   46:#define EIGEN_SPARSE_PUBLIC_INTERFACE(Derived) \
+        -:   47:  EIGEN_GENERIC_PUBLIC_INTERFACE(Derived)
+        -:   48:
+        -:   49:  
+        -:   50:const int CoherentAccessPattern     = 0x1;
+        -:   51:const int InnerRandomAccessPattern  = 0x2 | CoherentAccessPattern;
+        -:   52:const int OuterRandomAccessPattern  = 0x4 | CoherentAccessPattern;
+        -:   53:const int RandomAccessPattern       = 0x8 | OuterRandomAccessPattern | InnerRandomAccessPattern;
+        -:   54:
+        -:   55:template<typename Scalar_, int Flags_ = 0, typename StorageIndex_ = int>  class SparseMatrix;
+        -:   56:template<typename Scalar_, int Flags_ = 0, typename StorageIndex_ = int>  class SparseVector;
+        -:   57:
+        -:   58:template<typename MatrixType, unsigned int UpLo>  class SparseSelfAdjointView;
+        -:   59:template<typename Lhs, typename Rhs>              class SparseDiagonalProduct;
+        -:   60:template<typename MatrixType> class SparseView;
+        -:   61:
+        -:   62:template<typename Lhs, typename Rhs>        class SparseSparseProduct;
+        -:   63:template<typename Lhs, typename Rhs>        class SparseTimeDenseProduct;
+        -:   64:template<typename Lhs, typename Rhs>        class DenseTimeSparseProduct;
+        -:   65:template<typename Lhs, typename Rhs, bool Transpose> class SparseDenseOuterProduct;
+        -:   66:
+        -:   67:template<typename Lhs, typename Rhs> struct SparseSparseProductReturnType;
+        -:   68:template<typename Lhs, typename Rhs,
+        -:   69:         int InnerSize = internal::min_size_prefer_fixed(internal::traits<Lhs>::ColsAtCompileTime, internal::traits<Rhs>::RowsAtCompileTime)> struct DenseSparseProductReturnType;
+        -:   70:         
+        -:   71:template<typename Lhs, typename Rhs,
+        -:   72:         int InnerSize = internal::min_size_prefer_fixed(internal::traits<Lhs>::ColsAtCompileTime, internal::traits<Rhs>::RowsAtCompileTime)> struct SparseDenseProductReturnType;
+        -:   73:template<typename MatrixType,int UpLo> class SparseSymmetricPermutationProduct;
+        -:   74:
+        -:   75:namespace internal {
+        -:   76:
+        -:   77:template<typename T,int Rows,int Cols,int Flags> struct sparse_eval;
+        -:   78:
+        -:   79:template<typename T> struct eval<T,Sparse>
+        -:   80:  : sparse_eval<T, traits<T>::RowsAtCompileTime,traits<T>::ColsAtCompileTime,traits<T>::Flags>
+        -:   81:{};
+        -:   82:
+        -:   83:template<typename T,int Cols,int Flags> struct sparse_eval<T,1,Cols,Flags> {
+        -:   84:    typedef typename traits<T>::Scalar Scalar_;
+        -:   85:    typedef typename traits<T>::StorageIndex StorageIndex_;
+        -:   86:  public:
+        -:   87:    typedef SparseVector<Scalar_, RowMajor, StorageIndex_> type;
+        -:   88:};
+        -:   89:
+        -:   90:template<typename T,int Rows,int Flags> struct sparse_eval<T,Rows,1,Flags> {
+        -:   91:    typedef typename traits<T>::Scalar Scalar_;
+        -:   92:    typedef typename traits<T>::StorageIndex StorageIndex_;
+        -:   93:  public:
+        -:   94:    typedef SparseVector<Scalar_, ColMajor, StorageIndex_> type;
+        -:   95:};
+        -:   96:
+        -:   97:// TODO this seems almost identical to plain_matrix_type<T, Sparse>
+        -:   98:template<typename T,int Rows,int Cols,int Flags> struct sparse_eval {
+        -:   99:    typedef typename traits<T>::Scalar Scalar_;
+        -:  100:    typedef typename traits<T>::StorageIndex StorageIndex_;
+        -:  101:    enum { Options_ = ((Flags&RowMajorBit)==RowMajorBit) ? RowMajor : ColMajor };
+        -:  102:  public:
+        -:  103:    typedef SparseMatrix<Scalar_, Options_, StorageIndex_> type;
+        -:  104:};
+        -:  105:
+        -:  106:template<typename T,int Flags> struct sparse_eval<T,1,1,Flags> {
+        -:  107:    typedef typename traits<T>::Scalar Scalar_;
+        -:  108:  public:
+        -:  109:    typedef Matrix<Scalar_, 1, 1> type;
+        -:  110:};
+        -:  111:
+        -:  112:template<typename T> struct plain_matrix_type<T,Sparse>
+        -:  113:{
+        -:  114:  typedef typename traits<T>::Scalar Scalar_;
+        -:  115:  typedef typename traits<T>::StorageIndex StorageIndex_;
+        -:  116:  enum { Options_ = ((evaluator<T>::Flags&RowMajorBit)==RowMajorBit) ? RowMajor : ColMajor };
+        -:  117:  public:
+        -:  118:    typedef SparseMatrix<Scalar_, Options_, StorageIndex_> type;
+        -:  119:};
+        -:  120:
+        -:  121:template<typename T>
+        -:  122:struct plain_object_eval<T,Sparse>
+        -:  123:  : sparse_eval<T, traits<T>::RowsAtCompileTime,traits<T>::ColsAtCompileTime, evaluator<T>::Flags>
+        -:  124:{};
+        -:  125:
+        -:  126:template<typename Decomposition, typename RhsType>
+        -:  127:struct solve_traits<Decomposition,RhsType,Sparse>
+        -:  128:{
+        -:  129:  typedef typename sparse_eval<RhsType, RhsType::RowsAtCompileTime, RhsType::ColsAtCompileTime,traits<RhsType>::Flags>::type PlainObject;
+        -:  130:};
+        -:  131:
+        -:  132:template<typename Derived>
+        -:  133:struct generic_xpr_base<Derived, MatrixXpr, Sparse>
+        -:  134:{
+        -:  135:  typedef SparseMatrixBase<Derived> type;
+        -:  136:};
+        -:  137:
+        -:  138:struct SparseTriangularShape  { static std::string debugName() { return "SparseTriangularShape"; } };
+        -:  139:struct SparseSelfAdjointShape { static std::string debugName() { return "SparseSelfAdjointShape"; } };
+        -:  140:
+        -:  141:template<> struct glue_shapes<SparseShape,SelfAdjointShape> { typedef SparseSelfAdjointShape type;  };
+        -:  142:template<> struct glue_shapes<SparseShape,TriangularShape > { typedef SparseTriangularShape  type;  };
+        -:  143:
+        -:  144:// return type of SparseCompressedBase::lower_bound;
+        -:  145:struct LowerBoundIndex {
+        -:  146:  LowerBoundIndex() : value(-1), found(false) {}
+        -:  147:  LowerBoundIndex(Index val, bool ok) : value(val), found(ok) {}
+        -:  148:  Index value;
+        -:  149:  bool found;
+        -:  150:};
+        -:  151:
+        -:  152:} // end namespace internal
+        -:  153:
+        -:  154:/** \ingroup SparseCore_Module
+        -:  155:  *
+        -:  156:  * \class Triplet
+        -:  157:  *
+        -:  158:  * \brief A small structure to hold a non zero as a triplet (i,j,value).
+        -:  159:  *
+        -:  160:  * \sa SparseMatrix::setFromTriplets()
+        -:  161:  */
+        -:  162:template<typename Scalar, typename StorageIndex=typename SparseMatrix<Scalar>::StorageIndex >
+        -:  163:class Triplet
+        -:  164:{
+        -:  165:public:
+      960:  166:  Triplet() : m_row(0), m_col(0), m_value(0) {}
+        -:  167:
+     6482:  168:  Triplet(const StorageIndex& i, const StorageIndex& j, const Scalar& v = Scalar(0))
+     3241:  169:    : m_row(i), m_col(j), m_value(v)
+     6482:  170:  {}
+        -:  171:
+        -:  172:  /** \returns the row index of the element */
+    12964:  173:  const StorageIndex& row() const { return m_row; }
+        -:  174:
+        -:  175:  /** \returns the column index of the element */
+     9723:  176:  const StorageIndex& col() const { return m_col; }
+        -:  177:
+        -:  178:  /** \returns the value of the element */
+     3241:  179:  const Scalar& value() const { return m_value; }
+        -:  180:protected:
+        -:  181:  StorageIndex m_row, m_col;
+        -:  182:  Scalar m_value;
+        -:  183:};
+        -:  184:
+        -:  185:} // end namespace Eigen
+        -:  186:
+        -:  187:#endif // EIGEN_SPARSEUTIL_H

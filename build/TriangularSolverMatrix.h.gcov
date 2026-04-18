@@ -1,0 +1,454 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/products/TriangularSolverMatrix.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2009 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    5:// Modifications Copyright (C) 2022 Intel Corporation
+        -:    6://
+        -:    7:// This Source Code Form is subject to the terms of the Mozilla
+        -:    8:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    9:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:   10:
+        -:   11:#ifndef EIGEN_TRIANGULAR_SOLVER_MATRIX_H
+        -:   12:#define EIGEN_TRIANGULAR_SOLVER_MATRIX_H
+        -:   13:
+        -:   14:// IWYU pragma: private
+        -:   15:#include "../InternalHeaderCheck.h"
+        -:   16:
+        -:   17:namespace Eigen {
+        -:   18:
+        -:   19:namespace internal {
+        -:   20:
+        -:   21:template <typename Scalar, typename Index, int Mode, bool Conjugate, int TriStorageOrder,int OtherInnerStride, bool Specialized>
+        -:   22:struct trsmKernelL {
+        -:   23:  // Generic Implementation of triangular solve for triangular matrix on left and multiple rhs.
+        -:   24:  // Handles non-packed matrices.
+        -:   25:  static void kernel(
+        -:   26:    Index size, Index otherSize,
+        -:   27:    const Scalar* _tri, Index triStride,
+        -:   28:    Scalar* _other, Index otherIncr, Index otherStride);
+        -:   29:};
+        -:   30:
+        -:   31:template <typename Scalar, typename Index, int Mode, bool Conjugate, int TriStorageOrder,int OtherInnerStride, bool Specialized>
+        -:   32:struct trsmKernelR {
+        -:   33:  // Generic Implementation of triangular solve for triangular matrix on right and multiple lhs.
+        -:   34:  // Handles non-packed matrices.
+        -:   35:  static void kernel(
+        -:   36:    Index size, Index otherSize,
+        -:   37:    const Scalar* _tri, Index triStride,
+        -:   38:    Scalar* _other, Index otherIncr, Index otherStride);
+        -:   39:};
+        -:   40:
+        -:   41:template <typename Scalar, typename Index, int Mode, bool Conjugate, int TriStorageOrder,int OtherInnerStride, bool Specialized>
+    #####:   42:EIGEN_STRONG_INLINE void trsmKernelL<Scalar, Index, Mode, Conjugate, TriStorageOrder, OtherInnerStride, Specialized>::kernel(
+        -:   43:    Index size, Index otherSize,
+        -:   44:    const Scalar* _tri, Index triStride,
+        -:   45:    Scalar* _other, Index otherIncr, Index otherStride)
+        -:   46:  {
+        -:   47:    typedef const_blas_data_mapper<Scalar, Index, TriStorageOrder> TriMapper;
+        -:   48:    typedef blas_data_mapper<Scalar, Index, ColMajor, Unaligned, OtherInnerStride> OtherMapper;
+    #####:   49:    TriMapper tri(_tri, triStride);
+    #####:   50:    OtherMapper other(_other, otherStride, otherIncr);
+        -:   51:
+        -:   52:    enum { IsLower = (Mode&Lower) == Lower };
+        -:   53:    conj_if<Conjugate> conj;
+        -:   54:
+        -:   55:    // tr solve
+    #####:   56:    for (Index k=0; k<size; ++k)
+        -:   57:    {
+        -:   58:      // TODO write a small kernel handling this (can be shared with trsv)
+    #####:   59:      Index i  = IsLower ? k : -k-1;
+    #####:   60:      Index rs = size - k - 1; // remaining size
+    #####:   61:      Index s  = TriStorageOrder==RowMajor ? (IsLower ? 0 : i+1)
+    #####:   62:        :  IsLower ? i+1 : i-rs;
+        -:   63:
+    #####:   64:      Scalar a = (Mode & UnitDiag) ? Scalar(1) : Scalar(1)/conj(tri(i,i));
+    #####:   65:      for (Index j=0; j<otherSize; ++j)
+        -:   66:      {
+        -:   67:        if (TriStorageOrder==RowMajor)
+        -:   68:        {
+        -:   69:          Scalar b(0);
+        -:   70:          const Scalar* l = &tri(i,s);
+        -:   71:          typename OtherMapper::LinearMapper r = other.getLinearMapper(s,j);
+        -:   72:          for (Index i3=0; i3<k; ++i3)
+        -:   73:            b += conj(l[i3]) * r(i3);
+        -:   74:
+        -:   75:          other(i,j) = (other(i,j) - b)*a;
+        -:   76:        }
+        -:   77:        else
+        -:   78:        {
+    #####:   79:          Scalar& otherij = other(i,j);
+    #####:   80:          otherij *= a;
+    #####:   81:          Scalar b = otherij;
+    #####:   82:          typename OtherMapper::LinearMapper r = other.getLinearMapper(s,j);
+    #####:   83:          typename TriMapper::LinearMapper l = tri.getLinearMapper(s,i);
+    #####:   84:          for (Index i3=0;i3<rs;++i3)
+    #####:   85:            r(i3) -= b * conj(l(i3));
+        -:   86:        }
+    #####:   87:      }
+    #####:   88:    }
+    #####:   89:  }
+        -:   90:
+        -:   91:
+        -:   92:template <typename Scalar, typename Index, int Mode, bool Conjugate, int TriStorageOrder, int OtherInnerStride, bool Specialized>
+        -:   93:EIGEN_STRONG_INLINE void trsmKernelR<Scalar, Index, Mode, Conjugate, TriStorageOrder, OtherInnerStride, Specialized>::kernel(
+        -:   94:    Index size, Index otherSize,
+        -:   95:    const Scalar* _tri, Index triStride,
+        -:   96:    Scalar* _other, Index otherIncr, Index otherStride)
+        -:   97:{
+        -:   98:  typedef typename NumTraits<Scalar>::Real RealScalar;
+        -:   99:  typedef blas_data_mapper<Scalar, Index, ColMajor, Unaligned, OtherInnerStride> LhsMapper;
+        -:  100:  typedef const_blas_data_mapper<Scalar, Index, TriStorageOrder> RhsMapper;
+        -:  101:  LhsMapper lhs(_other, otherStride, otherIncr);
+        -:  102:  RhsMapper rhs(_tri, triStride);
+        -:  103:
+        -:  104:  enum {
+        -:  105:    RhsStorageOrder   = TriStorageOrder,
+        -:  106:    IsLower = (Mode&Lower) == Lower
+        -:  107:  };
+        -:  108:  conj_if<Conjugate> conj;
+        -:  109:
+        -:  110:  for (Index k=0; k<size; ++k)
+        -:  111:  {
+        -:  112:    Index j = IsLower ? size-k-1 : k;
+        -:  113:
+        -:  114:    typename LhsMapper::LinearMapper r = lhs.getLinearMapper(0,j);
+        -:  115:    for (Index k3=0; k3<k; ++k3)
+        -:  116:    {
+        -:  117:      Scalar b = conj(rhs(IsLower ? j+1+k3 : k3,j));
+        -:  118:      typename LhsMapper::LinearMapper a = lhs.getLinearMapper(0,IsLower ? j+1+k3 : k3);
+        -:  119:      for (Index i=0; i<otherSize; ++i)
+        -:  120:                    r(i) -= a(i) * b;
+        -:  121:    }
+        -:  122:    if((Mode & UnitDiag)==0)
+        -:  123:    {
+        -:  124:      Scalar inv_rjj = RealScalar(1)/conj(rhs(j,j));
+        -:  125:      for (Index i=0; i<otherSize; ++i)
+        -:  126:        r(i) *= inv_rjj;
+        -:  127:    }
+        -:  128:  }
+        -:  129:}
+        -:  130:
+        -:  131:
+        -:  132:// if the rhs is row major, let's transpose the product
+        -:  133:template <typename Scalar, typename Index, int Side, int Mode, bool Conjugate, int TriStorageOrder, int OtherInnerStride>
+        -:  134:struct triangular_solve_matrix<Scalar,Index,Side,Mode,Conjugate,TriStorageOrder,RowMajor,OtherInnerStride>
+        -:  135:{
+        -:  136:  static void run(
+        -:  137:    Index size, Index cols,
+        -:  138:    const Scalar*  tri, Index triStride,
+        -:  139:    Scalar* _other, Index otherIncr, Index otherStride,
+        -:  140:    level3_blocking<Scalar,Scalar>& blocking)
+        -:  141:  {
+        -:  142:    triangular_solve_matrix<
+        -:  143:      Scalar, Index, Side==OnTheLeft?OnTheRight:OnTheLeft,
+        -:  144:      (Mode&UnitDiag) | ((Mode&Upper) ? Lower : Upper),
+        -:  145:      NumTraits<Scalar>::IsComplex && Conjugate,
+        -:  146:      TriStorageOrder==RowMajor ? ColMajor : RowMajor, ColMajor, OtherInnerStride>
+        -:  147:      ::run(size, cols, tri, triStride, _other, otherIncr, otherStride, blocking);
+        -:  148:  }
+        -:  149:};
+        -:  150:
+        -:  151:/* Optimized triangular solver with multiple right hand side and the triangular matrix on the left
+        -:  152: */
+        -:  153:template <typename Scalar, typename Index, int Mode, bool Conjugate, int TriStorageOrder,int OtherInnerStride>
+        -:  154:struct triangular_solve_matrix<Scalar,Index,OnTheLeft,Mode,Conjugate,TriStorageOrder,ColMajor,OtherInnerStride>
+        -:  155:{
+        -:  156:  static EIGEN_DONT_INLINE void run(
+        -:  157:    Index size, Index otherSize,
+        -:  158:    const Scalar* _tri, Index triStride,
+        -:  159:    Scalar* _other, Index otherIncr, Index otherStride,
+        -:  160:    level3_blocking<Scalar,Scalar>& blocking);
+        -:  161:};
+        -:  162:
+        -:  163:template <typename Scalar, typename Index, int Mode, bool Conjugate, int TriStorageOrder, int OtherInnerStride>
+    #####:  164:EIGEN_DONT_INLINE void triangular_solve_matrix<Scalar,Index,OnTheLeft,Mode,Conjugate,TriStorageOrder,ColMajor,OtherInnerStride>::run(
+        -:  165:    Index size, Index otherSize,
+        -:  166:    const Scalar* _tri, Index triStride,
+        -:  167:    Scalar* _other, Index otherIncr, Index otherStride,
+        -:  168:    level3_blocking<Scalar,Scalar>& blocking)
+        -:  169:  {
+    #####:  170:    Index cols = otherSize;
+        -:  171:
+        -:  172:    std::ptrdiff_t l1, l2, l3;
+    #####:  173:    manage_caching_sizes(GetAction, &l1, &l2, &l3);
+        -:  174:
+        -:  175:#if defined(EIGEN_VECTORIZE_AVX512) && EIGEN_USE_AVX512_TRSM_L_KERNELS && EIGEN_ENABLE_AVX512_NOCOPY_TRSM_L_CUTOFFS
+        -:  176:    EIGEN_IF_CONSTEXPR( (OtherInnerStride == 1 &&
+        -:  177:                       (std::is_same<Scalar,float>::value ||
+        -:  178:                        std::is_same<Scalar,double>::value)) ) {
+        -:  179:      // Very rough cutoffs to determine when to call trsm w/o packing
+        -:  180:      // For small problem sizes trsmKernel compiled with clang is generally faster.
+        -:  181:      // TODO: Investigate better heuristics for cutoffs.
+        -:  182:      double L2Cap = 0.5; // 50% of L2 size
+        -:  183:      if (size < avx512_trsm_cutoff<Scalar>(l2, cols, L2Cap)) {
+        -:  184:        trsmKernelL<Scalar, Index, Mode, Conjugate, TriStorageOrder, 1, /*Specialized=*/true>::kernel(
+        -:  185:          size, cols, _tri, triStride, _other, 1, otherStride);
+        -:  186:        return;
+        -:  187:      }
+        -:  188:    }
+        -:  189:#endif
+        -:  190:
+        -:  191:    typedef const_blas_data_mapper<Scalar, Index, TriStorageOrder> TriMapper;
+        -:  192:    typedef blas_data_mapper<Scalar, Index, ColMajor, Unaligned, OtherInnerStride> OtherMapper;
+    #####:  193:    TriMapper tri(_tri, triStride);
+    #####:  194:    OtherMapper other(_other, otherStride, otherIncr);
+        -:  195:
+        -:  196:    typedef gebp_traits<Scalar,Scalar> Traits;
+        -:  197:
+        -:  198:    enum {
+        -:  199:      SmallPanelWidth   = plain_enum_max(Traits::mr, Traits::nr),
+        -:  200:      IsLower = (Mode&Lower) == Lower
+        -:  201:    };
+        -:  202:
+    #####:  203:    Index kc = blocking.kc();                   // cache block size along the K direction
+    #####:  204:    Index mc = (std::min)(size,blocking.mc());  // cache block size along the M direction
+        -:  205:
+    #####:  206:    std::size_t sizeA = kc*mc;
+    #####:  207:    std::size_t sizeB = kc*cols;
+        -:  208:
+    #####:  209:    ei_declare_aligned_stack_constructed_variable(Scalar, blockA, sizeA, blocking.blockA());
+    #####:  210:    ei_declare_aligned_stack_constructed_variable(Scalar, blockB, sizeB, blocking.blockB());
+        -:  211:
+        -:  212:    gebp_kernel<Scalar, Scalar, Index, OtherMapper, Traits::mr, Traits::nr, Conjugate, false> gebp_kernel;
+        -:  213:    gemm_pack_lhs<Scalar, Index, TriMapper, Traits::mr, Traits::LhsProgress, typename Traits::LhsPacket4Packing, TriStorageOrder> pack_lhs;
+        -:  214:    gemm_pack_rhs<Scalar, Index, OtherMapper, Traits::nr, ColMajor, false, true> pack_rhs;
+        -:  215:
+        -:  216:    // the goal here is to subdivise the Rhs panels such that we keep some cache
+        -:  217:    // coherence when accessing the rhs elements
+    #####:  218:    Index subcols = cols>0 ? l2/(4 * sizeof(Scalar) * std::max<Index>(otherStride,size)) : 0;
+    #####:  219:    subcols = std::max<Index>((subcols/Traits::nr)*Traits::nr, Traits::nr);
+        -:  220:
+    #####:  221:    for(Index k2=IsLower ? 0 : size;
+    #####:  222:        IsLower ? k2<size : k2>0;
+    #####:  223:        IsLower ? k2+=kc : k2-=kc)
+        -:  224:    {
+    #####:  225:      const Index actual_kc = (std::min)(IsLower ? size-k2 : k2, kc);
+        -:  226:
+        -:  227:      // We have selected and packed a big horizontal panel R1 of rhs. Let B be the packed copy of this panel,
+        -:  228:      // and R2 the remaining part of rhs. The corresponding vertical panel of lhs is split into
+        -:  229:      // A11 (the triangular part) and A21 the remaining rectangular part.
+        -:  230:      // Then the high level algorithm is:
+        -:  231:      //  - B = R1                    => general block copy (done during the next step)
+        -:  232:      //  - R1 = A11^-1 B             => tricky part
+        -:  233:      //  - update B from the new R1  => actually this has to be performed continuously during the above step
+        -:  234:      //  - R2 -= A21 * B             => GEPP
+        -:  235:
+        -:  236:      // The tricky part: compute R1 = A11^-1 B while updating B from R1
+        -:  237:      // The idea is to split A11 into multiple small vertical panels.
+        -:  238:      // Each panel can be split into a small triangular part T1k which is processed without optimization,
+        -:  239:      // and the remaining small part T2k which is processed using gebp with appropriate block strides
+    #####:  240:      for(Index j2=0; j2<cols; j2+=subcols)
+        -:  241:      {
+    #####:  242:        Index actual_cols = (std::min)(cols-j2,subcols);
+        -:  243:        // for each small vertical panels [T1k^T, T2k^T]^T of lhs
+    #####:  244:        for (Index k1=0; k1<actual_kc; k1+=SmallPanelWidth)
+        -:  245:        {
+    #####:  246:          Index actualPanelWidth = std::min<Index>(actual_kc-k1, SmallPanelWidth);
+        -:  247:          // tr solve
+        -:  248:          {
+    #####:  249:            Index i  = IsLower ? k2+k1 : k2-k1;
+        -:  250:#if defined(EIGEN_VECTORIZE_AVX512) && EIGEN_USE_AVX512_TRSM_L_KERNELS
+        -:  251:            EIGEN_IF_CONSTEXPR( (OtherInnerStride == 1 &&
+        -:  252:                                 (std::is_same<Scalar,float>::value ||
+        -:  253:                                  std::is_same<Scalar,double>::value)) ) {
+        -:  254:              i  = IsLower ? k2 + k1: k2 - k1 - actualPanelWidth;
+        -:  255:            }
+        -:  256:#endif
+    #####:  257:            trsmKernelL<Scalar, Index, Mode, Conjugate, TriStorageOrder, OtherInnerStride, /*Specialized=*/true>::kernel(
+    #####:  258:              actualPanelWidth, actual_cols,
+    #####:  259:              _tri + i + (i)*triStride, triStride,
+    #####:  260:              _other + i*OtherInnerStride + j2*otherStride, otherIncr, otherStride);
+        -:  261:          }
+        -:  262:
+    #####:  263:          Index lengthTarget = actual_kc-k1-actualPanelWidth;
+    #####:  264:          Index startBlock   = IsLower ? k2+k1 : k2-k1-actualPanelWidth;
+    #####:  265:          Index blockBOffset = IsLower ? k1 : lengthTarget;
+        -:  266:
+        -:  267:          // update the respective rows of B from other
+    #####:  268:          pack_rhs(blockB+actual_kc*j2, other.getSubMapper(startBlock,j2), actualPanelWidth, actual_cols, actual_kc, blockBOffset);
+        -:  269:
+        -:  270:          // GEBP
+    #####:  271:          if (lengthTarget>0)
+        -:  272:          {
+    #####:  273:            Index startTarget  = IsLower ? k2+k1+actualPanelWidth : k2-actual_kc;
+        -:  274:
+    #####:  275:            pack_lhs(blockA, tri.getSubMapper(startTarget,startBlock), actualPanelWidth, lengthTarget);
+        -:  276:
+    #####:  277:            gebp_kernel(other.getSubMapper(startTarget,j2), blockA, blockB+actual_kc*j2, lengthTarget, actualPanelWidth, actual_cols, Scalar(-1),
+    #####:  278:                        actualPanelWidth, actual_kc, 0, blockBOffset);
+    #####:  279:          }
+    #####:  280:        }
+    #####:  281:      }
+        -:  282:
+        -:  283:      // R2 -= A21 * B => GEPP
+        -:  284:      {
+    #####:  285:        Index start = IsLower ? k2+kc : 0;
+    #####:  286:        Index end   = IsLower ? size : k2-kc;
+    #####:  287:        for(Index i2=start; i2<end; i2+=mc)
+        -:  288:        {
+    #####:  289:          const Index actual_mc = (std::min)(mc,end-i2);
+    #####:  290:          if (actual_mc>0)
+        -:  291:          {
+    #####:  292:            pack_lhs(blockA, tri.getSubMapper(i2, IsLower ? k2 : k2-kc), actual_kc, actual_mc);
+        -:  293:
+    #####:  294:            gebp_kernel(other.getSubMapper(i2, 0), blockA, blockB, actual_mc, actual_kc, cols, Scalar(-1), -1, -1, 0, 0);
+    #####:  295:          }
+    #####:  296:        }
+        -:  297:      }
+    #####:  298:    }
+    #####:  299:  }
+        -:  300:
+        -:  301:/* Optimized triangular solver with multiple left hand sides and the triangular matrix on the right
+        -:  302: */
+        -:  303:template <typename Scalar, typename Index, int Mode, bool Conjugate, int TriStorageOrder, int OtherInnerStride>
+        -:  304:struct triangular_solve_matrix<Scalar,Index,OnTheRight,Mode,Conjugate,TriStorageOrder,ColMajor,OtherInnerStride>
+        -:  305:{
+        -:  306:  static EIGEN_DONT_INLINE void run(
+        -:  307:    Index size, Index otherSize,
+        -:  308:    const Scalar* _tri, Index triStride,
+        -:  309:    Scalar* _other, Index otherIncr, Index otherStride,
+        -:  310:    level3_blocking<Scalar,Scalar>& blocking);
+        -:  311:};
+        -:  312:
+        -:  313:template <typename Scalar, typename Index, int Mode, bool Conjugate, int TriStorageOrder, int OtherInnerStride>
+        -:  314:EIGEN_DONT_INLINE void triangular_solve_matrix<Scalar,Index,OnTheRight,Mode,Conjugate,TriStorageOrder,ColMajor,OtherInnerStride>::run(
+        -:  315:    Index size, Index otherSize,
+        -:  316:    const Scalar* _tri, Index triStride,
+        -:  317:    Scalar* _other, Index otherIncr, Index otherStride,
+        -:  318:    level3_blocking<Scalar,Scalar>& blocking)
+        -:  319:  {
+        -:  320:    Index rows = otherSize;
+        -:  321:
+        -:  322:#if defined(EIGEN_VECTORIZE_AVX512) && EIGEN_USE_AVX512_TRSM_R_KERNELS && EIGEN_ENABLE_AVX512_NOCOPY_TRSM_R_CUTOFFS
+        -:  323:    EIGEN_IF_CONSTEXPR( (OtherInnerStride == 1 &&
+        -:  324:                 (std::is_same<Scalar,float>::value ||
+        -:  325:                  std::is_same<Scalar,double>::value)) ) {
+        -:  326:      // TODO: Investigate better heuristics for cutoffs.
+        -:  327:      std::ptrdiff_t l1, l2, l3;
+        -:  328:      manage_caching_sizes(GetAction, &l1, &l2, &l3);
+        -:  329:      double L2Cap = 0.5; // 50% of L2 size
+        -:  330:      if (size < avx512_trsm_cutoff<Scalar>(l2, rows, L2Cap)) {
+        -:  331:        trsmKernelR<Scalar, Index, Mode, Conjugate, TriStorageOrder, OtherInnerStride, /*Specialized=*/true>::
+        -:  332:          kernel(size, rows, _tri, triStride, _other, 1, otherStride);
+        -:  333:        return;
+        -:  334:      }
+        -:  335:    }
+        -:  336:#endif
+        -:  337:
+        -:  338:    typedef blas_data_mapper<Scalar, Index, ColMajor, Unaligned, OtherInnerStride> LhsMapper;
+        -:  339:    typedef const_blas_data_mapper<Scalar, Index, TriStorageOrder> RhsMapper;
+        -:  340:    LhsMapper lhs(_other, otherStride, otherIncr);
+        -:  341:    RhsMapper rhs(_tri, triStride);
+        -:  342:
+        -:  343:    typedef gebp_traits<Scalar,Scalar> Traits;
+        -:  344:    enum {
+        -:  345:      RhsStorageOrder   = TriStorageOrder,
+        -:  346:      SmallPanelWidth   = plain_enum_max(Traits::mr, Traits::nr),
+        -:  347:      IsLower = (Mode&Lower) == Lower
+        -:  348:    };
+        -:  349:
+        -:  350:    Index kc = blocking.kc();                   // cache block size along the K direction
+        -:  351:    Index mc = (std::min)(rows,blocking.mc());  // cache block size along the M direction
+        -:  352:
+        -:  353:    std::size_t sizeA = kc*mc;
+        -:  354:    std::size_t sizeB = kc*size;
+        -:  355:
+        -:  356:    ei_declare_aligned_stack_constructed_variable(Scalar, blockA, sizeA, blocking.blockA());
+        -:  357:    ei_declare_aligned_stack_constructed_variable(Scalar, blockB, sizeB, blocking.blockB());
+        -:  358:
+        -:  359:    gebp_kernel<Scalar, Scalar, Index, LhsMapper, Traits::mr, Traits::nr, false, Conjugate> gebp_kernel;
+        -:  360:    gemm_pack_rhs<Scalar, Index, RhsMapper, Traits::nr, RhsStorageOrder> pack_rhs;
+        -:  361:    gemm_pack_rhs<Scalar, Index, RhsMapper, Traits::nr, RhsStorageOrder,false,true> pack_rhs_panel;
+        -:  362:    gemm_pack_lhs<Scalar, Index, LhsMapper, Traits::mr, Traits::LhsProgress, typename Traits::LhsPacket4Packing, ColMajor, false, true> pack_lhs_panel;
+        -:  363:
+        -:  364:    for(Index k2=IsLower ? size : 0;
+        -:  365:        IsLower ? k2>0 : k2<size;
+        -:  366:        IsLower ? k2-=kc : k2+=kc)
+        -:  367:    {
+        -:  368:      const Index actual_kc = (std::min)(IsLower ? k2 : size-k2, kc);
+        -:  369:      Index actual_k2 = IsLower ? k2-actual_kc : k2 ;
+        -:  370:
+        -:  371:      Index startPanel = IsLower ? 0 : k2+actual_kc;
+        -:  372:      Index rs = IsLower ? actual_k2 : size - actual_k2 - actual_kc;
+        -:  373:      Scalar* geb = blockB+actual_kc*actual_kc;
+        -:  374:
+        -:  375:      if (rs>0) pack_rhs(geb, rhs.getSubMapper(actual_k2,startPanel), actual_kc, rs);
+        -:  376:
+        -:  377:      // triangular packing (we only pack the panels off the diagonal,
+        -:  378:      // neglecting the blocks overlapping the diagonal
+        -:  379:      {
+        -:  380:        for (Index j2=0; j2<actual_kc; j2+=SmallPanelWidth)
+        -:  381:        {
+        -:  382:          Index actualPanelWidth = std::min<Index>(actual_kc-j2, SmallPanelWidth);
+        -:  383:          Index actual_j2 = actual_k2 + j2;
+        -:  384:          Index panelOffset = IsLower ? j2+actualPanelWidth : 0;
+        -:  385:          Index panelLength = IsLower ? actual_kc-j2-actualPanelWidth : j2;
+        -:  386:
+        -:  387:          if (panelLength>0)
+        -:  388:          pack_rhs_panel(blockB+j2*actual_kc,
+        -:  389:                         rhs.getSubMapper(actual_k2+panelOffset, actual_j2),
+        -:  390:                         panelLength, actualPanelWidth,
+        -:  391:                         actual_kc, panelOffset);
+        -:  392:        }
+        -:  393:      }
+        -:  394:
+        -:  395:      for(Index i2=0; i2<rows; i2+=mc)
+        -:  396:      {
+        -:  397:        const Index actual_mc = (std::min)(mc,rows-i2);
+        -:  398:
+        -:  399:        // triangular solver kernel
+        -:  400:        {
+        -:  401:          // for each small block of the diagonal (=> vertical panels of rhs)
+        -:  402:          for (Index j2 = IsLower
+        -:  403:                      ? (actual_kc - ((actual_kc%SmallPanelWidth) ? Index(actual_kc%SmallPanelWidth)
+        -:  404:                                                                  : Index(SmallPanelWidth)))
+        -:  405:                      : 0;
+        -:  406:               IsLower ? j2>=0 : j2<actual_kc;
+        -:  407:               IsLower ? j2-=SmallPanelWidth : j2+=SmallPanelWidth)
+        -:  408:          {
+        -:  409:            Index actualPanelWidth = std::min<Index>(actual_kc-j2, SmallPanelWidth);
+        -:  410:            Index absolute_j2 = actual_k2 + j2;
+        -:  411:            Index panelOffset = IsLower ? j2+actualPanelWidth : 0;
+        -:  412:            Index panelLength = IsLower ? actual_kc - j2 - actualPanelWidth : j2;
+        -:  413:
+        -:  414:            // GEBP
+        -:  415:            if(panelLength>0)
+        -:  416:            {
+        -:  417:              gebp_kernel(lhs.getSubMapper(i2,absolute_j2),
+        -:  418:                          blockA, blockB+j2*actual_kc,
+        -:  419:                          actual_mc, panelLength, actualPanelWidth,
+        -:  420:                          Scalar(-1),
+        -:  421:                          actual_kc, actual_kc, // strides
+        -:  422:                          panelOffset, panelOffset); // offsets
+        -:  423:            }
+        -:  424:
+        -:  425:            {
+        -:  426:              // unblocked triangular solve
+        -:  427:              trsmKernelR<Scalar, Index, Mode, Conjugate, TriStorageOrder, OtherInnerStride, /*Specialized=*/true>::
+        -:  428:                kernel(actualPanelWidth, actual_mc,
+        -:  429:                            _tri + absolute_j2 + absolute_j2*triStride, triStride,
+        -:  430:                            _other + i2*OtherInnerStride + absolute_j2*otherStride, otherIncr, otherStride);
+        -:  431:            }
+        -:  432:            // pack the just computed part of lhs to A
+        -:  433:            pack_lhs_panel(blockA, lhs.getSubMapper(i2,absolute_j2),
+        -:  434:                           actualPanelWidth, actual_mc,
+        -:  435:                           actual_kc, j2);
+        -:  436:          }
+        -:  437:        }
+        -:  438:
+        -:  439:        if (rs>0)
+        -:  440:          gebp_kernel(lhs.getSubMapper(i2, startPanel), blockA, geb,
+        -:  441:                      actual_mc, actual_kc, rs, Scalar(-1),
+        -:  442:                      -1, -1, 0, 0);
+        -:  443:      }
+        -:  444:    }
+        -:  445:  }
+        -:  446:} // end namespace internal
+        -:  447:
+        -:  448:} // end namespace Eigen
+        -:  449:
+        -:  450:#endif // EIGEN_TRIANGULAR_SOLVER_MATRIX_H

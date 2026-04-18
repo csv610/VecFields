@@ -1,0 +1,169 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/include/directional/project_curl.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Directional, a library for directional field processing.
+        -:    2://
+        -:    3:// Copyright (C) 2024 Amir Vaxman <avaxman@gmail.com>
+        -:    4://
+        -:    5:// This Source Code Form is subject to the terms of the Mozilla Public License
+        -:    6:// v. 2.0. If a copy of the MPL was not distributed with this file, You can
+        -:    7:// obtain one at http://mozilla.org/MPL/2.0/.
+        -:    8:
+        -:    9:#ifndef DIRECTIONAL_PROJECT_CURL
+        -:   10:#define DIRECTIONAL_PROJECT_CURL
+        -:   11:
+        -:   12:#include <Eigen/Core>
+        -:   13:#include <vector>
+        -:   14:#include <set>
+        -:   15:#include <directional/PCFaceTangentBundle.h>
+        -:   16:#include <directional/CartesianField.h>
+        -:   17:#include <directional/curl_matrices.h>
+        -:   18:#include <directional/sparse_block.h>
+        -:   19:#include <directional/extrinsic_intrinsic_matrices.h>
+        -:   20:
+        -:   21:namespace directional {
+        -:   22:
+        -:   23:inline void gradient_descent(const Eigen::SparseMatrix<double>& A,
+        -:   24:                             const Eigen::VectorXd& gradMasses,
+        -:   25:                             const Eigen::VectorXd& b,
+        -:   26:                             const Eigen::VectorXd& initx,
+        -:   27:                             const double tol,
+        -:   28:                             const int maxIterations,
+        -:   29:                             Eigen::VectorXd& resultx)
+        -:   30:{
+        -:   31:    
+        -:   32:    using namespace Eigen;
+        -:   33:    using namespace std;
+        -:   34:    
+        -:   35:    resultx = initx;
+        -:   36:    double denValue = b.norm();
+        -:   37:    //cout<<"(A*initx-b).lpNorm<Infinity>(): "<<(A*initx-b).lpNorm<2>();
+        -:   38:    for (int i=0;i<maxIterations;i++){
+        -:   39:        VectorXd Ax=A*resultx;
+        -:   40:        VectorXd Axb = Ax-b;
+        -:   41:        double currValue = Axb.norm()/denValue;
+        -:   42:        // cout<<"currValue: "<<currValue<<endl;
+        -:   43:        if (currValue<tol)
+        -:   44:            break;
+        -:   45:        
+        -:   46:        VectorXd gradient = gradMasses.array()*Axb.array();
+        -:   47:        VectorXd Ag = A*gradient;
+        -:   48:        
+        -:   49:        double alpha = (Ag.dot(resultx))/(Ag.dot(gradient));
+        -:   50:        resultx = resultx - alpha*gradient;
+        -:   51:        //cout<<"(A*resultx-b).lpNorm<Infinity>(): "<<(A*resultx-b).lpNorm<Infinity>();
+        -:   52:    }
+        -:   53:    
+        -:   54:}
+        -:   55:
+        -:   56:
+        -:   57://This only works with face based raw fields, with a given matching
+        -:   58://Reducing the curl of a field by solving for the closest raw field that is curl free.
+        -:   59://the optional objMatrix is in case we want to minimize an objective (default: closeness)
+        -:   60://The optional reducMatrix is if the field has reduced degrees of freedom (for instance, symmetry). We have that field = reducMatrix*trueDofField
+        -:   61://Currently hard constraints are ignored
+    #####:   62:inline void project_curl(const CartesianField& origField,
+        -:   63:                         const Eigen::VectorXi& constFaces,   //these are only in case of hard constraints, otherwise leave empty (soft constraints should be baked into objMatrix
+        -:   64:                         const Eigen::MatrixXd& constVectors,
+        -:   65:                         CartesianField& curlFreeField,
+        -:   66:                         const Eigen::SparseMatrix<double>& objMatrix=Eigen::SparseMatrix<double>(),
+        -:   67:                         const Eigen::VectorXd& objRhs=Eigen::VectorXd(),
+        -:   68:                         const Eigen::SparseMatrix<double>& reducMatrix = Eigen::SparseMatrix<double>()){
+        -:   69:    
+        -:   70:    using namespace Eigen;
+        -:   71:    using namespace std;
+        -:   72:    
+    #####:   73:    assert(origField.fieldType == fieldTypeEnum::RAW_FIELD && origField.tb->discTangType() ==discTangTypeEnum::FACE_SPACES && "project_curl(): field should be a face-based raw field!");
+        -:   74:    
+    #####:   75:    VectorXd rawFieldVec = origField.flatten(true);
+        -:   76:    
+    #####:   77:    VectorXi constinFace(constFaces.size());
+        -:   78:    
+        -:   79:    //Finding the closest const field in face
+    #####:   80:    for (int i=0;i<constFaces.size();i++){
+    #####:   81:        double maxDot=-32767.0;
+        -:   82:        //cout<<"b.row(i): "<<b.row(i)<<endl;
+    #####:   83:        for (int j=0;j<origField.N;j++){
+    #####:   84:            RowVector3d currVector3D = origField.extField.block(constFaces(i), 3*j,1,3).normalized();
+        -:   85:            //cout<<"currVector3D: "<<currVector3D<<endl;
+    #####:   86:            double currDot = currVector3D.dot(constVectors.row(i));
+    #####:   87:            if (currDot>maxDot){
+    #####:   88:                maxDot=currDot;
+    #####:   89:                constinFace(i)=j;
+    #####:   90:            }
+    #####:   91:        }
+        -:   92:        //cout<<"maxDot: "<<maxDot<<endl;
+    #####:   93:    }
+        -:   94:    
+    #####:   95:    SparseMatrix<double> E;
+    #####:   96:    VectorXd rhs;
+    #####:   97:    if (objMatrix.nonZeros()==0){
+    #####:   98:        E.resize(rawFieldVec.size(), rawFieldVec.size());
+    #####:   99:        E.setIdentity();
+    #####:  100:        rhs = rawFieldVec;
+    #####:  101:    } else {
+    #####:  102:        E = objMatrix;
+    #####:  103:        rhs = objRhs;
+        -:  104:    }
+        -:  105:    
+    #####:  106:    SparseMatrix<double> R;
+    #####:  107:    if (reducMatrix.nonZeros()==0){
+    #####:  108:        R.resize(rawFieldVec.size(), rawFieldVec.size());
+    #####:  109:        R.setIdentity();
+    #####:  110:    } else R = reducMatrix;
+        -:  111:    
+        -:  112:    //TODO: hard constraints
+        -:  113:    
+    #####:  114:    SparseMatrix<double> C = directional::curl_matrix_2D<double>(*((directional::PCFaceTangentBundle*)(origField.tb))->mesh,  true, origField.N, 1, origField.matching);
+    #####:  115:    SparseMatrix<double> CR=C*R;
+    #####:  116:    SparseMatrix<double> CRt=CR.transpose();
+    #####:  117:    SparseMatrix<double> ER=E*R;
+        -:  118:    
+        -:  119:
+        -:  120:    //cout<<"(C*rawFieldVec).lpNorm<Infinity>() before: "<<(C*rawFieldVec).lpNorm<Infinity>()<<endl;
+        -:  121:    
+    #####:  122:    Eigen::Matrix2i orderMat; orderMat<<0,1,2,3;
+    #####:  123:    std::vector<Eigen::SparseMatrix<double>> matVec;
+    #####:  124:    matVec.push_back(ER.transpose()*ER);
+    #####:  125:    matVec.push_back(CRt);
+    #####:  126:    matVec.push_back(CR);
+    #####:  127:    matVec.push_back(Eigen::SparseMatrix<double>(CR.rows(), CR.rows()));
+    #####:  128:    Eigen::SparseMatrix<double> A;
+    #####:  129:    directional::sparse_block(orderMat, matVec, A);
+    #####:  130:    Eigen::Vector<double, Eigen::Dynamic> b(ER.rows()+CR.rows());
+    #####:  131:    b.head(ER.rows()) = ER.transpose()*rhs;
+    #####:  132:    b.tail(CR.rows()).setZero();
+        -:  133:    
+    #####:  134:    Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
+    #####:  135:    solver.compute(A);
+    #####:  136:    assert("project_curl(): Decomposition failed!" && solver.info() == Eigen::Success);
+    #####:  137:    Eigen::Vector<double, Eigen::Dynamic> x = solver.solve(b);
+    #####:  138:    assert("project_curl(): Solver failed!" && solver.info() == Eigen::Success);
+        -:  139:    
+        -:  140:    
+    #####:  141:    VectorXd cfFieldVec = R*x.head(ER.rows());
+        -:  142:    //cout<<"(C*rawFieldVec).lpNorm<Infinity>() after: "<<(C*cfFieldVec).lpNorm<Infinity>()<<endl;
+        -:  143:    
+    #####:  144:    curlFreeField=origField;
+    #####:  145:    Eigen::SparseMatrix<double> IE = directional::face_intrinsic_to_extrinsic_matrix_2D<double>(*((directional::PCFaceTangentBundle*)(origField.tb))->mesh, origField.N);
+    #####:  146:    curlFreeField.set_extrinsic_field(IE*cfFieldVec);
+        -:  147:    
+        -:  148:    //checking with extrinsic matrix
+    #####:  149:    SparseMatrix<double> Cext = directional::curl_matrix_2D<double>(*((directional::PCFaceTangentBundle*)(origField.tb))->mesh, false, origField.N, 1, origField.matching);
+    #####:  150:    VectorXd v = Cext * IE * cfFieldVec;
+        -:  151:    
+        -:  152:    Eigen::Index maxIndex;
+    #####:  153:    double maxAbsVal = v.cwiseAbs().maxCoeff(&maxIndex);
+        -:  154:    
+        -:  155:    /*cout << "Extrinsic curl max abs: " << maxAbsVal << endl;
+        -:  156:     cout << "At index: " << maxIndex << endl;
+        -:  157:     cout << "Actual value: " << v[maxIndex] << endl;
+        -:  158:     cout << "2D value: " << (C*cfFieldVec)[maxIndex] <<endl;
+        -:  159:     cout<<"Extrinsic curl: "<<(Cext*IE*cfFieldVec).lpNorm<Infinity>()<<endl;*/
+        -:  160:    
+    #####:  161:}
+        -:  162:};
+        -:  163:
+        -:  164:
+        -:  165:#endif

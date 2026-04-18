@@ -1,0 +1,142 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/include/directional/CartesianField.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Directional, a library for directional field processing.
+        -:    2:// Copyright (C) 2022 Amir Vaxman <avaxman@gmail.com>
+        -:    3://
+        -:    4:// This Source Code Form is subject to the terms of the Mozilla Public License
+        -:    5:// v. 2.0. If a copy of the MPL was not distributed with this file, You can
+        -:    6:// obtain one at http://mozilla.org/MPL/2.0/.
+        -:    7:
+        -:    8:#ifndef DIRECTIONAL_CARTESIAN_FIELD_H
+        -:    9:#define DIRECTIONAL_CARTESIAN_FIELD_H
+        -:   10:
+        -:   11:#include <iostream>
+        -:   12:#include <Eigen/Geometry>
+        -:   13:#include <Eigen/Sparse>
+        -:   14:#include <directional/single_to_N_matrix.h>
+        -:   15:#include <directional/TangentBundle.h>
+        -:   16:
+        -:   17:/***
+        -:   18: The class implements general cartesian fields in intrinsic dimension 2, which are attached to a tangent bundle. These fields can be of any degree N, where the unifying principle is that
+        -:   19: they are represented by Cartesian coordinates (intrinsically and possibly extrinsically). The class supports either direct raw fields (just a list of vectors in each
+        -:   20: tangent space in order), or power and polyvector fields, representing fields as root of polynomials irrespective of order.
+        -:   21: 
+        -:   22: This class assumes extrinsic representation in 3D space.
+        -:   23: ***/
+        -:   24:
+        -:   25:namespace directional{
+        -:   26:
+        -:   27:enum class fieldTypeEnum{RAW_FIELD, POWER_FIELD, POLYVECTOR_FIELD};
+        -:   28:
+    #####:   29:class CartesianField{
+        -:   30:public:
+        -:   31:    
+        -:   32:    const TangentBundle* tb;            //Referencing the tangent bundle on which the field is defined
+        -:   33:    
+        -:   34:    int N;                              //Degree of field (how many vectors are in each point);
+        -:   35:    fieldTypeEnum fieldType;            //The representation of the field (for instance, either a raw field or a power/polyvector field)
+        -:   36:    
+        -:   37:    Eigen::MatrixXd intField;           //Intrinsic representation (depending on the local basis of the face). Size #T x 2N
+        -:   38:    Eigen::MatrixXd extField;           //Ambient coordinates. Size Size #T x 3N
+        -:   39:    
+        -:   40:    Eigen::VectorXi matching;           //Matching(i)=j when vector k in adjSpaces(i,0) matches to vector (k+j)%N in adjSpaces(i,1)
+        -:   41:    Eigen::VectorXd effort;             //Effort of the entire matching (sum of deviations from parallel transport)
+        -:   42:    Eigen::VectorXi singLocalCycles;    //Singular (dual elements). Only the local cycles! not the generators or boundary cycles
+        -:   43:    Eigen::VectorXi singIndices;        //Corresponding indices (this is the numerator where the true fractional index is singIndices/N);
+        -:   44:    
+        4:   45:    CartesianField(){}
+        -:   46:    CartesianField(const TangentBundle& _tb):tb(&_tb){}
+        4:   47:    ~CartesianField(){}
+        -:   48:    
+        -:   49:    //Initializing the field with the proper tangent spaces
+        2:   50:    void inline init(const TangentBundle& _tb, const fieldTypeEnum _fieldType, const int _N){
+        2:   51:        tb = &_tb;
+        2:   52:        fieldType = _fieldType;
+        2:   53:        N=_N;
+        2:   54:        intField.resize(tb->sources.rows(),2*N);
+        2:   55:        extField.resize(tb->sources.rows(),3*N);
+        2:   56:    };
+        -:   57:    
+        2:   58:    void inline set_intrinsic_field(const Eigen::MatrixXd& _intField){
+        2:   59:        assert (!(fieldType==fieldTypeEnum::POWER_FIELD) || (_intField.cols()==2));
+        2:   60:        assert ((_intField.cols()==2*N) || !(fieldType==fieldTypeEnum::POLYVECTOR_FIELD || fieldType==fieldTypeEnum::RAW_FIELD));
+        2:   61:        intField = _intField;
+        -:   62:        
+        2:   63:        extField = tb->project_to_extrinsic(Eigen::VectorXi(), intField);
+        2:   64:    }
+        -:   65:    
+        -:   66:    //The same, just with complex coordinates
+        1:   67:    void virtual inline set_intrinsic_field(const Eigen::MatrixXcd& _intField){
+        1:   68:        intField.resize(_intField.rows(),_intField.cols()*2);
+        5:   69:        for (int i=0;i<N;i++){
+        4:   70:            intField.col(2*i)=_intField.col(i).real();
+        4:   71:            intField.col(2*i+1)=_intField.col(i).imag();
+        4:   72:        }
+        1:   73:        set_intrinsic_field(intField);
+        1:   74:    }
+        -:   75:    
+        -:   76:    //Setting the field by the extrinsic ambient field, which will get projected to the intrinsic tangent spaces.
+    #####:   77:    void inline set_extrinsic_field(const Eigen::MatrixXd& _extField){
+        -:   78:        //assert(_extField.cols()==3*N);
+    #####:   79:        if (_extField.cols()==1){
+    #####:   80:            extField.resize((_extField.size()/(3*N)), 3*N);
+    #####:   81:            for (int i=0;i<extField.rows();i++)
+    #####:   82:                extField.row(i) = _extField.block(3 * N * i, 0, 3 * N, 1).transpose();
+    #####:   83:        } else extField=_extField;
+    #####:   84:        intField = tb->project_to_intrinsic(Eigen::VectorXi::LinSpaced(extField.rows(), 0,extField.rows()-1), extField);
+    #####:   85:    }
+        -:   86:    
+    #####:   87:    Eigen::MatrixXcd inline get_complex_intrinsic_field() const{
+    #####:   88:        Eigen::MatrixXcd complexIntField(intField.rows(),intField.cols()/2);
+    #####:   89:        for (int i=0;i<N;i++){
+    #####:   90:            complexIntField.col(i).real() = intField.col(2*i);
+    #####:   91:            complexIntField.col(i).imag() = intField.col(2*i+1);
+    #####:   92:        }
+    #####:   93:        return complexIntField;
+    #####:   94:    }
+        -:   95:    
+        -:   96:    
+        -:   97:    //giving a single vector version of the field
+        -:   98:    //This is tangent space -> N coefficients -> xyz dominant order
+    #####:   99:    Eigen::VectorXd flatten(const bool isIntrinsic=false) const{
+    #####:  100:        assert(fieldType==fieldTypeEnum::RAW_FIELD && "flatten(): the real method is only good for raw fields");
+    #####:  101:        Eigen::MatrixXd field = (isIntrinsic ? intField : extField);
+    #####:  102:        Eigen::VectorXd vecField(field.rows()*field.cols());
+    #####:  103:        for (int i=0;i<field.rows();i++)
+    #####:  104:            for (int j=0;j<field.cols();j++)
+    #####:  105:                vecField(i*field.cols()+j) = field(i,j);
+        -:  106:        
+    #####:  107:        return vecField;
+    #####:  108:    }
+        -:  109:    
+        -:  110:    //Giving a single complex version (for power fields and polyvectors)
+        -:  111:    /* Eigen::VectorXcd flatten_complex() const{
+        -:  112:     assert((fieldType==fieldTypeEnum::POWER_FIELD || fieldType==fieldTypeEnum::POLYVECTOR_FIELD) && "flatten(): the complex method is only good for PolyVector or Power fields");
+        -:  113:     Eigen::VectorXcd vecField(intField.rows()*intField.cols()/2);
+        -:  114:     for (int j=0;j<intField.cols();j+=2)
+        -:  115:     for (int i=0;i<intField.rows();i++)
+        -:  116:     vecField(i*intField.cols()/2+j/2) = std::complex<double>(intField(i,j),intField(i,j+1));
+        -:  117:     
+        -:  118:     return vecField;
+        -:  119:     }*/
+        -:  120:    
+        -:  121:    
+        -:  122:    //Directly setting the singularities of the the field (only at the local dual elements; not at generator or boundary cycles).
+        1:  123:    void inline set_singularities(const Eigen::VectorXi& _singLocalCycles,
+        -:  124:                                  const Eigen::VectorXi& _singIndices){
+        -:  125:        
+        -:  126:        //TODO: remove boundary elements
+        1:  127:        singLocalCycles = _singLocalCycles;
+        1:  128:        singIndices = _singIndices;
+        1:  129:    }
+        -:  130:    
+        -:  131:    
+        -:  132:};
+        -:  133:
+        -:  134:}
+        -:  135:
+        -:  136:
+        -:  137:
+        -:  138:#endif

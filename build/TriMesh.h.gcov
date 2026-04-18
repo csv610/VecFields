@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/include/directional/TriMesh.h
-        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
-        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
-        -:    0:Runs:4
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
         -:    1:// This file is part of Directional, a library for directional field processing.
         -:    2:// Copyright (C) 2022 Amir Vaxman <avaxman@gmail.com>
         -:    3://
@@ -88,11 +88,11 @@
         -:   84:    int numGenerators;
         -:   85:    std::vector<std::vector<int>> boundaryLoops;
         -:   86:    
-       16:   87:    TriMesh(){}
-       16:   88:    ~TriMesh(){}
+        2:   87:    TriMesh(){}
+        2:   88:    ~TriMesh(){}
         -:   89:    
         -:   90:    //computing a full HE structure
-        4:   91:    void inline compute_edge_quantities(const bool verbose = false){
+        1:   91:    void inline compute_edge_quantities(const bool verbose = false){
         -:   92:        
         -:   93:        struct ComparePairs {
         -:   94:            bool operator()(const std::pair<std::pair<int, int>, int>& a, const std::pair<std::pair<int, int>, int>& b) const {
@@ -105,215 +105,215 @@
         -:  101:        };
         -:  102:        
         -:  103:        //This is done in the polyscope compatible fashion
-        4:  104:        dcel.init(V, F);
-        4:  105:        bool consistency = dcel.check_consistency(verbose,true,true,true);
-        8:  106:        assert(consistency && "compute_edge_quantities(): Something is wrong with the DCEL!!");
-        4:  107:        EV.resize(dcel.edges.size(),2);
-        4:  108:        EF = Eigen::MatrixXi::Constant(dcel.edges.size(),2,-1);
-        4:  109:        EFi = Eigen::MatrixXi::Constant(dcel.edges.size(),2,-1);
-        4:  110:        FE.resize(F.rows(),3);
-        4:  111:        FEs.resize(F.rows(),3);
-        4:  112:        TT.resize(F.rows(),3);
-     4234:  113:        for (int i=0;i<dcel.edges.size();i++){
-     8460:  114:            EV.row(i)<<dcel.halfedges[dcel.edges[i].halfedge].vertex,
-     4230:  115:            dcel.halfedges[dcel.halfedges[dcel.edges[i].halfedge].next].vertex;
-     4230:  116:            EF(i,0) = dcel.halfedges[dcel.edges[i].halfedge].face;
-     4230:  117:            if (dcel.halfedges[dcel.edges[i].halfedge].twin!=-1)
-     3990:  118:                EF(i,1) = dcel.halfedges[dcel.halfedges[dcel.edges[i].halfedge].twin].face;
+        1:  104:        dcel.init(V, F);
+        1:  105:        bool consistency = dcel.check_consistency(verbose,true,true,true);
+        2:  106:        assert(consistency && "compute_edge_quantities(): Something is wrong with the DCEL!!");
+        1:  107:        EV.resize(dcel.edges.size(),2);
+        1:  108:        EF = Eigen::MatrixXi::Constant(dcel.edges.size(),2,-1);
+        1:  109:        EFi = Eigen::MatrixXi::Constant(dcel.edges.size(),2,-1);
+        1:  110:        FE.resize(F.rows(),3);
+        1:  111:        FEs.resize(F.rows(),3);
+        1:  112:        TT.resize(F.rows(),3);
+      241:  113:        for (int i=0;i<dcel.edges.size();i++){
+      480:  114:            EV.row(i)<<dcel.halfedges[dcel.edges[i].halfedge].vertex,
+      240:  115:            dcel.halfedges[dcel.halfedges[dcel.edges[i].halfedge].next].vertex;
+      240:  116:            EF(i,0) = dcel.halfedges[dcel.edges[i].halfedge].face;
+      240:  117:            if (dcel.halfedges[dcel.edges[i].halfedge].twin!=-1)
+      120:  118:                EF(i,1) = dcel.halfedges[dcel.halfedges[dcel.edges[i].halfedge].twin].face;
         -:  119:            
-     4230:  120:            EFi(i,0) = (dcel.edges[i].halfedge + 0) % 3;
-     4230:  121:            if (dcel.halfedges[dcel.edges[i].halfedge].twin !=-1)
-     3990:  122:                EFi(i,1) = (dcel.halfedges[dcel.edges[i].halfedge].twin + 0) % 3;
-     4230:  123:        }
-     2744:  124:        for (int i=0;i<dcel.faces.size();i++){
-     2740:  125:            int hebegin = dcel.faces[i].halfedge;
-     2740:  126:            int heiterate = hebegin;
-     2740:  127:            int inFaceCounter=0;
-     2740:  128:            do{
-     8220:  129:                FE(i,inFaceCounter) = dcel.halfedges[heiterate].edge;
-     8220:  130:                FEs(i,inFaceCounter) = (dcel.edges[dcel.halfedges[heiterate].edge].halfedge==heiterate ? 1 : -1);
-     8220:  131:                if (dcel.halfedges[heiterate].twin!=-1)
-     7980:  132:                    TT(i, inFaceCounter) = dcel.halfedges[dcel.halfedges[heiterate].twin].face;
-     8220:  133:                inFaceCounter++;
-     8220:  134:                heiterate = dcel.halfedges[heiterate].next;
-     8220:  135:            }while (heiterate!=hebegin);
-     2740:  136:        }
+      240:  120:            EFi(i,0) = (dcel.edges[i].halfedge + 0) % 3;
+      240:  121:            if (dcel.halfedges[dcel.edges[i].halfedge].twin !=-1)
+      120:  122:                EFi(i,1) = (dcel.halfedges[dcel.edges[i].halfedge].twin + 0) % 3;
+      240:  123:        }
+      121:  124:        for (int i=0;i<dcel.faces.size();i++){
+      120:  125:            int hebegin = dcel.faces[i].halfedge;
+      120:  126:            int heiterate = hebegin;
+      120:  127:            int inFaceCounter=0;
+      120:  128:            do{
+      360:  129:                FE(i,inFaceCounter) = dcel.halfedges[heiterate].edge;
+      360:  130:                FEs(i,inFaceCounter) = (dcel.edges[dcel.halfedges[heiterate].edge].halfedge==heiterate ? 1 : -1);
+      360:  131:                if (dcel.halfedges[heiterate].twin!=-1)
+      240:  132:                    TT(i, inFaceCounter) = dcel.halfedges[dcel.halfedges[heiterate].twin].face;
+      360:  133:                inFaceCounter++;
+      360:  134:                heiterate = dcel.halfedges[heiterate].next;
+      360:  135:            }while (heiterate!=hebegin);
+      120:  136:        }
         -:  137:        
         -:  138:        //gathering all boundary halfedges
-        4:  139:        std::vector<int> innerEdgesList, boundEdgesList, boundHalfedgesList;
-        4:  140:        isBoundaryVertex=Eigen::VectorXi::Zero(V.size());
-        4:  141:        isBoundaryEdge=Eigen::VectorXi::Zero(EV.size());
-     4234:  142:        for (int i = 0; i < dcel.edges.size(); i++) {
-     4230:  143:            if (dcel.halfedges[dcel.edges[i].halfedge].twin == -1){
-      240:  144:                boundEdgesList.push_back(i);
-      240:  145:                boundHalfedgesList.push_back(dcel.edges[i].halfedge);
-      240:  146:                isBoundaryEdge(i)=1;
-      240:  147:                isBoundaryVertex(EV(i,0))=1;
-      240:  148:                isBoundaryVertex(EV(i,1))=1;
-      240:  149:            }else
-     3990:  150:                innerEdgesList.push_back(i);
-     4230:  151:        }
+        1:  139:        std::vector<int> innerEdgesList, boundEdgesList, boundHalfedgesList;
+        1:  140:        isBoundaryVertex=Eigen::VectorXi::Zero(V.size());
+        1:  141:        isBoundaryEdge=Eigen::VectorXi::Zero(EV.size());
+      241:  142:        for (int i = 0; i < dcel.edges.size(); i++) {
+      240:  143:            if (dcel.halfedges[dcel.edges[i].halfedge].twin == -1){
+      120:  144:                boundEdgesList.push_back(i);
+      120:  145:                boundHalfedgesList.push_back(dcel.edges[i].halfedge);
+      120:  146:                isBoundaryEdge(i)=1;
+      120:  147:                isBoundaryVertex(EV(i,0))=1;
+      120:  148:                isBoundaryVertex(EV(i,1))=1;
+      120:  149:            }else
+      120:  150:                innerEdgesList.push_back(i);
+      240:  151:        }
         -:  152:        
-        4:  153:        innerEdges = Eigen::Map<Eigen::VectorXi, Eigen::Unaligned>(innerEdgesList.data(), innerEdgesList.size());
-        4:  154:        boundEdges = Eigen::Map<Eigen::VectorXi, Eigen::Unaligned>(boundEdgesList.data(), boundEdgesList.size());
+        1:  153:        innerEdges = Eigen::Map<Eigen::VectorXi, Eigen::Unaligned>(innerEdgesList.data(), innerEdgesList.size());
+        1:  154:        boundEdges = Eigen::Map<Eigen::VectorXi, Eigen::Unaligned>(boundEdgesList.data(), boundEdgesList.size());
         -:  155:        
         -:  156:        //creating boundary loops
-        4:  157:        Eigen::VectorXi isVisited = Eigen::VectorXi::Constant(dcel.halfedges.size(),0);
-        8:  158:        while (isVisited.sum()!=boundHalfedgesList.size()){
+        1:  157:        Eigen::VectorXi isVisited = Eigen::VectorXi::Constant(dcel.halfedges.size(),0);
+        3:  158:        while (isVisited.sum()!=boundHalfedgesList.size()){
         -:  159:            //choose a first one
         -:  160:            int beginHE;
-       12:  161:            for (beginHE=0;beginHE<boundHalfedgesList.size();beginHE++)
-       12:  162:                if (isVisited(boundHalfedgesList[beginHE])==0)
-        4:  163:                    break;
+        6:  161:            for (beginHE=0;beginHE<boundHalfedgesList.size();beginHE++)
+        6:  162:                if (isVisited(boundHalfedgesList[beginHE])==0)
+        2:  163:                    break;
         -:  164:            
-        4:  165:            beginHE = boundHalfedgesList[beginHE];  //in the global indexing
-        4:  166:            int currHE = beginHE;
-        4:  167:            std::vector<int> currBoundaryLoop;
-        4:  168:            do{
-      240:  169:                currBoundaryLoop.push_back(dcel.halfedges[currHE].vertex);
-      240:  170:                isVisited(currHE) = 1;
+        2:  165:            beginHE = boundHalfedgesList[beginHE];  //in the global indexing
+        2:  166:            int currHE = beginHE;
+        2:  167:            std::vector<int> currBoundaryLoop;
+        2:  168:            do{
+      120:  169:                currBoundaryLoop.push_back(dcel.halfedges[currHE].vertex);
+      120:  170:                isVisited(currHE) = 1;
         -:  171:                //finding the next boundary halfedge
-      240:  172:                currHE = dcel.halfedges[currHE].next;
-      720:  173:                while (dcel.halfedges[currHE].twin!=-1)
-      480:  174:                    currHE = dcel.halfedges[dcel.halfedges[currHE].twin].next;
-      240:  175:            }while(currHE!=beginHE);
-        4:  176:            boundaryLoops.push_back(currBoundaryLoop);
-        4:  177:        }
+      120:  172:                currHE = dcel.halfedges[currHE].next;
+      360:  173:                while (dcel.halfedges[currHE].twin!=-1)
+      240:  174:                    currHE = dcel.halfedges[dcel.halfedges[currHE].twin].next;
+      120:  175:            }while(currHE!=beginHE);
+        2:  176:            boundaryLoops.push_back(currBoundaryLoop);
+        2:  177:        }
         -:  178:        
-        4:  179:    }
+        1:  179:    }
         -:  180:    
-        4:  181:    void inline compute_geometric_quantities(){
+        1:  181:    void inline compute_geometric_quantities(){
         -:  182:        
         -:  183:        //barycenters and local bases
-        4:  184:        barycenters.resize(F.rows(),3);
-        4:  185:        FBx.resize(F.rows(),3);
-        4:  186:        FBy.resize(F.rows(),3);
-        4:  187:        faceNormals.resize(F.rows(),3);
-        4:  188:        faceAreas.resize(F.rows());
-     2744:  189:        for (int i=0;i<F.rows();i++) {
-     2740:  190:            barycenters.row(i) = (V.row(F(i, 0)) + V.row(F(i, 1)) + V.row(F(i, 2))) / 3;
-     2740:  191:            Eigen::RowVector3d localx = V.row(F(i,1))-V.row(F(i,0));
-     2740:  192:            Eigen::RowVector3d localy = V.row(F(i,2))-V.row(F(i,0));
-     2740:  193:            Eigen::RowVector3d localz = localx.cross(localy);
-     2740:  194:            faceAreas(i) = localz.norm()/2.0;
-     2740:  195:            localy = localz.cross(localx);
-     2740:  196:            FBx.row(i) = localx.normalized();
-     2740:  197:            FBy.row(i) = localy.normalized();
-     2740:  198:            faceNormals.row(i) = localz.normalized();
-     2740:  199:        }
+        1:  184:        barycenters.resize(F.rows(),3);
+        1:  185:        FBx.resize(F.rows(),3);
+        1:  186:        FBy.resize(F.rows(),3);
+        1:  187:        faceNormals.resize(F.rows(),3);
+        1:  188:        faceAreas.resize(F.rows());
+      121:  189:        for (int i=0;i<F.rows();i++) {
+      120:  190:            barycenters.row(i) = (V.row(F(i, 0)) + V.row(F(i, 1)) + V.row(F(i, 2))) / 3;
+      120:  191:            Eigen::RowVector3d localx = V.row(F(i,1))-V.row(F(i,0));
+      120:  192:            Eigen::RowVector3d localy = V.row(F(i,2))-V.row(F(i,0));
+      120:  193:            Eigen::RowVector3d localz = localx.cross(localy);
+      120:  194:            faceAreas(i) = localz.norm()/2.0;
+      120:  195:            localy = localz.cross(localx);
+      120:  196:            FBx.row(i) = localx.normalized();
+      120:  197:            FBy.row(i) = localy.normalized();
+      120:  198:            faceNormals.row(i) = localz.normalized();
+      120:  199:        }
         -:  200:        
         -:  201:        //computing vertex normals by area-weighted aveage of face normals
-        4:  202:        vertexNormals=Eigen::MatrixXd::Zero(V.rows(),3);
-     2744:  203:        for (int i=0;i<F.rows();i++)
-    10960:  204:            for (int j=0;j<3;j++)
-    10960:  205:                vertexNormals.row(F(i,j)).array()+=faceNormals.row(i).array()*faceAreas(i);
+        1:  202:        vertexNormals=Eigen::MatrixXd::Zero(V.rows(),3);
+      121:  203:        for (int i=0;i<F.rows();i++)
+      480:  204:            for (int j=0;j<3;j++)
+      480:  205:                vertexNormals.row(F(i,j)).array()+=faceNormals.row(i).array()*faceAreas(i);
         -:  206:        
-        4:  207:        vertexNormals.rowwise().normalize();
+        1:  207:        vertexNormals.rowwise().normalize();
         -:  208:        
         -:  209:        //computing a local basis that aligns with the first projected edge of each triangle
-        4:  210:        VBx.resize(V.rows(),3);
-        4:  211:        VBy.resize(V.rows(),3);
-     1494:  212:        for (int i=0;i<V.rows();i++){
-     1490:  213:            Eigen::RowVector3d firstEdge = V.row(dcel.halfedges[dcel.halfedges[dcel.vertices[i].halfedge].next].vertex)-V.row(i);
-     1490:  214:            VBx.row(i)=firstEdge-(firstEdge.dot(vertexNormals.row(i)))*vertexNormals.row(i);
-     1490:  215:            VBx.row(i).normalize();
-     1490:  216:            Eigen::RowVector3d currx=VBx.row(i);
-     1490:  217:            Eigen::RowVector3d currn=vertexNormals.row(i);
-     1490:  218:            VBy.row(i)=currn.cross(currx);
-     1490:  219:            VBy.row(i).normalize();
-     1490:  220:        }
+        1:  210:        VBx.resize(V.rows(),3);
+        1:  211:        VBy.resize(V.rows(),3);
+      121:  212:        for (int i=0;i<V.rows();i++){
+      120:  213:            Eigen::RowVector3d firstEdge = V.row(dcel.halfedges[dcel.halfedges[dcel.vertices[i].halfedge].next].vertex)-V.row(i);
+      120:  214:            VBx.row(i)=firstEdge-(firstEdge.dot(vertexNormals.row(i)))*vertexNormals.row(i);
+      120:  215:            VBx.row(i).normalize();
+      120:  216:            Eigen::RowVector3d currx=VBx.row(i);
+      120:  217:            Eigen::RowVector3d currn=vertexNormals.row(i);
+      120:  218:            VBy.row(i)=currn.cross(currx);
+      120:  219:            VBy.row(i).normalize();
+      120:  220:        }
         -:  221:        
         -:  222:        
         -:  223:        
-        4:  224:        midEdges.resize(EV.rows(), 3);
-     4234:  225:        for (int i=0;i<EV.rows();i++)
-     4230:  226:            midEdges.row(i) = (V.row(EV(i,0))+V.row(EV(i,1)))/2.0;
+        1:  224:        midEdges.resize(EV.rows(), 3);
+      241:  225:        for (int i=0;i<EV.rows();i++)
+      240:  226:            midEdges.row(i) = (V.row(EV(i,0))+V.row(EV(i,1)))/2.0;
         -:  227:        
-        4:  228:        gaussian_curvature(V,F,isBoundaryVertex, GaussianCurvature);
-        4:  229:        directional::shape_operator(V,EV,VBx,VBy,vertexNormals, Sv);
-        4:  230:        minVertexPrincipalDirections.resize(V.rows(),3);
-        4:  231:        maxVertexPrincipalDirections.resize(V.rows(),3);
-        4:  232:        vertexPrincipalCurvatures.resize(V.rows(),2);
-     1494:  233:        for (int i=0;i<V.rows();i++){
-     1490:  234:            Eigen::SelfAdjointEigenSolver<Eigen::Matrix2d> eigensolver(Sv[i]);
+        1:  228:        gaussian_curvature(V,F,isBoundaryVertex, GaussianCurvature);
+        1:  229:        directional::shape_operator(V,EV,VBx,VBy,vertexNormals, Sv);
+        1:  230:        minVertexPrincipalDirections.resize(V.rows(),3);
+        1:  231:        maxVertexPrincipalDirections.resize(V.rows(),3);
+        1:  232:        vertexPrincipalCurvatures.resize(V.rows(),2);
+      121:  233:        for (int i=0;i<V.rows();i++){
+      120:  234:            Eigen::SelfAdjointEigenSolver<Eigen::Matrix2d> eigensolver(Sv[i]);
         -:  235:            int minAbsIndex;
-     1490:  236:            eigensolver.eigenvalues().cwiseAbs().minCoeff(&minAbsIndex);
+      120:  236:            eigensolver.eigenvalues().cwiseAbs().minCoeff(&minAbsIndex);
         -:  237:            int minIndex, maxIndex;
-     1490:  238:            minIndex = eigensolver.eigenvalues()(0)>=eigensolver.eigenvalues()(1) ? 1 : 0;
-     1490:  239:            maxIndex = eigensolver.eigenvalues()(0)>=eigensolver.eigenvalues()(1) ? 0 : 1;
-     1490:  240:            vertexPrincipalCurvatures.row(i)<<eigensolver.eigenvalues()(minIndex), eigensolver.eigenvalues()(maxIndex);
-     1490:  241:            Eigen::RowVector2d minDirection = eigensolver.eigenvectors().col(minIndex).transpose();
-     1490:  242:            Eigen::RowVector2d maxDirection = eigensolver.eigenvectors().col(maxIndex).transpose();
-     1490:  243:            minVertexPrincipalDirections.row(i) = minDirection(0)*VBx.row(i)+minDirection(1)*VBy.row(i);
-     1490:  244:            maxVertexPrincipalDirections.row(i) = maxDirection(0)*VBx.row(i)+maxDirection(1)*VBy.row(i);
-     1490:  245:        }
+      120:  238:            minIndex = eigensolver.eigenvalues()(0)>=eigensolver.eigenvalues()(1) ? 1 : 0;
+      120:  239:            maxIndex = eigensolver.eigenvalues()(0)>=eigensolver.eigenvalues()(1) ? 0 : 1;
+      120:  240:            vertexPrincipalCurvatures.row(i)<<eigensolver.eigenvalues()(minIndex), eigensolver.eigenvalues()(maxIndex);
+      120:  241:            Eigen::RowVector2d minDirection = eigensolver.eigenvectors().col(minIndex).transpose();
+      120:  242:            Eigen::RowVector2d maxDirection = eigensolver.eigenvectors().col(maxIndex).transpose();
+      120:  243:            minVertexPrincipalDirections.row(i) = minDirection(0)*VBx.row(i)+minDirection(1)*VBy.row(i);
+      120:  244:            maxVertexPrincipalDirections.row(i) = maxDirection(0)*VBx.row(i)+maxDirection(1)*VBy.row(i);
+      120:  245:        }
         -:  246:        
         -:  247:        //Average edge length
-        4:  248:        double sumEdgeLength=0.0;
-     4234:  249:        for (int i=0;i<EV.rows();i++)
-     4230:  250:            sumEdgeLength += (V.row(EV(i,0))-V.row(EV(i,1))).norm();
+        1:  248:        double sumEdgeLength=0.0;
+      241:  249:        for (int i=0;i<EV.rows();i++)
+      240:  250:            sumEdgeLength += (V.row(EV(i,0))-V.row(EV(i,1))).norm();
         -:  251:        
-        4:  252:        avgEdgeLength =sumEdgeLength/(double)EV.rows();
-        4:  253:    }
+        1:  252:        avgEdgeLength =sumEdgeLength/(double)EV.rows();
+        1:  253:    }
         -:  254:    
-        4:  255:    void inline set_mesh(const Eigen::MatrixXd& _V,
+        1:  255:    void inline set_mesh(const Eigen::MatrixXd& _V,
         -:  256:                         const Eigen::MatrixXi& _F,
         -:  257:                         const Eigen::MatrixXi& _EV=Eigen::MatrixXi(),
         -:  258:                         const Eigen::MatrixXi& _FE=Eigen::MatrixXi(),
         -:  259:                         const Eigen::MatrixXi& _EF=Eigen::MatrixXi(),
         -:  260:                         const bool verbose = false) {
         -:  261:        
-        4:  262:        V = _V;
-        4:  263:        F = _F;
-        4:  264:        if (_EV.rows() == 0) {
-        4:  265:            compute_edge_quantities(verbose);
-        4:  266:        } else {
+        1:  262:        V = _V;
+        1:  263:        F = _F;
+        1:  264:        if (_EV.rows() == 0) {
+        1:  265:            compute_edge_quantities(verbose);
+        1:  266:        } else {
     #####:  267:            EV = _EV;
     #####:  268:            FE = _FE;
     #####:  269:            EF = _EF;
         -:  270:        }
         -:  271:        
-        4:  272:        compute_geometric_quantities();
+        1:  272:        compute_geometric_quantities();
         -:  273:        
-        4:  274:        eulerChar = V.rows() - EV.rows() + F.rows();
-        4:  275:        numGenerators = (2 - eulerChar)/2 - boundaryLoops.size();
-        4:  276:        minBox = V.colwise().minCoeff();
-        4:  277:        maxBox = V.colwise().maxCoeff();
+        1:  274:        eulerChar = V.rows() - EV.rows() + F.rows();
+        1:  275:        numGenerators = (2 - eulerChar)/2 - boundaryLoops.size();
+        1:  276:        minBox = V.colwise().minCoeff();
+        1:  277:        maxBox = V.colwise().maxCoeff();
         -:  278:        
         -:  279:        //hedra::dcel(Eigen::VectorXi::Constant(F.rows(),3),F,EV,EF,EFi, innerEdges,VH,EH,FH,HV,HE,HF,nextH,prevH,twinH);
-        4:  280:        vertexValence=Eigen::VectorXi::Zero(V.rows());
-     4234:  281:        for (int i=0;i<EV.rows();i++){
-     4230:  282:            vertexValence(EV(i,0))++;
-     4230:  283:            vertexValence(EV(i,1))++;
-     4230:  284:        }
+        1:  280:        vertexValence=Eigen::VectorXi::Zero(V.rows());
+      241:  281:        for (int i=0;i<EV.rows();i++){
+      240:  282:            vertexValence(EV(i,0))++;
+      240:  283:            vertexValence(EV(i,1))++;
+      240:  284:        }
         -:  285:        
-        4:  286:        VE.resize(V.rows(),vertexValence.maxCoeff());
-        4:  287:        VF.resize(V.rows(),vertexValence.maxCoeff());
-     1494:  288:        for (int i=0;i<V.rows();i++){
-     1490:  289:            int counter=0;
-     1490:  290:            int hebegin = dcel.vertices[i].halfedge;
-     1490:  291:            if (isBoundaryVertex(i)) //winding up hebegin to the first boundary edge
-      240:  292:                while (dcel.halfedges[hebegin].twin!=-1)
+        1:  286:        VE.resize(V.rows(),vertexValence.maxCoeff());
+        1:  287:        VF.resize(V.rows(),vertexValence.maxCoeff());
+      121:  288:        for (int i=0;i<V.rows();i++){
+      120:  289:            int counter=0;
+      120:  290:            int hebegin = dcel.vertices[i].halfedge;
+      120:  291:            if (isBoundaryVertex(i)) //winding up hebegin to the first boundary edge
+      120:  292:                while (dcel.halfedges[hebegin].twin!=-1)
     #####:  293:                    hebegin = dcel.halfedges[dcel.halfedges[hebegin].twin].next;
         -:  294:            
         -:  295:            //TODO: this rest inside the init function
         -:  296:            //resetting dcel pointer for future reference
-     1490:  297:            dcel.vertices[i].halfedge=hebegin;
-     1490:  298:            int heiterate = hebegin;
-     1490:  299:            do {
-     8220:  300:                VE(i, counter) = dcel.halfedges[heiterate].edge;
-     8220:  301:                VF(i, counter++) = dcel.halfedges[heiterate].face;
-     8220:  302:                if (dcel.halfedges[dcel.halfedges[heiterate].prev].twin==-1){
-      240:  303:                    VE(i, counter) =  dcel.halfedges[dcel.halfedges[heiterate].prev].edge;  //note counter is already ahead
-      240:  304:                    break;
+      120:  297:            dcel.vertices[i].halfedge=hebegin;
+      120:  298:            int heiterate = hebegin;
+      120:  299:            do {
+      360:  300:                VE(i, counter) = dcel.halfedges[heiterate].edge;
+      360:  301:                VF(i, counter++) = dcel.halfedges[heiterate].face;
+      360:  302:                if (dcel.halfedges[dcel.halfedges[heiterate].prev].twin==-1){
+      120:  303:                    VE(i, counter) =  dcel.halfedges[dcel.halfedges[heiterate].prev].edge;  //note counter is already ahead
+      120:  304:                    break;
         -:  305:                }
-     7980:  306:                heiterate = dcel.halfedges[dcel.halfedges[heiterate].prev].twin ;
-     7980:  307:            }while(hebegin!=heiterate);
-     1490:  308:        }
+      240:  306:                heiterate = dcel.halfedges[dcel.halfedges[heiterate].prev].twin ;
+      240:  307:            }while(hebegin!=heiterate);
+      120:  308:        }
         -:  309:        
         -:  310:   
         -:  311:        
-        4:  312:    }
+        1:  312:    }
         -:  313:    
         -:  314:};
         -:  315:

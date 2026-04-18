@@ -1,0 +1,74 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/include/directional/power_field.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Directional, a library for directional field processing.
+        -:    2:// Copyright (C) 2018 Amir Vaxman <avaxman@gmail.com>
+        -:    3://
+        -:    4:// This Source Code Form is subject to the terms of the Mozilla Public License
+        -:    5:// v. 2.0. If a copy of the MPL was not distributed with this file, You can
+        -:    6:// obtain one at http://mozilla.org/MPL/2.0/.
+        -:    7:
+        -:    8:#ifndef DIRECTIONAL_POWER_FIELD_H
+        -:    9:#define DIRECTIONAL_POWER_FIELD_H
+        -:   10:
+        -:   11:#include <iostream>
+        -:   12:#include <Eigen/Geometry>
+        -:   13:#include <Eigen/Sparse>
+        -:   14:#include <directional/polyvector_field.h>
+        -:   15:#include <directional/TangentBundle.h>
+        -:   16:#include <directional/CartesianField.h>
+        -:   17:
+        -:   18:
+        -:   19:namespace directional
+        -:   20:{
+        -:   21:// Computes a power field on the entire mesh from given values at the prescribed indices.
+        -:   22:// If no constraints are given the lowest-eigenvalue (of smoothness energy) field will be returned.
+        -:   23:// Input:
+        -:   24://  tb: underlying tangent bundle.
+        -:   25://  constFaces: the faces on which the polyvector is prescribed. If a face is repeated and the alignment is hard then all but the first vector in the face will be ignored.
+        -:   26://  constVectors: #F by 3 in representative form of the N-RoSy's on the tangent spaces.
+        -:   27://  alignWeights: #constFaces x 1 soft weights for alignment (negative values = fixed faces).
+        -:   28://  N: The degree of the field.
+        -:   29:// Output:
+        -:   30://  powerField: a cartesian power-field object.
+        1:   31:inline void power_field(const TangentBundle& tb,
+        -:   32:                        const Eigen::VectorXi& constSpaces,
+        -:   33:                        const Eigen::MatrixXd& constVectors,
+        -:   34:                        const Eigen::VectorXd& alignWeights,
+        -:   35:                        const int N,
+        -:   36:                        directional::CartesianField& field,
+        -:   37:                        const bool normalizeField = false)
+        -:   38:{
+        -:   39:    
+        1:   40:    PolyVectorData pvData;
+        1:   41:    pvData.N = N;
+        1:   42:    pvData.tb = &tb;
+        -:   43:    //pvData.verbose = true;
+        1:   44:    if (constSpaces.size()!=0) {
+        1:   45:        pvData.constSpaces = constSpaces;
+        1:   46:        pvData.constVectors = constVectors;
+        1:   47:        pvData.wAlignment = alignWeights;
+        1:   48:    }else{
+    #####:   49:        pvData.constSpaces.resize(1); pvData.constSpaces(0)=0;
+    #####:   50:        Eigen::RowVector2d intConstVector; intConstVector<<1.0,0.0;
+    #####:   51:        pvData.constVectors = tb.project_to_extrinsic(pvData.constSpaces, intConstVector);
+    #####:   52:        pvData.wAlignment = Eigen::VectorXd::Constant(pvData.constSpaces.size(),-1.0);
+        -:   53:    }
+        1:   54:    pvData.wSmooth = 1.0;
+        1:   55:    pvData.wRoSy = -1.0;  //Perfect RoSy
+        1:   56:    polyvector_field(pvData, field);
+        1:   57:    field.fieldType = fieldTypeEnum::POWER_FIELD;
+        -:   58:    //getting rid of the redundant zeros, in case they were allocated.
+        1:   59:    field.intField.conservativeResize(field.intField.rows(),2);
+        1:   60:    field.extField.conservativeResize(field.extField.rows(),3);
+        1:   61:    if (normalizeField){
+    #####:   62:        Eigen::MatrixXd intField = field.intField;
+    #####:   63:        intField = intField.array().colwise() / intField.rowwise().norm().array();
+    #####:   64:        field.set_intrinsic_field(intField);
+    #####:   65:    }
+        1:   66:}
+        -:   67:}
+        -:   68:
+        -:   69:
+        -:   70:#endif

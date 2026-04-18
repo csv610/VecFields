@@ -1,0 +1,76 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/googletest/googlemock/src/gmock_main.cc
+        -:    0:Graph:./external/googletest/googlemock/CMakeFiles/gmock_main.dir/src/gmock_main.cc.gcno
+        -:    0:Data:-
+        -:    0:Runs:0
+        -:    1:// Copyright 2008, Google Inc.
+        -:    2:// All rights reserved.
+        -:    3://
+        -:    4:// Redistribution and use in source and binary forms, with or without
+        -:    5:// modification, are permitted provided that the following conditions are
+        -:    6:// met:
+        -:    7://
+        -:    8://     * Redistributions of source code must retain the above copyright
+        -:    9:// notice, this list of conditions and the following disclaimer.
+        -:   10://     * Redistributions in binary form must reproduce the above
+        -:   11:// copyright notice, this list of conditions and the following disclaimer
+        -:   12:// in the documentation and/or other materials provided with the
+        -:   13:// distribution.
+        -:   14://     * Neither the name of Google Inc. nor the names of its
+        -:   15:// contributors may be used to endorse or promote products derived from
+        -:   16:// this software without specific prior written permission.
+        -:   17://
+        -:   18:// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+        -:   19:// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+        -:   20:// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+        -:   21:// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+        -:   22:// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+        -:   23:// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+        -:   24:// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+        -:   25:// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+        -:   26:// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+        -:   27:// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+        -:   28:// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+        -:   29:
+        -:   30:
+        -:   31:#include <iostream>
+        -:   32:#include "gmock/gmock.h"
+        -:   33:#include "gtest/gtest.h"
+        -:   34:
+        -:   35:#if GTEST_OS_ESP8266 || GTEST_OS_ESP32
+        -:   36:#if GTEST_OS_ESP8266
+        -:   37:extern "C" {
+        -:   38:#endif
+        -:   39:void setup() {
+        -:   40:  // Since Google Mock depends on Google Test, InitGoogleMock() is
+        -:   41:  // also responsible for initializing Google Test.  Therefore there's
+        -:   42:  // no need for calling testing::InitGoogleTest() separately.
+        -:   43:  testing::InitGoogleMock();
+        -:   44:}
+        -:   45:void loop() { RUN_ALL_TESTS(); }
+        -:   46:#if GTEST_OS_ESP8266
+        -:   47:}
+        -:   48:#endif
+        -:   49:
+        -:   50:#else
+        -:   51:
+        -:   52:// MS C++ compiler/linker has a bug on Windows (not on Windows CE), which
+        -:   53:// causes a link error when _tmain is defined in a static library and UNICODE
+        -:   54:// is enabled. For this reason instead of _tmain, main function is used on
+        -:   55:// Windows. See the following link to track the current status of this bug:
+        -:   56:// https://web.archive.org/web/20170912203238/connect.microsoft.com/VisualStudio/feedback/details/394464/wmain-link-error-in-the-static-library
+        -:   57:// // NOLINT
+        -:   58:#if GTEST_OS_WINDOWS_MOBILE
+        -:   59:# include <tchar.h>  // NOLINT
+        -:   60:
+        -:   61:GTEST_API_ int _tmain(int argc, TCHAR** argv) {
+        -:   62:#else
+    #####:   63:GTEST_API_ int main(int argc, char** argv) {
+        -:   64:#endif  // GTEST_OS_WINDOWS_MOBILE
+    #####:   65:  std::cout << "Running main() from gmock_main.cc\n";
+        -:   66:  // Since Google Mock depends on Google Test, InitGoogleMock() is
+        -:   67:  // also responsible for initializing Google Test.  Therefore there's
+        -:   68:  // no need for calling testing::InitGoogleTest() separately.
+    #####:   69:  testing::InitGoogleMock(&argc, argv);
+    #####:   70:  return RUN_ALL_TESTS();
+        -:   71:}
+        -:   72:#endif

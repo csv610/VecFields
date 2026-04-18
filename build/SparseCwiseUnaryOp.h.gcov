@@ -1,0 +1,157 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/SparseCore/SparseCwiseUnaryOp.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2008-2015 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:#ifndef EIGEN_SPARSE_CWISE_UNARY_OP_H
+        -:   11:#define EIGEN_SPARSE_CWISE_UNARY_OP_H
+        -:   12:
+        -:   13:// IWYU pragma: private
+        -:   14:#include "./InternalHeaderCheck.h"
+        -:   15:
+        -:   16:namespace Eigen { 
+        -:   17:
+        -:   18:namespace internal {
+        -:   19:  
+        -:   20:template<typename UnaryOp, typename ArgType>
+        -:   21:struct unary_evaluator<CwiseUnaryOp<UnaryOp,ArgType>, IteratorBased>
+        -:   22:  : public evaluator_base<CwiseUnaryOp<UnaryOp,ArgType> >
+        -:   23:{
+        -:   24:  public:
+        -:   25:    typedef CwiseUnaryOp<UnaryOp, ArgType> XprType;
+        -:   26:
+        -:   27:    class InnerIterator;
+        -:   28:    
+        -:   29:    enum {
+        -:   30:      CoeffReadCost = int(evaluator<ArgType>::CoeffReadCost) + int(functor_traits<UnaryOp>::Cost),
+        -:   31:      Flags = XprType::Flags
+        -:   32:    };
+        -:   33:    
+        7:   34:    explicit unary_evaluator(const XprType& op) : m_functor(op.functor()), m_argImpl(op.nestedExpression())
+        -:   35:    {
+        -:   36:      EIGEN_INTERNAL_CHECK_COST_VALUE(functor_traits<UnaryOp>::Cost);
+        -:   37:      EIGEN_INTERNAL_CHECK_COST_VALUE(CoeffReadCost);
+        7:   38:    }
+        -:   39:    
+        3:   40:    inline Index nonZerosEstimate() const {
+        3:   41:      return m_argImpl.nonZerosEstimate();
+        -:   42:    }
+        -:   43:
+        -:   44:  protected:
+        -:   45:    typedef typename evaluator<ArgType>::InnerIterator        EvalIterator;
+        -:   46:    
+        -:   47:    const UnaryOp m_functor;
+        -:   48:    evaluator<ArgType> m_argImpl;
+        -:   49:};
+        -:   50:
+        -:   51:template<typename UnaryOp, typename ArgType>
+        -:   52:class unary_evaluator<CwiseUnaryOp<UnaryOp,ArgType>, IteratorBased>::InnerIterator
+        -:   53:    : public unary_evaluator<CwiseUnaryOp<UnaryOp,ArgType>, IteratorBased>::EvalIterator
+        -:   54:{
+        -:   55:  protected:
+        -:   56:    typedef typename XprType::Scalar Scalar;
+        -:   57:    typedef typename unary_evaluator<CwiseUnaryOp<UnaryOp,ArgType>, IteratorBased>::EvalIterator Base;
+        -:   58:  public:
+        -:   59:
+     6474:   60:    EIGEN_STRONG_INLINE InnerIterator(const unary_evaluator& unaryOp, Index outer)
+     3237:   61:      : Base(unaryOp.m_argImpl,outer), m_functor(unaryOp.m_functor)
+     6474:   62:    {}
+        -:   63:
+     3355:   64:    EIGEN_STRONG_INLINE InnerIterator& operator++()
+     3355:   65:    { Base::operator++(); return *this; }
+        -:   66:
+     2276:   67:    EIGEN_STRONG_INLINE Scalar value() const { return m_functor(Base::value()); }
+        -:   68:
+        -:   69:  protected:
+        -:   70:    const UnaryOp m_functor;
+        -:   71:  private:
+        -:   72:    Scalar& valueRef();
+        -:   73:};
+        -:   74:
+        -:   75:template<typename ViewOp, typename ArgType>
+        -:   76:struct unary_evaluator<CwiseUnaryView<ViewOp,ArgType>, IteratorBased>
+        -:   77:  : public evaluator_base<CwiseUnaryView<ViewOp,ArgType> >
+        -:   78:{
+        -:   79:  public:
+        -:   80:    typedef CwiseUnaryView<ViewOp, ArgType> XprType;
+        -:   81:
+        -:   82:    class InnerIterator;
+        -:   83:    
+        -:   84:    enum {
+        -:   85:      CoeffReadCost = int(evaluator<ArgType>::CoeffReadCost) + int(functor_traits<ViewOp>::Cost),
+        -:   86:      Flags = XprType::Flags
+        -:   87:    };
+        -:   88:    
+        -:   89:    explicit unary_evaluator(const XprType& op) : m_functor(op.functor()), m_argImpl(op.nestedExpression())
+        -:   90:    {
+        -:   91:      EIGEN_INTERNAL_CHECK_COST_VALUE(functor_traits<ViewOp>::Cost);
+        -:   92:      EIGEN_INTERNAL_CHECK_COST_VALUE(CoeffReadCost);
+        -:   93:    }
+        -:   94:
+        -:   95:  protected:
+        -:   96:    typedef typename evaluator<ArgType>::InnerIterator        EvalIterator;
+        -:   97:    
+        -:   98:    const ViewOp m_functor;
+        -:   99:    evaluator<ArgType> m_argImpl;
+        -:  100:};
+        -:  101:
+        -:  102:template<typename ViewOp, typename ArgType>
+        -:  103:class unary_evaluator<CwiseUnaryView<ViewOp,ArgType>, IteratorBased>::InnerIterator
+        -:  104:    : public unary_evaluator<CwiseUnaryView<ViewOp,ArgType>, IteratorBased>::EvalIterator
+        -:  105:{
+        -:  106:  protected:
+        -:  107:    typedef typename XprType::Scalar Scalar;
+        -:  108:    typedef typename unary_evaluator<CwiseUnaryView<ViewOp,ArgType>, IteratorBased>::EvalIterator Base;
+        -:  109:  public:
+        -:  110:
+        -:  111:    EIGEN_STRONG_INLINE InnerIterator(const unary_evaluator& unaryOp, Index outer)
+        -:  112:      : Base(unaryOp.m_argImpl,outer), m_functor(unaryOp.m_functor)
+        -:  113:    {}
+        -:  114:
+        -:  115:    EIGEN_STRONG_INLINE InnerIterator& operator++()
+        -:  116:    { Base::operator++(); return *this; }
+        -:  117:
+        -:  118:    EIGEN_STRONG_INLINE Scalar value() const { return m_functor(Base::value()); }
+        -:  119:    EIGEN_STRONG_INLINE Scalar& valueRef() { return m_functor(Base::valueRef()); }
+        -:  120:
+        -:  121:  protected:
+        -:  122:    const ViewOp m_functor;
+        -:  123:};
+        -:  124:
+        -:  125:} // end namespace internal
+        -:  126:
+        -:  127:template<typename Derived>
+        -:  128:EIGEN_STRONG_INLINE Derived&
+        -:  129:SparseMatrixBase<Derived>::operator*=(const Scalar& other)
+        -:  130:{
+        -:  131:  typedef typename internal::evaluator<Derived>::InnerIterator EvalIterator;
+        -:  132:  internal::evaluator<Derived> thisEval(derived());
+        -:  133:  for (Index j=0; j<outerSize(); ++j)
+        -:  134:    for (EvalIterator i(thisEval,j); i; ++i)
+        -:  135:      i.valueRef() *= other;
+        -:  136:  return derived();
+        -:  137:}
+        -:  138:
+        -:  139:template<typename Derived>
+        -:  140:EIGEN_STRONG_INLINE Derived&
+        -:  141:SparseMatrixBase<Derived>::operator/=(const Scalar& other)
+        -:  142:{
+        -:  143:  typedef typename internal::evaluator<Derived>::InnerIterator EvalIterator;
+        -:  144:  internal::evaluator<Derived> thisEval(derived());
+        -:  145:  for (Index j=0; j<outerSize(); ++j)
+        -:  146:    for (EvalIterator i(thisEval,j); i; ++i)
+        -:  147:      i.valueRef() /= other;
+        -:  148:  return derived();
+        -:  149:}
+        -:  150:
+        -:  151:} // end namespace Eigen
+        -:  152:
+        -:  153:#endif // EIGEN_SPARSE_CWISE_UNARY_OP_H

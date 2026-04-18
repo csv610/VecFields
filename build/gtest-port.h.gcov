@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/googletest/googletest/include/gtest/internal/gtest-port.h
-        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
-        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
-        -:    0:Runs:4
+        -:    0:Graph:./external/googletest/googlemock/CMakeFiles/gmock.dir/src/gmock-all.cc.gcno
+        -:    0:Data:-
+        -:    0:Runs:0
         -:    1:// Copyright 2005, Google Inc.
         -:    2:// All rights reserved.
         -:    3://
@@ -1086,19 +1086,19 @@
         -: 1082:// When RTTI is available, the function performs a runtime
         -: 1083:// check to enforce this.
         -: 1084:template <class Derived, class Base>
-        -: 1085:Derived* CheckedDowncastToActualType(Base* base) {
+    #####: 1085:Derived* CheckedDowncastToActualType(Base* base) {
         -: 1086:#if GTEST_HAS_RTTI
-        -: 1087:  GTEST_CHECK_(typeid(*base) == typeid(Derived));
+    #####: 1087:  GTEST_CHECK_(typeid(*base) == typeid(Derived));
         -: 1088:#endif
         -: 1089:
         -: 1090:#if GTEST_HAS_DOWNCAST_
         -: 1091:  return ::down_cast<Derived*>(base);
         -: 1092:#elif GTEST_HAS_RTTI
-        -: 1093:  return dynamic_cast<Derived*>(base);  // NOLINT
+    #####: 1093:  return dynamic_cast<Derived*>(base);  // NOLINT
         -: 1094:#else
         -: 1095:  return static_cast<Derived*>(base);  // Poor man's downcast.
         -: 1096:#endif
-        -: 1097:}
+    #####: 1097:}
         -: 1098:
         -: 1099:#if GTEST_HAS_STREAM_REDIRECTION
         -: 1100:
@@ -1619,28 +1619,28 @@
         -: 1615:class MutexBase {
         -: 1616: public:
         -: 1617:  // Acquires this mutex.
-        -: 1618:  void Lock() {
-        -: 1619:    GTEST_CHECK_POSIX_SUCCESS_(pthread_mutex_lock(&mutex_));
-        -: 1620:    owner_ = pthread_self();
-        -: 1621:    has_owner_ = true;
-        -: 1622:  }
+    #####: 1618:  void Lock() {
+    #####: 1619:    GTEST_CHECK_POSIX_SUCCESS_(pthread_mutex_lock(&mutex_));
+    #####: 1620:    owner_ = pthread_self();
+    #####: 1621:    has_owner_ = true;
+    #####: 1622:  }
         -: 1623:
         -: 1624:  // Releases this mutex.
-        -: 1625:  void Unlock() {
+    #####: 1625:  void Unlock() {
         -: 1626:    // Since the lock is being released the owner_ field should no longer be
         -: 1627:    // considered valid. We don't protect writing to has_owner_ here, as it's
         -: 1628:    // the caller's responsibility to ensure that the current thread holds the
         -: 1629:    // mutex when this is called.
-        -: 1630:    has_owner_ = false;
-        -: 1631:    GTEST_CHECK_POSIX_SUCCESS_(pthread_mutex_unlock(&mutex_));
-        -: 1632:  }
+    #####: 1630:    has_owner_ = false;
+    #####: 1631:    GTEST_CHECK_POSIX_SUCCESS_(pthread_mutex_unlock(&mutex_));
+    #####: 1632:  }
         -: 1633:
         -: 1634:  // Does nothing if the current thread holds the mutex. Otherwise, crashes
         -: 1635:  // with high probability.
-        -: 1636:  void AssertHeld() const {
-        -: 1637:    GTEST_CHECK_(has_owner_ && pthread_equal(owner_, pthread_self()))
-        -: 1638:        << "The current thread is not holding the mutex @" << this;
-        -: 1639:  }
+    #####: 1636:  void AssertHeld() const {
+    #####: 1637:    GTEST_CHECK_(has_owner_ && pthread_equal(owner_, pthread_self()))
+    #####: 1638:        << "The current thread is not holding the mutex @" << this;
+    #####: 1639:  }
         -: 1640:
         -: 1641:  // A static mutex may be used before main() is entered.  It may even
         -: 1642:  // be used before the dynamic initialization stage.  Therefore we
@@ -1676,13 +1676,13 @@
         -: 1672:// shares its API with MutexBase otherwise.
         -: 1673:class Mutex : public MutexBase {
         -: 1674: public:
-        -: 1675:  Mutex() {
-        -: 1676:    GTEST_CHECK_POSIX_SUCCESS_(pthread_mutex_init(&mutex_, nullptr));
-        -: 1677:    has_owner_ = false;
-        -: 1678:  }
-        -: 1679:  ~Mutex() {
-        -: 1680:    GTEST_CHECK_POSIX_SUCCESS_(pthread_mutex_destroy(&mutex_));
-        -: 1681:  }
+    #####: 1675:  Mutex() {
+    #####: 1676:    GTEST_CHECK_POSIX_SUCCESS_(pthread_mutex_init(&mutex_, nullptr));
+    #####: 1677:    has_owner_ = false;
+    #####: 1678:  }
+    #####: 1679:  ~Mutex() {
+    #####: 1680:    GTEST_CHECK_POSIX_SUCCESS_(pthread_mutex_destroy(&mutex_));
+    #####: 1681:  }
         -: 1682:
         -: 1683: private:
         -: 1684:  GTEST_DISALLOW_COPY_AND_ASSIGN_(Mutex);
@@ -1695,10 +1695,10 @@
         -: 1691:// "MutexLock l(&mu)".  Hence the typedef trick below.
         -: 1692:class GTestMutexLock {
         -: 1693: public:
-        -: 1694:  explicit GTestMutexLock(MutexBase* mutex)
-        -: 1695:      : mutex_(mutex) { mutex_->Lock(); }
+    #####: 1694:  explicit GTestMutexLock(MutexBase* mutex)
+    #####: 1695:      : mutex_(mutex) { mutex_->Lock(); }
         -: 1696:
-        -: 1697:  ~GTestMutexLock() { mutex_->Unlock(); }
+    #####: 1697:  ~GTestMutexLock() { mutex_->Unlock(); }
         -: 1698:
         -: 1699: private:
         -: 1700:  MutexBase* const mutex_;
@@ -1716,79 +1716,79 @@
         -: 1712:// ThreadLocalValueHolderBase.
         -: 1713:class ThreadLocalValueHolderBase {
         -: 1714: public:
-        -: 1715:  virtual ~ThreadLocalValueHolderBase() {}
+    #####: 1715:  virtual ~ThreadLocalValueHolderBase() {}
         -: 1716:};
         -: 1717:
         -: 1718:// Called by pthread to delete thread-local data stored by
         -: 1719:// pthread_setspecific().
-        -: 1720:extern "C" inline void DeleteThreadLocalValue(void* value_holder) {
-        -: 1721:  delete static_cast<ThreadLocalValueHolderBase*>(value_holder);
-        -: 1722:}
+    #####: 1720:extern "C" inline void DeleteThreadLocalValue(void* value_holder) {
+    #####: 1721:  delete static_cast<ThreadLocalValueHolderBase*>(value_holder);
+    #####: 1722:}
         -: 1723:
         -: 1724:// Implements thread-local storage on pthreads-based systems.
         -: 1725:template <typename T>
         -: 1726:class GTEST_API_ ThreadLocal {
         -: 1727: public:
-        -: 1728:  ThreadLocal()
-        -: 1729:      : key_(CreateKey()), default_factory_(new DefaultValueHolderFactory()) {}
+    #####: 1728:  ThreadLocal()
+    #####: 1729:      : key_(CreateKey()), default_factory_(new DefaultValueHolderFactory()) {}
         -: 1730:  explicit ThreadLocal(const T& value)
         -: 1731:      : key_(CreateKey()),
         -: 1732:        default_factory_(new InstanceValueHolderFactory(value)) {}
         -: 1733:
-        -: 1734:  ~ThreadLocal() {
+    #####: 1734:  ~ThreadLocal() {
         -: 1735:    // Destroys the managed object for the current thread, if any.
-        -: 1736:    DeleteThreadLocalValue(pthread_getspecific(key_));
+    #####: 1736:    DeleteThreadLocalValue(pthread_getspecific(key_));
         -: 1737:
         -: 1738:    // Releases resources associated with the key.  This will *not*
         -: 1739:    // delete managed objects for other threads.
-        -: 1740:    GTEST_CHECK_POSIX_SUCCESS_(pthread_key_delete(key_));
-        -: 1741:  }
+    #####: 1740:    GTEST_CHECK_POSIX_SUCCESS_(pthread_key_delete(key_));
+    #####: 1741:  }
         -: 1742:
-        -: 1743:  T* pointer() { return GetOrCreateValue(); }
-        -: 1744:  const T* pointer() const { return GetOrCreateValue(); }
-        -: 1745:  const T& get() const { return *pointer(); }
-        -: 1746:  void set(const T& value) { *pointer() = value; }
+    #####: 1743:  T* pointer() { return GetOrCreateValue(); }
+    #####: 1744:  const T* pointer() const { return GetOrCreateValue(); }
+    #####: 1745:  const T& get() const { return *pointer(); }
+    #####: 1746:  void set(const T& value) { *pointer() = value; }
         -: 1747:
         -: 1748: private:
         -: 1749:  // Holds a value of type T.
         -: 1750:  class ValueHolder : public ThreadLocalValueHolderBase {
         -: 1751:   public:
-        -: 1752:    ValueHolder() : value_() {}
+    #####: 1752:    ValueHolder() : value_() {}
         -: 1753:    explicit ValueHolder(const T& value) : value_(value) {}
         -: 1754:
-        -: 1755:    T* pointer() { return &value_; }
+    #####: 1755:    T* pointer() { return &value_; }
         -: 1756:
         -: 1757:   private:
         -: 1758:    T value_;
         -: 1759:    GTEST_DISALLOW_COPY_AND_ASSIGN_(ValueHolder);
         -: 1760:  };
         -: 1761:
-        -: 1762:  static pthread_key_t CreateKey() {
+    #####: 1762:  static pthread_key_t CreateKey() {
         -: 1763:    pthread_key_t key;
         -: 1764:    // When a thread exits, DeleteThreadLocalValue() will be called on
         -: 1765:    // the object managed for that thread.
-        -: 1766:    GTEST_CHECK_POSIX_SUCCESS_(
+    #####: 1766:    GTEST_CHECK_POSIX_SUCCESS_(
         -: 1767:        pthread_key_create(&key, &DeleteThreadLocalValue));
-        -: 1768:    return key;
-        -: 1769:  }
+    #####: 1768:    return key;
+    #####: 1769:  }
         -: 1770:
-        -: 1771:  T* GetOrCreateValue() const {
-        -: 1772:    ThreadLocalValueHolderBase* const holder =
-        -: 1773:        static_cast<ThreadLocalValueHolderBase*>(pthread_getspecific(key_));
-        -: 1774:    if (holder != nullptr) {
-        -: 1775:      return CheckedDowncastToActualType<ValueHolder>(holder)->pointer();
+    #####: 1771:  T* GetOrCreateValue() const {
+    #####: 1772:    ThreadLocalValueHolderBase* const holder =
+    #####: 1773:        static_cast<ThreadLocalValueHolderBase*>(pthread_getspecific(key_));
+    #####: 1774:    if (holder != nullptr) {
+    #####: 1775:      return CheckedDowncastToActualType<ValueHolder>(holder)->pointer();
         -: 1776:    }
         -: 1777:
-        -: 1778:    ValueHolder* const new_holder = default_factory_->MakeNewHolder();
-        -: 1779:    ThreadLocalValueHolderBase* const holder_base = new_holder;
-        -: 1780:    GTEST_CHECK_POSIX_SUCCESS_(pthread_setspecific(key_, holder_base));
-        -: 1781:    return new_holder->pointer();
-        -: 1782:  }
+    #####: 1778:    ValueHolder* const new_holder = default_factory_->MakeNewHolder();
+    #####: 1779:    ThreadLocalValueHolderBase* const holder_base = new_holder;
+    #####: 1780:    GTEST_CHECK_POSIX_SUCCESS_(pthread_setspecific(key_, holder_base));
+    #####: 1781:    return new_holder->pointer();
+    #####: 1782:  }
         -: 1783:
         -: 1784:  class ValueHolderFactory {
         -: 1785:   public:
-        -: 1786:    ValueHolderFactory() {}
-        -: 1787:    virtual ~ValueHolderFactory() {}
+    #####: 1786:    ValueHolderFactory() {}
+    #####: 1787:    virtual ~ValueHolderFactory() {}
         -: 1788:    virtual ValueHolder* MakeNewHolder() const = 0;
         -: 1789:
         -: 1790:   private:
@@ -1797,8 +1797,8 @@
         -: 1793:
         -: 1794:  class DefaultValueHolderFactory : public ValueHolderFactory {
         -: 1795:   public:
-        -: 1796:    DefaultValueHolderFactory() {}
-        -: 1797:    ValueHolder* MakeNewHolder() const override { return new ValueHolder(); }
+    #####: 1796:    DefaultValueHolderFactory() {}
+    #####: 1797:    ValueHolder* MakeNewHolder() const override { return new ValueHolder(); }
         -: 1798:
         -: 1799:   private:
         -: 1800:    GTEST_DISALLOW_COPY_AND_ASSIGN_(DefaultValueHolderFactory);
@@ -1895,23 +1895,23 @@
         -: 1891:// Therefore we need to cast a char to unsigned char before calling
         -: 1892:// isspace(), etc.
         -: 1893:
-        -: 1894:inline bool IsAlpha(char ch) {
-        -: 1895:  return isalpha(static_cast<unsigned char>(ch)) != 0;
+    #####: 1894:inline bool IsAlpha(char ch) {
+    #####: 1895:  return isalpha(static_cast<unsigned char>(ch)) != 0;
         -: 1896:}
-        -: 1897:inline bool IsAlNum(char ch) {
-        -: 1898:  return isalnum(static_cast<unsigned char>(ch)) != 0;
+    #####: 1897:inline bool IsAlNum(char ch) {
+    #####: 1898:  return isalnum(static_cast<unsigned char>(ch)) != 0;
         -: 1899:}
-        -: 1900:inline bool IsDigit(char ch) {
-        -: 1901:  return isdigit(static_cast<unsigned char>(ch)) != 0;
+    #####: 1900:inline bool IsDigit(char ch) {
+    #####: 1901:  return isdigit(static_cast<unsigned char>(ch)) != 0;
         -: 1902:}
-        -: 1903:inline bool IsLower(char ch) {
-        -: 1904:  return islower(static_cast<unsigned char>(ch)) != 0;
+    #####: 1903:inline bool IsLower(char ch) {
+    #####: 1904:  return islower(static_cast<unsigned char>(ch)) != 0;
         -: 1905:}
         -: 1906:inline bool IsSpace(char ch) {
         -: 1907:  return isspace(static_cast<unsigned char>(ch)) != 0;
         -: 1908:}
-        -: 1909:inline bool IsUpper(char ch) {
-        -: 1910:  return isupper(static_cast<unsigned char>(ch)) != 0;
+    #####: 1909:inline bool IsUpper(char ch) {
+    #####: 1910:  return isupper(static_cast<unsigned char>(ch)) != 0;
         -: 1911:}
         -: 1912:inline bool IsXDigit(char ch) {
         -: 1913:  return isxdigit(static_cast<unsigned char>(ch)) != 0;
@@ -1921,8 +1921,8 @@
         -: 1917:  return ch == low_byte && isxdigit(low_byte) != 0;
         -: 1918:}
         -: 1919:
-        -: 1920:inline char ToLower(char ch) {
-        -: 1921:  return static_cast<char>(tolower(static_cast<unsigned char>(ch)));
+    #####: 1920:inline char ToLower(char ch) {
+    #####: 1921:  return static_cast<char>(tolower(static_cast<unsigned char>(ch)));
         -: 1922:}
         -: 1923:inline char ToUpper(char ch) {
         -: 1924:  return static_cast<char>(toupper(static_cast<unsigned char>(ch)));
@@ -2067,7 +2067,7 @@
         -: 2063:// imitation of standard behaviour.
         -: 2064:[[noreturn]] void Abort();
         -: 2065:#else
-        -: 2066:[[noreturn]] inline void Abort() { abort(); }
+    #####: 2066:[[noreturn]] inline void Abort() { abort(); }
         -: 2067:#endif  // GTEST_OS_WINDOWS_MOBILE
         -: 2068:
         -: 2069:}  // namespace posix

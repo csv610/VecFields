@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/DenseCoeffsBase.h
-        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
-        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
-        -:    0:Runs:4
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -101,11 +101,11 @@
         -:   97:      * \sa operator()(Index,Index) const, coeffRef(Index,Index), coeff(Index) const
         -:   98:      */
         -:   99:    EIGEN_DEVICE_FUNC
-    57780:  100:    EIGEN_STRONG_INLINE CoeffReturnType coeff(Index row, Index col) const
+    16480:  100:    EIGEN_STRONG_INLINE CoeffReturnType coeff(Index row, Index col) const
         -:  101:    {
         -:  102:      eigen_internal_assert(row >= 0 && row < rows()
         -:  103:                         && col >= 0 && col < cols());
-    57780:  104:      return internal::evaluator<Derived>(derived()).coeff(row,col);
+    16480:  104:      return internal::evaluator<Derived>(derived()).coeff(row,col);
     #####:  105:    }
         -:  106:
         -:  107:    EIGEN_DEVICE_FUNC
@@ -120,11 +120,11 @@
         -:  116:      * \sa operator()(Index,Index), operator[](Index)
         -:  117:      */
         -:  118:    EIGEN_DEVICE_FUNC
-    57780:  119:    EIGEN_STRONG_INLINE CoeffReturnType operator()(Index row, Index col) const
+    16480:  119:    EIGEN_STRONG_INLINE CoeffReturnType operator()(Index row, Index col) const
         -:  120:    {
-    57780:  121:      eigen_assert(row >= 0 && row < rows()
+    16480:  121:      eigen_assert(row >= 0 && row < rows()
         -:  122:          && col >= 0 && col < cols());
-    57780:  123:      return coeff(row, col);
+    16480:  123:      return coeff(row, col);
         -:  124:    }
         -:  125:
         -:  126:    /** Short version: don't use this function, use
@@ -144,12 +144,12 @@
         -:  140:
         -:  141:    EIGEN_DEVICE_FUNC
         -:  142:    EIGEN_STRONG_INLINE CoeffReturnType
-    19052:  143:    coeff(Index index) const
+     4320:  143:    coeff(Index index) const
         -:  144:    {
         -:  145:      EIGEN_STATIC_ASSERT(internal::evaluator<Derived>::Flags & LinearAccessBit,
         -:  146:                          THIS_COEFFICIENT_ACCESSOR_TAKING_ONE_ACCESS_IS_ONLY_FOR_EXPRESSIONS_ALLOWING_LINEAR_ACCESS)
         -:  147:      eigen_internal_assert(index >= 0 && index < size());
-    19052:  148:      return internal::evaluator<Derived>(derived()).coeff(index);
+     4320:  148:      return internal::evaluator<Derived>(derived()).coeff(index);
     #####:  149:    }
         -:  150:
         -:  151:
@@ -163,12 +163,12 @@
         -:  159:
         -:  160:    EIGEN_DEVICE_FUNC
         -:  161:    EIGEN_STRONG_INLINE CoeffReturnType
-        -:  162:    operator[](Index index) const
+    #####:  162:    operator[](Index index) const
         -:  163:    {
         -:  164:      EIGEN_STATIC_ASSERT(Derived::IsVectorAtCompileTime,
         -:  165:                          THE_BRACKET_OPERATOR_IS_ONLY_FOR_VECTORS__USE_THE_PARENTHESIS_OPERATOR_INSTEAD)
-        -:  166:      eigen_assert(index >= 0 && index < size());
-        -:  167:      return coeff(index);
+    #####:  166:      eigen_assert(index >= 0 && index < size());
+    #####:  167:      return coeff(index);
         -:  168:    }
         -:  169:
         -:  170:    /** \returns the coefficient at given index.
@@ -183,10 +183,10 @@
         -:  179:
         -:  180:    EIGEN_DEVICE_FUNC
         -:  181:    EIGEN_STRONG_INLINE CoeffReturnType
-    10430:  182:    operator()(Index index) const
+     3722:  182:    operator()(Index index) const
         -:  183:    {
-    10430:  184:      eigen_assert(index >= 0 && index < size());
-    10430:  185:      return coeff(index);
+     3722:  184:      eigen_assert(index >= 0 && index < size());
+     3722:  185:      return coeff(index);
         -:  186:    }
         -:  187:
         -:  188:    /** equivalent to operator[](0).  */
@@ -346,11 +346,11 @@
         -:  342:      * \sa operator()(Index,Index), coeff(Index, Index) const, coeffRef(Index)
         -:  343:      */
         -:  344:    EIGEN_DEVICE_FUNC
-   122050:  345:    EIGEN_STRONG_INLINE Scalar& coeffRef(Index row, Index col)
+     8397:  345:    EIGEN_STRONG_INLINE Scalar& coeffRef(Index row, Index col)
         -:  346:    {
         -:  347:      eigen_internal_assert(row >= 0 && row < rows()
         -:  348:                         && col >= 0 && col < cols());
-   122050:  349:      return internal::evaluator<Derived>(derived()).coeffRef(row,col);
+     8397:  349:      return internal::evaluator<Derived>(derived()).coeffRef(row,col);
     #####:  350:    }
         -:  351:
         -:  352:    EIGEN_DEVICE_FUNC
@@ -368,11 +368,11 @@
         -:  364:
         -:  365:    EIGEN_DEVICE_FUNC
         -:  366:    EIGEN_STRONG_INLINE Scalar&
-   122050:  367:    operator()(Index row, Index col)
+     8397:  367:    operator()(Index row, Index col)
         -:  368:    {
-   122050:  369:      eigen_assert(row >= 0 && row < rows()
+     8397:  369:      eigen_assert(row >= 0 && row < rows()
         -:  370:          && col >= 0 && col < cols());
-   122050:  371:      return coeffRef(row, col);
+     8397:  371:      return coeffRef(row, col);
         -:  372:    }
         -:  373:
         -:  374:
@@ -393,12 +393,12 @@
         -:  389:
         -:  390:    EIGEN_DEVICE_FUNC
         -:  391:    EIGEN_STRONG_INLINE Scalar&
-    67068:  392:    coeffRef(Index index)
+    46069:  392:    coeffRef(Index index)
         -:  393:    {
         -:  394:      EIGEN_STATIC_ASSERT(internal::evaluator<Derived>::Flags & LinearAccessBit,
         -:  395:                          THIS_COEFFICIENT_ACCESSOR_TAKING_ONE_ACCESS_IS_ONLY_FOR_EXPRESSIONS_ALLOWING_LINEAR_ACCESS)
         -:  396:      eigen_internal_assert(index >= 0 && index < size());
-    67068:  397:      return internal::evaluator<Derived>(derived()).coeffRef(index);
+    46069:  397:      return internal::evaluator<Derived>(derived()).coeffRef(index);
     #####:  398:    }
         -:  399:
         -:  400:    /** \returns a reference to the coefficient at given index.
@@ -410,12 +410,12 @@
         -:  406:
         -:  407:    EIGEN_DEVICE_FUNC
         -:  408:    EIGEN_STRONG_INLINE Scalar&
-    15146:  409:    operator[](Index index)
+    23573:  409:    operator[](Index index)
         -:  410:    {
         -:  411:      EIGEN_STATIC_ASSERT(Derived::IsVectorAtCompileTime,
         -:  412:                          THE_BRACKET_OPERATOR_IS_ONLY_FOR_VECTORS__USE_THE_PARENTHESIS_OPERATOR_INSTEAD)
-    15146:  413:      eigen_assert(index >= 0 && index < size());
-    15146:  414:      return coeffRef(index);
+    23573:  413:      eigen_assert(index >= 0 && index < size());
+    23573:  414:      return coeffRef(index);
         -:  415:    }
         -:  416:
         -:  417:    /** \returns a reference to the coefficient at given index.
@@ -429,10 +429,10 @@
         -:  425:
         -:  426:    EIGEN_DEVICE_FUNC
         -:  427:    EIGEN_STRONG_INLINE Scalar&
-    51922:  428:    operator()(Index index)
+    22496:  428:    operator()(Index index)
         -:  429:    {
-    51922:  430:      eigen_assert(index >= 0 && index < size());
-    51922:  431:      return coeffRef(index);
+    22496:  430:      eigen_assert(index >= 0 && index < size());
+    22496:  431:      return coeffRef(index);
         -:  432:    }
         -:  433:
         -:  434:    /** equivalent to operator[](0).  */
@@ -503,9 +503,9 @@
         -:  499:      * \sa outerStride(), rowStride(), colStride()
         -:  500:      */
         -:  501:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
-     6176:  502:    inline Index innerStride() const
+    #####:  502:    inline Index innerStride() const
         -:  503:    {
-     6176:  504:      return derived().innerStride();
+    #####:  504:      return derived().innerStride();
         -:  505:    }
         -:  506:
         -:  507:    /** \returns the pointer increment between two consecutive inner slices (for example, between two consecutive columns
@@ -514,9 +514,9 @@
         -:  510:      * \sa innerStride(), rowStride(), colStride()
         -:  511:      */
         -:  512:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
-     6176:  513:    inline Index outerStride() const
+    #####:  513:    inline Index outerStride() const
         -:  514:    {
-     6176:  515:      return derived().outerStride();
+    #####:  515:      return derived().outerStride();
         -:  516:    }
         -:  517:
         -:  518:    // FIXME shall we remove it ?
@@ -530,9 +530,9 @@
         -:  526:      * \sa innerStride(), outerStride(), colStride()
         -:  527:      */
         -:  528:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
-     6176:  529:    inline Index rowStride() const
+    #####:  529:    inline Index rowStride() const
         -:  530:    {
-     6176:  531:      return Derived::IsRowMajor ? outerStride() : innerStride();
+    #####:  531:      return Derived::IsRowMajor ? outerStride() : innerStride();
         -:  532:    }
         -:  533:
         -:  534:    /** \returns the pointer increment between two consecutive columns.
@@ -540,9 +540,9 @@
         -:  536:      * \sa innerStride(), outerStride(), rowStride()
         -:  537:      */
         -:  538:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
-     6176:  539:    inline Index colStride() const
+    #####:  539:    inline Index colStride() const
         -:  540:    {
-     6176:  541:      return Derived::IsRowMajor ? innerStride() : outerStride();
+    #####:  541:      return Derived::IsRowMajor ? innerStride() : outerStride();
         -:  542:    }
         -:  543:};
         -:  544:
@@ -578,9 +578,9 @@
         -:  574:      * \sa outerStride(), rowStride(), colStride()
         -:  575:      */
         -:  576:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
-    71246:  577:    inline Index innerStride() const EIGEN_NOEXCEPT
+     4109:  577:    inline Index innerStride() const EIGEN_NOEXCEPT
         -:  578:    {
-    71246:  579:      return derived().innerStride();
+     4109:  579:      return derived().innerStride();
         -:  580:    }
         -:  581:
         -:  582:    /** \returns the pointer increment between two consecutive inner slices (for example, between two consecutive columns
@@ -589,9 +589,9 @@
         -:  585:      * \sa innerStride(), rowStride(), colStride()
         -:  586:      */
         -:  587:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
-   262876:  588:    inline Index outerStride() const EIGEN_NOEXCEPT
+    30279:  588:    inline Index outerStride() const EIGEN_NOEXCEPT
         -:  589:    {
-   262876:  590:      return derived().outerStride();
+    30279:  590:      return derived().outerStride();
         -:  591:    }
         -:  592:
         -:  593:    // FIXME shall we remove it ?
@@ -605,9 +605,9 @@
         -:  601:      * \sa innerStride(), outerStride(), colStride()
         -:  602:      */
         -:  603:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
-    62902:  604:    inline Index rowStride() const EIGEN_NOEXCEPT
+     3629:  604:    inline Index rowStride() const EIGEN_NOEXCEPT
         -:  605:    {
-    62902:  606:      return Derived::IsRowMajor ? outerStride() : innerStride();
+     3629:  606:      return Derived::IsRowMajor ? outerStride() : innerStride();
         -:  607:    }
         -:  608:
         -:  609:    /** \returns the pointer increment between two consecutive columns.
@@ -615,9 +615,9 @@
         -:  611:      * \sa innerStride(), outerStride(), rowStride()
         -:  612:      */
         -:  613:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
-    62902:  614:    inline Index colStride() const EIGEN_NOEXCEPT
+     3629:  614:    inline Index colStride() const EIGEN_NOEXCEPT
         -:  615:    {
-    62902:  616:      return Derived::IsRowMajor ? innerStride() : outerStride();
+     3629:  616:      return Derived::IsRowMajor ? innerStride() : outerStride();
         -:  617:    }
         -:  618:};
         -:  619:
@@ -626,16 +626,16 @@
         -:  622:template<int Alignment, typename Derived, bool JustReturnZero>
         -:  623:struct first_aligned_impl
         -:  624:{
-    24842:  625:  static EIGEN_CONSTEXPR inline Index run(const Derived&) EIGEN_NOEXCEPT
-    24842:  626:  { return 0; }
+     1690:  625:  static EIGEN_CONSTEXPR inline Index run(const Derived&) EIGEN_NOEXCEPT
+     1690:  626:  { return 0; }
         -:  627:};
         -:  628:
         -:  629:template<int Alignment, typename Derived>
         -:  630:struct first_aligned_impl<Alignment, Derived, false>
         -:  631:{
-       24:  632:  static inline Index run(const Derived& m)
+        8:  632:  static inline Index run(const Derived& m)
         -:  633:  {
-       24:  634:    return internal::first_aligned<Alignment>(m.data(), m.size());
+        8:  634:    return internal::first_aligned<Alignment>(m.data(), m.size());
         -:  635:  }
         -:  636:};
         -:  637:
@@ -647,18 +647,18 @@
         -:  643:  * documentation.
         -:  644:  */
         -:  645:template<int Alignment, typename Derived>
-    24866:  646:static inline Index first_aligned(const DenseBase<Derived>& m)
+     1698:  646:static inline Index first_aligned(const DenseBase<Derived>& m)
         -:  647:{
         -:  648:  enum { ReturnZero = (int(evaluator<Derived>::Alignment) >= Alignment) || !(Derived::Flags & DirectAccessBit) };
-    24866:  649:  return first_aligned_impl<Alignment, Derived, ReturnZero>::run(m.derived());
+     1698:  649:  return first_aligned_impl<Alignment, Derived, ReturnZero>::run(m.derived());
         -:  650:}
         -:  651:
         -:  652:template<typename Derived>
-    24866:  653:static inline Index first_default_aligned(const DenseBase<Derived>& m)
+     1698:  653:static inline Index first_default_aligned(const DenseBase<Derived>& m)
         -:  654:{
         -:  655:  typedef typename Derived::Scalar Scalar;
         -:  656:  typedef typename packet_traits<Scalar>::type DefaultPacketType;
-    24866:  657:  return internal::first_aligned<int(unpacket_traits<DefaultPacketType>::alignment),Derived>(m);
+     1698:  657:  return internal::first_aligned<int(unpacket_traits<DefaultPacketType>::alignment),Derived>(m);
         -:  658:}
         -:  659:
         -:  660:template<typename Derived, bool HasDirectAccess = has_direct_access<Derived>::ret>

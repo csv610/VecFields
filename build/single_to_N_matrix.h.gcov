@@ -1,0 +1,59 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/include/directional/single_to_N_matrix.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Directional, a library for directional field processing.
+        -:    2://
+        -:    3:// Copyright (C) 2025 Amir Vaxman <avaxman@gmail.com>
+        -:    4://
+        -:    5:// This Source Code Form is subject to the terms of the Mozilla Public License
+        -:    6:// v. 2.0. If a copy of the MPL was not distributed with this file, You can
+        -:    7:// obtain one at http://mozilla.org/MPL/2.0/.
+        -:    8:
+        -:    9:#ifndef DIRECTIONAL_SINGLE_TO_N_H
+        -:   10:#define DIRECTIONAL_SINGLE_TO_N_H
+        -:   11:#include <Eigen/Core>
+        -:   12:#include <Eigen/Sparse>
+        -:   13:#include <vector>
+        -:   14:
+        -:   15:
+        -:   16:namespace directional
+        -:   17:{
+        -:   18:
+        -:   19:/***Computing a kronecker product of a sparse matrix with Id(N), in order to make a matrix applicable to a raw N-field or N-function
+        -:   20: Input:
+        -:   21: singMat:           the sparse matrix
+        -:   22: N:                     the degree for multiplication
+        -:   23: dRows, dCols:  the unit block in the sparse matrix that gets copied, to allow for vector sizes. For instnace, for (3,3), the matrix creates copies of size (3N, 3N)
+        -:   24: Output:
+        -:   25: The resulting sparse matrix.
+        -:   26: ***/
+        -:   27:template <typename Scalar>
+    #####:   28:Eigen::SparseMatrix<Scalar> single_to_N_matrix(const Eigen::SparseMatrix<Scalar>& singMat,
+        -:   29:                                               const int N,
+        -:   30:                                               const int dRows,
+        -:   31:                                               const int dCols){
+    #####:   32:    Eigen::SparseMatrix<Scalar> NMat(singMat.rows()*N, singMat.cols()*N);
+    #####:   33:    std::vector<Eigen::Triplet<Scalar>> NMatTris;
+    #####:   34:    for (int k=0; k<singMat.outerSize(); ++k)
+    #####:   35:        for (typename Eigen::SparseMatrix<Scalar>::InnerIterator it(singMat,k); it; ++it)
+        -:   36:        {
+    #####:   37:            int rowPack = int(it.row() / dRows);
+    #####:   38:            int colPack = int(it.col() / dCols);
+    #####:   39:            int rowPos = it.row() % dRows;
+    #####:   40:            int colPos = it.col() % dCols;
+    #####:   41:            for (int j=0;j<N;j++)
+    #####:   42:                NMatTris.push_back(Eigen::Triplet<Scalar>(N*dRows*rowPack+j*dRows+rowPos, N*dCols*colPack+j*dCols+colPos, it.value()));
+    #####:   43:        }
+        -:   44:    
+    #####:   45:    NMat.setFromTriplets(NMatTris.begin(), NMatTris.end());
+    #####:   46:    return NMat;
+        -:   47:    
+    #####:   48:}
+        -:   49:
+        -:   50:
+        -:   51:
+        -:   52:}
+        -:   53:
+        -:   54:
+        -:   55:#endif

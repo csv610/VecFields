@@ -1,0 +1,188 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/SparseCore/SparseProduct.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2008-2015 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:#ifndef EIGEN_SPARSEPRODUCT_H
+        -:   11:#define EIGEN_SPARSEPRODUCT_H
+        -:   12:
+        -:   13:// IWYU pragma: private
+        -:   14:#include "./InternalHeaderCheck.h"
+        -:   15:
+        -:   16:namespace Eigen { 
+        -:   17:
+        -:   18:/** \returns an expression of the product of two sparse matrices.
+        -:   19:  * By default a conservative product preserving the symbolic non zeros is performed.
+        -:   20:  * The automatic pruning of the small values can be achieved by calling the pruned() function
+        -:   21:  * in which case a totally different product algorithm is employed:
+        -:   22:  * \code
+        -:   23:  * C = (A*B).pruned();             // suppress numerical zeros (exact)
+        -:   24:  * C = (A*B).pruned(ref);
+        -:   25:  * C = (A*B).pruned(ref,epsilon);
+        -:   26:  * \endcode
+        -:   27:  * where \c ref is a meaningful non zero reference value.
+        -:   28:  * */
+        -:   29:template<typename Derived>
+        -:   30:template<typename OtherDerived>
+        -:   31:inline const Product<Derived,OtherDerived,AliasFreeProduct>
+        8:   32:SparseMatrixBase<Derived>::operator*(const SparseMatrixBase<OtherDerived> &other) const
+        -:   33:{
+        8:   34:  return Product<Derived,OtherDerived,AliasFreeProduct>(derived(), other.derived());
+        -:   35:}
+        -:   36:
+        -:   37:namespace internal {
+        -:   38:
+        -:   39:// sparse * sparse
+        -:   40:template<typename Lhs, typename Rhs, int ProductType>
+        -:   41:struct generic_product_impl<Lhs, Rhs, SparseShape, SparseShape, ProductType>
+        -:   42:{
+        -:   43:  template<typename Dest>
+        8:   44:  static void evalTo(Dest& dst, const Lhs& lhs, const Rhs& rhs)
+        -:   45:  {
+        8:   46:    evalTo(dst, lhs, rhs, typename evaluator_traits<Dest>::Shape());
+        8:   47:  }
+        -:   48:
+        -:   49:  // dense += sparse * sparse
+        -:   50:  template<typename Dest,typename ActualLhs>
+        -:   51:  static void addTo(Dest& dst, const ActualLhs& lhs, const Rhs& rhs, std::enable_if_t<is_same<typename evaluator_traits<Dest>::Shape,DenseShape>::value,int*>* = 0)
+        -:   52:  {
+        -:   53:    typedef typename nested_eval<ActualLhs,Dynamic>::type LhsNested;
+        -:   54:    typedef typename nested_eval<Rhs,Dynamic>::type RhsNested;
+        -:   55:    LhsNested lhsNested(lhs);
+        -:   56:    RhsNested rhsNested(rhs);
+        -:   57:    internal::sparse_sparse_to_dense_product_selector<remove_all_t<LhsNested>,
+        -:   58:                                                      remove_all_t<RhsNested>, Dest>::run(lhsNested,rhsNested,dst);
+        -:   59:  }
+        -:   60:
+        -:   61:  // dense -= sparse * sparse
+        -:   62:  template<typename Dest>
+        -:   63:  static void subTo(Dest& dst, const Lhs& lhs, const Rhs& rhs, std::enable_if_t<is_same<typename evaluator_traits<Dest>::Shape,DenseShape>::value,int*>* = 0)
+        -:   64:  {
+        -:   65:    addTo(dst, -lhs, rhs);
+        -:   66:  }
+        -:   67:
+        -:   68:protected:
+        -:   69:
+        -:   70:  // sparse = sparse * sparse
+        -:   71:  template<typename Dest>
+        8:   72:  static void evalTo(Dest& dst, const Lhs& lhs, const Rhs& rhs, SparseShape)
+        -:   73:  {
+        -:   74:    typedef typename nested_eval<Lhs,Dynamic>::type LhsNested;
+        -:   75:    typedef typename nested_eval<Rhs,Dynamic>::type RhsNested;
+        8:   76:    LhsNested lhsNested(lhs);
+        8:   77:    RhsNested rhsNested(rhs);
+        8:   78:    internal::conservative_sparse_sparse_product_selector<remove_all_t<LhsNested>,
+        8:   79:                                                          remove_all_t<RhsNested>, Dest>::run(lhsNested,rhsNested,dst);
+        8:   80:  }
+        -:   81:
+        -:   82:  // dense = sparse * sparse
+        -:   83:  template<typename Dest>
+        -:   84:  static void evalTo(Dest& dst, const Lhs& lhs, const Rhs& rhs, DenseShape)
+        -:   85:  {
+        -:   86:    dst.setZero();
+        -:   87:    addTo(dst, lhs, rhs);
+        -:   88:  }
+        -:   89:};
+        -:   90:
+        -:   91:// sparse * sparse-triangular
+        -:   92:template<typename Lhs, typename Rhs, int ProductType>
+        -:   93:struct generic_product_impl<Lhs, Rhs, SparseShape, SparseTriangularShape, ProductType>
+        -:   94: : public generic_product_impl<Lhs, Rhs, SparseShape, SparseShape, ProductType>
+        -:   95:{};
+        -:   96:
+        -:   97:// sparse-triangular * sparse
+        -:   98:template<typename Lhs, typename Rhs, int ProductType>
+        -:   99:struct generic_product_impl<Lhs, Rhs, SparseTriangularShape, SparseShape, ProductType>
+        -:  100: : public generic_product_impl<Lhs, Rhs, SparseShape, SparseShape, ProductType>
+        -:  101:{};
+        -:  102:
+        -:  103:// dense = sparse-product (can be sparse*sparse, sparse*perm, etc.)
+        -:  104:template< typename DstXprType, typename Lhs, typename Rhs>
+        -:  105:struct Assignment<DstXprType, Product<Lhs,Rhs,AliasFreeProduct>, internal::assign_op<typename DstXprType::Scalar,typename Product<Lhs,Rhs,AliasFreeProduct>::Scalar>, Sparse2Dense>
+        -:  106:{
+        -:  107:  typedef Product<Lhs,Rhs,AliasFreeProduct> SrcXprType;
+        -:  108:  static void run(DstXprType &dst, const SrcXprType &src, const internal::assign_op<typename DstXprType::Scalar,typename SrcXprType::Scalar> &)
+        -:  109:  {
+        -:  110:    Index dstRows = src.rows();
+        -:  111:    Index dstCols = src.cols();
+        -:  112:    if((dst.rows()!=dstRows) || (dst.cols()!=dstCols))
+        -:  113:      dst.resize(dstRows, dstCols);
+        -:  114:    
+        -:  115:    generic_product_impl<Lhs, Rhs>::evalTo(dst,src.lhs(),src.rhs());
+        -:  116:  }
+        -:  117:};
+        -:  118:
+        -:  119:// dense += sparse-product (can be sparse*sparse, sparse*perm, etc.)
+        -:  120:template< typename DstXprType, typename Lhs, typename Rhs>
+        -:  121:struct Assignment<DstXprType, Product<Lhs,Rhs,AliasFreeProduct>, internal::add_assign_op<typename DstXprType::Scalar,typename Product<Lhs,Rhs,AliasFreeProduct>::Scalar>, Sparse2Dense>
+        -:  122:{
+        -:  123:  typedef Product<Lhs,Rhs,AliasFreeProduct> SrcXprType;
+        -:  124:  static void run(DstXprType &dst, const SrcXprType &src, const internal::add_assign_op<typename DstXprType::Scalar,typename SrcXprType::Scalar> &)
+        -:  125:  {
+        -:  126:    generic_product_impl<Lhs, Rhs>::addTo(dst,src.lhs(),src.rhs());
+        -:  127:  }
+        -:  128:};
+        -:  129:
+        -:  130:// dense -= sparse-product (can be sparse*sparse, sparse*perm, etc.)
+        -:  131:template< typename DstXprType, typename Lhs, typename Rhs>
+        -:  132:struct Assignment<DstXprType, Product<Lhs,Rhs,AliasFreeProduct>, internal::sub_assign_op<typename DstXprType::Scalar,typename Product<Lhs,Rhs,AliasFreeProduct>::Scalar>, Sparse2Dense>
+        -:  133:{
+        -:  134:  typedef Product<Lhs,Rhs,AliasFreeProduct> SrcXprType;
+        -:  135:  static void run(DstXprType &dst, const SrcXprType &src, const internal::sub_assign_op<typename DstXprType::Scalar,typename SrcXprType::Scalar> &)
+        -:  136:  {
+        -:  137:    generic_product_impl<Lhs, Rhs>::subTo(dst,src.lhs(),src.rhs());
+        -:  138:  }
+        -:  139:};
+        -:  140:
+        -:  141:template<typename Lhs, typename Rhs, int Options>
+        -:  142:struct unary_evaluator<SparseView<Product<Lhs, Rhs, Options> >, IteratorBased>
+        -:  143: : public evaluator<typename Product<Lhs, Rhs, DefaultProduct>::PlainObject>
+        -:  144:{
+        -:  145:  typedef SparseView<Product<Lhs, Rhs, Options> > XprType;
+        -:  146:  typedef typename XprType::PlainObject PlainObject;
+        -:  147:  typedef evaluator<PlainObject> Base;
+        -:  148:
+        -:  149:  explicit unary_evaluator(const XprType& xpr)
+        -:  150:    : m_result(xpr.rows(), xpr.cols())
+        -:  151:  {
+        -:  152:    using std::abs;
+        -:  153:    internal::construct_at<Base>(this, m_result);
+        -:  154:    typedef typename nested_eval<Lhs,Dynamic>::type LhsNested;
+        -:  155:    typedef typename nested_eval<Rhs,Dynamic>::type RhsNested;
+        -:  156:    LhsNested lhsNested(xpr.nestedExpression().lhs());
+        -:  157:    RhsNested rhsNested(xpr.nestedExpression().rhs());
+        -:  158:
+        -:  159:    internal::sparse_sparse_product_with_pruning_selector<remove_all_t<LhsNested>,
+        -:  160:                                                          remove_all_t<RhsNested>, PlainObject>::run(lhsNested,rhsNested,m_result,
+        -:  161:                                                                                                                  abs(xpr.reference())*xpr.epsilon());
+        -:  162:  }
+        -:  163:
+        -:  164:protected:
+        -:  165:  PlainObject m_result;
+        -:  166:};
+        -:  167:
+        -:  168:} // end namespace internal
+        -:  169:
+        -:  170:// sparse matrix = sparse-product (can be sparse*sparse, sparse*perm, etc.)
+        -:  171:template<typename Scalar, int Options_, typename StorageIndex_>
+        -:  172:template<typename Lhs, typename Rhs>
+        3:  173:SparseMatrix<Scalar,Options_,StorageIndex_>& SparseMatrix<Scalar,Options_,StorageIndex_>::operator=(const Product<Lhs,Rhs,AliasFreeProduct>& src)
+        -:  174:{
+        -:  175:  // std::cout << "in Assignment : " << DstOptions << "\n";
+        3:  176:  SparseMatrix dst(src.rows(),src.cols());
+        3:  177:  internal::generic_product_impl<Lhs, Rhs>::evalTo(dst,src.lhs(),src.rhs());
+        3:  178:  this->swap(dst);
+        -:  179:  return *this;
+        3:  180:}
+        -:  181:
+        -:  182:} // end namespace Eigen
+        -:  183:
+        -:  184:#endif // EIGEN_SPARSEPRODUCT_H

@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/products/TriangularSolverVector.h
-        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
-        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
-        -:    0:Runs:4
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -97,42 +97,42 @@
         -:   93:  enum {
         -:   94:    IsLower = ((Mode&Lower)==Lower)
         -:   95:  };
-     1490:   96:  static void run(Index size, const LhsScalar* _lhs, Index lhsStride, RhsScalar* rhs)
+      120:   96:  static void run(Index size, const LhsScalar* _lhs, Index lhsStride, RhsScalar* rhs)
         -:   97:  {
         -:   98:    typedef Map<const Matrix<LhsScalar,Dynamic,Dynamic,ColMajor>, 0, OuterStride<> > LhsMap;
-     1490:   99:    const LhsMap lhs(_lhs,size,size,OuterStride<>(lhsStride));
+      120:   99:    const LhsMap lhs(_lhs,size,size,OuterStride<>(lhsStride));
         -:  100:    typedef const_blas_data_mapper<LhsScalar,Index,ColMajor> LhsMapper;
         -:  101:    typedef const_blas_data_mapper<RhsScalar,Index,ColMajor> RhsMapper;
         -:  102:    std::conditional_t<Conjugate,
         -:  103:                            const CwiseUnaryOp<typename internal::scalar_conjugate_op<LhsScalar>,LhsMap>,
         -:  104:                            const LhsMap&
-     1490:  105:                           > cjLhs(lhs);
+      120:  105:                           > cjLhs(lhs);
         -:  106:    static const Index PanelWidth = EIGEN_TUNE_TRIANGULAR_PANEL_WIDTH;
         -:  107:
-     2980:  108:    for(Index pi=IsLower ? 0 : size;
-     2980:  109:        IsLower ? pi<size : pi>0;
-     1490:  110:        IsLower ? pi+=PanelWidth : pi-=PanelWidth)
+      240:  108:    for(Index pi=IsLower ? 0 : size;
+      240:  109:        IsLower ? pi<size : pi>0;
+      120:  110:        IsLower ? pi+=PanelWidth : pi-=PanelWidth)
         -:  111:    {
-     1490:  112:      Index actualPanelWidth = (std::min)(IsLower ? size - pi : pi, PanelWidth);
-     1490:  113:      Index startBlock = IsLower ? pi : pi-actualPanelWidth;
-     1490:  114:      Index endBlock = IsLower ? pi + actualPanelWidth : 0;
+      120:  112:      Index actualPanelWidth = (std::min)(IsLower ? size - pi : pi, PanelWidth);
+      120:  113:      Index startBlock = IsLower ? pi : pi-actualPanelWidth;
+      120:  114:      Index endBlock = IsLower ? pi + actualPanelWidth : 0;
         -:  115:
-     8622:  116:      for(Index k=0; k<actualPanelWidth; ++k)
+      598:  116:      for(Index k=0; k<actualPanelWidth; ++k)
         -:  117:      {
-     7132:  118:        Index i = IsLower ? pi+k : pi-k-1;
-     7132:  119:        if(!is_identically_zero(rhs[i]))
+      478:  118:        Index i = IsLower ? pi+k : pi-k-1;
+      478:  119:        if(!is_identically_zero(rhs[i]))
         -:  120:        {
         -:  121:          if(!(Mode & UnitDiag))
-     6176:  122:            rhs[i] /= cjLhs.coeff(i,i);
+    #####:  122:            rhs[i] /= cjLhs.coeff(i,i);
         -:  123:
-     6176:  124:          Index r = actualPanelWidth - k - 1; // remaining size
-     6176:  125:          Index s = IsLower ? i+1 : i-r;
-     6176:  126:          if (r>0)
-     4926:  127:            Map<Matrix<RhsScalar,Dynamic,1> >(rhs+s,r) -= rhs[i] * cjLhs.col(i).segment(s,r);
-     6176:  128:        }
-     7132:  129:      }
-     1490:  130:      Index r = IsLower ? size - endBlock : startBlock; // remaining size
-     1490:  131:      if (r > 0)
+    #####:  124:          Index r = actualPanelWidth - k - 1; // remaining size
+    #####:  125:          Index s = IsLower ? i+1 : i-r;
+    #####:  126:          if (r>0)
+    #####:  127:            Map<Matrix<RhsScalar,Dynamic,1> >(rhs+s,r) -= rhs[i] * cjLhs.col(i).segment(s,r);
+    #####:  128:        }
+      478:  129:      }
+      120:  130:      Index r = IsLower ? size - endBlock : startBlock; // remaining size
+      120:  131:      if (r > 0)
         -:  132:      {
         -:  133:        // let's directly call the low level product function because:
         -:  134:        // 1 - it is faster to compile
@@ -143,8 +143,8 @@
     #####:  139:            RhsMapper(rhs+startBlock, 1),
     #####:  140:            rhs+endBlock, 1, RhsScalar(-1));
     #####:  141:      }
-     1490:  142:    }
-     1490:  143:  }
+      120:  142:    }
+      120:  143:  }
         -:  144:};
         -:  145:
         -:  146:} // end namespace internal

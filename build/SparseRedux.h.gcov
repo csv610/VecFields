@@ -1,0 +1,56 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/SparseCore/SparseRedux.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2008-2014 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:#ifndef EIGEN_SPARSEREDUX_H
+        -:   11:#define EIGEN_SPARSEREDUX_H
+        -:   12:
+        -:   13:// IWYU pragma: private
+        -:   14:#include "./InternalHeaderCheck.h"
+        -:   15:
+        -:   16:namespace Eigen { 
+        -:   17:
+        -:   18:template<typename Derived>
+        -:   19:typename internal::traits<Derived>::Scalar
+    #####:   20:SparseMatrixBase<Derived>::sum() const
+        -:   21:{
+    #####:   22:  eigen_assert(rows()>0 && cols()>0 && "you are using a non initialized matrix");
+    #####:   23:  Scalar res(0);
+    #####:   24:  internal::evaluator<Derived> thisEval(derived());
+    #####:   25:  for (Index j=0; j<outerSize(); ++j)
+    #####:   26:    for (typename internal::evaluator<Derived>::InnerIterator iter(thisEval,j); iter; ++iter)
+    #####:   27:      res += iter.value();
+    #####:   28:  return res;
+    #####:   29:}
+        -:   30:
+        -:   31:template<typename Scalar_, int Options_, typename Index_>
+        -:   32:typename internal::traits<SparseMatrix<Scalar_,Options_,Index_> >::Scalar
+        2:   33:SparseMatrix<Scalar_,Options_,Index_>::sum() const
+        -:   34:{
+        4:   35:  eigen_assert(rows()>0 && cols()>0 && "you are using a non initialized matrix");
+        2:   36:  if(this->isCompressed())
+        2:   37:    return Matrix<Scalar,1,Dynamic>::Map(m_data.valuePtr(), m_data.size()).sum();
+        -:   38:  else
+    #####:   39:    return Base::sum();
+        2:   40:}
+        -:   41:
+        -:   42:template<typename Scalar_, int Options_, typename Index_>
+        -:   43:typename internal::traits<SparseVector<Scalar_,Options_, Index_> >::Scalar
+        -:   44:SparseVector<Scalar_,Options_,Index_>::sum() const
+        -:   45:{
+        -:   46:  eigen_assert(rows()>0 && cols()>0 && "you are using a non initialized matrix");
+        -:   47:  return Matrix<Scalar,1,Dynamic>::Map(m_data.valuePtr(), m_data.size()).sum();
+        -:   48:}
+        -:   49:
+        -:   50:} // end namespace Eigen
+        -:   51:
+        -:   52:#endif // EIGEN_SPARSEREDUX_H

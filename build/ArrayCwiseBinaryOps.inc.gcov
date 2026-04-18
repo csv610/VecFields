@@ -1,0 +1,355 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/plugins/ArrayCwiseBinaryOps.inc
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:
+        -:    2:/** \returns an expression of the coefficient wise product of \c *this and \a other
+        -:    3:  *
+        -:    4:  * \sa MatrixBase::cwiseProduct
+        -:    5:  */
+        -:    6:template<typename OtherDerived>
+        -:    7:EIGEN_DEVICE_FUNC
+        -:    8:EIGEN_STRONG_INLINE const EIGEN_CWISE_BINARY_RETURN_TYPE(Derived,OtherDerived,product)
+        2:    9:operator*(const EIGEN_CURRENT_STORAGE_BASE_CLASS<OtherDerived> &other) const
+        -:   10:{
+        2:   11:  return EIGEN_CWISE_BINARY_RETURN_TYPE(Derived,OtherDerived,product)(derived(), other.derived());
+        -:   12:}
+        -:   13:
+        -:   14:/** \returns an expression of the coefficient wise quotient of \c *this and \a other
+        -:   15:  *
+        -:   16:  * \sa MatrixBase::cwiseQuotient
+        -:   17:  */
+        -:   18:template<typename OtherDerived>
+        -:   19:EIGEN_DEVICE_FUNC
+        -:   20:EIGEN_STRONG_INLINE const CwiseBinaryOp<internal::scalar_quotient_op<Scalar,typename OtherDerived::Scalar>, const Derived, const OtherDerived>
+    #####:   21:operator/(const EIGEN_CURRENT_STORAGE_BASE_CLASS<OtherDerived> &other) const
+        -:   22:{
+    #####:   23:  return CwiseBinaryOp<internal::scalar_quotient_op<Scalar,typename OtherDerived::Scalar>, const Derived, const OtherDerived>(derived(), other.derived());
+        -:   24:}
+        -:   25:
+        -:   26:/** \returns an expression of the coefficient-wise min of \c *this and \a other
+        -:   27:  *
+        -:   28:  * Example: \include Cwise_min.cpp
+        -:   29:  * Output: \verbinclude Cwise_min.out
+        -:   30:  *
+        -:   31:  * \sa max()
+        -:   32:  */
+        -:   33:template <int NaNPropagation=PropagateFast, typename OtherDerived>
+        -:   34:EIGEN_DEVICE_FUNC
+        -:   35:EIGEN_STRONG_INLINE const CwiseBinaryOp<internal::scalar_min_op<Scalar,Scalar,NaNPropagation>, const Derived, const OtherDerived>
+        -:   36:#ifdef EIGEN_PARSED_BY_DOXYGEN
+        -:   37:min
+        -:   38:#else
+        -:   39:(min)
+        -:   40:#endif
+        -:   41:(const EIGEN_CURRENT_STORAGE_BASE_CLASS<OtherDerived> &other) const
+        -:   42:{
+        -:   43:  return CwiseBinaryOp<internal::scalar_min_op<Scalar,Scalar,NaNPropagation>, const Derived, const OtherDerived>(derived(), other.derived());
+        -:   44:}
+        -:   45:
+        -:   46:/** \returns an expression of the coefficient-wise min of \c *this and scalar \a other
+        -:   47:  *
+        -:   48:  * \sa max()
+        -:   49:  */
+        -:   50:template <int NaNPropagation=PropagateFast>
+        -:   51:EIGEN_DEVICE_FUNC
+        -:   52:EIGEN_STRONG_INLINE const CwiseBinaryOp<internal::scalar_min_op<Scalar,Scalar,NaNPropagation>, const Derived,
+        -:   53:    const CwiseNullaryOp<internal::scalar_constant_op<Scalar>, PlainObject> >
+        -:   54:#ifdef EIGEN_PARSED_BY_DOXYGEN
+        -:   55:min
+        -:   56:#else
+        -:   57:(min)
+        -:   58:#endif
+        -:   59:(const Scalar &other) const
+        -:   60:{
+        -:   61:  return (min<NaNPropagation>)(Derived::PlainObject::Constant(rows(), cols(), other));
+        -:   62:}
+        -:   63:
+        -:   64:/** \returns an expression of the coefficient-wise max of \c *this and \a other
+        -:   65:  *
+        -:   66:  * Example: \include Cwise_max.cpp
+        -:   67:  * Output: \verbinclude Cwise_max.out
+        -:   68:  *
+        -:   69:  * \sa min()
+        -:   70:  */
+        -:   71:template <int NaNPropagation=PropagateFast, typename OtherDerived>
+        -:   72:EIGEN_DEVICE_FUNC
+        -:   73:EIGEN_STRONG_INLINE const CwiseBinaryOp<internal::scalar_max_op<Scalar,Scalar,NaNPropagation>, const Derived, const OtherDerived>
+        -:   74:#ifdef EIGEN_PARSED_BY_DOXYGEN
+        -:   75:max
+        -:   76:#else
+        -:   77:(max)
+        -:   78:#endif
+        -:   79:(const EIGEN_CURRENT_STORAGE_BASE_CLASS<OtherDerived> &other) const
+        -:   80:{
+        -:   81:  return CwiseBinaryOp<internal::scalar_max_op<Scalar,Scalar,NaNPropagation>, const Derived, const OtherDerived>(derived(), other.derived());
+        -:   82:}
+        -:   83:
+        -:   84:/** \returns an expression of the coefficient-wise max of \c *this and scalar \a other
+        -:   85:  *
+        -:   86:  * \sa min()
+        -:   87:  */
+        -:   88:template <int NaNPropagation=PropagateFast>
+        -:   89:EIGEN_DEVICE_FUNC
+        -:   90:    EIGEN_STRONG_INLINE const CwiseBinaryOp<internal::scalar_max_op<Scalar,Scalar,NaNPropagation>, const Derived,
+        -:   91:                                        const CwiseNullaryOp<internal::scalar_constant_op<Scalar>, PlainObject> >
+        -:   92:#ifdef EIGEN_PARSED_BY_DOXYGEN
+        -:   93:max
+        -:   94:#else
+        -:   95:(max)
+        -:   96:#endif
+        -:   97:(const Scalar &other) const
+        -:   98:{
+        -:   99:  return (max<NaNPropagation>)(Derived::PlainObject::Constant(rows(), cols(), other));
+        -:  100:}
+        -:  101:
+        -:  102:/** \returns an expression of the coefficient-wise absdiff of \c *this and \a other
+        -:  103:  *
+        -:  104:  * Example: \include Cwise_absolute_difference.cpp
+        -:  105:  * Output: \verbinclude Cwise_absolute_difference.out
+        -:  106:  *
+        -:  107:  * \sa absolute_difference()
+        -:  108:  */
+        -:  109:EIGEN_MAKE_CWISE_BINARY_OP(absolute_difference,absolute_difference)
+        -:  110:
+        -:  111:/** \returns an expression of the coefficient-wise absolute_difference of \c *this and scalar \a other
+        -:  112:  *
+        -:  113:  * \sa absolute_difference()
+        -:  114:  */
+        -:  115:EIGEN_DEVICE_FUNC
+        -:  116:EIGEN_STRONG_INLINE const CwiseBinaryOp<internal::scalar_absolute_difference_op<Scalar,Scalar>, const Derived,
+        -:  117:                                        const CwiseNullaryOp<internal::scalar_constant_op<Scalar>, PlainObject> >
+        -:  118:#ifdef EIGEN_PARSED_BY_DOXYGEN
+        -:  119:absolute_difference
+        -:  120:#else
+        -:  121:(absolute_difference)
+        -:  122:#endif
+        -:  123:(const Scalar &other) const
+        -:  124:{
+        -:  125:  return (absolute_difference)(Derived::PlainObject::Constant(rows(), cols(), other));
+        -:  126:}
+        -:  127:
+        -:  128:/** \returns an expression of the coefficient-wise power of \c *this to the given array of \a exponents.
+        -:  129:  *
+        -:  130:  * This function computes the coefficient-wise power.
+        -:  131:  *
+        -:  132:  * Example: \include Cwise_array_power_array.cpp
+        -:  133:  * Output: \verbinclude Cwise_array_power_array.out
+        -:  134:  */
+        -:  135:EIGEN_MAKE_CWISE_BINARY_OP(pow,pow)
+        -:  136:
+        -:  137:/** \returns an expression of the coefficient-wise atan2(\c *this, \a y), where \a y is the given array argument.
+        -:  138:  *
+        -:  139:  * This function computes the coefficient-wise atan2.
+        -:  140:  *
+        -:  141:  */
+        -:  142:EIGEN_MAKE_CWISE_BINARY_OP(atan2,atan2)
+        -:  143:
+        -:  144:
+        -:  145:// TODO code generating macros could be moved to Macros.h and could include generation of documentation
+        -:  146:#define EIGEN_MAKE_CWISE_COMP_OP(OP, COMPARATOR) \
+        -:  147:template<typename OtherDerived> \
+        -:  148:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const CwiseBinaryOp<internal::scalar_cmp_op<Scalar, typename OtherDerived::Scalar, internal::cmp_ ## COMPARATOR>, const Derived, const OtherDerived> \
+        -:  149:OP(const EIGEN_CURRENT_STORAGE_BASE_CLASS<OtherDerived> &other) const \
+        -:  150:{ \
+        -:  151:  return CwiseBinaryOp<internal::scalar_cmp_op<Scalar, typename OtherDerived::Scalar, internal::cmp_ ## COMPARATOR>, const Derived, const OtherDerived>(derived(), other.derived()); \
+        -:  152:}\
+        -:  153:typedef CwiseBinaryOp<internal::scalar_cmp_op<Scalar,Scalar, internal::cmp_ ## COMPARATOR>, const Derived, const CwiseNullaryOp<internal::scalar_constant_op<Scalar>, PlainObject> > Cmp ## COMPARATOR ## ReturnType; \
+        -:  154:typedef CwiseBinaryOp<internal::scalar_cmp_op<Scalar,Scalar, internal::cmp_ ## COMPARATOR>, const CwiseNullaryOp<internal::scalar_constant_op<Scalar>, PlainObject>, const Derived > RCmp ## COMPARATOR ## ReturnType; \
+        -:  155:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Cmp ## COMPARATOR ## ReturnType \
+        -:  156:OP(const Scalar& s) const { \
+        -:  157:  return this->OP(Derived::PlainObject::Constant(rows(), cols(), s)); \
+        -:  158:} \
+        -:  159:EIGEN_DEVICE_FUNC friend EIGEN_STRONG_INLINE const RCmp ## COMPARATOR ## ReturnType \
+        -:  160:OP(const Scalar& s, const EIGEN_CURRENT_STORAGE_BASE_CLASS<Derived>& d) { \
+        -:  161:  return Derived::PlainObject::Constant(d.rows(), d.cols(), s).OP(d); \
+        -:  162:}
+        -:  163:
+        -:  164:#define EIGEN_MAKE_CWISE_COMP_R_OP(OP, R_OP, RCOMPARATOR) \
+        -:  165:template<typename OtherDerived> \
+        -:  166:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const CwiseBinaryOp<internal::scalar_cmp_op<typename OtherDerived::Scalar, Scalar, internal::cmp_##RCOMPARATOR>, const OtherDerived, const Derived> \
+        -:  167:OP(const EIGEN_CURRENT_STORAGE_BASE_CLASS<OtherDerived> &other) const \
+        -:  168:{ \
+        -:  169:  return CwiseBinaryOp<internal::scalar_cmp_op<typename OtherDerived::Scalar, Scalar, internal::cmp_##RCOMPARATOR>, const OtherDerived, const Derived>(other.derived(), derived()); \
+        -:  170:} \
+        -:  171:EIGEN_DEVICE_FUNC \
+        -:  172:inline const RCmp ## RCOMPARATOR ## ReturnType \
+        -:  173:OP(const Scalar& s) const { \
+        -:  174:  return Derived::PlainObject::Constant(rows(), cols(), s).R_OP(*this); \
+        -:  175:} \
+        -:  176:friend inline const Cmp ## RCOMPARATOR ## ReturnType \
+        -:  177:OP(const Scalar& s, const Derived& d) { \
+        -:  178:  return d.R_OP(Derived::PlainObject::Constant(d.rows(), d.cols(), s)); \
+        -:  179:}
+        -:  180:
+        -:  181:
+        -:  182:
+        -:  183:/** \returns an expression of the coefficient-wise \< operator of *this and \a other
+        -:  184:  *
+        -:  185:  * Example: \include Cwise_less.cpp
+        -:  186:  * Output: \verbinclude Cwise_less.out
+        -:  187:  *
+        -:  188:  * \sa all(), any(), operator>(), operator<=()
+        -:  189:  */
+        -:  190:EIGEN_MAKE_CWISE_COMP_OP(operator<, LT)
+        -:  191:
+        -:  192:/** \returns an expression of the coefficient-wise \<= operator of *this and \a other
+        -:  193:  *
+        -:  194:  * Example: \include Cwise_less_equal.cpp
+        -:  195:  * Output: \verbinclude Cwise_less_equal.out
+        -:  196:  *
+        -:  197:  * \sa all(), any(), operator>=(), operator<()
+        -:  198:  */
+        -:  199:EIGEN_MAKE_CWISE_COMP_OP(operator<=, LE)
+        -:  200:
+        -:  201:/** \returns an expression of the coefficient-wise \> operator of *this and \a other
+        -:  202:  *
+        -:  203:  * Example: \include Cwise_greater.cpp
+        -:  204:  * Output: \verbinclude Cwise_greater.out
+        -:  205:  *
+        -:  206:  * \sa all(), any(), operator>=(), operator<()
+        -:  207:  */
+        -:  208:EIGEN_MAKE_CWISE_COMP_R_OP(operator>, operator<, LT)
+        -:  209:
+        -:  210:/** \returns an expression of the coefficient-wise \>= operator of *this and \a other
+        -:  211:  *
+        -:  212:  * Example: \include Cwise_greater_equal.cpp
+        -:  213:  * Output: \verbinclude Cwise_greater_equal.out
+        -:  214:  *
+        -:  215:  * \sa all(), any(), operator>(), operator<=()
+        -:  216:  */
+        -:  217:EIGEN_MAKE_CWISE_COMP_R_OP(operator>=, operator<=, LE)
+        -:  218:
+        -:  219:/** \returns an expression of the coefficient-wise == operator of *this and \a other
+        -:  220:  *
+        -:  221:  * \warning this performs an exact comparison, which is generally a bad idea with floating-point types.
+        -:  222:  * In order to check for equality between two vectors or matrices with floating-point coefficients, it is
+        -:  223:  * generally a far better idea to use a fuzzy comparison as provided by isApprox() and
+        -:  224:  * isMuchSmallerThan().
+        -:  225:  *
+        -:  226:  * Example: \include Cwise_equal_equal.cpp
+        -:  227:  * Output: \verbinclude Cwise_equal_equal.out
+        -:  228:  *
+        -:  229:  * \sa all(), any(), isApprox(), isMuchSmallerThan()
+        -:  230:  */
+        -:  231:EIGEN_MAKE_CWISE_COMP_OP(operator==, EQ)
+        -:  232:
+        -:  233:/** \returns an expression of the coefficient-wise != operator of *this and \a other
+        -:  234:  *
+        -:  235:  * \warning this performs an exact comparison, which is generally a bad idea with floating-point types.
+        -:  236:  * In order to check for equality between two vectors or matrices with floating-point coefficients, it is
+        -:  237:  * generally a far better idea to use a fuzzy comparison as provided by isApprox() and
+        -:  238:  * isMuchSmallerThan().
+        -:  239:  *
+        -:  240:  * Example: \include Cwise_not_equal.cpp
+        -:  241:  * Output: \verbinclude Cwise_not_equal.out
+        -:  242:  *
+        -:  243:  * \sa all(), any(), isApprox(), isMuchSmallerThan()
+        -:  244:  */
+        -:  245:EIGEN_MAKE_CWISE_COMP_OP(operator!=, NEQ)
+        -:  246:
+        -:  247:
+        -:  248:#undef EIGEN_MAKE_CWISE_COMP_OP
+        -:  249:#undef EIGEN_MAKE_CWISE_COMP_R_OP
+        -:  250:
+        -:  251:// scalar addition
+        -:  252:#ifndef EIGEN_PARSED_BY_DOXYGEN
+    #####:  253:EIGEN_MAKE_SCALAR_BINARY_OP(operator+,sum)
+        -:  254:#else
+        -:  255:/** \returns an expression of \c *this with each coeff incremented by the constant \a scalar
+        -:  256:  *
+        -:  257:  * \tparam T is the scalar type of \a scalar. It must be compatible with the scalar type of the given expression.
+        -:  258:  *
+        -:  259:  * Example: \include Cwise_plus.cpp
+        -:  260:  * Output: \verbinclude Cwise_plus.out
+        -:  261:  *
+        -:  262:  * \sa operator+=(), operator-()
+        -:  263:  */
+        -:  264:template<typename T>
+        -:  265:const CwiseBinaryOp<internal::scalar_sum_op<Scalar,T>,Derived,Constant<T> > operator+(const T& scalar) const;
+        -:  266:/** \returns an expression of \a expr with each coeff incremented by the constant \a scalar
+        -:  267:  *
+        -:  268:  * \tparam T is the scalar type of \a scalar. It must be compatible with the scalar type of the given expression.
+        -:  269:  */
+        -:  270:template<typename T> friend
+        -:  271:const CwiseBinaryOp<internal::scalar_sum_op<T,Scalar>,Constant<T>,Derived> operator+(const T& scalar, const StorageBaseType& expr);
+        -:  272:#endif
+        -:  273:
+        -:  274:#ifndef EIGEN_PARSED_BY_DOXYGEN
+        -:  275:EIGEN_MAKE_SCALAR_BINARY_OP(operator-,difference)
+        -:  276:#else
+        -:  277:/** \returns an expression of \c *this with each coeff decremented by the constant \a scalar
+        -:  278:  *
+        -:  279:  * \tparam T is the scalar type of \a scalar. It must be compatible with the scalar type of the given expression.
+        -:  280:  *
+        -:  281:  * Example: \include Cwise_minus.cpp
+        -:  282:  * Output: \verbinclude Cwise_minus.out
+        -:  283:  *
+        -:  284:  * \sa operator+=(), operator-()
+        -:  285:  */
+        -:  286:template<typename T>
+        -:  287:const CwiseBinaryOp<internal::scalar_difference_op<Scalar,T>,Derived,Constant<T> > operator-(const T& scalar) const;
+        -:  288:/** \returns an expression of the constant matrix of value \a scalar decremented by the coefficients of \a expr
+        -:  289:  *
+        -:  290:  * \tparam T is the scalar type of \a scalar. It must be compatible with the scalar type of the given expression.
+        -:  291:  */
+        -:  292:template<typename T> friend
+        -:  293:const CwiseBinaryOp<internal::scalar_difference_op<T,Scalar>,Constant<T>,Derived> operator-(const T& scalar, const StorageBaseType& expr);
+        -:  294:#endif
+        -:  295:
+        -:  296:
+        -:  297:#ifndef EIGEN_PARSED_BY_DOXYGEN
+        -:  298:  EIGEN_MAKE_SCALAR_BINARY_OP_ONTHELEFT(operator/,quotient)
+        -:  299:#else
+        -:  300:  /**
+        -:  301:    * \brief Component-wise division of the scalar \a s by array elements of \a a.
+        -:  302:    *
+        -:  303:    * \tparam Scalar is the scalar type of \a x. It must be compatible with the scalar type of the given array expression (\c Derived::Scalar).
+        -:  304:    */
+        -:  305:  template<typename T> friend
+        -:  306:  inline const CwiseBinaryOp<internal::scalar_quotient_op<T,Scalar>,Constant<T>,Derived>
+        -:  307:  operator/(const T& s,const StorageBaseType& a);
+        -:  308:#endif
+        -:  309:
+        -:  310:// NOTE disabled until we agree on argument order
+        -:  311:#if 0
+        -:  312:/** \cpp11 \returns an expression of the coefficient-wise polygamma function.
+        -:  313:  *
+        -:  314:  * \specialfunctions_module
+        -:  315:  *
+        -:  316:  * It returns the \a n -th derivative of the digamma(psi) evaluated at \c *this.
+        -:  317:  *
+        -:  318:  * \warning Be careful with the order of the parameters: x.polygamma(n) is equivalent to polygamma(n,x)
+        -:  319:  *
+        -:  320:  * \sa Eigen::polygamma()
+        -:  321:  */
+        -:  322:template<typename DerivedN>
+        -:  323:inline const CwiseBinaryOp<internal::scalar_polygamma_op<Scalar>, const DerivedN, const Derived>
+        -:  324:polygamma(const EIGEN_CURRENT_STORAGE_BASE_CLASS<DerivedN> &n) const
+        -:  325:{
+        -:  326:  return CwiseBinaryOp<internal::scalar_polygamma_op<Scalar>, const DerivedN, const Derived>(n.derived(), this->derived());
+        -:  327:}
+        -:  328:#endif
+        -:  329:
+        -:  330:/** \returns an expression of the coefficient-wise zeta function.
+        -:  331:  *
+        -:  332:  * \specialfunctions_module
+        -:  333:  *
+        -:  334:  * It returns the Riemann zeta function of two arguments \c *this and \a q:
+        -:  335:  *
+        -:  336:  * \param q is the shift, it must be > 0
+        -:  337:  *
+        -:  338:  * \note *this is the exponent, it must be > 1.
+        -:  339:  * \note This function supports only float and double scalar types. To support other scalar types, the user has
+        -:  340:  * to provide implementations of zeta(T,T) for any scalar type T to be supported.
+        -:  341:  *
+        -:  342:  * This method is an alias for zeta(*this,q);
+        -:  343:  *
+        -:  344:  * \sa Eigen::zeta()
+        -:  345:  */
+        -:  346:template<typename DerivedQ>
+        -:  347:inline const CwiseBinaryOp<internal::scalar_zeta_op<Scalar>, const Derived, const DerivedQ>
+        -:  348:zeta(const EIGEN_CURRENT_STORAGE_BASE_CLASS<DerivedQ> &q) const
+        -:  349:{
+        -:  350:  return CwiseBinaryOp<internal::scalar_zeta_op<Scalar>, const Derived, const DerivedQ>(this->derived(), q.derived());
+        -:  351:}

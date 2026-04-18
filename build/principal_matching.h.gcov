@@ -1,0 +1,97 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/include/directional/principal_matching.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Directional, a library for directional field processing.
+        -:    2:// Copyright (C) 2018 Amir Vaxman <avaxman@gmail.com>
+        -:    3://
+        -:    4:// This Source Code Form is subject to the terms of the Mozilla Public License
+        -:    5:// v. 2.0. If a copy of the MPL was not distributed with this file, You can
+        -:    6:// obtain one at http://mozilla.org/MPL/2.0/.
+        -:    7:
+        -:    8:#ifndef DIRECTIONAL_PRINCIPAL_MATCHING_H
+        -:    9:#define DIRECTIONAL_PRINCIPAL_MATCHING_H
+        -:   10:
+        -:   11:#include <vector>
+        -:   12:#include <cmath>
+        -:   13:#include <numbers>
+        -:   14:#include <Eigen/Core>
+        -:   15:#include <directional/effort_to_indices.h>
+        -:   16:#include <directional/TangentBundle.h>
+        -:   17:
+        -:   18:namespace directional
+        -:   19:{
+        -:   20:/*** Takes a field in raw form and computes both the principal effort and the consequent principal matching on every edge.
+        -:   21: Important: if the Raw field in not CCW ordered, the result is meaningless.
+        -:   22: The input and output are both a RAW_FIELD type cartesian field, in which the matching, effort, and singularities are set.
+        -:   23: ***/
+        1:   24:inline void principal_matching(directional::CartesianField& field, const bool isSingularities = true)
+        -:   25:{
+        -:   26:    
+        -:   27:    typedef std::complex<double> Complex;
+        -:   28:    using namespace Eigen;
+        -:   29:    using namespace std;
+        -:   30:    
+        1:   31:    field.matching.conservativeResize(field.tb->adjSpaces.rows());
+        1:   32:    field.matching.setConstant(-1);
+        -:   33:    
+        1:   34:    field.effort = VectorXd::Zero(field.tb->adjSpaces.rows());
+      241:   35:    for (int i = 0; i < field.tb->adjSpaces.rows(); i++) {
+      240:   36:        if (field.tb->adjSpaces(i, 0) == -1 || field.tb->adjSpaces(i, 1) == -1)
+      120:   37:            continue;
+        -:   38:        
+      120:   39:        double minRotAngle=10000.0;
+      120:   40:        int indexMinFromZero=0;
+        -:   41:        
+        -:   42:        //computing some effort and the extracting principal one
+      120:   43:        Complex freeCoeff(1.0,0.0);
+        -:   44:        //finding where the 0 vector in EF(i,0) goes to with smallest rotation angle in EF(i,1), computing the effort, and then adjusting the matching to have principal effort.
+      120:   45:        RowVector2d vec0f = field.intField.block(field.tb->adjSpaces(i, 0), 0, 1, 2);
+      120:   46:        Complex vec0fc = Complex(vec0f(0), vec0f(1));
+      120:   47:        Complex transvec0fc = vec0fc*field.tb->connection(i);
+      600:   48:        for (int j = 0; j < field.N; j++) {
+      480:   49:            RowVector2d vecjf = field.intField.block(field.tb->adjSpaces(i, 0), 2 * j, 1, 2);
+      480:   50:            Complex vecjfc = Complex(vecjf(0),vecjf(1));
+      480:   51:            RowVector2d vecjg = field.intField.block(field.tb->adjSpaces(i, 1), 2 * j, 1, 2);
+      480:   52:            Complex vecjgc = Complex(vecjg(0),vecjg(1));
+      480:   53:            Complex transvecjfc = vecjfc*field.tb->connection(i);
+      480:   54:            freeCoeff *= (vecjgc / transvecjfc);
+      480:   55:            double currRotAngle =arg(vecjgc / transvec0fc);
+      480:   56:            if (abs(currRotAngle)<abs(minRotAngle)){
+      234:   57:                indexMinFromZero=j;
+      234:   58:                minRotAngle=currRotAngle;
+      234:   59:            }
+        -:   60:            
+        -:   61:            //taking principal effort
+        -:   62:            
+      480:   63:        }
+      120:   64:        field.effort(i) = arg(freeCoeff);
+        -:   65:        
+        -:   66:        //finding the matching that implements effort(i)
+        -:   67:        //This is still not perfect
+      120:   68:        double currEffort=0;
+      600:   69:        for (int j = 0; j < field.N; j++) {
+      480:   70:            RowVector2d vecjf = field.intField.block(field.tb->adjSpaces(i, 0), 2*j, 1, 2);
+      480:   71:            Complex vecjfc = Complex(vecjf(0), vecjf(1));
+      480:   72:            RowVector2d vecjg = field.intField.block(field.tb->adjSpaces(i, 1), 2 *((j+indexMinFromZero+field.N)%field.N), 1, 2);
+      480:   73:            Complex vecjgc = Complex(vecjg(0), vecjg(1));
+      480:   74:            Complex transvecjfc = vecjfc*field.tb->connection(i);
+      480:   75:            currEffort+= arg(vecjgc / transvecjfc);
+      480:   76:        }
+        -:   77:        
+      120:   78:        field.matching(i)=indexMinFromZero-round((currEffort-field.effort(i))/(2.0*std::numbers::pi));
+      120:   79:    }
+        -:   80:    
+        -:   81:    //Getting final singularities and their indices
+        1:   82:    if (isSingularities)
+        1:   83:        effort_to_indices(field);
+        -:   84:    
+        1:   85:}
+        -:   86:}
+        -:   87:
+        -:   88:
+        -:   89:
+        -:   90:
+        -:   91:#endif
+        -:   92:
+        -:   93:

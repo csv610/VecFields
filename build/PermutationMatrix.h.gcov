@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/PermutationMatrix.h
-        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
-        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
-        -:    0:Runs:4
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -95,13 +95,13 @@
         -:   91:    }
         -:   92:
         -:   93:    /** \returns the number of rows */
-        -:   94:    inline EIGEN_DEVICE_FUNC Index rows() const { return Index(indices().size()); }
+        2:   94:    inline EIGEN_DEVICE_FUNC Index rows() const { return Index(indices().size()); }
         -:   95:
         -:   96:    /** \returns the number of columns */
-        -:   97:    inline EIGEN_DEVICE_FUNC Index cols() const { return Index(indices().size()); }
+        2:   97:    inline EIGEN_DEVICE_FUNC Index cols() const { return Index(indices().size()); }
         -:   98:
         -:   99:    /** \returns the size of a side of the respective square matrix, i.e., the number of indices */
-    15754:  100:    inline EIGEN_DEVICE_FUNC Index size() const { return Index(indices().size()); }
+     1227:  100:    inline EIGEN_DEVICE_FUNC Index size() const { return Index(indices().size()); }
         -:  101:
         -:  102:    #ifndef EIGEN_PARSED_BY_DOXYGEN
         -:  103:    template<typename DenseDerived>
@@ -123,32 +123,32 @@
         -:  119:    }
         -:  120:
         -:  121:    /** const version of indices(). */
-    15754:  122:    const IndicesType& indices() const { return derived().indices(); }
+     1231:  122:    const IndicesType& indices() const { return derived().indices(); }
         -:  123:    /** \returns a reference to the stored array representing the permutation. */
-    24694:  124:    IndicesType& indices() { return derived().indices(); }
+     1797:  124:    IndicesType& indices() { return derived().indices(); }
         -:  125:
         -:  126:    /** Resizes to given size.
         -:  127:      */
-     2980:  128:    inline void resize(Index newSize)
+      241:  128:    inline void resize(Index newSize)
         -:  129:    {
-     2980:  130:      indices().resize(newSize);
-     2980:  131:    }
+      241:  130:      indices().resize(newSize);
+      241:  131:    }
         -:  132:
         -:  133:    /** Sets *this to be the identity permutation matrix */
-     1490:  134:    void setIdentity()
+      120:  134:    void setIdentity()
         -:  135:    {
-     1490:  136:      StorageIndex n = StorageIndex(size());
-     8940:  137:      for(StorageIndex i = 0; i < n; ++i)
-     7450:  138:        indices().coeffRef(i) = i;
-     1490:  139:    }
+      120:  136:      StorageIndex n = StorageIndex(size());
+      720:  137:      for(StorageIndex i = 0; i < n; ++i)
+      600:  138:        indices().coeffRef(i) = i;
+      120:  139:    }
         -:  140:
         -:  141:    /** Sets *this to be the identity permutation matrix of given size.
         -:  142:      */
-     1490:  143:    void setIdentity(Index newSize)
+      120:  143:    void setIdentity(Index newSize)
         -:  144:    {
-     1490:  145:      resize(newSize);
-     1490:  146:      setIdentity();
-     1490:  147:    }
+      120:  145:      resize(newSize);
+      120:  146:      setIdentity();
+      120:  147:    }
         -:  148:
         -:  149:    /** Multiplies *this by the transposition \f$(ij)\f$ on the left.
         -:  150:      *
@@ -178,19 +178,19 @@
         -:  174:      *
         -:  175:      * \sa applyTranspositionOnTheLeft(Index,Index)
         -:  176:      */
-     7132:  177:    Derived& applyTranspositionOnTheRight(Index i, Index j)
+      478:  177:    Derived& applyTranspositionOnTheRight(Index i, Index j)
         -:  178:    {
-     7132:  179:      eigen_assert(i>=0 && j>=0 && i<size() && j<size());
-     7132:  180:      std::swap(indices().coeffRef(i), indices().coeffRef(j));
-     7132:  181:      return derived();
+      478:  179:      eigen_assert(i>=0 && j>=0 && i<size() && j<size());
+      478:  180:      std::swap(indices().coeffRef(i), indices().coeffRef(j));
+      478:  181:      return derived();
         -:  182:    }
         -:  183:
         -:  184:    /** \returns the inverse permutation matrix.
         -:  185:      *
         -:  186:      * \note \blank \note_try_to_help_rvo
         -:  187:      */
-        -:  188:    inline InverseReturnType inverse() const
-        -:  189:    { return InverseReturnType(derived()); }
+        1:  188:    inline InverseReturnType inverse() const
+        1:  189:    { return InverseReturnType(derived()); }
         -:  190:    /** \returns the tranpose permutation matrix.
         -:  191:      *
         -:  192:      * \note \blank \note_try_to_help_rvo
@@ -209,11 +209,11 @@
         -:  205:      for (Index i=0; i<rows();++i) indices().coeffRef(other.indices().coeff(i)) = i;
         -:  206:    }
         -:  207:    template<typename Lhs,typename Rhs>
-        -:  208:    void assignProduct(const Lhs& lhs, const Rhs& rhs)
+    #####:  208:    void assignProduct(const Lhs& lhs, const Rhs& rhs)
         -:  209:    {
-        -:  210:      eigen_assert(lhs.cols() == rhs.rows());
-        -:  211:      for (Index i=0; i<rows();++i) indices().coeffRef(i) = lhs.indices().coeff(rhs.indices().coeff(i));
-        -:  212:    }
+    #####:  210:      eigen_assert(lhs.cols() == rhs.rows());
+    #####:  211:      for (Index i=0; i<rows();++i) indices().coeffRef(i) = lhs.indices().coeff(rhs.indices().coeff(i));
+    #####:  212:    }
         -:  213:#endif
         -:  214:
         -:  215:  public:
@@ -223,8 +223,8 @@
         -:  219:      * \note \blank \note_try_to_help_rvo
         -:  220:      */
         -:  221:    template<typename Other>
-        -:  222:    inline PlainPermutationType operator*(const PermutationBase<Other>& other) const
-        -:  223:    { return PlainPermutationType(internal::PermPermProduct, derived(), other.derived()); }
+    #####:  222:    inline PlainPermutationType operator*(const PermutationBase<Other>& other) const
+    #####:  223:    { return PlainPermutationType(internal::PermPermProduct, derived(), other.derived()); }
         -:  224:
         -:  225:    /** \returns the product of a permutation with another inverse permutation.
         -:  226:      *
@@ -246,30 +246,30 @@
         -:  242:      *
         -:  243:      * This function is O(\c n) procedure allocating a buffer of \c n booleans.
         -:  244:      */
-        -:  245:    Index determinant() const
+    #####:  245:    Index determinant() const
         -:  246:    {
-        -:  247:      Index res = 1;
-        -:  248:      Index n = size();
-        -:  249:      Matrix<bool,RowsAtCompileTime,1,0,MaxRowsAtCompileTime> mask(n);
-        -:  250:      mask.fill(false);
-        -:  251:      Index r = 0;
-        -:  252:      while(r < n)
+    #####:  247:      Index res = 1;
+    #####:  248:      Index n = size();
+    #####:  249:      Matrix<bool,RowsAtCompileTime,1,0,MaxRowsAtCompileTime> mask(n);
+    #####:  250:      mask.fill(false);
+    #####:  251:      Index r = 0;
+    #####:  252:      while(r < n)
         -:  253:      {
         -:  254:        // search for the next seed
-        -:  255:        while(r<n && mask[r]) r++;
-        -:  256:        if(r>=n)
-        -:  257:          break;
+    #####:  255:        while(r<n && mask[r]) r++;
+    #####:  256:        if(r>=n)
+    #####:  257:          break;
         -:  258:        // we got one, let's follow it until we are back to the seed
-        -:  259:        Index k0 = r++;
-        -:  260:        mask.coeffRef(k0) = true;
-        -:  261:        for(Index k=indices().coeff(k0); k!=k0; k=indices().coeff(k))
+    #####:  259:        Index k0 = r++;
+    #####:  260:        mask.coeffRef(k0) = true;
+    #####:  261:        for(Index k=indices().coeff(k0); k!=k0; k=indices().coeff(k))
         -:  262:        {
-        -:  263:          mask.coeffRef(k) = true;
-        -:  264:          res = -res;
-        -:  265:        }
+    #####:  263:          mask.coeffRef(k) = true;
+    #####:  264:          res = -res;
+    #####:  265:        }
         -:  266:      }
-        -:  267:      return res;
-        -:  268:    }
+    #####:  267:      return res;
+    #####:  268:    }
         -:  269:
         -:  270:  protected:
         -:  271:
@@ -314,15 +314,15 @@
         -:  310:    typedef typename Traits::StorageIndex StorageIndex;
         -:  311:    #endif
         -:  312:
-     2980:  313:    inline PermutationMatrix()
-     2980:  314:    {}
+      252:  313:    inline PermutationMatrix()
+      252:  314:    {}
         -:  315:
         -:  316:    /** Constructs an uninitialized permutation matrix of given size.
         -:  317:      */
-        -:  318:    explicit inline PermutationMatrix(Index size) : m_indices(size)
-        -:  319:    {
+    #####:  318:    explicit inline PermutationMatrix(Index size) : m_indices(size)
+    #####:  319:    {
         -:  320:      eigen_internal_assert(size <= NumTraits<StorageIndex>::highest());
-        -:  321:    }
+    #####:  321:    }
         -:  322:
         -:  323:    /** Copy constructor. */
         -:  324:    template<typename OtherDerived>
@@ -364,29 +364,29 @@
         -:  360:    }
         -:  361:
         -:  362:    /** const version of indices(). */
-    23204:  363:    const IndicesType& indices() const { return m_indices; }
+     2189:  363:    const IndicesType& indices() const { return m_indices; }
         -:  364:    /** \returns a reference to the stored array representing the permutation. */
-    24694:  365:    IndicesType& indices() { return m_indices; }
+     1801:  365:    IndicesType& indices() { return m_indices; }
         -:  366:
         -:  367:
         -:  368:    /**** multiplication helpers to hopefully get RVO ****/
         -:  369:
         -:  370:#ifndef EIGEN_PARSED_BY_DOXYGEN
         -:  371:    template<typename Other>
-        -:  372:    PermutationMatrix(const InverseImpl<Other,PermutationStorage>& other)
-        -:  373:      : m_indices(other.derived().nestedExpression().size())
-        -:  374:    {
+        2:  372:    PermutationMatrix(const InverseImpl<Other,PermutationStorage>& other)
+        1:  373:      : m_indices(other.derived().nestedExpression().size())
+        1:  374:    {
         -:  375:      eigen_internal_assert(m_indices.size() <= NumTraits<StorageIndex>::highest());
-        -:  376:      StorageIndex end = StorageIndex(m_indices.size());
-        -:  377:      for (StorageIndex i=0; i<end;++i)
-        -:  378:        m_indices.coeffRef(other.derived().nestedExpression().indices().coeff(i)) = i;
-        -:  379:    }
+        1:  376:      StorageIndex end = StorageIndex(m_indices.size());
+      120:  377:      for (StorageIndex i=0; i<end;++i)
+      119:  378:        m_indices.coeffRef(other.derived().nestedExpression().indices().coeff(i)) = i;
+        2:  379:    }
         -:  380:    template<typename Lhs,typename Rhs>
-        -:  381:    PermutationMatrix(internal::PermPermProduct_t, const Lhs& lhs, const Rhs& rhs)
-        -:  382:      : m_indices(lhs.indices().size())
-        -:  383:    {
-        -:  384:      Base::assignProduct(lhs,rhs);
-        -:  385:    }
+    #####:  381:    PermutationMatrix(internal::PermPermProduct_t, const Lhs& lhs, const Rhs& rhs)
+    #####:  382:      : m_indices(lhs.indices().size())
+    #####:  383:    {
+    #####:  384:      Base::assignProduct(lhs,rhs);
+    #####:  385:    }
         -:  386:#endif
         -:  387:
         -:  388:  protected:
@@ -531,11 +531,11 @@
         -:  527:template<typename PermutationDerived, typename MatrixDerived>
         -:  528:EIGEN_DEVICE_FUNC
         -:  529:const Product<PermutationDerived, MatrixDerived, AliasFreeProduct>
-        -:  530:operator*(const PermutationBase<PermutationDerived> &permutation,
+        2:  530:operator*(const PermutationBase<PermutationDerived> &permutation,
         -:  531:          const MatrixBase<MatrixDerived>& matrix)
         -:  532:{
-        -:  533:  return Product<PermutationDerived, MatrixDerived, AliasFreeProduct>
-        -:  534:            (permutation.derived(), matrix.derived());
+        2:  533:  return Product<PermutationDerived, MatrixDerived, AliasFreeProduct>
+        2:  534:            (permutation.derived(), matrix.derived());
         -:  535:}
         -:  536:
         -:  537:
@@ -546,7 +546,7 @@
         -:  542:    typedef typename PermutationType::PlainPermutationType PlainPermutationType;
         -:  543:    typedef internal::traits<PermutationType> PermTraits;
         -:  544:  protected:
-        -:  545:    InverseImpl() {}
+        1:  545:    InverseImpl() {}
         -:  546:  public:
         -:  547:    typedef Inverse<PermutationType> InverseType;
         -:  548:    using EigenBase<Inverse<PermutationType> >::derived;
@@ -589,9 +589,9 @@
         -:  585:      */
         -:  586:    template<typename OtherDerived>
         -:  587:    const Product<InverseType, OtherDerived, AliasFreeProduct>
-        -:  588:    operator*(const MatrixBase<OtherDerived>& matrix) const
+    #####:  588:    operator*(const MatrixBase<OtherDerived>& matrix) const
         -:  589:    {
-        -:  590:      return Product<InverseType, OtherDerived, AliasFreeProduct>(derived(), matrix.derived());
+    #####:  590:      return Product<InverseType, OtherDerived, AliasFreeProduct>(derived(), matrix.derived());
         -:  591:    }
         -:  592:};
         -:  593:

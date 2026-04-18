@@ -1,0 +1,160 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/OrderingMethods/Ordering.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1: 
+        -:    2:// This file is part of Eigen, a lightweight C++ template library
+        -:    3:// for linear algebra.
+        -:    4://
+        -:    5:// Copyright (C) 2012  Désiré Nuentsa-Wakam <desire.nuentsa_wakam@inria.fr>
+        -:    6://
+        -:    7:// This Source Code Form is subject to the terms of the Mozilla
+        -:    8:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    9:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:   10:
+        -:   11:#ifndef EIGEN_ORDERING_H
+        -:   12:#define EIGEN_ORDERING_H
+        -:   13:
+        -:   14:// IWYU pragma: private
+        -:   15:#include "./InternalHeaderCheck.h"
+        -:   16:
+        -:   17:namespace Eigen {
+        -:   18:  
+        -:   19:#include "Eigen_Colamd.h"
+        -:   20:
+        -:   21:namespace internal {
+        -:   22:    
+        -:   23:/** \internal
+        -:   24:  * \ingroup OrderingMethods_Module
+        -:   25:  * \param[in] A the input non-symmetric matrix
+        -:   26:  * \param[out] symmat the symmetric pattern A^T+A from the input matrix \a A.
+        -:   27:  * FIXME: The values should not be considered here
+        -:   28:  */
+        -:   29:template<typename MatrixType> 
+        1:   30:void ordering_helper_at_plus_a(const MatrixType& A, MatrixType& symmat)
+        -:   31:{
+        1:   32:  MatrixType C;
+        1:   33:  C = A.transpose(); // NOTE: Could be  costly
+      120:   34:  for (int i = 0; i < C.rows(); i++) 
+        -:   35:  {
+      474:   36:      for (typename MatrixType::InnerIterator it(C, i); it; ++it)
+      355:   37:        it.valueRef() = typename MatrixType::Scalar(0);
+      119:   38:  }
+        1:   39:  symmat = C + A;
+        1:   40:}
+        -:   41:    
+        -:   42:}
+        -:   43:
+        -:   44:/** \ingroup OrderingMethods_Module
+        -:   45:  * \class AMDOrdering
+        -:   46:  *
+        -:   47:  * Functor computing the \em approximate \em minimum \em degree ordering
+        -:   48:  * If the matrix is not structurally symmetric, an ordering of A^T+A is computed
+        -:   49:  * \tparam  StorageIndex The type of indices of the matrix 
+        -:   50:  * \sa COLAMDOrdering
+        -:   51:  */
+        -:   52:template <typename StorageIndex>
+        -:   53:class AMDOrdering
+        -:   54:{
+        -:   55:  public:
+        -:   56:    typedef PermutationMatrix<Dynamic, Dynamic, StorageIndex> PermutationType;
+        -:   57:    
+        -:   58:    /** Compute the permutation vector from a sparse matrix
+        -:   59:     * This routine is much faster if the input matrix is column-major     
+        -:   60:     */
+        -:   61:    template <typename MatrixType>
+        1:   62:    void operator()(const MatrixType& mat, PermutationType& perm)
+        -:   63:    {
+        -:   64:      // Compute the symmetric pattern
+        1:   65:      SparseMatrix<typename MatrixType::Scalar, ColMajor, StorageIndex> symm;
+        1:   66:      internal::ordering_helper_at_plus_a(mat,symm); 
+        -:   67:    
+        -:   68:      // Call the AMD routine 
+        -:   69:      //m_mat.prune(keep_diag());
+        1:   70:      internal::minimum_degree_ordering(symm, perm);
+        1:   71:    }
+        -:   72:    
+        -:   73:    /** Compute the permutation with a selfadjoint matrix */
+        -:   74:    template <typename SrcType, unsigned int SrcUpLo> 
+        -:   75:    void operator()(const SparseSelfAdjointView<SrcType, SrcUpLo>& mat, PermutationType& perm)
+        -:   76:    { 
+        -:   77:      SparseMatrix<typename SrcType::Scalar, ColMajor, StorageIndex> C; C = mat;
+        -:   78:      
+        -:   79:      // Call the AMD routine 
+        -:   80:      // m_mat.prune(keep_diag()); //Remove the diagonal elements 
+        -:   81:      internal::minimum_degree_ordering(C, perm);
+        -:   82:    }
+        -:   83:};
+        -:   84:
+        -:   85:/** \ingroup OrderingMethods_Module
+        -:   86:  * \class NaturalOrdering
+        -:   87:  *
+        -:   88:  * Functor computing the natural ordering (identity)
+        -:   89:  * 
+        -:   90:  * \note Returns an empty permutation matrix
+        -:   91:  * \tparam  StorageIndex The type of indices of the matrix 
+        -:   92:  */
+        -:   93:template <typename StorageIndex>
+        -:   94:class NaturalOrdering
+        -:   95:{
+        -:   96:  public:
+        -:   97:    typedef PermutationMatrix<Dynamic, Dynamic, StorageIndex> PermutationType;
+        -:   98:    
+        -:   99:    /** Compute the permutation vector from a column-major sparse matrix */
+        -:  100:    template <typename MatrixType>
+        -:  101:    void operator()(const MatrixType& /*mat*/, PermutationType& perm)
+        -:  102:    {
+        -:  103:      perm.resize(0); 
+        -:  104:    }
+        -:  105:    
+        -:  106:};
+        -:  107:
+        -:  108:/** \ingroup OrderingMethods_Module
+        -:  109:  * \class COLAMDOrdering
+        -:  110:  *
+        -:  111:  * \tparam  StorageIndex The type of indices of the matrix 
+        -:  112:  * 
+        -:  113:  * Functor computing the \em column \em approximate \em minimum \em degree ordering 
+        -:  114:  * The matrix should be in column-major and \b compressed format (see SparseMatrix::makeCompressed()).
+        -:  115:  */
+        -:  116:template<typename StorageIndex>
+        -:  117:class COLAMDOrdering
+        -:  118:{
+        -:  119:  public:
+        -:  120:    typedef PermutationMatrix<Dynamic, Dynamic, StorageIndex> PermutationType; 
+        -:  121:    typedef Matrix<StorageIndex, Dynamic, 1> IndexVector;
+        -:  122:    
+        -:  123:    /** Compute the permutation vector \a perm form the sparse matrix \a mat
+        -:  124:      * \warning The input sparse matrix \a mat must be in compressed mode (see SparseMatrix::makeCompressed()).
+        -:  125:      */
+        -:  126:    template <typename MatrixType>
+    #####:  127:    void operator() (const MatrixType& mat, PermutationType& perm)
+        -:  128:    {
+    #####:  129:      eigen_assert(mat.isCompressed() && "COLAMDOrdering requires a sparse matrix in compressed mode. Call .makeCompressed() before passing it to COLAMDOrdering");
+        -:  130:      
+    #####:  131:      StorageIndex m = StorageIndex(mat.rows());
+    #####:  132:      StorageIndex n = StorageIndex(mat.cols());
+    #####:  133:      StorageIndex nnz = StorageIndex(mat.nonZeros());
+        -:  134:      // Get the recommended value of Alen to be used by colamd
+    #####:  135:      StorageIndex Alen = internal::Colamd::recommended(nnz, m, n); 
+        -:  136:      // Set the default parameters
+        -:  137:      double knobs [internal::Colamd::NKnobs]; 
+        -:  138:      StorageIndex stats [internal::Colamd::NStats];
+    #####:  139:      internal::Colamd::set_defaults(knobs);
+        -:  140:      
+    #####:  141:      IndexVector p(n+1), A(Alen); 
+    #####:  142:      for(StorageIndex i=0; i <= n; i++)   p(i) = mat.outerIndexPtr()[i];
+    #####:  143:      for(StorageIndex i=0; i < nnz; i++)  A(i) = mat.innerIndexPtr()[i];
+        -:  144:      // Call Colamd routine to compute the ordering 
+    #####:  145:      StorageIndex info = internal::Colamd::compute_ordering(m, n, Alen, A.data(), p.data(), knobs, stats); 
+    #####:  146:      EIGEN_UNUSED_VARIABLE(info);
+    #####:  147:      eigen_assert( info && "COLAMD failed " );
+        -:  148:      
+    #####:  149:      perm.resize(n);
+    #####:  150:      for (StorageIndex i = 0; i < n; i++) perm.indices()(p(i)) = i;
+    #####:  151:    }
+        -:  152:};
+        -:  153:
+        -:  154:} // end namespace Eigen
+        -:  155:
+        -:  156:#endif

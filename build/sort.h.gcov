@@ -1,0 +1,962 @@
+        -:    0:Source:/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/sort.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1://===----------------------------------------------------------------------===//
+        -:    2://
+        -:    3:// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+        -:    4:// See https://llvm.org/LICENSE.txt for license information.
+        -:    5:// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+        -:    6://
+        -:    7://===----------------------------------------------------------------------===//
+        -:    8:
+        -:    9:#ifndef _LIBCPP___ALGORITHM_SORT_H
+        -:   10:#define _LIBCPP___ALGORITHM_SORT_H
+        -:   11:
+        -:   12:#include <__algorithm/comp.h>
+        -:   13:#include <__algorithm/comp_ref_type.h>
+        -:   14:#include <__algorithm/iter_swap.h>
+        -:   15:#include <__algorithm/iterator_operations.h>
+        -:   16:#include <__algorithm/min_element.h>
+        -:   17:#include <__algorithm/partial_sort.h>
+        -:   18:#include <__algorithm/unwrap_iter.h>
+        -:   19:#include <__assert>
+        -:   20:#include <__bit/bit_log2.h>
+        -:   21:#include <__bit/blsr.h>
+        -:   22:#include <__bit/countl.h>
+        -:   23:#include <__bit/countr.h>
+        -:   24:#include <__config>
+        -:   25:#include <__debug_utils/randomize_range.h>
+        -:   26:#include <__debug_utils/strict_weak_ordering_check.h>
+        -:   27:#include <__functional/operations.h>
+        -:   28:#include <__functional/ranges_operations.h>
+        -:   29:#include <__iterator/iterator_traits.h>
+        -:   30:#include <__type_traits/conditional.h>
+        -:   31:#include <__type_traits/desugars_to.h>
+        -:   32:#include <__type_traits/disjunction.h>
+        -:   33:#include <__type_traits/enable_if.h>
+        -:   34:#include <__type_traits/is_arithmetic.h>
+        -:   35:#include <__type_traits/is_constant_evaluated.h>
+        -:   36:#include <__type_traits/is_same.h>
+        -:   37:#include <__type_traits/is_trivially_copyable.h>
+        -:   38:#include <__type_traits/make_unsigned.h>
+        -:   39:#include <__utility/move.h>
+        -:   40:#include <__utility/pair.h>
+        -:   41:#include <climits>
+        -:   42:#include <cstdint>
+        -:   43:
+        -:   44:#if !defined(_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER)
+        -:   45:#  pragma GCC system_header
+        -:   46:#endif
+        -:   47:
+        -:   48:_LIBCPP_PUSH_MACROS
+        -:   49:#include <__undef_macros>
+        -:   50:
+        -:   51:_LIBCPP_BEGIN_NAMESPACE_STD
+        -:   52:
+        -:   53:template <class _Compare, class _Iter, class _Tp = typename iterator_traits<_Iter>::value_type>
+        -:   54:inline const bool __use_branchless_sort =
+        -:   55:    __libcpp_is_contiguous_iterator<_Iter>::value && __is_cheap_to_copy<_Tp> && is_arithmetic<_Tp>::value &&
+        -:   56:    (__desugars_to_v<__less_tag, _Compare, _Tp, _Tp> || __desugars_to_v<__greater_tag, _Compare, _Tp, _Tp>);
+        -:   57:
+        -:   58:namespace __detail {
+        -:   59:
+        -:   60:// Size in bits for the bitset in use.
+        -:   61:enum { __block_size = sizeof(uint64_t) * 8 };
+        -:   62:
+        -:   63:} // namespace __detail
+        -:   64:
+        -:   65:// Ensures that __c(*__x, *__y) is true by swapping *__x and *__y if necessary.
+        -:   66:template <class _Compare, class _RandomAccessIterator>
+        -:   67:inline _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 bool
+        -:   68:__cond_swap(_RandomAccessIterator __x, _RandomAccessIterator __y, _Compare __c) {
+        -:   69:  // Note: this function behaves correctly even with proxy iterators (because it relies on `value_type`).
+        -:   70:  using value_type = typename iterator_traits<_RandomAccessIterator>::value_type;
+        -:   71:  bool __r         = __c(*__x, *__y);
+        -:   72:  value_type __tmp = __r ? *__x : *__y;
+        -:   73:  *__y             = __r ? *__y : *__x;
+        -:   74:  *__x             = __tmp;
+        -:   75:  return !__r;
+        -:   76:}
+        -:   77:
+        -:   78:// Ensures that *__x, *__y and *__z are ordered according to the comparator __c,
+        -:   79:// under the assumption that *__y and *__z are already ordered.
+        -:   80:template <class _Compare, class _RandomAccessIterator>
+        -:   81:inline _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 bool
+        -:   82:__partially_sorted_swap(_RandomAccessIterator __x, _RandomAccessIterator __y, _RandomAccessIterator __z, _Compare __c) {
+        -:   83:  // Note: this function behaves correctly even with proxy iterators (because it relies on `value_type`).
+        -:   84:  using value_type = typename iterator_traits<_RandomAccessIterator>::value_type;
+        -:   85:  bool __r1        = __c(*__z, *__x);
+        -:   86:  value_type __tmp = __r1 ? *__z : *__x;
+        -:   87:  *__z             = __r1 ? *__x : *__z;
+        -:   88:  bool __r2        = __c(__tmp, *__y);
+        -:   89:  *__x             = __r2 ? *__x : *__y;
+        -:   90:  *__y             = __r2 ? *__y : __tmp;
+        -:   91:  return !__r1 || !__r2;
+        -:   92:}
+        -:   93:
+        -:   94:// stable, 2-3 compares, 0-2 swaps
+        -:   95:
+        -:   96:template <class,
+        -:   97:          class _Compare,
+        -:   98:          class _RandomAccessIterator,
+        -:   99:          __enable_if_t<__use_branchless_sort<_Compare, _RandomAccessIterator>, int> = 0>
+        -:  100:inline _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 bool
+        -:  101:__sort3(_RandomAccessIterator __x1, _RandomAccessIterator __x2, _RandomAccessIterator __x3, _Compare __c) {
+        -:  102:  bool __swapped1 = std::__cond_swap<_Compare>(__x2, __x3, __c);
+        -:  103:  bool __swapped2 = std::__partially_sorted_swap<_Compare>(__x1, __x2, __x3, __c);
+        -:  104:  return __swapped1 || __swapped2;
+        -:  105:}
+        -:  106:
+        -:  107:template <class _AlgPolicy,
+        -:  108:          class _Compare,
+        -:  109:          class _RandomAccessIterator,
+        -:  110:          __enable_if_t<!__use_branchless_sort<_Compare, _RandomAccessIterator>, int> = 0>
+        -:  111:inline _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 bool
+    #####:  112:__sort3(_RandomAccessIterator __x, _RandomAccessIterator __y, _RandomAccessIterator __z, _Compare __c) {
+        -:  113:  using _Ops = _IterOps<_AlgPolicy>;
+        -:  114:
+    #####:  115:  if (!__c(*__y, *__x)) // if x <= y
+        -:  116:  {
+    #####:  117:    if (!__c(*__z, *__y))        // if y <= z
+    #####:  118:      return false;              // x <= y && y <= z
+        -:  119:                                 // x <= y && y > z
+    #####:  120:    _Ops::iter_swap(__y, __z);   // x <= z && y < z
+    #####:  121:    if (__c(*__y, *__x))         // if x > y
+    #####:  122:      _Ops::iter_swap(__x, __y); // x < y && y <= z
+    #####:  123:    return true;                 // x <= y && y < z
+        -:  124:  }
+    #####:  125:  if (__c(*__z, *__y)) // x > y, if y > z
+        -:  126:  {
+    #####:  127:    _Ops::iter_swap(__x, __z); // x < y && y < z
+    #####:  128:    return true;
+        -:  129:  }
+    #####:  130:  _Ops::iter_swap(__x, __y); // x > y && y <= z
+        -:  131:  // x < y && x <= z
+    #####:  132:  if (__c(*__z, *__y))         // if y > z
+    #####:  133:    _Ops::iter_swap(__y, __z); // x <= y && y < z
+    #####:  134:  return true;
+    #####:  135:} // x <= y && y <= z
+        -:  136:
+        -:  137:// stable, 3-6 compares, 0-5 swaps
+        -:  138:
+        -:  139:template <class,
+        -:  140:          class _Compare,
+        -:  141:          class _RandomAccessIterator,
+        -:  142:          __enable_if_t<__use_branchless_sort<_Compare, _RandomAccessIterator>, int> = 0>
+        -:  143:inline _LIBCPP_HIDE_FROM_ABI void
+        -:  144:__sort4(_RandomAccessIterator __x1,
+        -:  145:        _RandomAccessIterator __x2,
+        -:  146:        _RandomAccessIterator __x3,
+        -:  147:        _RandomAccessIterator __x4,
+        -:  148:        _Compare __c) {
+        -:  149:  std::__cond_swap<_Compare>(__x1, __x3, __c);
+        -:  150:  std::__cond_swap<_Compare>(__x2, __x4, __c);
+        -:  151:  std::__cond_swap<_Compare>(__x1, __x2, __c);
+        -:  152:  std::__cond_swap<_Compare>(__x3, __x4, __c);
+        -:  153:  std::__cond_swap<_Compare>(__x2, __x3, __c);
+        -:  154:}
+        -:  155:
+        -:  156:template <class _AlgPolicy,
+        -:  157:          class _Compare,
+        -:  158:          class _RandomAccessIterator,
+        -:  159:          __enable_if_t<!__use_branchless_sort<_Compare, _RandomAccessIterator>, int> = 0>
+        -:  160:inline _LIBCPP_HIDE_FROM_ABI void
+    #####:  161:__sort4(_RandomAccessIterator __x1,
+        -:  162:        _RandomAccessIterator __x2,
+        -:  163:        _RandomAccessIterator __x3,
+        -:  164:        _RandomAccessIterator __x4,
+        -:  165:        _Compare __c) {
+        -:  166:  using _Ops = _IterOps<_AlgPolicy>;
+    #####:  167:  std::__sort3<_AlgPolicy, _Compare>(__x1, __x2, __x3, __c);
+    #####:  168:  if (__c(*__x4, *__x3)) {
+    #####:  169:    _Ops::iter_swap(__x3, __x4);
+    #####:  170:    if (__c(*__x3, *__x2)) {
+    #####:  171:      _Ops::iter_swap(__x2, __x3);
+    #####:  172:      if (__c(*__x2, *__x1)) {
+    #####:  173:        _Ops::iter_swap(__x1, __x2);
+    #####:  174:      }
+    #####:  175:    }
+    #####:  176:  }
+    #####:  177:}
+        -:  178:
+        -:  179:// stable, 4-10 compares, 0-9 swaps
+        -:  180:
+        -:  181:template <class _AlgPolicy,
+        -:  182:          class _Compare,
+        -:  183:          class _RandomAccessIterator,
+        -:  184:          __enable_if_t<__use_branchless_sort<_Compare, _RandomAccessIterator>, int> = 0>
+        -:  185:inline _LIBCPP_HIDE_FROM_ABI void
+        -:  186:__sort5(_RandomAccessIterator __x1,
+        -:  187:        _RandomAccessIterator __x2,
+        -:  188:        _RandomAccessIterator __x3,
+        -:  189:        _RandomAccessIterator __x4,
+        -:  190:        _RandomAccessIterator __x5,
+        -:  191:        _Compare __c) {
+        -:  192:  std::__cond_swap<_Compare>(__x1, __x2, __c);
+        -:  193:  std::__cond_swap<_Compare>(__x4, __x5, __c);
+        -:  194:  std::__partially_sorted_swap<_Compare>(__x3, __x4, __x5, __c);
+        -:  195:  std::__cond_swap<_Compare>(__x2, __x5, __c);
+        -:  196:  std::__partially_sorted_swap<_Compare>(__x1, __x3, __x4, __c);
+        -:  197:  std::__partially_sorted_swap<_Compare>(__x2, __x3, __x4, __c);
+        -:  198:}
+        -:  199:
+        -:  200:template <class _AlgPolicy,
+        -:  201:          class _Compare,
+        -:  202:          class _RandomAccessIterator,
+        -:  203:          __enable_if_t<!__use_branchless_sort<_Compare, _RandomAccessIterator>, int> = 0>
+        -:  204:inline _LIBCPP_HIDE_FROM_ABI void
+    #####:  205:__sort5(_RandomAccessIterator __x1,
+        -:  206:        _RandomAccessIterator __x2,
+        -:  207:        _RandomAccessIterator __x3,
+        -:  208:        _RandomAccessIterator __x4,
+        -:  209:        _RandomAccessIterator __x5,
+        -:  210:        _Compare __comp) {
+        -:  211:  using _Ops = _IterOps<_AlgPolicy>;
+        -:  212:
+    #####:  213:  std::__sort4<_AlgPolicy, _Compare>(__x1, __x2, __x3, __x4, __comp);
+    #####:  214:  if (__comp(*__x5, *__x4)) {
+    #####:  215:    _Ops::iter_swap(__x4, __x5);
+    #####:  216:    if (__comp(*__x4, *__x3)) {
+    #####:  217:      _Ops::iter_swap(__x3, __x4);
+    #####:  218:      if (__comp(*__x3, *__x2)) {
+    #####:  219:        _Ops::iter_swap(__x2, __x3);
+    #####:  220:        if (__comp(*__x2, *__x1)) {
+    #####:  221:          _Ops::iter_swap(__x1, __x2);
+    #####:  222:        }
+    #####:  223:      }
+    #####:  224:    }
+    #####:  225:  }
+    #####:  226:}
+        -:  227:
+        -:  228:// Assumes size > 0
+        -:  229:template <class _AlgPolicy, class _Compare, class _BidirectionalIterator>
+        -:  230:_LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 void
+        -:  231:__selection_sort(_BidirectionalIterator __first, _BidirectionalIterator __last, _Compare __comp) {
+        -:  232:  _BidirectionalIterator __lm1 = __last;
+        -:  233:  for (--__lm1; __first != __lm1; ++__first) {
+        -:  234:    _BidirectionalIterator __i = std::__min_element<_Compare>(__first, __last, __comp);
+        -:  235:    if (__i != __first)
+        -:  236:      _IterOps<_AlgPolicy>::iter_swap(__first, __i);
+        -:  237:  }
+        -:  238:}
+        -:  239:
+        -:  240:// Sort the iterator range [__first, __last) using the comparator __comp using
+        -:  241:// the insertion sort algorithm.
+        -:  242:template <class _AlgPolicy, class _Compare, class _BidirectionalIterator>
+        -:  243:_LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX26 void
+    #####:  244:__insertion_sort(_BidirectionalIterator __first, _BidirectionalIterator __last, _Compare __comp) {
+        -:  245:  using _Ops = _IterOps<_AlgPolicy>;
+        -:  246:
+        -:  247:  typedef typename iterator_traits<_BidirectionalIterator>::value_type value_type;
+    #####:  248:  if (__first == __last)
+    #####:  249:    return;
+    #####:  250:  _BidirectionalIterator __i = __first;
+    #####:  251:  for (++__i; __i != __last; ++__i) {
+    #####:  252:    _BidirectionalIterator __j = __i;
+    #####:  253:    --__j;
+    #####:  254:    if (__comp(*__i, *__j)) {
+    #####:  255:      value_type __t(_Ops::__iter_move(__i));
+    #####:  256:      _BidirectionalIterator __k = __j;
+    #####:  257:      __j                        = __i;
+    #####:  258:      do {
+    #####:  259:        *__j = _Ops::__iter_move(__k);
+    #####:  260:        __j  = __k;
+    #####:  261:      } while (__j != __first && __comp(__t, *--__k));
+    #####:  262:      *__j = std::move(__t);
+    #####:  263:    }
+    #####:  264:  }
+    #####:  265:}
+        -:  266:
+        -:  267:// Sort the iterator range [__first, __last) using the comparator __comp using
+        -:  268:// the insertion sort algorithm.  Insertion sort has two loops, outer and inner.
+        -:  269:// The implementation below has no bounds check (unguarded) for the inner loop.
+        -:  270:// Assumes that there is an element in the position (__first - 1) and that each
+        -:  271:// element in the input range is greater or equal to the element at __first - 1.
+        -:  272:template <class _AlgPolicy, class _Compare, class _RandomAccessIterator>
+        -:  273:_LIBCPP_HIDE_FROM_ABI void
+    #####:  274:__insertion_sort_unguarded(_RandomAccessIterator const __first, _RandomAccessIterator __last, _Compare __comp) {
+        -:  275:  using _Ops = _IterOps<_AlgPolicy>;
+        -:  276:  typedef typename iterator_traits<_RandomAccessIterator>::difference_type difference_type;
+        -:  277:  typedef typename iterator_traits<_RandomAccessIterator>::value_type value_type;
+    #####:  278:  if (__first == __last)
+    #####:  279:    return;
+    #####:  280:  const _RandomAccessIterator __leftmost = __first - difference_type(1);
+        -:  281:  (void)__leftmost; // can be unused when assertions are disabled
+    #####:  282:  for (_RandomAccessIterator __i = __first + difference_type(1); __i != __last; ++__i) {
+    #####:  283:    _RandomAccessIterator __j = __i - difference_type(1);
+    #####:  284:    if (__comp(*__i, *__j)) {
+    #####:  285:      value_type __t(_Ops::__iter_move(__i));
+    #####:  286:      _RandomAccessIterator __k = __j;
+    #####:  287:      __j                       = __i;
+    #####:  288:      do {
+    #####:  289:        *__j = _Ops::__iter_move(__k);
+    #####:  290:        __j  = __k;
+        -:  291:        _LIBCPP_ASSERT_VALID_ELEMENT_ACCESS(
+        -:  292:            __k != __leftmost,
+        -:  293:            "Would read out of bounds, does your comparator satisfy the strict-weak ordering requirement?");
+    #####:  294:      } while (__comp(__t, *--__k)); // No need for bounds check due to the assumption stated above.
+    #####:  295:      *__j = std::move(__t);
+    #####:  296:    }
+    #####:  297:  }
+    #####:  298:}
+        -:  299:
+        -:  300:template <class _AlgPolicy, class _Comp, class _RandomAccessIterator>
+        -:  301:_LIBCPP_HIDE_FROM_ABI bool
+    #####:  302:__insertion_sort_incomplete(_RandomAccessIterator __first, _RandomAccessIterator __last, _Comp __comp) {
+        -:  303:  using _Ops = _IterOps<_AlgPolicy>;
+        -:  304:
+        -:  305:  typedef typename iterator_traits<_RandomAccessIterator>::difference_type difference_type;
+    #####:  306:  switch (__last - __first) {
+        -:  307:  case 0:
+        -:  308:  case 1:
+    #####:  309:    return true;
+        -:  310:  case 2:
+    #####:  311:    if (__comp(*--__last, *__first))
+    #####:  312:      _Ops::iter_swap(__first, __last);
+    #####:  313:    return true;
+        -:  314:  case 3:
+    #####:  315:    std::__sort3<_AlgPolicy, _Comp>(__first, __first + difference_type(1), --__last, __comp);
+    #####:  316:    return true;
+        -:  317:  case 4:
+    #####:  318:    std::__sort4<_AlgPolicy, _Comp>(
+    #####:  319:        __first, __first + difference_type(1), __first + difference_type(2), --__last, __comp);
+    #####:  320:    return true;
+        -:  321:  case 5:
+    #####:  322:    std::__sort5<_AlgPolicy, _Comp>(
+    #####:  323:        __first,
+    #####:  324:        __first + difference_type(1),
+    #####:  325:        __first + difference_type(2),
+    #####:  326:        __first + difference_type(3),
+    #####:  327:        --__last,
+    #####:  328:        __comp);
+    #####:  329:    return true;
+        -:  330:  }
+        -:  331:  typedef typename iterator_traits<_RandomAccessIterator>::value_type value_type;
+    #####:  332:  _RandomAccessIterator __j = __first + difference_type(2);
+    #####:  333:  std::__sort3<_AlgPolicy, _Comp>(__first, __first + difference_type(1), __j, __comp);
+    #####:  334:  const unsigned __limit = 8;
+    #####:  335:  unsigned __count       = 0;
+    #####:  336:  for (_RandomAccessIterator __i = __j + difference_type(1); __i != __last; ++__i) {
+    #####:  337:    if (__comp(*__i, *__j)) {
+    #####:  338:      value_type __t(_Ops::__iter_move(__i));
+    #####:  339:      _RandomAccessIterator __k = __j;
+    #####:  340:      __j                       = __i;
+    #####:  341:      do {
+    #####:  342:        *__j = _Ops::__iter_move(__k);
+    #####:  343:        __j  = __k;
+    #####:  344:      } while (__j != __first && __comp(__t, *--__k));
+    #####:  345:      *__j = std::move(__t);
+    #####:  346:      if (++__count == __limit)
+    #####:  347:        return ++__i == __last;
+    #####:  348:    }
+    #####:  349:    __j = __i;
+    #####:  350:  }
+    #####:  351:  return true;
+    #####:  352:}
+        -:  353:
+        -:  354:template <class _AlgPolicy, class _RandomAccessIterator>
+    #####:  355:inline _LIBCPP_HIDE_FROM_ABI void __swap_bitmap_pos(
+        -:  356:    _RandomAccessIterator __first, _RandomAccessIterator __last, uint64_t& __left_bitset, uint64_t& __right_bitset) {
+        -:  357:  using _Ops = _IterOps<_AlgPolicy>;
+        -:  358:  typedef typename std::iterator_traits<_RandomAccessIterator>::difference_type difference_type;
+        -:  359:  // Swap one pair on each iteration as long as both bitsets have at least one
+        -:  360:  // element for swapping.
+    #####:  361:  while (__left_bitset != 0 && __right_bitset != 0) {
+    #####:  362:    difference_type __tz_left  = std::__countr_zero(__left_bitset);
+    #####:  363:    __left_bitset              = std::__libcpp_blsr(__left_bitset);
+    #####:  364:    difference_type __tz_right = std::__countr_zero(__right_bitset);
+    #####:  365:    __right_bitset             = std::__libcpp_blsr(__right_bitset);
+    #####:  366:    _Ops::iter_swap(__first + __tz_left, __last - __tz_right);
+        -:  367:  }
+    #####:  368:}
+        -:  369:
+        -:  370:template <class _Compare,
+        -:  371:          class _RandomAccessIterator,
+        -:  372:          class _ValueType = typename iterator_traits<_RandomAccessIterator>::value_type>
+        -:  373:inline _LIBCPP_HIDE_FROM_ABI void
+    #####:  374:__populate_left_bitset(_RandomAccessIterator __first, _Compare __comp, _ValueType& __pivot, uint64_t& __left_bitset) {
+        -:  375:  // Possible vectorization. With a proper "-march" flag, the following loop
+        -:  376:  // will be compiled into a set of SIMD instructions.
+    #####:  377:  _RandomAccessIterator __iter = __first;
+    #####:  378:  for (int __j = 0; __j < __detail::__block_size;) {
+    #####:  379:    bool __comp_result = !__comp(*__iter, __pivot);
+    #####:  380:    __left_bitset |= (static_cast<uint64_t>(__comp_result) << __j);
+    #####:  381:    __j++;
+    #####:  382:    ++__iter;
+        -:  383:  }
+    #####:  384:}
+        -:  385:
+        -:  386:template <class _Compare,
+        -:  387:          class _RandomAccessIterator,
+        -:  388:          class _ValueType = typename iterator_traits<_RandomAccessIterator>::value_type>
+        -:  389:inline _LIBCPP_HIDE_FROM_ABI void
+    #####:  390:__populate_right_bitset(_RandomAccessIterator __lm1, _Compare __comp, _ValueType& __pivot, uint64_t& __right_bitset) {
+        -:  391:  // Possible vectorization. With a proper "-march" flag, the following loop
+        -:  392:  // will be compiled into a set of SIMD instructions.
+    #####:  393:  _RandomAccessIterator __iter = __lm1;
+    #####:  394:  for (int __j = 0; __j < __detail::__block_size;) {
+    #####:  395:    bool __comp_result = __comp(*__iter, __pivot);
+    #####:  396:    __right_bitset |= (static_cast<uint64_t>(__comp_result) << __j);
+    #####:  397:    __j++;
+    #####:  398:    --__iter;
+        -:  399:  }
+    #####:  400:}
+        -:  401:
+        -:  402:template <class _AlgPolicy,
+        -:  403:          class _Compare,
+        -:  404:          class _RandomAccessIterator,
+        -:  405:          class _ValueType = typename iterator_traits<_RandomAccessIterator>::value_type>
+    #####:  406:inline _LIBCPP_HIDE_FROM_ABI void __bitset_partition_partial_blocks(
+        -:  407:    _RandomAccessIterator& __first,
+        -:  408:    _RandomAccessIterator& __lm1,
+        -:  409:    _Compare __comp,
+        -:  410:    _ValueType& __pivot,
+        -:  411:    uint64_t& __left_bitset,
+        -:  412:    uint64_t& __right_bitset) {
+        -:  413:  typedef typename std::iterator_traits<_RandomAccessIterator>::difference_type difference_type;
+    #####:  414:  difference_type __remaining_len = __lm1 - __first + 1;
+        -:  415:  difference_type __l_size;
+        -:  416:  difference_type __r_size;
+    #####:  417:  if (__left_bitset == 0 && __right_bitset == 0) {
+    #####:  418:    __l_size = __remaining_len / 2;
+    #####:  419:    __r_size = __remaining_len - __l_size;
+    #####:  420:  } else if (__left_bitset == 0) {
+        -:  421:    // We know at least one side is a full block.
+    #####:  422:    __l_size = __remaining_len - __detail::__block_size;
+    #####:  423:    __r_size = __detail::__block_size;
+    #####:  424:  } else { // if (__right_bitset == 0)
+    #####:  425:    __l_size = __detail::__block_size;
+    #####:  426:    __r_size = __remaining_len - __detail::__block_size;
+        -:  427:  }
+        -:  428:  // Record the comparison outcomes for the elements currently on the left side.
+    #####:  429:  if (__left_bitset == 0) {
+    #####:  430:    _RandomAccessIterator __iter = __first;
+    #####:  431:    for (int __j = 0; __j < __l_size; __j++) {
+    #####:  432:      bool __comp_result = !__comp(*__iter, __pivot);
+    #####:  433:      __left_bitset |= (static_cast<uint64_t>(__comp_result) << __j);
+    #####:  434:      ++__iter;
+    #####:  435:    }
+    #####:  436:  }
+        -:  437:  // Record the comparison outcomes for the elements currently on the right
+        -:  438:  // side.
+    #####:  439:  if (__right_bitset == 0) {
+    #####:  440:    _RandomAccessIterator __iter = __lm1;
+    #####:  441:    for (int __j = 0; __j < __r_size; __j++) {
+    #####:  442:      bool __comp_result = __comp(*__iter, __pivot);
+    #####:  443:      __right_bitset |= (static_cast<uint64_t>(__comp_result) << __j);
+    #####:  444:      --__iter;
+    #####:  445:    }
+    #####:  446:  }
+    #####:  447:  std::__swap_bitmap_pos<_AlgPolicy, _RandomAccessIterator>(__first, __lm1, __left_bitset, __right_bitset);
+    #####:  448:  __first += (__left_bitset == 0) ? __l_size : 0;
+    #####:  449:  __lm1 -= (__right_bitset == 0) ? __r_size : 0;
+    #####:  450:}
+        -:  451:
+        -:  452:template <class _AlgPolicy, class _RandomAccessIterator>
+    #####:  453:inline _LIBCPP_HIDE_FROM_ABI void __swap_bitmap_pos_within(
+        -:  454:    _RandomAccessIterator& __first, _RandomAccessIterator& __lm1, uint64_t& __left_bitset, uint64_t& __right_bitset) {
+        -:  455:  using _Ops = _IterOps<_AlgPolicy>;
+        -:  456:  typedef typename std::iterator_traits<_RandomAccessIterator>::difference_type difference_type;
+    #####:  457:  if (__left_bitset) {
+        -:  458:    // Swap within the left side.  Need to find set positions in the reverse
+        -:  459:    // order.
+    #####:  460:    while (__left_bitset != 0) {
+    #####:  461:      difference_type __tz_left = __detail::__block_size - 1 - std::__countl_zero(__left_bitset);
+    #####:  462:      __left_bitset &= (static_cast<uint64_t>(1) << __tz_left) - 1;
+    #####:  463:      _RandomAccessIterator __it = __first + __tz_left;
+    #####:  464:      if (__it != __lm1) {
+    #####:  465:        _Ops::iter_swap(__it, __lm1);
+    #####:  466:      }
+    #####:  467:      --__lm1;
+        -:  468:    }
+    #####:  469:    __first = __lm1 + difference_type(1);
+    #####:  470:  } else if (__right_bitset) {
+        -:  471:    // Swap within the right side.  Need to find set positions in the reverse
+        -:  472:    // order.
+    #####:  473:    while (__right_bitset != 0) {
+    #####:  474:      difference_type __tz_right = __detail::__block_size - 1 - std::__countl_zero(__right_bitset);
+    #####:  475:      __right_bitset &= (static_cast<uint64_t>(1) << __tz_right) - 1;
+    #####:  476:      _RandomAccessIterator __it = __lm1 - __tz_right;
+    #####:  477:      if (__it != __first) {
+    #####:  478:        _Ops::iter_swap(__it, __first);
+    #####:  479:      }
+    #####:  480:      ++__first;
+        -:  481:    }
+    #####:  482:  }
+    #####:  483:}
+        -:  484:
+        -:  485:// Partition [__first, __last) using the comparator __comp.  *__first has the
+        -:  486:// chosen pivot.  Elements that are equivalent are kept to the left of the
+        -:  487:// pivot.  Returns the iterator for the pivot and a bool value which is true if
+        -:  488:// the provided range is already sorted, false otherwise.  We assume that the
+        -:  489:// length of the range is at least three elements.
+        -:  490://
+        -:  491:// __bitset_partition uses bitsets for storing outcomes of the comparisons
+        -:  492:// between the pivot and other elements.
+        -:  493:template <class _AlgPolicy, class _RandomAccessIterator, class _Compare>
+        -:  494:_LIBCPP_HIDE_FROM_ABI std::pair<_RandomAccessIterator, bool>
+    #####:  495:__bitset_partition(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp) {
+        -:  496:  using _Ops = _IterOps<_AlgPolicy>;
+        -:  497:  typedef typename std::iterator_traits<_RandomAccessIterator>::value_type value_type;
+        -:  498:  typedef typename std::iterator_traits<_RandomAccessIterator>::difference_type difference_type;
+        -:  499:  _LIBCPP_ASSERT_INTERNAL(__last - __first >= difference_type(3), "");
+    #####:  500:  const _RandomAccessIterator __begin = __first; // used for bounds checking, those are not moved around
+    #####:  501:  const _RandomAccessIterator __end   = __last;
+        -:  502:  (void)__end; //
+        -:  503:
+    #####:  504:  value_type __pivot(_Ops::__iter_move(__first));
+        -:  505:  // Find the first element greater than the pivot.
+    #####:  506:  if (__comp(__pivot, *(__last - difference_type(1)))) {
+        -:  507:    // Not guarded since we know the last element is greater than the pivot.
+    #####:  508:    do {
+    #####:  509:      ++__first;
+        -:  510:      _LIBCPP_ASSERT_VALID_ELEMENT_ACCESS(
+        -:  511:          __first != __end,
+        -:  512:          "Would read out of bounds, does your comparator satisfy the strict-weak ordering requirement?");
+    #####:  513:    } while (!__comp(__pivot, *__first));
+    #####:  514:  } else {
+    #####:  515:    while (++__first < __last && !__comp(__pivot, *__first)) {
+        -:  516:    }
+        -:  517:  }
+        -:  518:  // Find the last element less than or equal to the pivot.
+    #####:  519:  if (__first < __last) {
+        -:  520:    // It will be always guarded because __introsort will do the median-of-three
+        -:  521:    // before calling this.
+    #####:  522:    do {
+        -:  523:      _LIBCPP_ASSERT_VALID_ELEMENT_ACCESS(
+        -:  524:          __last != __begin,
+        -:  525:          "Would read out of bounds, does your comparator satisfy the strict-weak ordering requirement?");
+    #####:  526:      --__last;
+    #####:  527:    } while (__comp(__pivot, *__last));
+    #####:  528:  }
+        -:  529:  // If the first element greater than the pivot is at or after the
+        -:  530:  // last element less than or equal to the pivot, then we have covered the
+        -:  531:  // entire range without swapping elements.  This implies the range is already
+        -:  532:  // partitioned.
+    #####:  533:  bool __already_partitioned = __first >= __last;
+    #####:  534:  if (!__already_partitioned) {
+    #####:  535:    _Ops::iter_swap(__first, __last);
+    #####:  536:    ++__first;
+    #####:  537:  }
+        -:  538:
+        -:  539:  // In [__first, __last) __last is not inclusive. From now on, it uses last
+        -:  540:  // minus one to be inclusive on both sides.
+    #####:  541:  _RandomAccessIterator __lm1 = __last - difference_type(1);
+    #####:  542:  uint64_t __left_bitset      = 0;
+    #####:  543:  uint64_t __right_bitset     = 0;
+        -:  544:
+        -:  545:  // Reminder: length = __lm1 - __first + 1.
+    #####:  546:  while (__lm1 - __first >= 2 * __detail::__block_size - 1) {
+        -:  547:    // Record the comparison outcomes for the elements currently on the left
+        -:  548:    // side.
+    #####:  549:    if (__left_bitset == 0)
+    #####:  550:      std::__populate_left_bitset<_Compare>(__first, __comp, __pivot, __left_bitset);
+        -:  551:    // Record the comparison outcomes for the elements currently on the right
+        -:  552:    // side.
+    #####:  553:    if (__right_bitset == 0)
+    #####:  554:      std::__populate_right_bitset<_Compare>(__lm1, __comp, __pivot, __right_bitset);
+        -:  555:    // Swap the elements recorded to be the candidates for swapping in the
+        -:  556:    // bitsets.
+    #####:  557:    std::__swap_bitmap_pos<_AlgPolicy, _RandomAccessIterator>(__first, __lm1, __left_bitset, __right_bitset);
+        -:  558:    // Only advance the iterator if all the elements that need to be moved to
+        -:  559:    // other side were moved.
+    #####:  560:    __first += (__left_bitset == 0) ? difference_type(__detail::__block_size) : difference_type(0);
+    #####:  561:    __lm1 -= (__right_bitset == 0) ? difference_type(__detail::__block_size) : difference_type(0);
+        -:  562:  }
+        -:  563:  // Now, we have a less-than a block worth of elements on at least one of the
+        -:  564:  // sides.
+    #####:  565:  std::__bitset_partition_partial_blocks<_AlgPolicy, _Compare>(
+    #####:  566:      __first, __lm1, __comp, __pivot, __left_bitset, __right_bitset);
+        -:  567:  // At least one the bitsets would be empty.  For the non-empty one, we need to
+        -:  568:  // properly partition the elements that appear within that bitset.
+    #####:  569:  std::__swap_bitmap_pos_within<_AlgPolicy>(__first, __lm1, __left_bitset, __right_bitset);
+        -:  570:
+        -:  571:  // Move the pivot to its correct position.
+    #####:  572:  _RandomAccessIterator __pivot_pos = __first - difference_type(1);
+    #####:  573:  if (__begin != __pivot_pos) {
+    #####:  574:    *__begin = _Ops::__iter_move(__pivot_pos);
+    #####:  575:  }
+    #####:  576:  *__pivot_pos = std::move(__pivot);
+    #####:  577:  return std::make_pair(__pivot_pos, __already_partitioned);
+        -:  578:}
+        -:  579:
+        -:  580:// Partition [__first, __last) using the comparator __comp.  *__first has the
+        -:  581:// chosen pivot.  Elements that are equivalent are kept to the right of the
+        -:  582:// pivot.  Returns the iterator for the pivot and a bool value which is true if
+        -:  583:// the provided range is already sorted, false otherwise.  We assume that the
+        -:  584:// length of the range is at least three elements.
+        -:  585:template <class _AlgPolicy, class _RandomAccessIterator, class _Compare>
+        -:  586:_LIBCPP_HIDE_FROM_ABI std::pair<_RandomAccessIterator, bool>
+    #####:  587:__partition_with_equals_on_right(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp) {
+        -:  588:  using _Ops = _IterOps<_AlgPolicy>;
+        -:  589:  typedef typename iterator_traits<_RandomAccessIterator>::difference_type difference_type;
+        -:  590:  typedef typename std::iterator_traits<_RandomAccessIterator>::value_type value_type;
+        -:  591:  _LIBCPP_ASSERT_INTERNAL(__last - __first >= difference_type(3), "");
+    #####:  592:  const _RandomAccessIterator __begin = __first; // used for bounds checking, those are not moved around
+    #####:  593:  const _RandomAccessIterator __end   = __last;
+        -:  594:  (void)__end; //
+    #####:  595:  value_type __pivot(_Ops::__iter_move(__first));
+        -:  596:  // Find the first element greater or equal to the pivot.  It will be always
+        -:  597:  // guarded because __introsort will do the median-of-three before calling
+        -:  598:  // this.
+    #####:  599:  do {
+    #####:  600:    ++__first;
+        -:  601:    _LIBCPP_ASSERT_VALID_ELEMENT_ACCESS(
+        -:  602:        __first != __end,
+        -:  603:        "Would read out of bounds, does your comparator satisfy the strict-weak ordering requirement?");
+    #####:  604:  } while (__comp(*__first, __pivot));
+        -:  605:
+        -:  606:  // Find the last element less than the pivot.
+    #####:  607:  if (__begin == __first - difference_type(1)) {
+    #####:  608:    while (__first < __last && !__comp(*--__last, __pivot))
+        -:  609:      ;
+    #####:  610:  } else {
+        -:  611:    // Guarded.
+    #####:  612:    do {
+        -:  613:      _LIBCPP_ASSERT_VALID_ELEMENT_ACCESS(
+        -:  614:          __last != __begin,
+        -:  615:          "Would read out of bounds, does your comparator satisfy the strict-weak ordering requirement?");
+    #####:  616:      --__last;
+    #####:  617:    } while (!__comp(*__last, __pivot));
+        -:  618:  }
+        -:  619:
+        -:  620:  // If the first element greater than or equal to the pivot is at or after the
+        -:  621:  // last element less than the pivot, then we have covered the entire range
+        -:  622:  // without swapping elements.  This implies the range is already partitioned.
+    #####:  623:  bool __already_partitioned = __first >= __last;
+        -:  624:  // Go through the remaining elements.  Swap pairs of elements (one to the
+        -:  625:  // right of the pivot and the other to left of the pivot) that are not on the
+        -:  626:  // correct side of the pivot.
+    #####:  627:  while (__first < __last) {
+    #####:  628:    _Ops::iter_swap(__first, __last);
+    #####:  629:    do {
+    #####:  630:      ++__first;
+        -:  631:      _LIBCPP_ASSERT_VALID_ELEMENT_ACCESS(
+        -:  632:          __first != __end,
+        -:  633:          "Would read out of bounds, does your comparator satisfy the strict-weak ordering requirement?");
+    #####:  634:    } while (__comp(*__first, __pivot));
+    #####:  635:    do {
+        -:  636:      _LIBCPP_ASSERT_VALID_ELEMENT_ACCESS(
+        -:  637:          __last != __begin,
+        -:  638:          "Would read out of bounds, does your comparator satisfy the strict-weak ordering requirement?");
+    #####:  639:      --__last;
+    #####:  640:    } while (!__comp(*__last, __pivot));
+        -:  641:  }
+        -:  642:  // Move the pivot to its correct position.
+    #####:  643:  _RandomAccessIterator __pivot_pos = __first - difference_type(1);
+    #####:  644:  if (__begin != __pivot_pos) {
+    #####:  645:    *__begin = _Ops::__iter_move(__pivot_pos);
+    #####:  646:  }
+    #####:  647:  *__pivot_pos = std::move(__pivot);
+    #####:  648:  return std::make_pair(__pivot_pos, __already_partitioned);
+        -:  649:}
+        -:  650:
+        -:  651:// Similar to the above function.  Elements equivalent to the pivot are put to
+        -:  652:// the left of the pivot.  Returns the iterator to the pivot element.
+        -:  653:template <class _AlgPolicy, class _RandomAccessIterator, class _Compare>
+        -:  654:_LIBCPP_HIDE_FROM_ABI _RandomAccessIterator
+    #####:  655:__partition_with_equals_on_left(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp) {
+        -:  656:  using _Ops = _IterOps<_AlgPolicy>;
+        -:  657:  typedef typename iterator_traits<_RandomAccessIterator>::difference_type difference_type;
+        -:  658:  typedef typename std::iterator_traits<_RandomAccessIterator>::value_type value_type;
+    #####:  659:  const _RandomAccessIterator __begin = __first; // used for bounds checking, those are not moved around
+    #####:  660:  const _RandomAccessIterator __end   = __last;
+        -:  661:  (void)__end; //
+    #####:  662:  value_type __pivot(_Ops::__iter_move(__first));
+    #####:  663:  if (__comp(__pivot, *(__last - difference_type(1)))) {
+        -:  664:    // Guarded.
+    #####:  665:    do {
+    #####:  666:      ++__first;
+        -:  667:      _LIBCPP_ASSERT_VALID_ELEMENT_ACCESS(
+        -:  668:          __first != __end,
+        -:  669:          "Would read out of bounds, does your comparator satisfy the strict-weak ordering requirement?");
+    #####:  670:    } while (!__comp(__pivot, *__first));
+    #####:  671:  } else {
+    #####:  672:    while (++__first < __last && !__comp(__pivot, *__first)) {
+        -:  673:    }
+        -:  674:  }
+        -:  675:
+    #####:  676:  if (__first < __last) {
+        -:  677:    // It will be always guarded because __introsort will do the
+        -:  678:    // median-of-three before calling this.
+    #####:  679:    do {
+        -:  680:      _LIBCPP_ASSERT_VALID_ELEMENT_ACCESS(
+        -:  681:          __last != __begin,
+        -:  682:          "Would read out of bounds, does your comparator satisfy the strict-weak ordering requirement?");
+    #####:  683:      --__last;
+    #####:  684:    } while (__comp(__pivot, *__last));
+    #####:  685:  }
+    #####:  686:  while (__first < __last) {
+    #####:  687:    _Ops::iter_swap(__first, __last);
+    #####:  688:    do {
+    #####:  689:      ++__first;
+        -:  690:      _LIBCPP_ASSERT_VALID_ELEMENT_ACCESS(
+        -:  691:          __first != __end,
+        -:  692:          "Would read out of bounds, does your comparator satisfy the strict-weak ordering requirement?");
+    #####:  693:    } while (!__comp(__pivot, *__first));
+    #####:  694:    do {
+        -:  695:      _LIBCPP_ASSERT_VALID_ELEMENT_ACCESS(
+        -:  696:          __last != __begin,
+        -:  697:          "Would read out of bounds, does your comparator satisfy the strict-weak ordering requirement?");
+    #####:  698:      --__last;
+    #####:  699:    } while (__comp(__pivot, *__last));
+        -:  700:  }
+    #####:  701:  _RandomAccessIterator __pivot_pos = __first - difference_type(1);
+    #####:  702:  if (__begin != __pivot_pos) {
+    #####:  703:    *__begin = _Ops::__iter_move(__pivot_pos);
+    #####:  704:  }
+    #####:  705:  *__pivot_pos = std::move(__pivot);
+    #####:  706:  return __first;
+        -:  707:}
+        -:  708:
+        -:  709:// The main sorting function.  Implements introsort combined with other ideas:
+        -:  710://  - option of using block quick sort for partitioning,
+        -:  711://  - guarded and unguarded insertion sort for small lengths,
+        -:  712://  - Tuckey's ninther technique for computing the pivot,
+        -:  713://  - check on whether partition was not required.
+        -:  714:// The implementation is partly based on Orson Peters' pattern-defeating
+        -:  715:// quicksort, published at: <https://github.com/orlp/pdqsort>.
+        -:  716:template <class _AlgPolicy, class _Compare, class _RandomAccessIterator, bool _UseBitSetPartition>
+    #####:  717:void __introsort(_RandomAccessIterator __first,
+        -:  718:                 _RandomAccessIterator __last,
+        -:  719:                 _Compare __comp,
+        -:  720:                 typename iterator_traits<_RandomAccessIterator>::difference_type __depth,
+        -:  721:                 bool __leftmost = true) {
+        -:  722:  using _Ops = _IterOps<_AlgPolicy>;
+        -:  723:  typedef typename iterator_traits<_RandomAccessIterator>::difference_type difference_type;
+        -:  724:  using _Comp_ref = __comp_ref_type<_Compare>;
+        -:  725:  // Upper bound for using insertion sort for sorting.
+    #####:  726:  _LIBCPP_CONSTEXPR difference_type __limit = 24;
+        -:  727:  // Lower bound for using Tuckey's ninther technique for median computation.
+    #####:  728:  _LIBCPP_CONSTEXPR difference_type __ninther_threshold = 128;
+    #####:  729:  while (true) {
+    #####:  730:    difference_type __len = __last - __first;
+    #####:  731:    switch (__len) {
+        -:  732:    case 0:
+        -:  733:    case 1:
+    #####:  734:      return;
+        -:  735:    case 2:
+    #####:  736:      if (__comp(*--__last, *__first))
+    #####:  737:        _Ops::iter_swap(__first, __last);
+    #####:  738:      return;
+        -:  739:    case 3:
+    #####:  740:      std::__sort3<_AlgPolicy, _Compare>(__first, __first + difference_type(1), --__last, __comp);
+    #####:  741:      return;
+        -:  742:    case 4:
+    #####:  743:      std::__sort4<_AlgPolicy, _Compare>(
+    #####:  744:          __first, __first + difference_type(1), __first + difference_type(2), --__last, __comp);
+    #####:  745:      return;
+        -:  746:    case 5:
+    #####:  747:      std::__sort5<_AlgPolicy, _Compare>(
+    #####:  748:          __first,
+    #####:  749:          __first + difference_type(1),
+    #####:  750:          __first + difference_type(2),
+    #####:  751:          __first + difference_type(3),
+    #####:  752:          --__last,
+    #####:  753:          __comp);
+    #####:  754:      return;
+        -:  755:    }
+        -:  756:    // Use insertion sort if the length of the range is below the specified limit.
+    #####:  757:    if (__len < __limit) {
+    #####:  758:      if (__leftmost) {
+    #####:  759:        std::__insertion_sort<_AlgPolicy, _Compare>(__first, __last, __comp);
+    #####:  760:      } else {
+    #####:  761:        std::__insertion_sort_unguarded<_AlgPolicy, _Compare>(__first, __last, __comp);
+        -:  762:      }
+    #####:  763:      return;
+        -:  764:    }
+    #####:  765:    if (__depth == 0) {
+        -:  766:      // Fallback to heap sort as Introsort suggests.
+    #####:  767:      std::__partial_sort<_AlgPolicy, _Compare>(__first, __last, __last, __comp);
+    #####:  768:      return;
+        -:  769:    }
+    #####:  770:    --__depth;
+        -:  771:    {
+    #####:  772:      difference_type __half_len = __len / 2;
+        -:  773:      // Use Tuckey's ninther technique or median of 3 for pivot selection
+        -:  774:      // depending on the length of the range being sorted.
+    #####:  775:      if (__len > __ninther_threshold) {
+    #####:  776:        std::__sort3<_AlgPolicy, _Compare>(__first, __first + __half_len, __last - difference_type(1), __comp);
+    #####:  777:        std::__sort3<_AlgPolicy, _Compare>(
+    #####:  778:            __first + difference_type(1), __first + (__half_len - 1), __last - difference_type(2), __comp);
+    #####:  779:        std::__sort3<_AlgPolicy, _Compare>(
+    #####:  780:            __first + difference_type(2), __first + (__half_len + 1), __last - difference_type(3), __comp);
+    #####:  781:        std::__sort3<_AlgPolicy, _Compare>(
+    #####:  782:            __first + (__half_len - 1), __first + __half_len, __first + (__half_len + 1), __comp);
+    #####:  783:        _Ops::iter_swap(__first, __first + __half_len);
+    #####:  784:      } else {
+    #####:  785:        std::__sort3<_AlgPolicy, _Compare>(__first + __half_len, __first, __last - difference_type(1), __comp);
+        -:  786:      }
+        -:  787:    }
+        -:  788:    // The elements to the left of the current iterator range are already
+        -:  789:    // sorted.  If the current iterator range to be sorted is not the
+        -:  790:    // leftmost part of the entire iterator range and the pivot is same as
+        -:  791:    // the highest element in the range to the left, then we know that all
+        -:  792:    // the elements in the range [first, pivot] would be equal to the pivot,
+        -:  793:    // assuming the equal elements are put on the left side when
+        -:  794:    // partitioned.  This also means that we do not need to sort the left
+        -:  795:    // side of the partition.
+    #####:  796:    if (!__leftmost && !__comp(*(__first - difference_type(1)), *__first)) {
+    #####:  797:      __first = std::__partition_with_equals_on_left<_AlgPolicy, _RandomAccessIterator, _Comp_ref>(
+    #####:  798:          __first, __last, _Comp_ref(__comp));
+    #####:  799:      continue;
+        -:  800:    }
+        -:  801:    // Use bitset partition only if asked for.
+    #####:  802:    auto __ret                = _UseBitSetPartition
+    #####:  803:                                  ? std::__bitset_partition<_AlgPolicy, _RandomAccessIterator, _Compare>(__first, __last, __comp)
+    #####:  804:                                  : std::__partition_with_equals_on_right<_AlgPolicy, _RandomAccessIterator, _Compare>(
+    #####:  805:                         __first, __last, __comp);
+    #####:  806:    _RandomAccessIterator __i = __ret.first;
+        -:  807:    // [__first, __i) < *__i and *__i <= [__i+1, __last)
+        -:  808:    // If we were given a perfect partition, see if insertion sort is quick...
+    #####:  809:    if (__ret.second) {
+    #####:  810:      bool __fs = std::__insertion_sort_incomplete<_AlgPolicy, _Compare>(__first, __i, __comp);
+    #####:  811:      if (std::__insertion_sort_incomplete<_AlgPolicy, _Compare>(__i + difference_type(1), __last, __comp)) {
+    #####:  812:        if (__fs)
+    #####:  813:          return;
+    #####:  814:        __last = __i;
+    #####:  815:        continue;
+        -:  816:      } else {
+    #####:  817:        if (__fs) {
+    #####:  818:          __first = ++__i;
+    #####:  819:          continue;
+        -:  820:        }
+        -:  821:      }
+    #####:  822:    }
+        -:  823:    // Sort the left partiton recursively and the right partition with tail recursion elimination.
+    #####:  824:    std::__introsort<_AlgPolicy, _Compare, _RandomAccessIterator, _UseBitSetPartition>(
+    #####:  825:        __first, __i, __comp, __depth, __leftmost);
+    #####:  826:    __leftmost = false;
+    #####:  827:    __first    = ++__i;
+        -:  828:  }
+    #####:  829:}
+        -:  830:
+        -:  831:template <class _Comp, class _RandomAccessIterator>
+        -:  832:void __sort(_RandomAccessIterator, _RandomAccessIterator, _Comp);
+        -:  833:
+        -:  834:extern template _LIBCPP_EXPORTED_FROM_ABI void __sort<__less<char>&, char*>(char*, char*, __less<char>&);
+        -:  835:#if _LIBCPP_HAS_WIDE_CHARACTERS
+        -:  836:extern template _LIBCPP_EXPORTED_FROM_ABI void __sort<__less<wchar_t>&, wchar_t*>(wchar_t*, wchar_t*, __less<wchar_t>&);
+        -:  837:#endif
+        -:  838:extern template _LIBCPP_EXPORTED_FROM_ABI void
+        -:  839:__sort<__less<signed char>&, signed char*>(signed char*, signed char*, __less<signed char>&);
+        -:  840:extern template _LIBCPP_EXPORTED_FROM_ABI void
+        -:  841:__sort<__less<unsigned char>&, unsigned char*>(unsigned char*, unsigned char*, __less<unsigned char>&);
+        -:  842:extern template _LIBCPP_EXPORTED_FROM_ABI void __sort<__less<short>&, short*>(short*, short*, __less<short>&);
+        -:  843:extern template _LIBCPP_EXPORTED_FROM_ABI void
+        -:  844:__sort<__less<unsigned short>&, unsigned short*>(unsigned short*, unsigned short*, __less<unsigned short>&);
+        -:  845:extern template _LIBCPP_EXPORTED_FROM_ABI void __sort<__less<int>&, int*>(int*, int*, __less<int>&);
+        -:  846:extern template _LIBCPP_EXPORTED_FROM_ABI void
+        -:  847:__sort<__less<unsigned>&, unsigned*>(unsigned*, unsigned*, __less<unsigned>&);
+        -:  848:extern template _LIBCPP_EXPORTED_FROM_ABI void __sort<__less<long>&, long*>(long*, long*, __less<long>&);
+        -:  849:extern template _LIBCPP_EXPORTED_FROM_ABI void
+        -:  850:__sort<__less<unsigned long>&, unsigned long*>(unsigned long*, unsigned long*, __less<unsigned long>&);
+        -:  851:extern template _LIBCPP_EXPORTED_FROM_ABI void
+        -:  852:__sort<__less<long long>&, long long*>(long long*, long long*, __less<long long>&);
+        -:  853:extern template _LIBCPP_EXPORTED_FROM_ABI void __sort<__less<unsigned long long>&, unsigned long long*>(
+        -:  854:    unsigned long long*, unsigned long long*, __less<unsigned long long>&);
+        -:  855:extern template _LIBCPP_EXPORTED_FROM_ABI void __sort<__less<float>&, float*>(float*, float*, __less<float>&);
+        -:  856:extern template _LIBCPP_EXPORTED_FROM_ABI void __sort<__less<double>&, double*>(double*, double*, __less<double>&);
+        -:  857:extern template _LIBCPP_EXPORTED_FROM_ABI void
+        -:  858:__sort<__less<long double>&, long double*>(long double*, long double*, __less<long double>&);
+        -:  859:
+        -:  860:template <class _AlgPolicy, class _RandomAccessIterator, class _Comp>
+        -:  861:_LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 void
+    #####:  862:__sort_dispatch(_RandomAccessIterator __first, _RandomAccessIterator __last, _Comp& __comp) {
+    #####:  863:  if (__first == __last) // log(0) is undefined, so don't try computing the depth
+    #####:  864:    return;
+        -:  865:
+        -:  866:  typedef typename iterator_traits<_RandomAccessIterator>::difference_type difference_type;
+    #####:  867:  difference_type __depth_limit = 2 * std::__bit_log2(std::__to_unsigned_like(__last - __first));
+        -:  868:
+        -:  869:  // Only use bitset partitioning for arithmetic types.  We should also check
+        -:  870:  // that the default comparator is in use so that we are sure that there are no
+        -:  871:  // branches in the comparator.
+    #####:  872:  std::__introsort<_AlgPolicy, _Comp&, _RandomAccessIterator, __use_branchless_sort<_Comp, _RandomAccessIterator> >(
+    #####:  873:      __first, __last, __comp, __depth_limit);
+    #####:  874:}
+        -:  875:
+        -:  876:template <class _Type, class... _Options>
+        -:  877:using __is_any_of _LIBCPP_NODEBUG = _Or<is_same<_Type, _Options>...>;
+        -:  878:
+        -:  879:template <class _Type>
+        -:  880:using __sort_is_specialized_in_library _LIBCPP_NODEBUG = __is_any_of<
+        -:  881:    _Type,
+        -:  882:    char,
+        -:  883:#if _LIBCPP_HAS_WIDE_CHARACTERS
+        -:  884:    wchar_t,
+        -:  885:#endif
+        -:  886:    signed char,
+        -:  887:    unsigned char,
+        -:  888:    short,
+        -:  889:    unsigned short,
+        -:  890:    int,
+        -:  891:    unsigned int,
+        -:  892:    long,
+        -:  893:    unsigned long,
+        -:  894:    long long,
+        -:  895:    unsigned long long,
+        -:  896:    float,
+        -:  897:    double,
+        -:  898:    long double>;
+        -:  899:
+        -:  900:template <class _AlgPolicy, class _Type, __enable_if_t<__sort_is_specialized_in_library<_Type>::value, int> = 0>
+    #####:  901:_LIBCPP_HIDE_FROM_ABI void __sort_dispatch(_Type* __first, _Type* __last, __less<>&) {
+        -:  902:  __less<_Type> __comp;
+    #####:  903:  std::__sort<__less<_Type>&, _Type*>(__first, __last, __comp);
+    #####:  904:}
+        -:  905:
+        -:  906:template <class _AlgPolicy, class _Type, __enable_if_t<__sort_is_specialized_in_library<_Type>::value, int> = 0>
+        -:  907:_LIBCPP_HIDE_FROM_ABI void __sort_dispatch(_Type* __first, _Type* __last, less<_Type>&) {
+        -:  908:  __less<_Type> __comp;
+        -:  909:  std::__sort<__less<_Type>&, _Type*>(__first, __last, __comp);
+        -:  910:}
+        -:  911:
+        -:  912:#if _LIBCPP_STD_VER >= 14
+        -:  913:template <class _AlgPolicy, class _Type, __enable_if_t<__sort_is_specialized_in_library<_Type>::value, int> = 0>
+        -:  914:_LIBCPP_HIDE_FROM_ABI void __sort_dispatch(_Type* __first, _Type* __last, less<>&) {
+        -:  915:  __less<_Type> __comp;
+        -:  916:  std::__sort<__less<_Type>&, _Type*>(__first, __last, __comp);
+        -:  917:}
+        -:  918:#endif
+        -:  919:
+        -:  920:#if _LIBCPP_STD_VER >= 20
+        -:  921:template <class _AlgPolicy, class _Type, __enable_if_t<__sort_is_specialized_in_library<_Type>::value, int> = 0>
+        -:  922:_LIBCPP_HIDE_FROM_ABI void __sort_dispatch(_Type* __first, _Type* __last, ranges::less&) {
+        -:  923:  __less<_Type> __comp;
+        -:  924:  std::__sort<__less<_Type>&, _Type*>(__first, __last, __comp);
+        -:  925:}
+        -:  926:#endif
+        -:  927:
+        -:  928:template <class _AlgPolicy, class _RandomAccessIterator, class _Comp>
+        -:  929:inline _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 void
+    #####:  930:__sort_impl(_RandomAccessIterator __first, _RandomAccessIterator __last, _Comp& __comp) {
+    #####:  931:  std::__debug_randomize_range<_AlgPolicy>(__first, __last);
+        -:  932:
+        -:  933:  if (__libcpp_is_constant_evaluated()) {
+        -:  934:    std::__partial_sort<_AlgPolicy>(
+        -:  935:        std::__unwrap_iter(__first), std::__unwrap_iter(__last), std::__unwrap_iter(__last), __comp);
+        -:  936:  } else {
+    #####:  937:    std::__sort_dispatch<_AlgPolicy>(std::__unwrap_iter(__first), std::__unwrap_iter(__last), __comp);
+        -:  938:  }
+    #####:  939:  std::__check_strict_weak_ordering_sorted(std::__unwrap_iter(__first), std::__unwrap_iter(__last), __comp);
+    #####:  940:}
+        -:  941:
+        -:  942:template <class _RandomAccessIterator, class _Comp>
+        -:  943:inline _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 void
+    #####:  944:sort(_RandomAccessIterator __first, _RandomAccessIterator __last, _Comp __comp) {
+    #####:  945:  std::__sort_impl<_ClassicAlgPolicy>(std::move(__first), std::move(__last), __comp);
+    #####:  946:}
+        -:  947:
+        -:  948:template <class _RandomAccessIterator>
+        -:  949:inline _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 void
+    #####:  950:sort(_RandomAccessIterator __first, _RandomAccessIterator __last) {
+    #####:  951:  std::sort(__first, __last, __less<>());
+    #####:  952:}
+        -:  953:
+        -:  954:_LIBCPP_END_NAMESPACE_STD
+        -:  955:
+        -:  956:_LIBCPP_POP_MACROS
+        -:  957:
+        -:  958:#endif // _LIBCPP___ALGORITHM_SORT_H

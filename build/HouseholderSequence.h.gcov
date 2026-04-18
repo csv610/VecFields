@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Householder/HouseholderSequence.h
-        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
-        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
-        -:    0:Runs:4
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -94,10 +94,10 @@
         -:   90:{
         -:   91:  typedef Block<const VectorsType, Dynamic, 1> EssentialVectorType;
         -:   92:  typedef HouseholderSequence<VectorsType, CoeffsType, OnTheLeft> HouseholderSequenceType;
-     8622:   93:  static EIGEN_DEVICE_FUNC inline const EssentialVectorType essentialVector(const HouseholderSequenceType& h, Index k)
+      598:   93:  static EIGEN_DEVICE_FUNC inline const EssentialVectorType essentialVector(const HouseholderSequenceType& h, Index k)
         -:   94:  {
-     8622:   95:    Index start = k+1+h.m_shift;
-     8622:   96:    return Block<const VectorsType,Dynamic,1>(h.m_vectors, start, k, h.rows()-start, 1);
+      598:   95:    Index start = k+1+h.m_shift;
+      598:   96:    return Block<const VectorsType,Dynamic,1>(h.m_vectors, start, k, h.rows()-start, 1);
         -:   97:  }
         -:   98:};
         -:   99:
@@ -187,36 +187,36 @@
         -:  183:      * \sa setLength(), setShift()
         -:  184:      */
         -:  185:    EIGEN_DEVICE_FUNC
-     8940:  186:    HouseholderSequence(const VectorsType& v, const CoeffsType& h)
-     4470:  187:      : m_vectors(v), m_coeffs(h), m_reverse(false), m_length(v.diagonalSize()),
-     4470:  188:        m_shift(0)
-     4470:  189:    {
-     8940:  190:    }
+      720:  186:    HouseholderSequence(const VectorsType& v, const CoeffsType& h)
+      360:  187:      : m_vectors(v), m_coeffs(h), m_reverse(false), m_length(v.diagonalSize()),
+      360:  188:        m_shift(0)
+      360:  189:    {
+      720:  190:    }
         -:  191:
         -:  192:    /** \brief Copy constructor. */
         -:  193:    EIGEN_DEVICE_FUNC
-     2980:  194:    HouseholderSequence(const HouseholderSequence& other)
-     1490:  195:      : m_vectors(other.m_vectors),
-     1490:  196:        m_coeffs(other.m_coeffs),
-     1490:  197:        m_reverse(other.m_reverse),
-     1490:  198:        m_length(other.m_length),
-     1490:  199:        m_shift(other.m_shift)
-     1490:  200:    {
-     2980:  201:    }
+      240:  194:    HouseholderSequence(const HouseholderSequence& other)
+      120:  195:      : m_vectors(other.m_vectors),
+      120:  196:        m_coeffs(other.m_coeffs),
+      120:  197:        m_reverse(other.m_reverse),
+      120:  198:        m_length(other.m_length),
+      120:  199:        m_shift(other.m_shift)
+      120:  200:    {
+      240:  201:    }
         -:  202:
         -:  203:    /** \brief Number of rows of transformation viewed as a matrix.
         -:  204:      * \returns Number of rows
         -:  205:      * \details This equals the dimension of the space that the transformation acts on.
         -:  206:      */
         -:  207:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
-    24694:  208:    Index rows() const EIGEN_NOEXCEPT { return Side==OnTheLeft ? m_vectors.rows() : m_vectors.cols(); }
+     1796:  208:    Index rows() const EIGEN_NOEXCEPT { return Side==OnTheLeft ? m_vectors.rows() : m_vectors.cols(); }
         -:  209:
         -:  210:    /** \brief Number of columns of transformation viewed as a matrix.
         -:  211:      * \returns Number of columns
         -:  212:      * \details This equals the dimension of the space that the transformation acts on.
         -:  213:      */
         -:  214:    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
-     2980:  215:    Index cols() const EIGEN_NOEXCEPT { return rows(); }
+      240:  215:    Index cols() const EIGEN_NOEXCEPT { return rows(); }
         -:  216:
         -:  217:    /** \brief Essential part of a Householder vector.
         -:  218:      * \param[in]  k  Index of Householder reflection
@@ -233,10 +233,10 @@
         -:  229:      * \sa setShift(), shift()
         -:  230:      */
         -:  231:    EIGEN_DEVICE_FUNC
-     8622:  232:    const EssentialVectorType essentialVector(Index k) const
+      598:  232:    const EssentialVectorType essentialVector(Index k) const
         -:  233:    {
-     8622:  234:      eigen_assert(k >= 0 && k < m_length);
-     8622:  235:      return internal::hseq_side_dependent_impl<VectorsType,CoeffsType,Side>::essentialVector(*this, k);
+      598:  234:      eigen_assert(k >= 0 && k < m_length);
+      598:  235:      return internal::hseq_side_dependent_impl<VectorsType,CoeffsType,Side>::essentialVector(*this, k);
         -:  236:    }
         -:  237:
         -:  238:    /** \brief %Transpose of the Householder sequence. */
@@ -270,12 +270,12 @@
         -:  266:    }
         -:  267:
         -:  268:    /** \brief Adjoint (conjugate transpose) of the Householder sequence. */
-     1490:  269:    AdjointReturnType adjoint() const
+      120:  269:    AdjointReturnType adjoint() const
         -:  270:    {
-     2980:  271:      return AdjointReturnType(m_vectors, m_coeffs.conjugate())
-     1490:  272:              .setReverseFlag(!m_reverse)
-     1490:  273:              .setLength(m_length)
-     1490:  274:              .setShift(m_shift);
+      240:  271:      return AdjointReturnType(m_vectors, m_coeffs.conjugate())
+      120:  272:              .setReverseFlag(!m_reverse)
+      120:  273:              .setLength(m_length)
+      120:  274:              .setShift(m_shift);
         -:  275:    }
         -:  276:
         -:  277:    /** \brief Inverse of the Householder sequence (equals the adjoint). */
@@ -294,32 +294,32 @@
         -:  290:    /** \internal */
         -:  291:    template<typename Dest, typename Workspace>
         -:  292:    EIGEN_DEVICE_FUNC
-     1490:  293:    void evalTo(Dest& dst, Workspace& workspace) const
+      120:  293:    void evalTo(Dest& dst, Workspace& workspace) const
         -:  294:    {
-     1490:  295:      workspace.resize(rows());
-     1490:  296:      Index vecs = m_length;
-     1490:  297:      if(internal::is_same_dense(dst,m_vectors))
+      120:  295:      workspace.resize(rows());
+      120:  296:      Index vecs = m_length;
+      120:  297:      if(internal::is_same_dense(dst,m_vectors))
         -:  298:      {
         -:  299:        // in-place
-     1490:  300:        dst.diagonal().setOnes();
-     1490:  301:        dst.template triangularView<StrictlyUpper>().setZero();
-     2980:  302:        for(Index k = vecs-1; k >= 0; --k)
+      120:  300:        dst.diagonal().setOnes();
+      120:  301:        dst.template triangularView<StrictlyUpper>().setZero();
+      240:  302:        for(Index k = vecs-1; k >= 0; --k)
         -:  303:        {
-     1490:  304:          Index cornerSize = rows() - k - m_shift;
-     1490:  305:          if(m_reverse)
+      120:  304:          Index cornerSize = rows() - k - m_shift;
+      120:  305:          if(m_reverse)
     #####:  306:            dst.bottomRightCorner(cornerSize, cornerSize)
     #####:  307:               .applyHouseholderOnTheRight(essentialVector(k), m_coeffs.coeff(k), workspace.data());
         -:  308:          else
-     1490:  309:            dst.bottomRightCorner(cornerSize, cornerSize)
-     1490:  310:               .applyHouseholderOnTheLeft(essentialVector(k), m_coeffs.coeff(k), workspace.data());
+      120:  309:            dst.bottomRightCorner(cornerSize, cornerSize)
+      120:  310:               .applyHouseholderOnTheLeft(essentialVector(k), m_coeffs.coeff(k), workspace.data());
         -:  311:
         -:  312:          // clear the off diagonal vector
-     1490:  313:          dst.col(k).tail(rows()-k-1).setZero();
-     1490:  314:        }
+      120:  313:          dst.col(k).tail(rows()-k-1).setZero();
+      120:  314:        }
         -:  315:        // clear the remaining columns if needed
-     2980:  316:        for(Index k = 0; k<cols()-vecs ; ++k)
-     1490:  317:          dst.col(k).tail(rows()-k-1).setZero();
-     1490:  318:      }
+      240:  316:        for(Index k = 0; k<cols()-vecs ; ++k)
+      120:  317:          dst.col(k).tail(rows()-k-1).setZero();
+      120:  318:      }
     #####:  319:      else if(m_length>BlockSize)
         -:  320:      {
     #####:  321:        dst.setIdentity(rows(), rows());
@@ -342,7 +342,7 @@
     #####:  338:               .applyHouseholderOnTheLeft(essentialVector(k), m_coeffs.coeff(k), workspace.data());
     #####:  339:        }
         -:  340:      }
-     1490:  341:    }
+      120:  341:    }
         -:  342:
         -:  343:    /** \internal */
         -:  344:    template<typename Dest> inline void applyThisOnTheRight(Dest& dst) const
@@ -365,20 +365,20 @@
         -:  361:    }
         -:  362:
         -:  363:    /** \internal */
-     1490:  364:    template<typename Dest> inline void applyThisOnTheLeft(Dest& dst, bool inputIsIdentity = false) const
+      120:  364:    template<typename Dest> inline void applyThisOnTheLeft(Dest& dst, bool inputIsIdentity = false) const
         -:  365:    {
-     1490:  366:      Matrix<Scalar,1,Dest::ColsAtCompileTime,RowMajor,1,Dest::MaxColsAtCompileTime> workspace;
-     1490:  367:      applyThisOnTheLeft(dst, workspace, inputIsIdentity);
-     1490:  368:    }
+      120:  366:      Matrix<Scalar,1,Dest::ColsAtCompileTime,RowMajor,1,Dest::MaxColsAtCompileTime> workspace;
+      120:  367:      applyThisOnTheLeft(dst, workspace, inputIsIdentity);
+      120:  368:    }
         -:  369:
         -:  370:    /** \internal */
         -:  371:    template<typename Dest, typename Workspace>
-     1490:  372:    inline void applyThisOnTheLeft(Dest& dst, Workspace& workspace, bool inputIsIdentity = false) const
+      120:  372:    inline void applyThisOnTheLeft(Dest& dst, Workspace& workspace, bool inputIsIdentity = false) const
         -:  373:    {
-     1490:  374:      if(inputIsIdentity && m_reverse)
+      120:  374:      if(inputIsIdentity && m_reverse)
     #####:  375:        inputIsIdentity = false;
         -:  376:      // if the entries are large enough, then apply the reflectors by block
-     1490:  377:      if(m_length>=BlockSize && dst.cols()>1)
+      120:  377:      if(m_length>=BlockSize && dst.cols()>1)
         -:  378:      {
         -:  379:        // Make sure we have at least 2 useful blocks, otherwise it is point-less:
     #####:  380:        Index blockSize = m_length<Index(2*BlockSize) ? (m_length+1)/2 : Index(BlockSize);
@@ -412,25 +412,25 @@
     #####:  408:      }
         -:  409:      else
         -:  410:      {
-     1490:  411:        workspace.resize(dst.cols());
-     8622:  412:        for(Index k = 0; k < m_length; ++k)
+      120:  411:        workspace.resize(dst.cols());
+      598:  412:        for(Index k = 0; k < m_length; ++k)
         -:  413:        {
-     7132:  414:          Index actual_k = m_reverse ? k : m_length-k-1;
-     7132:  415:          Index dstRows = rows()-m_shift-actual_k;
+      478:  414:          Index actual_k = m_reverse ? k : m_length-k-1;
+      478:  415:          Index dstRows = rows()-m_shift-actual_k;
         -:  416:
-     7132:  417:          if (inputIsIdentity)
+      478:  417:          if (inputIsIdentity)
         -:  418:          {
     #####:  419:            Block<Dest, Dynamic, Dynamic> sub_dst = dst.bottomRightCorner(dstRows, dstRows);
     #####:  420:            sub_dst.applyHouseholderOnTheLeft(essentialVector(actual_k), m_coeffs.coeff(actual_k), workspace.data());
     #####:  421:          }
         -:  422:          else
         -:  423:          {
-     7132:  424:            auto sub_dst = dst.bottomRows(dstRows);
-     7132:  425:            sub_dst.applyHouseholderOnTheLeft(essentialVector(actual_k), m_coeffs.coeff(actual_k), workspace.data());
+      478:  424:            auto sub_dst = dst.bottomRows(dstRows);
+      478:  425:            sub_dst.applyHouseholderOnTheLeft(essentialVector(actual_k), m_coeffs.coeff(actual_k), workspace.data());
         -:  426:          }
-     7132:  427:        }
+      478:  427:        }
         -:  428:      }
-     1490:  429:    }
+      120:  429:    }
         -:  430:
         -:  431:    /** \brief Computes the product of a Householder sequence with a matrix.
         -:  432:      * \param[in]  other  %Matrix being multiplied.
@@ -460,10 +460,10 @@
         -:  456:      * \sa length()
         -:  457:      */
         -:  458:    EIGEN_DEVICE_FUNC
-     4470:  459:    HouseholderSequence& setLength(Index length)
+      360:  459:    HouseholderSequence& setLength(Index length)
         -:  460:    {
-     4470:  461:      m_length = length;
-     4470:  462:      return *this;
+      360:  461:      m_length = length;
+      360:  462:      return *this;
         -:  463:    }
         -:  464:
         -:  465:    /** \brief Sets the shift of the Householder sequence.
@@ -478,10 +478,10 @@
         -:  474:      * \sa shift()
         -:  475:      */
         -:  476:    EIGEN_DEVICE_FUNC
-     2980:  477:    HouseholderSequence& setShift(Index shift)
+      240:  477:    HouseholderSequence& setShift(Index shift)
         -:  478:    {
-     2980:  479:      m_shift = shift;
-     2980:  480:      return *this;
+      240:  479:      m_shift = shift;
+      240:  480:      return *this;
         -:  481:    }
         -:  482:
         -:  483:    EIGEN_DEVICE_FUNC
@@ -505,10 +505,10 @@
         -:  501:      *
         -:  502:      * \sa reverseFlag(), transpose(), adjoint()
         -:  503:      */
-     1490:  504:    HouseholderSequence& setReverseFlag(bool reverse)
+      120:  504:    HouseholderSequence& setReverseFlag(bool reverse)
         -:  505:    {
-     1490:  506:      m_reverse = reverse;
-     1490:  507:      return *this;
+      120:  506:      m_reverse = reverse;
+      120:  507:      return *this;
         -:  508:    }
         -:  509:
         -:  510:    bool reverseFlag() const { return m_reverse; }     /**< \internal \brief Returns the reverse flag. */

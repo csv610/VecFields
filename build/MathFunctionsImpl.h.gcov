@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/Core/MathFunctionsImpl.h
-        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
-        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
-        -:    0:Runs:4
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
         -:    1:// This file is part of Eigen, a lightweight C++ template library
         -:    2:// for linear algebra.
         -:    3://
@@ -219,38 +219,38 @@
         -:  215:
         -:  216:template<typename RealScalar>
         -:  217:EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-     1192:  218:RealScalar positive_real_hypot(const RealScalar& x, const RealScalar& y)
+    #####:  218:RealScalar positive_real_hypot(const RealScalar& x, const RealScalar& y)
         -:  219:{
         -:  220:  // IEEE IEC 6059 special cases.
-     1192:  221:  if ((numext::isinf)(x) || (numext::isinf)(y))
+    #####:  221:  if ((numext::isinf)(x) || (numext::isinf)(y))
     #####:  222:    return NumTraits<RealScalar>::infinity();
-     1192:  223:  if ((numext::isnan)(x) || (numext::isnan)(y))
+    #####:  223:  if ((numext::isnan)(x) || (numext::isnan)(y))
     #####:  224:    return NumTraits<RealScalar>::quiet_NaN();
         -:  225:    
         -:  226:  EIGEN_USING_STD(sqrt);
         -:  227:  RealScalar p, qp;
-     1192:  228:  p = numext::maxi(x,y);
-     1192:  229:  if(numext::is_exactly_zero(p)) return RealScalar(0);
-     1192:  230:  qp = numext::mini(y,x) / p;
-     1192:  231:  return p * sqrt(RealScalar(1) + qp*qp);
-     1192:  232:}
+    #####:  228:  p = numext::maxi(x,y);
+    #####:  229:  if(numext::is_exactly_zero(p)) return RealScalar(0);
+    #####:  230:  qp = numext::mini(y,x) / p;
+    #####:  231:  return p * sqrt(RealScalar(1) + qp*qp);
+    #####:  232:}
         -:  233:
         -:  234:template<typename Scalar>
         -:  235:struct hypot_impl
         -:  236:{
         -:  237:  typedef typename NumTraits<Scalar>::Real RealScalar;
         -:  238:  static EIGEN_DEVICE_FUNC
-     1192:  239:  inline RealScalar run(const Scalar& x, const Scalar& y)
+    #####:  239:  inline RealScalar run(const Scalar& x, const Scalar& y)
         -:  240:  {
         -:  241:    EIGEN_USING_STD(abs);
-     1192:  242:    return positive_real_hypot<RealScalar>(abs(x), abs(y));
+    #####:  242:    return positive_real_hypot<RealScalar>(abs(x), abs(y));
         -:  243:  }
         -:  244:};
         -:  245:
         -:  246:// Generic complex sqrt implementation that correctly handles corner cases
         -:  247:// according to https://en.cppreference.com/w/cpp/numeric/complex/sqrt
         -:  248:template<typename T>
-        -:  249:EIGEN_DEVICE_FUNC std::complex<T> complex_sqrt(const std::complex<T>& z) {
+    #####:  249:EIGEN_DEVICE_FUNC std::complex<T> complex_sqrt(const std::complex<T>& z) {
         -:  250:  // Computes the principal sqrt of the input.
         -:  251:  //
         -:  252:  // For a complex square root of the number x + i*y. We want to find real
@@ -273,16 +273,16 @@
         -:  269:  //   if x > 0:  u = w, v = y / (2 * w)
         -:  270:  //   if x < 0:  u = |y| / (2 * w), v = sign(y) * w
         -:  271:
-        -:  272:  const T x = numext::real(z);
-        -:  273:  const T y = numext::imag(z);
-        -:  274:  const T zero = T(0);
-        -:  275:  const T w = numext::sqrt(T(0.5) * (numext::abs(x) + numext::hypot(x, y)));
+    #####:  272:  const T x = numext::real(z);
+    #####:  273:  const T y = numext::imag(z);
+    #####:  274:  const T zero = T(0);
+    #####:  275:  const T w = numext::sqrt(T(0.5) * (numext::abs(x) + numext::hypot(x, y)));
         -:  276:
-        -:  277:  return
-        -:  278:    (numext::isinf)(y) ? std::complex<T>(NumTraits<T>::infinity(), y)
-        -:  279:      : numext::is_exactly_zero(x) ? std::complex<T>(w, y < zero ? -w : w)
-        -:  280:                                   : x > zero ? std::complex<T>(w, y / (2 * w))
-        -:  281:      : std::complex<T>(numext::abs(y) / (2 * w), y < zero ? -w : w );
+    #####:  277:  return
+    #####:  278:    (numext::isinf)(y) ? std::complex<T>(NumTraits<T>::infinity(), y)
+    #####:  279:      : numext::is_exactly_zero(x) ? std::complex<T>(w, y < zero ? -w : w)
+    #####:  280:                                   : x > zero ? std::complex<T>(w, y / (2 * w))
+    #####:  281:      : std::complex<T>(numext::abs(y) / (2 * w), y < zero ? -w : w );
         -:  282:}
         -:  283:
         -:  284:// Generic complex rsqrt implementation.

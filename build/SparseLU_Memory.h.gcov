@@ -1,0 +1,233 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/SparseLU/SparseLU_Memory.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2012 Désiré Nuentsa-Wakam <desire.nuentsa_wakam@inria.fr>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:/* 
+        -:   11: 
+        -:   12: * NOTE: This file is the modified version of [s,d,c,z]memory.c files in SuperLU 
+        -:   13: 
+        -:   14: * -- SuperLU routine (version 3.1) --
+        -:   15: * Univ. of California Berkeley, Xerox Palo Alto Research Center,
+        -:   16: * and Lawrence Berkeley National Lab.
+        -:   17: * August 1, 2008
+        -:   18: *
+        -:   19: * Copyright (c) 1994 by Xerox Corporation.  All rights reserved.
+        -:   20: *
+        -:   21: * THIS MATERIAL IS PROVIDED AS IS, WITH ABSOLUTELY NO WARRANTY
+        -:   22: * EXPRESSED OR IMPLIED.  ANY USE IS AT YOUR OWN RISK.
+        -:   23: *
+        -:   24: * Permission is hereby granted to use or copy this program for any
+        -:   25: * purpose, provided the above notices are retained on all copies.
+        -:   26: * Permission to modify the code and to distribute modified code is
+        -:   27: * granted, provided the above notices are retained, and a notice that
+        -:   28: * the code was modified is included with the above copyright notice.
+        -:   29: */
+        -:   30:
+        -:   31:#ifndef EIGEN_SPARSELU_MEMORY
+        -:   32:#define EIGEN_SPARSELU_MEMORY
+        -:   33:
+        -:   34:// IWYU pragma: private
+        -:   35:#include "./InternalHeaderCheck.h"
+        -:   36:
+        -:   37:namespace Eigen {
+        -:   38:namespace internal {
+        -:   39:  
+        -:   40:enum { LUNoMarker = 3 };
+        -:   41:enum {emptyIdxLU = -1};
+    #####:   42:inline Index LUnumTempV(Index& m, Index& w, Index& t, Index& b)
+        -:   43:{
+    #####:   44:  return (std::max)(m, (t+b)*w);
+        -:   45:}
+        -:   46:
+        -:   47:template< typename Scalar>
+        -:   48:inline Index LUTempSpace(Index&m, Index& w)
+        -:   49:{
+        -:   50:  return (2*w + 4 + LUNoMarker) * m * sizeof(Index) + (w + 1) * m * sizeof(Scalar);
+        -:   51:}
+        -:   52:
+        -:   53:
+        -:   54:
+        -:   55:
+        -:   56:/** 
+        -:   57:  * Expand the existing storage to accommodate more fill-ins
+        -:   58:  * \param vec Valid pointer to the vector to allocate or expand
+        -:   59:  * \param[in,out] length  At input, contain the current length of the vector that is to be increased. At output, length of the newly allocated vector
+        -:   60:  * \param[in] nbElts Current number of elements in the factors
+        -:   61:  * \param keep_prev  1: use length  and do not expand the vector; 0: compute new_len and expand
+        -:   62:  * \param[in,out] num_expansions Number of times the memory has been expanded
+        -:   63:  */
+        -:   64:template <typename Scalar, typename StorageIndex>
+        -:   65:template <typename VectorType>
+    #####:   66:Index  SparseLUImpl<Scalar,StorageIndex>::expand(VectorType& vec, Index& length, Index nbElts, Index keep_prev, Index& num_expansions) 
+        -:   67:{
+        -:   68:  
+    #####:   69:  float alpha = 1.5; // Ratio of the memory increase 
+        -:   70:  Index new_len; // New size of the allocated memory
+        -:   71:  
+    #####:   72:  if(num_expansions == 0 || keep_prev) 
+    #####:   73:    new_len = length ; // First time allocate requested
+        -:   74:  else 
+    #####:   75:    new_len = (std::max)(length+1,Index(alpha * length));
+        -:   76:  
+    #####:   77:  VectorType old_vec; // Temporary vector to hold the previous values   
+    #####:   78:  if (nbElts > 0 )
+    #####:   79:    old_vec = vec.segment(0,nbElts); 
+        -:   80:  
+        -:   81:  //Allocate or expand the current vector
+        -:   82:#ifdef EIGEN_EXCEPTIONS
+        -:   83:  try
+        -:   84:#endif
+        -:   85:  {
+    #####:   86:    vec.resize(new_len); 
+    #####:   87:  }
+        -:   88:#ifdef EIGEN_EXCEPTIONS
+        -:   89:  catch(std::bad_alloc& )
+        -:   90:#else
+        -:   91:  if(!vec.size())
+        -:   92:#endif
+        -:   93:  {
+    #####:   94:    if (!num_expansions)
+        -:   95:    {
+        -:   96:      // First time to allocate from LUMemInit()
+        -:   97:      // Let LUMemInit() deals with it.
+    #####:   98:      return -1;
+        -:   99:    }
+    #####:  100:    if (keep_prev)
+        -:  101:    {
+        -:  102:      // In this case, the memory length should not not be reduced
+    #####:  103:      return new_len;
+        -:  104:    }
+        -:  105:    else 
+        -:  106:    {
+        -:  107:      // Reduce the size and increase again 
+    #####:  108:      Index tries = 0; // Number of attempts
+    #####:  109:      do 
+        -:  110:      {
+    #####:  111:        alpha = (alpha + 1)/2;
+    #####:  112:        new_len = (std::max)(length+1,Index(alpha * length));
+        -:  113:#ifdef EIGEN_EXCEPTIONS
+        -:  114:        try
+        -:  115:#endif
+        -:  116:        {
+    #####:  117:          vec.resize(new_len); 
+    #####:  118:        }
+        -:  119:#ifdef EIGEN_EXCEPTIONS
+        -:  120:        catch(std::bad_alloc& )
+        -:  121:#else
+        -:  122:        if (!vec.size())
+        -:  123:#endif
+        -:  124:        {
+    #####:  125:          tries += 1; 
+    #####:  126:          if ( tries > 10) return new_len; 
+    #####:  127:        }
+    #####:  128:      } while (!vec.size());
+        -:  129:    }
+    #####:  130:  }
+        -:  131:  //Copy the previous values to the newly allocated space 
+    #####:  132:  if (nbElts > 0)
+    #####:  133:    vec.segment(0, nbElts) = old_vec;   
+        -:  134:   
+        -:  135:  
+    #####:  136:  length  = new_len;
+    #####:  137:  if(num_expansions) ++num_expansions;
+    #####:  138:  return 0; 
+    #####:  139:}
+        -:  140:
+        -:  141:/**
+        -:  142: * \brief  Allocate various working space for the numerical factorization phase.
+        -:  143: * \param m number of rows of the input matrix 
+        -:  144: * \param n number of columns 
+        -:  145: * \param annz number of initial nonzeros in the matrix 
+        -:  146: * \param lwork  if lwork=-1, this routine returns an estimated size of the required memory
+        -:  147: * \param glu persistent data to facilitate multiple factors : will be deleted later ??
+        -:  148: * \param fillratio estimated ratio of fill in the factors
+        -:  149: * \param panel_size Size of a panel
+        -:  150: * \return an estimated size of the required memory if lwork = -1; otherwise, return the size of actually allocated memory when allocation failed, and 0 on success
+        -:  151: * \note Unlike SuperLU, this routine does not support successive factorization with the same pattern and the same row permutation
+        -:  152: */
+        -:  153:template <typename Scalar, typename StorageIndex>
+    #####:  154:Index SparseLUImpl<Scalar,StorageIndex>::memInit(Index m, Index n, Index annz, Index lwork, Index fillratio, Index panel_size,  GlobalLU_t& glu)
+        -:  155:{
+    #####:  156:  Index& num_expansions = glu.num_expansions; //No memory expansions so far
+    #####:  157:  num_expansions = 0;
+    #####:  158:  glu.nzumax = glu.nzlumax = (std::min)(fillratio * (annz+1) / n, m) * n; // estimated number of nonzeros in U 
+    #####:  159:  glu.nzlmax = (std::max)(Index(4), fillratio) * (annz+1) / 4; // estimated  nnz in L factor
+        -:  160:  // Return the estimated size to the user if necessary
+        -:  161:  Index tempSpace;
+    #####:  162:  tempSpace = (2*panel_size + 4 + LUNoMarker) * m * sizeof(Index) + (panel_size + 1) * m * sizeof(Scalar);
+    #####:  163:  if (lwork == emptyIdxLU) 
+        -:  164:  {
+        -:  165:    Index estimated_size;
+    #####:  166:    estimated_size = (5 * n + 5) * sizeof(Index)  + tempSpace
+    #####:  167:                    + (glu.nzlmax + glu.nzumax) * sizeof(Index) + (glu.nzlumax+glu.nzumax) *  sizeof(Scalar) + n; 
+    #####:  168:    return estimated_size;
+        -:  169:  }
+        -:  170:  
+        -:  171:  // Setup the required space 
+        -:  172:  
+        -:  173:  // First allocate Integer pointers for L\U factors
+    #####:  174:  glu.xsup.resize(n+1);
+    #####:  175:  glu.supno.resize(n+1);
+    #####:  176:  glu.xlsub.resize(n+1);
+    #####:  177:  glu.xlusup.resize(n+1);
+    #####:  178:  glu.xusub.resize(n+1);
+        -:  179:
+        -:  180:  // Reserve memory for L/U factors
+    #####:  181:  do 
+        -:  182:  {
+    #####:  183:    if(     (expand<ScalarVector>(glu.lusup, glu.nzlumax, 0, 0, num_expansions)<0)
+    #####:  184:        ||  (expand<ScalarVector>(glu.ucol,  glu.nzumax,  0, 0, num_expansions)<0)
+    #####:  185:        ||  (expand<IndexVector> (glu.lsub,  glu.nzlmax,  0, 0, num_expansions)<0)
+    #####:  186:        ||  (expand<IndexVector> (glu.usub,  glu.nzumax,  0, 1, num_expansions)<0) )
+        -:  187:    {
+        -:  188:      //Reduce the estimated size and retry
+    #####:  189:      glu.nzlumax /= 2;
+    #####:  190:      glu.nzumax /= 2;
+    #####:  191:      glu.nzlmax /= 2;
+    #####:  192:      if (glu.nzlumax < annz ) return glu.nzlumax; 
+    #####:  193:    }
+    #####:  194:  } while (!glu.lusup.size() || !glu.ucol.size() || !glu.lsub.size() || !glu.usub.size());
+        -:  195:  
+    #####:  196:  ++num_expansions;
+    #####:  197:  return 0;
+        -:  198:  
+    #####:  199:} // end LuMemInit
+        -:  200:
+        -:  201:/** 
+        -:  202: * \brief Expand the existing storage 
+        -:  203: * \param vec vector to expand 
+        -:  204: * \param[in,out] maxlen On input, previous size of vec (Number of elements to copy ). on output, new size
+        -:  205: * \param nbElts current number of elements in the vector.
+        -:  206: * \param memtype Type of the element to expand
+        -:  207: * \param num_expansions Number of expansions 
+        -:  208: * \return 0 on success, > 0 size of the memory allocated so far
+        -:  209: */
+        -:  210:template <typename Scalar, typename StorageIndex>
+        -:  211:template <typename VectorType>
+    #####:  212:Index SparseLUImpl<Scalar,StorageIndex>::memXpand(VectorType& vec, Index& maxlen, Index nbElts, MemType memtype, Index& num_expansions)
+        -:  213:{
+        -:  214:  Index failed_size; 
+    #####:  215:  if (memtype == USUB)
+    #####:  216:     failed_size = this->expand<VectorType>(vec, maxlen, nbElts, 1, num_expansions);
+        -:  217:  else
+    #####:  218:    failed_size = this->expand<VectorType>(vec, maxlen, nbElts, 0, num_expansions);
+        -:  219:
+    #####:  220:  if (failed_size)
+    #####:  221:    return failed_size; 
+        -:  222:  
+    #####:  223:  return 0 ;  
+    #####:  224:}
+        -:  225:
+        -:  226:} // end namespace internal
+        -:  227:
+        -:  228:} // end namespace Eigen
+        -:  229:#endif // EIGEN_SPARSELU_MEMORY

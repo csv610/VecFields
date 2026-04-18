@@ -1,0 +1,59 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/include/directional/power_to_raw.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Directional, a library for directional field processing.
+        -:    2:// Copyright (C) 2018 Amir Vaxman <avaxman@gmail.com>
+        -:    3://
+        -:    4:// This Source Code Form is subject to the terms of the Mozilla Public License
+        -:    5:// v. 2.0. If a copy of the MPL was not distributed with this file, You can
+        -:    6:// obtain one at http://mozilla.org/MPL/2.0/.
+        -:    7:
+        -:    8:#ifndef DIRECTIONAL_POWER_TO_RAW_H
+        -:    9:#define DIRECTIONAL_POWER_TO_RAW_H
+        -:   10:
+        -:   11:#include <numbers>
+        -:   12:#include <directional/TangentBundle.h>
+        -:   13:#include <directional/CartesianField.h>
+        -:   14:
+        -:   15:namespace directional
+        -:   16:{
+        -:   17:// Converts the power complex representation to raw representation.
+        -:   18:// Input:
+        -:   19://  powerField: a POWER_FIELD field object
+        -:   20://  N: the degree of the field.
+        -:   21://  normalize: whether to produce a normalized result (length = 1)
+        -:   22:// Output:
+        -:   23://  rawField: a RAW_FIELD object representing the (CCW sorted) roots of the power field.
+        1:   24:inline void power_to_raw(const directional::CartesianField& powerField,
+        -:   25:                         int N,
+        -:   26:                         directional::CartesianField& rawField,
+        -:   27:                         bool normalize=false)
+        -:   28:{
+        2:   29:    assert(powerField.fieldType==fieldTypeEnum::POWER_FIELD && "The input field should be a power/PolyVector field");
+        1:   30:    rawField.init(*(powerField.tb), fieldTypeEnum::RAW_FIELD,N);
+        1:   31:    Eigen::MatrixXcd intFieldComplex(powerField.intField.rows(),N);
+        1:   32:    Eigen::VectorXcd complexPowerField(powerField.intField.rows());
+        -:   33:    
+        -:   34:    //power fields are represented as -u^N since they are a special case of PVs.
+        1:   35:    complexPowerField.array().real()=-powerField.intField.col(0);
+        1:   36:    complexPowerField.array().imag()=-powerField.intField.col(1);
+        1:   37:    intFieldComplex.col(0)=pow(complexPowerField.array(),1.0/(double)N);
+        4:   38:    for (int i=1;i<N;i++)
+        3:   39:        intFieldComplex.col(i)=intFieldComplex.col(0)*exp(std::complex<double>(0,2*std::numbers::pi*(double)i/(double)N));
+        -:   40:    
+        1:   41:    if (normalize)
+    #####:   42:        intFieldComplex.array()/=intFieldComplex.array().abs();
+        -:   43:    
+        1:   44:    Eigen::MatrixXd intField(intFieldComplex.rows(),2*N);
+        5:   45:    for (int i=0;i<N;i++){
+        4:   46:        intField.col(2*i)=intFieldComplex.col(i).real();
+        4:   47:        intField.col(2*i+1)=intFieldComplex.col(i).imag();
+        4:   48:    }
+        -:   49:    
+        1:   50:    rawField.set_intrinsic_field(intField);
+        1:   51:}
+        -:   52:
+        -:   53:}
+        -:   54:
+        -:   55:#endif

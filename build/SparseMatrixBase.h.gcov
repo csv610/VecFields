@@ -1,0 +1,404 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/SparseCore/SparseMatrixBase.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2008-2014 Gael Guennebaud <gael.guennebaud@inria.fr>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:#ifndef EIGEN_SPARSEMATRIXBASE_H
+        -:   11:#define EIGEN_SPARSEMATRIXBASE_H
+        -:   12:
+        -:   13:// IWYU pragma: private
+        -:   14:#include "./InternalHeaderCheck.h"
+        -:   15:
+        -:   16:namespace Eigen { 
+        -:   17:
+        -:   18:/** \ingroup SparseCore_Module
+        -:   19:  *
+        -:   20:  * \class SparseMatrixBase
+        -:   21:  *
+        -:   22:  * \brief Base class of any sparse matrices or sparse expressions
+        -:   23:  *
+        -:   24:  * \tparam Derived is the derived type, e.g. a sparse matrix type, or an expression, etc.
+        -:   25:  *
+        -:   26:  * This class can be extended with the help of the plugin mechanism described on the page
+        -:   27:  * \ref TopicCustomizing_Plugins by defining the preprocessor symbol \c EIGEN_SPARSEMATRIXBASE_PLUGIN.
+        -:   28:  */
+        -:   29:template<typename Derived> class SparseMatrixBase
+        -:   30:  : public EigenBase<Derived>
+        -:   31:{
+        -:   32:  public:
+        -:   33:
+        -:   34:    typedef typename internal::traits<Derived>::Scalar Scalar;
+        -:   35:    
+        -:   36:    /** The numeric type of the expression' coefficients, e.g. float, double, int or std::complex<float>, etc.
+        -:   37:      *
+        -:   38:      * It is an alias for the Scalar type */
+        -:   39:    typedef Scalar value_type;
+        -:   40:    
+        -:   41:    typedef typename internal::packet_traits<Scalar>::type PacketScalar;
+        -:   42:    typedef typename internal::traits<Derived>::StorageKind StorageKind;
+        -:   43:
+        -:   44:    /** The integer type used to \b store indices within a SparseMatrix.
+        -:   45:      * For a \c SparseMatrix<Scalar,Options,IndexType> it an alias of the third template parameter \c IndexType. */
+        -:   46:    typedef typename internal::traits<Derived>::StorageIndex StorageIndex;
+        -:   47:
+        -:   48:    typedef typename internal::add_const_on_value_type_if_arithmetic<
+        -:   49:                         typename internal::packet_traits<Scalar>::type
+        -:   50:                     >::type PacketReturnType;
+        -:   51:
+        -:   52:    typedef SparseMatrixBase StorageBaseType;
+        -:   53:
+        -:   54:    typedef Matrix<StorageIndex,Dynamic,1> IndexVector;
+        -:   55:    typedef Matrix<Scalar,Dynamic,1> ScalarVector;
+        -:   56:    
+        -:   57:    template<typename OtherDerived>
+        -:   58:    Derived& operator=(const EigenBase<OtherDerived> &other);
+        -:   59:
+        -:   60:    enum {
+        -:   61:
+        -:   62:      RowsAtCompileTime = internal::traits<Derived>::RowsAtCompileTime,
+        -:   63:        /**< The number of rows at compile-time. This is just a copy of the value provided
+        -:   64:          * by the \a Derived type. If a value is not known at compile-time,
+        -:   65:          * it is set to the \a Dynamic constant.
+        -:   66:          * \sa MatrixBase::rows(), MatrixBase::cols(), ColsAtCompileTime, SizeAtCompileTime */
+        -:   67:
+        -:   68:      ColsAtCompileTime = internal::traits<Derived>::ColsAtCompileTime,
+        -:   69:        /**< The number of columns at compile-time. This is just a copy of the value provided
+        -:   70:          * by the \a Derived type. If a value is not known at compile-time,
+        -:   71:          * it is set to the \a Dynamic constant.
+        -:   72:          * \sa MatrixBase::rows(), MatrixBase::cols(), RowsAtCompileTime, SizeAtCompileTime */
+        -:   73:
+        -:   74:
+        -:   75:      SizeAtCompileTime = (internal::size_of_xpr_at_compile_time<Derived>::ret),
+        -:   76:        /**< This is equal to the number of coefficients, i.e. the number of
+        -:   77:          * rows times the number of columns, or to \a Dynamic if this is not
+        -:   78:          * known at compile-time. \sa RowsAtCompileTime, ColsAtCompileTime */
+        -:   79:
+        -:   80:      MaxRowsAtCompileTime = RowsAtCompileTime,
+        -:   81:      MaxColsAtCompileTime = ColsAtCompileTime,
+        -:   82:
+        -:   83:      MaxSizeAtCompileTime = internal::size_at_compile_time(MaxRowsAtCompileTime, MaxColsAtCompileTime),
+        -:   84:
+        -:   85:      IsVectorAtCompileTime = RowsAtCompileTime == 1 || ColsAtCompileTime == 1,
+        -:   86:        /**< This is set to true if either the number of rows or the number of
+        -:   87:          * columns is known at compile-time to be equal to 1. Indeed, in that case,
+        -:   88:          * we are dealing with a column-vector (if there is only one column) or with
+        -:   89:          * a row-vector (if there is only one row). */
+        -:   90:
+        -:   91:      NumDimensions = int(MaxSizeAtCompileTime) == 1 ? 0 : bool(IsVectorAtCompileTime) ? 1 : 2,
+        -:   92:        /**< This value is equal to Tensor::NumDimensions, i.e. 0 for scalars, 1 for vectors,
+        -:   93:         * and 2 for matrices.
+        -:   94:         */
+        -:   95:
+        -:   96:      Flags = internal::traits<Derived>::Flags,
+        -:   97:        /**< This stores expression \ref flags flags which may or may not be inherited by new expressions
+        -:   98:          * constructed from this one. See the \ref flags "list of flags".
+        -:   99:          */
+        -:  100:
+        -:  101:      IsRowMajor = Flags&RowMajorBit ? 1 : 0,
+        -:  102:      
+        -:  103:      InnerSizeAtCompileTime = int(IsVectorAtCompileTime) ? int(SizeAtCompileTime)
+        -:  104:                             : int(IsRowMajor) ? int(ColsAtCompileTime) : int(RowsAtCompileTime),
+        -:  105:
+        -:  106:      #ifndef EIGEN_PARSED_BY_DOXYGEN
+        -:  107:      HasDirectAccess_ = (int(Flags)&DirectAccessBit) ? 1 : 0 // workaround sunCC
+        -:  108:      #endif
+        -:  109:    };
+        -:  110:
+        -:  111:    /** \internal the return type of MatrixBase::adjoint() */
+        -:  112:    typedef std::conditional_t<NumTraits<Scalar>::IsComplex,
+        -:  113:                        CwiseUnaryOp<internal::scalar_conjugate_op<Scalar>, Eigen::Transpose<const Derived> >,
+        -:  114:                        Transpose<const Derived>
+        -:  115:                     > AdjointReturnType;
+        -:  116:    typedef Transpose<Derived> TransposeReturnType;
+        -:  117:    typedef Transpose<const Derived> ConstTransposeReturnType;
+        -:  118:
+        -:  119:    // FIXME storage order do not match evaluator storage order
+        -:  120:    typedef SparseMatrix<Scalar, Flags&RowMajorBit ? RowMajor : ColMajor, StorageIndex> PlainObject;
+        -:  121:
+        -:  122:#ifndef EIGEN_PARSED_BY_DOXYGEN
+        -:  123:    /** This is the "real scalar" type; if the \a Scalar type is already real numbers
+        -:  124:      * (e.g. int, float or double) then \a RealScalar is just the same as \a Scalar. If
+        -:  125:      * \a Scalar is \a std::complex<T> then RealScalar is \a T.
+        -:  126:      *
+        -:  127:      * \sa class NumTraits
+        -:  128:      */
+        -:  129:    typedef typename NumTraits<Scalar>::Real RealScalar;
+        -:  130:
+        -:  131:    /** \internal the return type of coeff()
+        -:  132:      */
+        -:  133:    typedef std::conditional_t<HasDirectAccess_, const Scalar&, Scalar> CoeffReturnType;
+        -:  134:
+        -:  135:    /** \internal Represents a matrix with all coefficients equal to one another*/
+        -:  136:    typedef CwiseNullaryOp<internal::scalar_constant_op<Scalar>,Matrix<Scalar,Dynamic,Dynamic> > ConstantReturnType;
+        -:  137:
+        -:  138:    /** type of the equivalent dense matrix */
+        -:  139:    typedef Matrix<Scalar,RowsAtCompileTime,ColsAtCompileTime> DenseMatrixType;
+        -:  140:    /** type of the equivalent square matrix */
+        -:  141:    typedef Matrix<Scalar, internal::max_size_prefer_dynamic(RowsAtCompileTime, ColsAtCompileTime),
+        -:  142:                           internal::max_size_prefer_dynamic(RowsAtCompileTime, ColsAtCompileTime)> SquareMatrixType;
+        -:  143:
+   142111:  144:    inline const Derived& derived() const { return *static_cast<const Derived*>(this); }
+       38:  145:    inline Derived& derived() { return *static_cast<Derived*>(this); }
+    21972:  146:    inline Derived& const_cast_derived() const
+    21972:  147:    { return *static_cast<Derived*>(const_cast<SparseMatrixBase*>(this)); }
+        -:  148:
+        -:  149:    typedef EigenBase<Derived> Base;
+        -:  150:
+        -:  151:#endif // not EIGEN_PARSED_BY_DOXYGEN
+        -:  152:
+        -:  153:#define EIGEN_CURRENT_STORAGE_BASE_CLASS Eigen::SparseMatrixBase
+        -:  154:#ifdef EIGEN_PARSED_BY_DOXYGEN
+        -:  155:#define EIGEN_DOC_UNARY_ADDONS(METHOD,OP)           /** <p>This method does not change the sparsity of \c *this: the OP is applied to explicitly stored coefficients only. \sa SparseCompressedBase::coeffs() </p> */
+        -:  156:#define EIGEN_DOC_BLOCK_ADDONS_NOT_INNER_PANEL      /** <p> \warning This method returns a read-only expression for any sparse matrices. \sa \ref TutorialSparse_SubMatrices "Sparse block operations" </p> */
+        -:  157:#define EIGEN_DOC_BLOCK_ADDONS_INNER_PANEL_IF(COND) /** <p> \warning This method returns a read-write expression for COND sparse matrices only. Otherwise, the returned expression is read-only. \sa \ref TutorialSparse_SubMatrices "Sparse block operations" </p> */
+        -:  158:#else
+        -:  159:#define EIGEN_DOC_UNARY_ADDONS(X,Y)
+        -:  160:#define EIGEN_DOC_BLOCK_ADDONS_NOT_INNER_PANEL
+        -:  161:#define EIGEN_DOC_BLOCK_ADDONS_INNER_PANEL_IF(COND)
+        -:  162:#endif
+        -:  163:#   include "../plugins/CommonCwiseUnaryOps.inc"
+        -:  164:#   include "../plugins/CommonCwiseBinaryOps.inc"
+        -:  165:#   include "../plugins/MatrixCwiseUnaryOps.inc"
+        -:  166:#   include "../plugins/MatrixCwiseBinaryOps.inc"
+        -:  167:#   include "../plugins/BlockMethods.inc"
+        -:  168:#   ifdef EIGEN_SPARSEMATRIXBASE_PLUGIN
+        -:  169:#     include EIGEN_SPARSEMATRIXBASE_PLUGIN
+        -:  170:#   endif
+        -:  171:#undef EIGEN_CURRENT_STORAGE_BASE_CLASS
+        -:  172:#undef EIGEN_DOC_UNARY_ADDONS
+        -:  173:#undef EIGEN_DOC_BLOCK_ADDONS_NOT_INNER_PANEL
+        -:  174:#undef EIGEN_DOC_BLOCK_ADDONS_INNER_PANEL_IF
+        -:  175:
+        -:  176:    /** \returns the number of rows. \sa cols() */
+      272:  177:    inline Index rows() const { return derived().rows(); }
+        -:  178:    /** \returns the number of columns. \sa rows() */
+       31:  179:    inline Index cols() const { return derived().cols(); }
+        -:  180:    /** \returns the number of coefficients, which is \a rows()*cols().
+        -:  181:      * \sa rows(), cols(). */
+        -:  182:    inline Index size() const { return rows() * cols(); }
+        -:  183:    /** \returns true if either the number of rows or the number of columns is equal to 1.
+        -:  184:      * In other words, this function returns
+        -:  185:      * \code rows()==1 || cols()==1 \endcode
+        -:  186:      * \sa rows(), cols(), IsVectorAtCompileTime. */
+        -:  187:    inline bool isVector() const { return rows()==1 || cols()==1; }
+        -:  188:    /** \returns the size of the storage major dimension,
+        -:  189:      * i.e., the number of columns for a columns major matrix, and the number of rows otherwise */
+      244:  190:    Index outerSize() const { return (int(Flags)&RowMajorBit) ? this->rows() : this->cols(); }
+        -:  191:    /** \returns the size of the inner dimension according to the storage order,
+        -:  192:      * i.e., the number of rows for a columns major matrix, and the number of cols otherwise */
+        3:  193:    Index innerSize() const { return (int(Flags)&RowMajorBit) ? this->cols() : this->rows(); }
+        -:  194:
+       36:  195:    bool isRValue() const { return m_isRValue; }
+       16:  196:    Derived& markAsRValue() { m_isRValue = true; return derived(); }
+        -:  197:
+      145:  198:    SparseMatrixBase() : m_isRValue(false) { /* TODO check flags */ }
+        -:  199:
+        -:  200:    
+        -:  201:    template<typename OtherDerived>
+        -:  202:    Derived& operator=(const ReturnByValue<OtherDerived>& other);
+        -:  203:
+        -:  204:    template<typename OtherDerived>
+        -:  205:    inline Derived& operator=(const SparseMatrixBase<OtherDerived>& other);
+        -:  206:
+        -:  207:    inline Derived& operator=(const Derived& other);
+        -:  208:
+        -:  209:  protected:
+        -:  210:
+        -:  211:    template<typename OtherDerived>
+        -:  212:    inline Derived& assign(const OtherDerived& other);
+        -:  213:
+        -:  214:    template<typename OtherDerived>
+        -:  215:    inline void assignGeneric(const OtherDerived& other);
+        -:  216:
+        -:  217:  public:
+        -:  218:#ifndef EIGEN_NO_IO
+        -:  219:    friend std::ostream & operator << (std::ostream & s, const SparseMatrixBase& m)
+        -:  220:    {
+        -:  221:      typedef typename Derived::Nested Nested;
+        -:  222:      typedef internal::remove_all_t<Nested> NestedCleaned;
+        -:  223:
+        -:  224:      if (Flags&RowMajorBit)
+        -:  225:      {
+        -:  226:        Nested nm(m.derived());
+        -:  227:        internal::evaluator<NestedCleaned> thisEval(nm);
+        -:  228:        for (Index row=0; row<nm.outerSize(); ++row)
+        -:  229:        {
+        -:  230:          Index col = 0;
+        -:  231:          for (typename internal::evaluator<NestedCleaned>::InnerIterator it(thisEval, row); it; ++it)
+        -:  232:          {
+        -:  233:            for ( ; col<it.index(); ++col)
+        -:  234:              s << "0 ";
+        -:  235:            s << it.value() << " ";
+        -:  236:            ++col;
+        -:  237:          }
+        -:  238:          for ( ; col<m.cols(); ++col)
+        -:  239:            s << "0 ";
+        -:  240:          s << std::endl;
+        -:  241:        }
+        -:  242:      }
+        -:  243:      else
+        -:  244:      {
+        -:  245:        Nested nm(m.derived());
+        -:  246:        internal::evaluator<NestedCleaned> thisEval(nm);
+        -:  247:        if (m.cols() == 1) {
+        -:  248:          Index row = 0;
+        -:  249:          for (typename internal::evaluator<NestedCleaned>::InnerIterator it(thisEval, 0); it; ++it)
+        -:  250:          {
+        -:  251:            for ( ; row<it.index(); ++row)
+        -:  252:              s << "0" << std::endl;
+        -:  253:            s << it.value() << std::endl;
+        -:  254:            ++row;
+        -:  255:          }
+        -:  256:          for ( ; row<m.rows(); ++row)
+        -:  257:            s << "0" << std::endl;
+        -:  258:        }
+        -:  259:        else
+        -:  260:        {
+        -:  261:          SparseMatrix<Scalar, RowMajorBit, StorageIndex> trans = m;
+        -:  262:          s << static_cast<const SparseMatrixBase<SparseMatrix<Scalar, RowMajorBit, StorageIndex> >&>(trans);
+        -:  263:        }
+        -:  264:      }
+        -:  265:      return s;
+        -:  266:    }
+        -:  267:#endif
+        -:  268:
+        -:  269:    template<typename OtherDerived>
+        -:  270:    Derived& operator+=(const SparseMatrixBase<OtherDerived>& other);
+        -:  271:    template<typename OtherDerived>
+        -:  272:    Derived& operator-=(const SparseMatrixBase<OtherDerived>& other);
+        -:  273:    
+        -:  274:    template<typename OtherDerived>
+        -:  275:    Derived& operator+=(const DiagonalBase<OtherDerived>& other);
+        -:  276:    template<typename OtherDerived>
+        -:  277:    Derived& operator-=(const DiagonalBase<OtherDerived>& other);
+        -:  278:
+        -:  279:    template<typename OtherDerived>
+        -:  280:    Derived& operator+=(const EigenBase<OtherDerived> &other);
+        -:  281:    template<typename OtherDerived>
+        -:  282:    Derived& operator-=(const EigenBase<OtherDerived> &other);
+        -:  283:
+        -:  284:    Derived& operator*=(const Scalar& other);
+        -:  285:    Derived& operator/=(const Scalar& other);
+        -:  286:
+        -:  287:    template<typename OtherDerived> struct CwiseProductDenseReturnType {
+        -:  288:      typedef CwiseBinaryOp<internal::scalar_product_op<typename ScalarBinaryOpTraits<
+        -:  289:                                                          typename internal::traits<Derived>::Scalar,
+        -:  290:                                                          typename internal::traits<OtherDerived>::Scalar
+        -:  291:                                                        >::ReturnType>,
+        -:  292:                            const Derived,
+        -:  293:                            const OtherDerived
+        -:  294:                          > Type;
+        -:  295:    };
+        -:  296:
+        -:  297:    template<typename OtherDerived>
+        -:  298:    EIGEN_STRONG_INLINE const typename CwiseProductDenseReturnType<OtherDerived>::Type
+        -:  299:    cwiseProduct(const MatrixBase<OtherDerived> &other) const;
+        -:  300:
+        -:  301:    // sparse * diagonal
+        -:  302:    template<typename OtherDerived>
+        -:  303:    const Product<Derived,OtherDerived>
+        -:  304:    operator*(const DiagonalBase<OtherDerived> &other) const
+        -:  305:    { return Product<Derived,OtherDerived>(derived(), other.derived()); }
+        -:  306:
+        -:  307:    // diagonal * sparse
+        -:  308:    template<typename OtherDerived> friend
+        -:  309:    const Product<OtherDerived,Derived>
+        -:  310:    operator*(const DiagonalBase<OtherDerived> &lhs, const SparseMatrixBase& rhs)
+        -:  311:    { return Product<OtherDerived,Derived>(lhs.derived(), rhs.derived()); }
+        -:  312:    
+        -:  313:    // sparse * sparse
+        -:  314:    template<typename OtherDerived>
+        -:  315:    const Product<Derived,OtherDerived,AliasFreeProduct>
+        -:  316:    operator*(const SparseMatrixBase<OtherDerived> &other) const;
+        -:  317:    
+        -:  318:    // sparse * dense
+        -:  319:    template<typename OtherDerived>
+        -:  320:    const Product<Derived,OtherDerived>
+        5:  321:    operator*(const MatrixBase<OtherDerived> &other) const
+        5:  322:    { return Product<Derived,OtherDerived>(derived(), other.derived()); }
+        -:  323:    
+        -:  324:    // dense * sparse
+        -:  325:    template<typename OtherDerived> friend
+        -:  326:    const Product<OtherDerived,Derived>
+    #####:  327:    operator*(const MatrixBase<OtherDerived> &lhs, const SparseMatrixBase& rhs)
+    #####:  328:    { return Product<OtherDerived,Derived>(lhs.derived(), rhs.derived()); }
+        -:  329:    
+        -:  330:     /** \returns an expression of P H P^-1 where H is the matrix represented by \c *this */
+        -:  331:    SparseSymmetricPermutationProduct<Derived,Upper|Lower> twistedBy(const PermutationMatrix<Dynamic,Dynamic,StorageIndex>& perm) const
+        -:  332:    {
+        -:  333:      return SparseSymmetricPermutationProduct<Derived,Upper|Lower>(derived(), perm);
+        -:  334:    }
+        -:  335:
+        -:  336:    template<typename OtherDerived>
+        -:  337:    Derived& operator*=(const SparseMatrixBase<OtherDerived>& other);
+        -:  338:
+        -:  339:    template<int Mode>
+        -:  340:    inline const TriangularView<const Derived, Mode> triangularView() const;
+        -:  341:    
+        -:  342:    template<unsigned int UpLo> struct SelfAdjointViewReturnType { typedef SparseSelfAdjointView<Derived, UpLo> Type; };
+        -:  343:    template<unsigned int UpLo> struct ConstSelfAdjointViewReturnType { typedef const SparseSelfAdjointView<const Derived, UpLo> Type; };
+        -:  344:
+        -:  345:    template<unsigned int UpLo> inline 
+        -:  346:    typename ConstSelfAdjointViewReturnType<UpLo>::Type selfadjointView() const;
+        -:  347:    template<unsigned int UpLo> inline
+        -:  348:    typename SelfAdjointViewReturnType<UpLo>::Type selfadjointView();
+        -:  349:
+        -:  350:    template<typename OtherDerived> Scalar dot(const MatrixBase<OtherDerived>& other) const;
+        -:  351:    template<typename OtherDerived> Scalar dot(const SparseMatrixBase<OtherDerived>& other) const;
+        -:  352:    RealScalar squaredNorm() const;
+        -:  353:    RealScalar norm()  const;
+        -:  354:    RealScalar blueNorm() const;
+        -:  355:
+    #####:  356:    TransposeReturnType transpose() { return TransposeReturnType(derived()); }
+        6:  357:    const ConstTransposeReturnType transpose() const { return ConstTransposeReturnType(derived()); }
+        5:  358:    const AdjointReturnType adjoint() const { return AdjointReturnType(transpose()); }
+        -:  359:
+        -:  360:    DenseMatrixType toDense() const
+        -:  361:    {
+        -:  362:      return DenseMatrixType(derived());
+        -:  363:    }
+        -:  364:
+        -:  365:    template<typename OtherDerived>
+        -:  366:    bool isApprox(const SparseMatrixBase<OtherDerived>& other,
+        -:  367:                  const RealScalar& prec = NumTraits<Scalar>::dummy_precision()) const;
+        -:  368:
+        -:  369:    template<typename OtherDerived>
+        -:  370:    bool isApprox(const MatrixBase<OtherDerived>& other,
+        -:  371:                  const RealScalar& prec = NumTraits<Scalar>::dummy_precision()) const
+        -:  372:    { return toDense().isApprox(other,prec); }
+        -:  373:
+        -:  374:    /** \returns the matrix or vector obtained by evaluating this expression.
+        -:  375:      *
+        -:  376:      * Notice that in the case of a plain matrix or vector (not an expression) this function just returns
+        -:  377:      * a const reference, in order to avoid a useless copy.
+        -:  378:      */
+        -:  379:    inline const typename internal::eval<Derived>::type eval() const
+        -:  380:    { return typename internal::eval<Derived>::type(derived()); }
+        -:  381:
+        -:  382:    Scalar sum() const;
+        -:  383:    
+        -:  384:    inline const SparseView<Derived>
+        -:  385:    pruned(const Scalar& reference = Scalar(0), const RealScalar& epsilon = NumTraits<Scalar>::dummy_precision()) const;
+        -:  386:
+        -:  387:  protected:
+        -:  388:
+        -:  389:    bool m_isRValue;
+        -:  390:
+        -:  391:    static inline StorageIndex convert_index(const Index idx) {
+        -:  392:      return internal::convert_index<StorageIndex>(idx);
+        -:  393:    }
+        -:  394:  private:
+        -:  395:    template<typename Dest> void evalTo(Dest &) const;
+        -:  396:};
+        -:  397:
+        -:  398:} // end namespace Eigen
+        -:  399:
+        -:  400:#endif // EIGEN_SPARSEMATRIXBASE_H

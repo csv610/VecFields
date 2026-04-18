@@ -1,0 +1,70 @@
+        -:    0:Source:/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__numeric/partial_sum.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// -*- C++ -*-
+        -:    2://===----------------------------------------------------------------------===//
+        -:    3://
+        -:    4:// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+        -:    5:// See https://llvm.org/LICENSE.txt for license information.
+        -:    6:// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+        -:    7://
+        -:    8://===----------------------------------------------------------------------===//
+        -:    9:
+        -:   10:#ifndef _LIBCPP___NUMERIC_PARTIAL_SUM_H
+        -:   11:#define _LIBCPP___NUMERIC_PARTIAL_SUM_H
+        -:   12:
+        -:   13:#include <__config>
+        -:   14:#include <__iterator/iterator_traits.h>
+        -:   15:#include <__utility/move.h>
+        -:   16:
+        -:   17:#if !defined(_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER)
+        -:   18:#  pragma GCC system_header
+        -:   19:#endif
+        -:   20:
+        -:   21:_LIBCPP_PUSH_MACROS
+        -:   22:#include <__undef_macros>
+        -:   23:
+        -:   24:_LIBCPP_BEGIN_NAMESPACE_STD
+        -:   25:
+        -:   26:template <class _InputIterator, class _OutputIterator>
+        -:   27:_LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 _OutputIterator
+       11:   28:partial_sum(_InputIterator __first, _InputIterator __last, _OutputIterator __result) {
+       11:   29:  if (__first != __last) {
+       11:   30:    typename iterator_traits<_InputIterator>::value_type __t(*__first);
+       11:   31:    *__result = __t;
+     2775:   32:    for (++__first, (void)++__result; __first != __last; ++__first, (void)++__result) {
+        -:   33:#if _LIBCPP_STD_VER >= 20
+     2764:   34:      __t = std::move(__t) + *__first;
+        -:   35:#else
+        -:   36:      __t = __t + *__first;
+        -:   37:#endif
+     2764:   38:      *__result = __t;
+     2764:   39:    }
+       11:   40:  }
+       11:   41:  return __result;
+        -:   42:}
+        -:   43:
+        -:   44:template <class _InputIterator, class _OutputIterator, class _BinaryOperation>
+        -:   45:_LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 _OutputIterator
+        -:   46:partial_sum(_InputIterator __first, _InputIterator __last, _OutputIterator __result, _BinaryOperation __binary_op) {
+        -:   47:  if (__first != __last) {
+        -:   48:    typename iterator_traits<_InputIterator>::value_type __t(*__first);
+        -:   49:    *__result = __t;
+        -:   50:    for (++__first, (void)++__result; __first != __last; ++__first, (void)++__result) {
+        -:   51:#if _LIBCPP_STD_VER >= 20
+        -:   52:      __t = __binary_op(std::move(__t), *__first);
+        -:   53:#else
+        -:   54:      __t = __binary_op(__t, *__first);
+        -:   55:#endif
+        -:   56:      *__result = __t;
+        -:   57:    }
+        -:   58:  }
+        -:   59:  return __result;
+        -:   60:}
+        -:   61:
+        -:   62:_LIBCPP_END_NAMESPACE_STD
+        -:   63:
+        -:   64:_LIBCPP_POP_MACROS
+        -:   65:
+        -:   66:#endif // _LIBCPP___NUMERIC_PARTIAL_SUM_H

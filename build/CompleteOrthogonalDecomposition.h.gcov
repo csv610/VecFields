@@ -1,0 +1,656 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/eigen/Eigen/src/QR/CompleteOrthogonalDecomposition.h
+        -:    0:Graph:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcno
+        -:    0:Data:./tests/CMakeFiles/vecfields_test_field_processing.dir/test_field_processing.cpp.gcda
+        -:    0:Runs:1
+        -:    1:// This file is part of Eigen, a lightweight C++ template library
+        -:    2:// for linear algebra.
+        -:    3://
+        -:    4:// Copyright (C) 2016 Rasmus Munk Larsen <rmlarsen@google.com>
+        -:    5://
+        -:    6:// This Source Code Form is subject to the terms of the Mozilla
+        -:    7:// Public License v. 2.0. If a copy of the MPL was not distributed
+        -:    8:// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        -:    9:
+        -:   10:#ifndef EIGEN_COMPLETEORTHOGONALDECOMPOSITION_H
+        -:   11:#define EIGEN_COMPLETEORTHOGONALDECOMPOSITION_H
+        -:   12:
+        -:   13:// IWYU pragma: private
+        -:   14:#include "./InternalHeaderCheck.h"
+        -:   15:
+        -:   16:namespace Eigen {
+        -:   17:
+        -:   18:namespace internal {
+        -:   19:template <typename MatrixType_, typename PermutationIndex_>
+        -:   20:struct traits<CompleteOrthogonalDecomposition<MatrixType_, PermutationIndex_> >
+        -:   21:    : traits<MatrixType_> {
+        -:   22:  typedef MatrixXpr XprKind;
+        -:   23:  typedef SolverStorage StorageKind;
+        -:   24:  typedef PermutationIndex_ PermutationIndex;
+        -:   25:  enum { Flags = 0 };
+        -:   26:};
+        -:   27:
+        -:   28:}  // end namespace internal
+        -:   29:
+        -:   30:/** \ingroup QR_Module
+        -:   31:  *
+        -:   32:  * \class CompleteOrthogonalDecomposition
+        -:   33:  *
+        -:   34:  * \brief Complete orthogonal decomposition (COD) of a matrix.
+        -:   35:  *
+        -:   36:  * \tparam MatrixType_ the type of the matrix of which we are computing the COD.
+        -:   37:  *
+        -:   38:  * This class performs a rank-revealing complete orthogonal decomposition of a
+        -:   39:  * matrix  \b A into matrices \b P, \b Q, \b T, and \b Z such that
+        -:   40:  * \f[
+        -:   41:  *  \mathbf{A} \, \mathbf{P} = \mathbf{Q} \,
+        -:   42:  *                     \begin{bmatrix} \mathbf{T} &  \mathbf{0} \\
+        -:   43:  *                                     \mathbf{0} & \mathbf{0} \end{bmatrix} \, \mathbf{Z}
+        -:   44:  * \f]
+        -:   45:  * by using Householder transformations. Here, \b P is a permutation matrix,
+        -:   46:  * \b Q and \b Z are unitary matrices and \b T an upper triangular matrix of
+        -:   47:  * size rank-by-rank. \b A may be rank deficient.
+        -:   48:  *
+        -:   49:  * This class supports the \link InplaceDecomposition inplace decomposition \endlink mechanism.
+        -:   50:  * 
+        -:   51:  * \sa MatrixBase::completeOrthogonalDecomposition()
+        -:   52:  */
+        -:   53:template <typename MatrixType_, typename PermutationIndex_> class CompleteOrthogonalDecomposition
+        -:   54:          : public SolverBase<CompleteOrthogonalDecomposition<MatrixType_, PermutationIndex_> >
+        -:   55:{
+        -:   56: public:
+        -:   57:  typedef MatrixType_ MatrixType;
+        -:   58:  typedef SolverBase<CompleteOrthogonalDecomposition> Base;
+        -:   59:
+        -:   60:  template<typename Derived>
+        -:   61:  friend struct internal::solve_assertion;
+        -:   62:  typedef PermutationIndex_ PermutationIndex;
+        -:   63:  EIGEN_GENERIC_PUBLIC_INTERFACE(CompleteOrthogonalDecomposition)
+        -:   64:  enum {
+        -:   65:    MaxRowsAtCompileTime = MatrixType::MaxRowsAtCompileTime,
+        -:   66:    MaxColsAtCompileTime = MatrixType::MaxColsAtCompileTime
+        -:   67:  };
+        -:   68:  typedef typename internal::plain_diag_type<MatrixType>::type HCoeffsType;
+        -:   69:  typedef PermutationMatrix<ColsAtCompileTime, MaxColsAtCompileTime, PermutationIndex>
+        -:   70:      PermutationType;
+        -:   71:  typedef typename internal::plain_row_type<MatrixType, Index>::type
+        -:   72:      IntRowVectorType;
+        -:   73:  typedef typename internal::plain_row_type<MatrixType>::type RowVectorType;
+        -:   74:  typedef typename internal::plain_row_type<MatrixType, RealScalar>::type
+        -:   75:      RealRowVectorType;
+        -:   76:  typedef HouseholderSequence<
+        -:   77:      MatrixType, internal::remove_all_t<
+        -:   78:                      typename HCoeffsType::ConjugateReturnType>>
+        -:   79:      HouseholderSequenceType;
+        -:   80:  typedef typename MatrixType::PlainObject PlainObject;
+        -:   81:
+        -:   82: public:
+        -:   83:  /**
+        -:   84:   * \brief Default Constructor.
+        -:   85:   *
+        -:   86:   * The default constructor is useful in cases in which the user intends to
+        -:   87:   * perform decompositions via
+        -:   88:   * \c CompleteOrthogonalDecomposition::compute(const* MatrixType&).
+        -:   89:   */
+        -:   90:  CompleteOrthogonalDecomposition() : m_cpqr(), m_zCoeffs(), m_temp() {}
+        -:   91:
+        -:   92:  /** \brief Default Constructor with memory preallocation
+        -:   93:   *
+        -:   94:   * Like the default constructor but with preallocation of the internal data
+        -:   95:   * according to the specified problem \a size.
+        -:   96:   * \sa CompleteOrthogonalDecomposition()
+        -:   97:   */
+        -:   98:  CompleteOrthogonalDecomposition(Index rows, Index cols)
+        -:   99:      : m_cpqr(rows, cols), m_zCoeffs((std::min)(rows, cols)), m_temp(cols) {}
+        -:  100:
+        -:  101:  /** \brief Constructs a complete orthogonal decomposition from a given
+        -:  102:   * matrix.
+        -:  103:   *
+        -:  104:   * This constructor computes the complete orthogonal decomposition of the
+        -:  105:   * matrix \a matrix by calling the method compute(). The default
+        -:  106:   * threshold for rank determination will be used. It is a short cut for:
+        -:  107:   *
+        -:  108:   * \code
+        -:  109:   * CompleteOrthogonalDecomposition<MatrixType> cod(matrix.rows(),
+        -:  110:   *                                                 matrix.cols());
+        -:  111:   * cod.setThreshold(Default);
+        -:  112:   * cod.compute(matrix);
+        -:  113:   * \endcode
+        -:  114:   *
+        -:  115:   * \sa compute()
+        -:  116:   */
+        -:  117:  template <typename InputType>
+    #####:  118:  explicit CompleteOrthogonalDecomposition(const EigenBase<InputType>& matrix)
+    #####:  119:      : m_cpqr(matrix.rows(), matrix.cols()),
+    #####:  120:        m_zCoeffs((std::min)(matrix.rows(), matrix.cols())),
+    #####:  121:        m_temp(matrix.cols())
+    #####:  122:  {
+    #####:  123:    compute(matrix.derived());
+    #####:  124:  }
+        -:  125:
+        -:  126:  /** \brief Constructs a complete orthogonal decomposition from a given matrix
+        -:  127:    *
+        -:  128:    * This overloaded constructor is provided for \link InplaceDecomposition inplace decomposition \endlink when \c MatrixType is a Eigen::Ref.
+        -:  129:    *
+        -:  130:    * \sa CompleteOrthogonalDecomposition(const EigenBase&)
+        -:  131:    */
+        -:  132:  template<typename InputType>
+        -:  133:  explicit CompleteOrthogonalDecomposition(EigenBase<InputType>& matrix)
+        -:  134:    : m_cpqr(matrix.derived()),
+        -:  135:      m_zCoeffs((std::min)(matrix.rows(), matrix.cols())),
+        -:  136:      m_temp(matrix.cols())
+        -:  137:  {
+        -:  138:    computeInPlace();
+        -:  139:  } 
+        -:  140:
+        -:  141:  #ifdef EIGEN_PARSED_BY_DOXYGEN
+        -:  142:  /** This method computes the minimum-norm solution X to a least squares
+        -:  143:   * problem \f[\mathrm{minimize} \|A X - B\|, \f] where \b A is the matrix of
+        -:  144:   * which \c *this is the complete orthogonal decomposition.
+        -:  145:   *
+        -:  146:   * \param b the right-hand sides of the problem to solve.
+        -:  147:   *
+        -:  148:   * \returns a solution.
+        -:  149:   *
+        -:  150:   */
+        -:  151:  template <typename Rhs>
+        -:  152:  inline const Solve<CompleteOrthogonalDecomposition, Rhs> solve(
+        -:  153:      const MatrixBase<Rhs>& b) const;
+        -:  154:  #endif
+        -:  155:
+        -:  156:  HouseholderSequenceType householderQ(void) const;
+    #####:  157:  HouseholderSequenceType matrixQ(void) const { return m_cpqr.householderQ(); }
+        -:  158:
+        -:  159:  /** \returns the matrix \b Z.
+        -:  160:   */
+        -:  161:  MatrixType matrixZ() const {
+        -:  162:    MatrixType Z = MatrixType::Identity(m_cpqr.cols(), m_cpqr.cols());
+        -:  163:    applyZOnTheLeftInPlace<false>(Z);
+        -:  164:    return Z;
+        -:  165:  }
+        -:  166:
+        -:  167:  /** \returns a reference to the matrix where the complete orthogonal
+        -:  168:   * decomposition is stored
+        -:  169:   */
+    #####:  170:  const MatrixType& matrixQTZ() const { return m_cpqr.matrixQR(); }
+        -:  171:
+        -:  172:  /** \returns a reference to the matrix where the complete orthogonal
+        -:  173:   * decomposition is stored.
+        -:  174:   * \warning The strict lower part and \code cols() - rank() \endcode right
+        -:  175:   * columns of this matrix contains internal values.
+        -:  176:   * Only the upper triangular part should be referenced. To get it, use
+        -:  177:   * \code matrixT().template triangularView<Upper>() \endcode
+        -:  178:   * For rank-deficient matrices, use
+        -:  179:   * \code
+        -:  180:   * matrixT().topLeftCorner(rank(), rank()).template triangularView<Upper>()
+        -:  181:   * \endcode
+        -:  182:   */
+    #####:  183:  const MatrixType& matrixT() const { return m_cpqr.matrixQR(); }
+        -:  184:
+        -:  185:  template <typename InputType>
+    #####:  186:  CompleteOrthogonalDecomposition& compute(const EigenBase<InputType>& matrix) {
+        -:  187:    // Compute the column pivoted QR factorization A P = Q R.
+    #####:  188:    m_cpqr.compute(matrix);
+    #####:  189:    computeInPlace();
+    #####:  190:    return *this;
+        -:  191:  }
+        -:  192:
+        -:  193:  /** \returns a const reference to the column permutation matrix */
+    #####:  194:  const PermutationType& colsPermutation() const {
+    #####:  195:    return m_cpqr.colsPermutation();
+        -:  196:  }
+        -:  197:
+        -:  198:    /** \returns the determinant of the matrix of which
+        -:  199:   * *this is the complete orthogonal decomposition. It has only linear
+        -:  200:   * complexity (that is, O(n) where n is the dimension of the square matrix)
+        -:  201:   * as the complete orthogonal decomposition has already been computed.
+        -:  202:   *
+        -:  203:   * \note This is only for square matrices.
+        -:  204:   *
+        -:  205:   * \warning a determinant can be very big or small, so for matrices
+        -:  206:   * of large enough dimension, there is a risk of overflow/underflow.
+        -:  207:   * One way to work around that is to use logAbsDeterminant() instead.
+        -:  208:   *
+        -:  209:   * \sa absDeterminant(), logAbsDeterminant(), MatrixBase::determinant()
+        -:  210:   */
+        -:  211:  typename MatrixType::Scalar determinant() const;
+        -:  212:
+        -:  213:  /** \returns the absolute value of the determinant of the matrix of which
+        -:  214:   * *this is the complete orthogonal decomposition. It has only linear
+        -:  215:   * complexity (that is, O(n) where n is the dimension of the square matrix)
+        -:  216:   * as the complete orthogonal decomposition has already been computed.
+        -:  217:   *
+        -:  218:   * \note This is only for square matrices.
+        -:  219:   *
+        -:  220:   * \warning a determinant can be very big or small, so for matrices
+        -:  221:   * of large enough dimension, there is a risk of overflow/underflow.
+        -:  222:   * One way to work around that is to use logAbsDeterminant() instead.
+        -:  223:   *
+        -:  224:   * \sa determinant(), logAbsDeterminant(), MatrixBase::determinant()
+        -:  225:   */
+        -:  226:  typename MatrixType::RealScalar absDeterminant() const;
+        -:  227:
+        -:  228:  /** \returns the natural log of the absolute value of the determinant of the
+        -:  229:   * matrix of which *this is the complete orthogonal decomposition. It has
+        -:  230:   * only linear complexity (that is, O(n) where n is the dimension of the
+        -:  231:   * square matrix) as the complete orthogonal decomposition has already been
+        -:  232:   * computed.
+        -:  233:   *
+        -:  234:   * \note This is only for square matrices.
+        -:  235:   *
+        -:  236:   * \note This method is useful to work around the risk of overflow/underflow
+        -:  237:   * that's inherent to determinant computation.
+        -:  238:   *
+        -:  239:   * \sa determinant(), absDeterminant(), MatrixBase::determinant()
+        -:  240:   */
+        -:  241:  typename MatrixType::RealScalar logAbsDeterminant() const;
+        -:  242:
+        -:  243:  /** \returns the rank of the matrix of which *this is the complete orthogonal
+        -:  244:   * decomposition.
+        -:  245:   *
+        -:  246:   * \note This method has to determine which pivots should be considered
+        -:  247:   * nonzero. For that, it uses the threshold value that you can control by
+        -:  248:   * calling setThreshold(const RealScalar&).
+        -:  249:   */
+    #####:  250:  inline Index rank() const { return m_cpqr.rank(); }
+        -:  251:
+        -:  252:  /** \returns the dimension of the kernel of the matrix of which *this is the
+        -:  253:   * complete orthogonal decomposition.
+        -:  254:   *
+        -:  255:   * \note This method has to determine which pivots should be considered
+        -:  256:   * nonzero. For that, it uses the threshold value that you can control by
+        -:  257:   * calling setThreshold(const RealScalar&).
+        -:  258:   */
+        -:  259:  inline Index dimensionOfKernel() const { return m_cpqr.dimensionOfKernel(); }
+        -:  260:
+        -:  261:  /** \returns true if the matrix of which *this is the decomposition represents
+        -:  262:   * an injective linear map, i.e. has trivial kernel; false otherwise.
+        -:  263:   *
+        -:  264:   * \note This method has to determine which pivots should be considered
+        -:  265:   * nonzero. For that, it uses the threshold value that you can control by
+        -:  266:   * calling setThreshold(const RealScalar&).
+        -:  267:   */
+        -:  268:  inline bool isInjective() const { return m_cpqr.isInjective(); }
+        -:  269:
+        -:  270:  /** \returns true if the matrix of which *this is the decomposition represents
+        -:  271:   * a surjective linear map; false otherwise.
+        -:  272:   *
+        -:  273:   * \note This method has to determine which pivots should be considered
+        -:  274:   * nonzero. For that, it uses the threshold value that you can control by
+        -:  275:   * calling setThreshold(const RealScalar&).
+        -:  276:   */
+        -:  277:  inline bool isSurjective() const { return m_cpqr.isSurjective(); }
+        -:  278:
+        -:  279:  /** \returns true if the matrix of which *this is the complete orthogonal
+        -:  280:   * decomposition is invertible.
+        -:  281:   *
+        -:  282:   * \note This method has to determine which pivots should be considered
+        -:  283:   * nonzero. For that, it uses the threshold value that you can control by
+        -:  284:   * calling setThreshold(const RealScalar&).
+        -:  285:   */
+        -:  286:  inline bool isInvertible() const { return m_cpqr.isInvertible(); }
+        -:  287:
+        -:  288:  /** \returns the pseudo-inverse of the matrix of which *this is the complete
+        -:  289:   * orthogonal decomposition.
+        -:  290:   * \warning: Do not compute \c this->pseudoInverse()*rhs to solve a linear systems.
+        -:  291:   * It is more efficient and numerically stable to call \c this->solve(rhs).
+        -:  292:   */
+    #####:  293:  inline const Inverse<CompleteOrthogonalDecomposition> pseudoInverse() const
+        -:  294:  {
+    #####:  295:    eigen_assert(m_cpqr.m_isInitialized && "CompleteOrthogonalDecomposition is not initialized.");
+    #####:  296:    return Inverse<CompleteOrthogonalDecomposition>(*this);
+        -:  297:  }
+        -:  298:
+    #####:  299:  inline Index rows() const { return m_cpqr.rows(); }
+    #####:  300:  inline Index cols() const { return m_cpqr.cols(); }
+        -:  301:
+        -:  302:  /** \returns a const reference to the vector of Householder coefficients used
+        -:  303:   * to represent the factor \c Q.
+        -:  304:   *
+        -:  305:   * For advanced uses only.
+        -:  306:   */
+        -:  307:  inline const HCoeffsType& hCoeffs() const { return m_cpqr.hCoeffs(); }
+        -:  308:
+        -:  309:  /** \returns a const reference to the vector of Householder coefficients
+        -:  310:   * used to represent the factor \c Z.
+        -:  311:   *
+        -:  312:   * For advanced uses only.
+        -:  313:   */
+    #####:  314:  const HCoeffsType& zCoeffs() const { return m_zCoeffs; }
+        -:  315:
+        -:  316:  /** Allows to prescribe a threshold to be used by certain methods, such as
+        -:  317:   * rank(), who need to determine when pivots are to be considered nonzero.
+        -:  318:   * Most be called before calling compute().
+        -:  319:   *
+        -:  320:   * When it needs to get the threshold value, Eigen calls threshold(). By
+        -:  321:   * default, this uses a formula to automatically determine a reasonable
+        -:  322:   * threshold. Once you have called the present method
+        -:  323:   * setThreshold(const RealScalar&), your value is used instead.
+        -:  324:   *
+        -:  325:   * \param threshold The new value to use as the threshold.
+        -:  326:   *
+        -:  327:   * A pivot will be considered nonzero if its absolute value is strictly
+        -:  328:   * greater than
+        -:  329:   *  \f$ \vert pivot \vert \leqslant threshold \times \vert maxpivot \vert \f$
+        -:  330:   * where maxpivot is the biggest pivot.
+        -:  331:   *
+        -:  332:   * If you want to come back to the default behavior, call
+        -:  333:   * setThreshold(Default_t)
+        -:  334:   */
+        -:  335:  CompleteOrthogonalDecomposition& setThreshold(const RealScalar& threshold) {
+        -:  336:    m_cpqr.setThreshold(threshold);
+        -:  337:    return *this;
+        -:  338:  }
+        -:  339:
+        -:  340:  /** Allows to come back to the default behavior, letting Eigen use its default
+        -:  341:   * formula for determining the threshold.
+        -:  342:   *
+        -:  343:   * You should pass the special object Eigen::Default as parameter here.
+        -:  344:   * \code qr.setThreshold(Eigen::Default); \endcode
+        -:  345:   *
+        -:  346:   * See the documentation of setThreshold(const RealScalar&).
+        -:  347:   */
+        -:  348:  CompleteOrthogonalDecomposition& setThreshold(Default_t) {
+        -:  349:    m_cpqr.setThreshold(Default);
+        -:  350:    return *this;
+        -:  351:  }
+        -:  352:
+        -:  353:  /** Returns the threshold that will be used by certain methods such as rank().
+        -:  354:   *
+        -:  355:   * See the documentation of setThreshold(const RealScalar&).
+        -:  356:   */
+        -:  357:  RealScalar threshold() const { return m_cpqr.threshold(); }
+        -:  358:
+        -:  359:  /** \returns the number of nonzero pivots in the complete orthogonal
+        -:  360:   * decomposition. Here nonzero is meant in the exact sense, not in a
+        -:  361:   * fuzzy sense. So that notion isn't really intrinsically interesting,
+        -:  362:   * but it is still useful when implementing algorithms.
+        -:  363:   *
+        -:  364:   * \sa rank()
+        -:  365:   */
+        -:  366:  inline Index nonzeroPivots() const { return m_cpqr.nonzeroPivots(); }
+        -:  367:
+        -:  368:  /** \returns the absolute value of the biggest pivot, i.e. the biggest
+        -:  369:   *          diagonal coefficient of R.
+        -:  370:   */
+        -:  371:  inline RealScalar maxPivot() const { return m_cpqr.maxPivot(); }
+        -:  372:
+        -:  373:  /** \brief Reports whether the complete orthogonal decomposition was
+        -:  374:   * successful.
+        -:  375:   *
+        -:  376:   * \note This function always returns \c Success. It is provided for
+        -:  377:   * compatibility
+        -:  378:   * with other factorization routines.
+        -:  379:   * \returns \c Success
+        -:  380:   */
+        -:  381:  ComputationInfo info() const {
+        -:  382:    eigen_assert(m_cpqr.m_isInitialized && "Decomposition is not initialized.");
+        -:  383:    return Success;
+        -:  384:  }
+        -:  385:
+        -:  386:#ifndef EIGEN_PARSED_BY_DOXYGEN
+        -:  387:  template <typename RhsType, typename DstType>
+        -:  388:  void _solve_impl(const RhsType& rhs, DstType& dst) const;
+        -:  389:
+        -:  390:  template<bool Conjugate, typename RhsType, typename DstType>
+        -:  391:  void _solve_impl_transposed(const RhsType &rhs, DstType &dst) const;
+        -:  392:#endif
+        -:  393:
+        -:  394: protected:
+        -:  395:  EIGEN_STATIC_ASSERT_NON_INTEGER(Scalar)
+        -:  396:
+        -:  397:  template<bool Transpose_, typename Rhs>
+    #####:  398:  void _check_solve_assertion(const Rhs& b) const {
+        -:  399:      EIGEN_ONLY_USED_FOR_DEBUG(b);
+    #####:  400:      eigen_assert(m_cpqr.m_isInitialized && "CompleteOrthogonalDecomposition is not initialized.");
+    #####:  401:      eigen_assert((Transpose_?derived().cols():derived().rows())==b.rows() && "CompleteOrthogonalDecomposition::solve(): invalid number of rows of the right hand side matrix b");
+    #####:  402:  }
+        -:  403:
+        -:  404:  void computeInPlace();
+        -:  405:
+        -:  406:  /** Overwrites \b rhs with \f$ \mathbf{Z} * \mathbf{rhs} \f$ or
+        -:  407:   *  \f$ \mathbf{\overline Z} * \mathbf{rhs} \f$ if \c Conjugate 
+        -:  408:   *  is set to \c true.
+        -:  409:   */
+        -:  410:  template <bool Conjugate, typename Rhs>
+        -:  411:  void applyZOnTheLeftInPlace(Rhs& rhs) const;
+        -:  412:
+        -:  413:  /** Overwrites \b rhs with \f$ \mathbf{Z}^* * \mathbf{rhs} \f$.
+        -:  414:   */
+        -:  415:  template <typename Rhs>
+        -:  416:  void applyZAdjointOnTheLeftInPlace(Rhs& rhs) const;
+        -:  417:
+        -:  418:  ColPivHouseholderQR<MatrixType, PermutationIndex> m_cpqr;
+        -:  419:  HCoeffsType m_zCoeffs;
+        -:  420:  RowVectorType m_temp;
+        -:  421:};
+        -:  422:
+        -:  423:template <typename MatrixType, typename PermutationIndex>
+        -:  424:typename MatrixType::Scalar
+        -:  425:CompleteOrthogonalDecomposition<MatrixType, PermutationIndex>::determinant() const {
+        -:  426:  return m_cpqr.determinant();
+        -:  427:}
+        -:  428:
+        -:  429:template <typename MatrixType, typename PermutationIndex>
+        -:  430:typename MatrixType::RealScalar
+        -:  431:CompleteOrthogonalDecomposition<MatrixType, PermutationIndex>::absDeterminant() const {
+        -:  432:  return m_cpqr.absDeterminant();
+        -:  433:}
+        -:  434:
+        -:  435:template <typename MatrixType, typename PermutationIndex>
+        -:  436:typename MatrixType::RealScalar
+        -:  437:CompleteOrthogonalDecomposition<MatrixType, PermutationIndex>::logAbsDeterminant() const {
+        -:  438:  return m_cpqr.logAbsDeterminant();
+        -:  439:}
+        -:  440:
+        -:  441:/** Performs the complete orthogonal decomposition of the given matrix \a
+        -:  442: * matrix. The result of the factorization is stored into \c *this, and a
+        -:  443: * reference to \c *this is returned.
+        -:  444: *
+        -:  445: * \sa class CompleteOrthogonalDecomposition,
+        -:  446: * CompleteOrthogonalDecomposition(const MatrixType&)
+        -:  447: */
+        -:  448:template <typename MatrixType, typename PermutationIndex>
+    #####:  449:void CompleteOrthogonalDecomposition<MatrixType, PermutationIndex>::computeInPlace()
+        -:  450:{
+    #####:  451:  eigen_assert(m_cpqr.cols() <= NumTraits<PermutationIndex>::highest());
+        -:  452:
+    #####:  453:  const Index rank = m_cpqr.rank();
+    #####:  454:  const Index cols = m_cpqr.cols();
+    #####:  455:  const Index rows = m_cpqr.rows();
+    #####:  456:  m_zCoeffs.resize((std::min)(rows, cols));
+    #####:  457:  m_temp.resize(cols);
+        -:  458:
+    #####:  459:  if (rank < cols) {
+        -:  460:    // We have reduced the (permuted) matrix to the form
+        -:  461:    //   [R11 R12]
+        -:  462:    //   [ 0  R22]
+        -:  463:    // where R11 is r-by-r (r = rank) upper triangular, R12 is
+        -:  464:    // r-by-(n-r), and R22 is empty or the norm of R22 is negligible.
+        -:  465:    // We now compute the complete orthogonal decomposition by applying
+        -:  466:    // Householder transformations from the right to the upper trapezoidal
+        -:  467:    // matrix X = [R11 R12] to zero out R12 and obtain the factorization
+        -:  468:    // [R11 R12] = [T11 0] * Z, where T11 is r-by-r upper triangular and
+        -:  469:    // Z = Z(0) * Z(1) ... Z(r-1) is an n-by-n orthogonal matrix.
+        -:  470:    // We store the data representing Z in R12 and m_zCoeffs.
+    #####:  471:    for (Index k = rank - 1; k >= 0; --k) {
+    #####:  472:      if (k != rank - 1) {
+        -:  473:        // Given the API for Householder reflectors, it is more convenient if
+        -:  474:        // we swap the leading parts of columns k and r-1 (zero-based) to form
+        -:  475:        // the matrix X_k = [X(0:k, k), X(0:k, r:n)]
+    #####:  476:        m_cpqr.m_qr.col(k).head(k + 1).swap(
+    #####:  477:            m_cpqr.m_qr.col(rank - 1).head(k + 1));
+    #####:  478:      }
+        -:  479:      // Construct Householder reflector Z(k) to zero out the last row of X_k,
+        -:  480:      // i.e. choose Z(k) such that
+        -:  481:      // [X(k, k), X(k, r:n)] * Z(k) = [beta, 0, .., 0].
+        -:  482:      RealScalar beta;
+    #####:  483:      m_cpqr.m_qr.row(k)
+    #####:  484:          .tail(cols - rank + 1)
+    #####:  485:          .makeHouseholderInPlace(m_zCoeffs(k), beta);
+    #####:  486:      m_cpqr.m_qr(k, rank - 1) = beta;
+    #####:  487:      if (k > 0) {
+        -:  488:        // Apply Z(k) to the first k rows of X_k
+    #####:  489:        m_cpqr.m_qr.topRightCorner(k, cols - rank + 1)
+    #####:  490:            .applyHouseholderOnTheRight(
+    #####:  491:                m_cpqr.m_qr.row(k).tail(cols - rank).adjoint(), m_zCoeffs(k),
+    #####:  492:                &m_temp(0));
+    #####:  493:      }
+    #####:  494:      if (k != rank - 1) {
+        -:  495:        // Swap X(0:k,k) back to its proper location.
+    #####:  496:        m_cpqr.m_qr.col(k).head(k + 1).swap(
+    #####:  497:            m_cpqr.m_qr.col(rank - 1).head(k + 1));
+    #####:  498:      }
+    #####:  499:    }
+    #####:  500:  }
+    #####:  501:}
+        -:  502:
+        -:  503:template <typename MatrixType, typename PermutationIndex>
+        -:  504:template <bool Conjugate, typename Rhs>
+        -:  505:void CompleteOrthogonalDecomposition<MatrixType, PermutationIndex>::applyZOnTheLeftInPlace(
+        -:  506:    Rhs& rhs) const {
+        -:  507:  const Index cols = this->cols();
+        -:  508:  const Index nrhs = rhs.cols();
+        -:  509:  const Index rank = this->rank();
+        -:  510:  Matrix<typename Rhs::Scalar, Dynamic, 1> temp((std::max)(cols, nrhs));
+        -:  511:  for (Index k = rank-1; k >= 0; --k) {
+        -:  512:    if (k != rank - 1) {
+        -:  513:      rhs.row(k).swap(rhs.row(rank - 1));
+        -:  514:    }
+        -:  515:    rhs.middleRows(rank - 1, cols - rank + 1)
+        -:  516:        .applyHouseholderOnTheLeft(
+        -:  517:            matrixQTZ().row(k).tail(cols - rank).transpose().template conjugateIf<!Conjugate>(), zCoeffs().template conjugateIf<Conjugate>()(k),
+        -:  518:            &temp(0));
+        -:  519:    if (k != rank - 1) {
+        -:  520:      rhs.row(k).swap(rhs.row(rank - 1));
+        -:  521:    }
+        -:  522:  }
+        -:  523:}
+        -:  524:
+        -:  525:template <typename MatrixType, typename PermutationIndex>
+        -:  526:template <typename Rhs>
+    #####:  527:void CompleteOrthogonalDecomposition<MatrixType, PermutationIndex>::applyZAdjointOnTheLeftInPlace(
+        -:  528:    Rhs& rhs) const {
+    #####:  529:  const Index cols = this->cols();
+    #####:  530:  const Index nrhs = rhs.cols();
+    #####:  531:  const Index rank = this->rank();
+    #####:  532:  Matrix<typename Rhs::Scalar, Dynamic, 1> temp((std::max)(cols, nrhs));
+    #####:  533:  for (Index k = 0; k < rank; ++k) {
+    #####:  534:    if (k != rank - 1) {
+    #####:  535:      rhs.row(k).swap(rhs.row(rank - 1));
+    #####:  536:    }
+    #####:  537:    rhs.middleRows(rank - 1, cols - rank + 1)
+    #####:  538:        .applyHouseholderOnTheLeft(
+    #####:  539:            matrixQTZ().row(k).tail(cols - rank).adjoint(), zCoeffs()(k),
+    #####:  540:            &temp(0));
+    #####:  541:    if (k != rank - 1) {
+    #####:  542:      rhs.row(k).swap(rhs.row(rank - 1));
+    #####:  543:    }
+    #####:  544:  }
+    #####:  545:}
+        -:  546:
+        -:  547:#ifndef EIGEN_PARSED_BY_DOXYGEN
+        -:  548:template <typename MatrixType_, typename PermutationIndex_>
+        -:  549:template <typename RhsType, typename DstType>
+    #####:  550:void CompleteOrthogonalDecomposition<MatrixType_, PermutationIndex_>::_solve_impl(
+        -:  551:    const RhsType& rhs, DstType& dst) const {
+    #####:  552:  const Index rank = this->rank();
+    #####:  553:  if (rank == 0) {
+    #####:  554:    dst.setZero();
+    #####:  555:    return;
+        -:  556:  }
+        -:  557:
+        -:  558:  // Compute c = Q^* * rhs
+    #####:  559:  typename RhsType::PlainObject c(rhs);
+    #####:  560:  c.applyOnTheLeft(matrixQ().setLength(rank).adjoint());
+        -:  561:
+        -:  562:  // Solve T z = c(1:rank, :)
+    #####:  563:  dst.topRows(rank) = matrixT()
+    #####:  564:                          .topLeftCorner(rank, rank)
+    #####:  565:                          .template triangularView<Upper>()
+    #####:  566:                          .solve(c.topRows(rank));
+        -:  567:
+    #####:  568:  const Index cols = this->cols();
+    #####:  569:  if (rank < cols) {
+        -:  570:    // Compute y = Z^* * [ z ]
+        -:  571:    //                   [ 0 ]
+    #####:  572:    dst.bottomRows(cols - rank).setZero();
+    #####:  573:    applyZAdjointOnTheLeftInPlace(dst);
+    #####:  574:  }
+        -:  575:
+        -:  576:  // Undo permutation to get x = P^{-1} * y.
+    #####:  577:  dst = colsPermutation() * dst;
+    #####:  578:}
+        -:  579:
+        -:  580:template<typename MatrixType_, typename PermutationIndex_>
+        -:  581:template<bool Conjugate, typename RhsType, typename DstType>
+        -:  582:void CompleteOrthogonalDecomposition<MatrixType_, PermutationIndex_>::_solve_impl_transposed(const RhsType &rhs, DstType &dst) const
+        -:  583:{
+        -:  584:  const Index rank = this->rank();
+        -:  585:
+        -:  586:  if (rank == 0) {
+        -:  587:    dst.setZero();
+        -:  588:    return;
+        -:  589:  }
+        -:  590:
+        -:  591:  typename RhsType::PlainObject c(colsPermutation().transpose()*rhs);
+        -:  592:
+        -:  593:  if (rank < cols()) {
+        -:  594:    applyZOnTheLeftInPlace<!Conjugate>(c);
+        -:  595:  }
+        -:  596:
+        -:  597:  matrixT().topLeftCorner(rank, rank)
+        -:  598:           .template triangularView<Upper>()
+        -:  599:           .transpose().template conjugateIf<Conjugate>()
+        -:  600:           .solveInPlace(c.topRows(rank));
+        -:  601:
+        -:  602:  dst.topRows(rank) = c.topRows(rank);
+        -:  603:  dst.bottomRows(rows()-rank).setZero();
+        -:  604:
+        -:  605:  dst.applyOnTheLeft(householderQ().setLength(rank).template conjugateIf<!Conjugate>() );
+        -:  606:}
+        -:  607:#endif
+        -:  608:
+        -:  609:namespace internal {
+        -:  610:
+        -:  611:template<typename MatrixType, typename PermutationIndex>
+        -:  612:struct traits<Inverse<CompleteOrthogonalDecomposition<MatrixType, PermutationIndex> > >
+        -:  613:  : traits<typename Transpose<typename MatrixType::PlainObject>::PlainObject>
+        -:  614:{
+        -:  615:  enum { Flags = 0 };
+        -:  616:};
+        -:  617:
+        -:  618:template<typename DstXprType, typename MatrixType, typename PermutationIndex>
+        -:  619:struct Assignment<DstXprType, Inverse<CompleteOrthogonalDecomposition<MatrixType, PermutationIndex> >, internal::assign_op<typename DstXprType::Scalar,typename CompleteOrthogonalDecomposition<MatrixType, PermutationIndex>::Scalar>, Dense2Dense>
+        -:  620:{
+        -:  621:  typedef CompleteOrthogonalDecomposition<MatrixType, PermutationIndex> CodType;
+        -:  622:  typedef Inverse<CodType> SrcXprType;
+    #####:  623:  static void run(DstXprType &dst, const SrcXprType &src, const internal::assign_op<typename DstXprType::Scalar,typename CodType::Scalar> &)
+        -:  624:  {
+        -:  625:    typedef Matrix<typename CodType::Scalar, CodType::RowsAtCompileTime, CodType::RowsAtCompileTime, 0, CodType::MaxRowsAtCompileTime, CodType::MaxRowsAtCompileTime> IdentityMatrixType;
+    #####:  626:    dst = src.nestedExpression().solve(IdentityMatrixType::Identity(src.cols(), src.cols()));
+    #####:  627:  }
+        -:  628:};
+        -:  629:
+        -:  630:} // end namespace internal
+        -:  631:
+        -:  632:/** \returns the matrix Q as a sequence of householder transformations */
+        -:  633:template <typename MatrixType, typename PermutationIndex>
+        -:  634:typename CompleteOrthogonalDecomposition<MatrixType, PermutationIndex>::HouseholderSequenceType
+        -:  635:CompleteOrthogonalDecomposition<MatrixType, PermutationIndex>::householderQ() const {
+        -:  636:  return m_cpqr.householderQ();
+        -:  637:}
+        -:  638:
+        -:  639:/** \return the complete orthogonal decomposition of \c *this.
+        -:  640:  *
+        -:  641:  * \sa class CompleteOrthogonalDecomposition
+        -:  642:  */
+        -:  643:template <typename Derived>
+        -:  644:template <typename PermutationIndex>
+        -:  645:const CompleteOrthogonalDecomposition<typename MatrixBase<Derived>::PlainObject, PermutationIndex>
+    #####:  646:MatrixBase<Derived>::completeOrthogonalDecomposition() const {
+    #####:  647:  return CompleteOrthogonalDecomposition<PlainObject>(eval());
+        -:  648:}
+        -:  649:
+        -:  650:}  // end namespace Eigen
+        -:  651:
+        -:  652:#endif  // EIGEN_COMPLETEORTHOGONALDECOMPOSITION_H

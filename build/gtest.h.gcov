@@ -1,7 +1,7 @@
         -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/googletest/googletest/include/gtest/gtest.h
-        -:    0:Graph:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcno
-        -:    0:Data:tests/CMakeFiles/vecfields_test_mesh_io.dir/test_mesh_io.cpp.gcda
-        -:    0:Runs:4
+        -:    0:Graph:./external/googletest/googlemock/CMakeFiles/gmock_main.dir/src/gmock_main.cc.gcno
+        -:    0:Data:-
+        -:    0:Runs:0
         -:    1:// Copyright 2005, Google Inc.
         -:    2:// All rights reserved.
         -:    3://
@@ -294,13 +294,13 @@
         -:  290:  // the argument is implicitly convertible to AssertionResult. In that case
         -:  291:  // we want AssertionResult's copy constructor to be used.
         -:  292:  template <typename T>
-       72:  293:  explicit AssertionResult(
+        -:  293:  explicit AssertionResult(
         -:  294:      const T& success,
         -:  295:      typename std::enable_if<
         -:  296:          !std::is_convertible<T, AssertionResult>::value>::type*
         -:  297:      /*enabler*/
         -:  298:      = nullptr)
-       72:  299:      : success_(success) {}
+        -:  299:      : success_(success) {}
         -:  300:
         -:  301:#if defined(_MSC_VER) && _MSC_VER < 1910
         -:  302:  GTEST_DISABLE_MSC_WARNINGS_POP_()
@@ -313,7 +313,7 @@
         -:  309:  }
         -:  310:
         -:  311:  // Returns true if and only if the assertion succeeded.
-       24:  312:  operator bool() const { return success_; }  // NOLINT
+        -:  312:  operator bool() const { return success_; }  // NOLINT
         -:  313:
         -:  314:  // Returns the assertion's negation. Used with EXPECT/ASSERT_FALSE.
         -:  315:  AssertionResult operator!() const;
@@ -322,17 +322,17 @@
         -:  318:  // use it when they fail (i.e., the predicate's outcome doesn't match the
         -:  319:  // assertion's expectation). When nothing has been streamed into the
         -:  320:  // object, returns an empty string.
-       12:  321:  const char* message() const {
-       12:  322:    return message_.get() != nullptr ? message_->c_str() : "";
+        -:  321:  const char* message() const {
+        -:  322:    return message_.get() != nullptr ? message_->c_str() : "";
         -:  323:  }
         -:  324:  // Deprecated; please use message() instead.
-        8:  325:  const char* failure_message() const { return message(); }
+        -:  325:  const char* failure_message() const { return message(); }
         -:  326:
         -:  327:  // Streams a custom failure message into this object.
-       80:  328:  template <typename T> AssertionResult& operator<<(const T& value) {
-       80:  329:    AppendMessage(Message() << value);
-       80:  330:    return *this;
-    #####:  331:  }
+        -:  328:  template <typename T> AssertionResult& operator<<(const T& value) {
+        -:  329:    AppendMessage(Message() << value);
+        -:  330:    return *this;
+        -:  331:  }
         -:  332:
         -:  333:  // Allows streaming basic output manipulators such as endl or flush into
         -:  334:  // this object.
@@ -344,10 +344,10 @@
         -:  340:
         -:  341: private:
         -:  342:  // Appends the contents of message to message_.
-       80:  343:  void AppendMessage(const Message& a_message) {
-       80:  344:    if (message_.get() == nullptr) message_.reset(new ::std::string);
-       80:  345:    message_->append(a_message.GetString().c_str());
-       80:  346:  }
+        -:  343:  void AppendMessage(const Message& a_message) {
+        -:  344:    if (message_.get() == nullptr) message_.reset(new ::std::string);
+        -:  345:    message_->append(a_message.GetString().c_str());
+        -:  346:  }
         -:  347:
         -:  348:  // Swap the contents of this AssertionResult with other.
         -:  349:  void swap(AssertionResult& other);
@@ -418,7 +418,7 @@
         -:  414:  // class.
         -:  415:  // Failures that happen during SetUpTestSuite are logged but otherwise
         -:  416:  // ignored.
-    #####:  417:  static void SetUpTestSuite() {}
+        -:  417:  static void SetUpTestSuite() {}
         -:  418:
         -:  419:  // Tears down the stuff shared by all tests in this test suite.
         -:  420:  //
@@ -428,12 +428,12 @@
         -:  424:  // class.
         -:  425:  // Failures that happen during TearDownTestSuite are logged but otherwise
         -:  426:  // ignored.
-    #####:  427:  static void TearDownTestSuite() {}
+        -:  427:  static void TearDownTestSuite() {}
         -:  428:
         -:  429:  // Legacy API is deprecated but still available
         -:  430:#ifndef GTEST_REMOVE_LEGACY_TEST_CASEAPI_
-    #####:  431:  static void TearDownTestCase() {}
-    #####:  432:  static void SetUpTestCase() {}
+        -:  431:  static void TearDownTestCase() {}
+        -:  432:  static void SetUpTestCase() {}
         -:  433:#endif  // GTEST_REMOVE_LEGACY_TEST_CASEAPI_
         -:  434:
         -:  435:  // Returns true if and only if the current test has a fatal failure.
@@ -514,7 +514,7 @@
         -:  510:  // If you see an error about overriding the following function or
         -:  511:  // about it being private, you have mis-spelled SetUp() as Setup().
         -:  512:  struct Setup_should_be_spelled_SetUp {};
-    #####:  513:  virtual Setup_should_be_spelled_SetUp* Setup() { return nullptr; }
+        -:  513:  virtual Setup_should_be_spelled_SetUp* Setup() { return nullptr; }
         -:  514:
         -:  515:  // We disallow copying Tests.
         -:  516:  GTEST_DISALLOW_COPY_AND_ASSIGN_(Test);
@@ -1586,14 +1586,14 @@
         -: 1582:// frame size of CmpHelperOP. This helps reduce the overhead of some sanitizers
         -: 1583:// when calling EXPECT_OP in a tight loop.
         -: 1584:template <typename T1, typename T2>
-        8: 1585:AssertionResult CmpHelperOpFailure(const char* expr1, const char* expr2,
+        -: 1585:AssertionResult CmpHelperOpFailure(const char* expr1, const char* expr2,
         -: 1586:                                   const T1& val1, const T2& val2,
         -: 1587:                                   const char* op) {
-       16: 1588:  return AssertionFailure()
-        8: 1589:         << "Expected: (" << expr1 << ") " << op << " (" << expr2
-        8: 1590:         << "), actual: " << FormatForComparisonFailureMessage(val1, val2)
-        8: 1591:         << " vs " << FormatForComparisonFailureMessage(val2, val1);
-    #####: 1592:}
+        -: 1588:  return AssertionFailure()
+        -: 1589:         << "Expected: (" << expr1 << ") " << op << " (" << expr2
+        -: 1590:         << "), actual: " << FormatForComparisonFailureMessage(val1, val2)
+        -: 1591:         << " vs " << FormatForComparisonFailureMessage(val2, val1);
+        -: 1592:}
         -: 1593:
         -: 1594:// A macro for implementing the helper functions needed to implement
         -: 1595:// ASSERT_?? and EXPECT_??.  It is here just to avoid copy-and-paste
@@ -1630,7 +1630,7 @@
         -: 1626:// Implements the helper function for {ASSERT|EXPECT}_GE
         -: 1627:GTEST_IMPL_CMP_HELPER_(GE, >=);
         -: 1628:// Implements the helper function for {ASSERT|EXPECT}_GT
-       16: 1629:GTEST_IMPL_CMP_HELPER_(GT, >);
+        -: 1629:GTEST_IMPL_CMP_HELPER_(GT, >);
         -: 1630:
         -: 1631:#undef GTEST_IMPL_CMP_HELPER_
         -: 1632:
@@ -2472,8 +2472,8 @@
         -: 2468:// namespace and has an all-caps name.
         -: 2469:int RUN_ALL_TESTS() GTEST_MUST_USE_RESULT_;
         -: 2470:
-        -: 2471:inline int RUN_ALL_TESTS() {
-        -: 2472:  return ::testing::UnitTest::GetInstance()->Run();
+    #####: 2471:inline int RUN_ALL_TESTS() {
+    #####: 2472:  return ::testing::UnitTest::GetInstance()->Run();
         -: 2473:}
         -: 2474:
         -: 2475:GTEST_DISABLE_MSC_WARNINGS_POP_()  //  4251

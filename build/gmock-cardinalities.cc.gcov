@@ -1,0 +1,159 @@
+        -:    0:Source:/Users/csv610/Projects/Mesh/Directional/external/googletest/googlemock/src/gmock-cardinalities.cc
+        -:    0:Graph:./external/googletest/googlemock/CMakeFiles/gmock.dir/src/gmock-all.cc.gcno
+        -:    0:Data:-
+        -:    0:Runs:0
+        -:    1:// Copyright 2007, Google Inc.
+        -:    2:// All rights reserved.
+        -:    3://
+        -:    4:// Redistribution and use in source and binary forms, with or without
+        -:    5:// modification, are permitted provided that the following conditions are
+        -:    6:// met:
+        -:    7://
+        -:    8://     * Redistributions of source code must retain the above copyright
+        -:    9:// notice, this list of conditions and the following disclaimer.
+        -:   10://     * Redistributions in binary form must reproduce the above
+        -:   11:// copyright notice, this list of conditions and the following disclaimer
+        -:   12:// in the documentation and/or other materials provided with the
+        -:   13:// distribution.
+        -:   14://     * Neither the name of Google Inc. nor the names of its
+        -:   15:// contributors may be used to endorse or promote products derived from
+        -:   16:// this software without specific prior written permission.
+        -:   17://
+        -:   18:// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+        -:   19:// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+        -:   20:// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+        -:   21:// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+        -:   22:// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+        -:   23:// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+        -:   24:// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+        -:   25:// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+        -:   26:// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+        -:   27:// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+        -:   28:// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+        -:   29:
+        -:   30:
+        -:   31:// Google Mock - a framework for writing C++ mock classes.
+        -:   32://
+        -:   33:// This file implements cardinalities.
+        -:   34:
+        -:   35:#include "gmock/gmock-cardinalities.h"
+        -:   36:
+        -:   37:#include <limits.h>
+        -:   38:#include <ostream>  // NOLINT
+        -:   39:#include <sstream>
+        -:   40:#include <string>
+        -:   41:#include "gmock/internal/gmock-internal-utils.h"
+        -:   42:#include "gtest/gtest.h"
+        -:   43:
+        -:   44:namespace testing {
+        -:   45:
+        -:   46:namespace {
+        -:   47:
+        -:   48:// Implements the Between(m, n) cardinality.
+        -:   49:class BetweenCardinalityImpl : public CardinalityInterface {
+        -:   50: public:
+    #####:   51:  BetweenCardinalityImpl(int min, int max)
+    #####:   52:      : min_(min >= 0 ? min : 0),
+    #####:   53:        max_(max >= min_ ? max : min_) {
+    #####:   54:    std::stringstream ss;
+    #####:   55:    if (min < 0) {
+    #####:   56:      ss << "The invocation lower bound must be >= 0, "
+    #####:   57:         << "but is actually " << min << ".";
+    #####:   58:      internal::Expect(false, __FILE__, __LINE__, ss.str());
+    #####:   59:    } else if (max < 0) {
+    #####:   60:      ss << "The invocation upper bound must be >= 0, "
+    #####:   61:         << "but is actually " << max << ".";
+    #####:   62:      internal::Expect(false, __FILE__, __LINE__, ss.str());
+    #####:   63:    } else if (min > max) {
+    #####:   64:      ss << "The invocation upper bound (" << max
+    #####:   65:         << ") must be >= the invocation lower bound (" << min
+    #####:   66:         << ").";
+    #####:   67:      internal::Expect(false, __FILE__, __LINE__, ss.str());
+    #####:   68:    }
+    #####:   69:  }
+        -:   70:
+        -:   71:  // Conservative estimate on the lower/upper bound of the number of
+        -:   72:  // calls allowed.
+    #####:   73:  int ConservativeLowerBound() const override { return min_; }
+    #####:   74:  int ConservativeUpperBound() const override { return max_; }
+        -:   75:
+    #####:   76:  bool IsSatisfiedByCallCount(int call_count) const override {
+    #####:   77:    return min_ <= call_count && call_count <= max_;
+        -:   78:  }
+        -:   79:
+    #####:   80:  bool IsSaturatedByCallCount(int call_count) const override {
+    #####:   81:    return call_count >= max_;
+        -:   82:  }
+        -:   83:
+        -:   84:  void DescribeTo(::std::ostream* os) const override;
+        -:   85:
+        -:   86: private:
+        -:   87:  const int min_;
+        -:   88:  const int max_;
+        -:   89:
+        -:   90:  GTEST_DISALLOW_COPY_AND_ASSIGN_(BetweenCardinalityImpl);
+        -:   91:};
+        -:   92:
+        -:   93:// Formats "n times" in a human-friendly way.
+    #####:   94:inline std::string FormatTimes(int n) {
+    #####:   95:  if (n == 1) {
+    #####:   96:    return "once";
+    #####:   97:  } else if (n == 2) {
+    #####:   98:    return "twice";
+        -:   99:  } else {
+    #####:  100:    std::stringstream ss;
+    #####:  101:    ss << n << " times";
+    #####:  102:    return ss.str();
+    #####:  103:  }
+    #####:  104:}
+        -:  105:
+        -:  106:// Describes the Between(m, n) cardinality in human-friendly text.
+    #####:  107:void BetweenCardinalityImpl::DescribeTo(::std::ostream* os) const {
+    #####:  108:  if (min_ == 0) {
+    #####:  109:    if (max_ == 0) {
+    #####:  110:      *os << "never called";
+    #####:  111:    } else if (max_ == INT_MAX) {
+    #####:  112:      *os << "called any number of times";
+    #####:  113:    } else {
+    #####:  114:      *os << "called at most " << FormatTimes(max_);
+        -:  115:    }
+    #####:  116:  } else if (min_ == max_) {
+    #####:  117:    *os << "called " << FormatTimes(min_);
+    #####:  118:  } else if (max_ == INT_MAX) {
+    #####:  119:    *os << "called at least " << FormatTimes(min_);
+    #####:  120:  } else {
+        -:  121:    // 0 < min_ < max_ < INT_MAX
+    #####:  122:    *os << "called between " << min_ << " and " << max_ << " times";
+        -:  123:  }
+    #####:  124:}
+        -:  125:
+        -:  126:}  // Unnamed namespace
+        -:  127:
+        -:  128:// Describes the given call count to an ostream.
+    #####:  129:void Cardinality::DescribeActualCallCountTo(int actual_call_count,
+        -:  130:                                            ::std::ostream* os) {
+    #####:  131:  if (actual_call_count > 0) {
+    #####:  132:    *os << "called " << FormatTimes(actual_call_count);
+    #####:  133:  } else {
+    #####:  134:    *os << "never called";
+        -:  135:  }
+    #####:  136:}
+        -:  137:
+        -:  138:// Creates a cardinality that allows at least n calls.
+    #####:  139:GTEST_API_ Cardinality AtLeast(int n) { return Between(n, INT_MAX); }
+        -:  140:
+        -:  141:// Creates a cardinality that allows at most n calls.
+    #####:  142:GTEST_API_ Cardinality AtMost(int n) { return Between(0, n); }
+        -:  143:
+        -:  144:// Creates a cardinality that allows any number of calls.
+    #####:  145:GTEST_API_ Cardinality AnyNumber() { return AtLeast(0); }
+        -:  146:
+        -:  147:// Creates a cardinality that allows between min and max calls.
+    #####:  148:GTEST_API_ Cardinality Between(int min, int max) {
+    #####:  149:  return Cardinality(new BetweenCardinalityImpl(min, max));
+    #####:  150:}
+        -:  151:
+        -:  152:// Creates a cardinality that allows exactly n calls.
+    #####:  153:GTEST_API_ Cardinality Exactly(int n) { return Between(n, n); }
+        -:  154:
+        -:  155:}  // namespace testing
